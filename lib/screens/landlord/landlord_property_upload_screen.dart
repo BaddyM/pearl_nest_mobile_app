@@ -1,0 +1,1479 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:pearlnest/models/property.dart';
+import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/models/landlord.dart';
+import 'package:pearlnest/widgets/app_theme.dart';
+
+class LandlordPropertyUploadScreen extends StatefulWidget {
+  final User user;
+  final Landlord landlord;
+  final Property? property;
+
+  const LandlordPropertyUploadScreen({
+    super.key,
+    required this.user,
+    required this.landlord,
+    this.property,
+  });
+
+  @override
+  State<LandlordPropertyUploadScreen> createState() => _LandlordPropertyUploadScreenState();
+}
+
+class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _areaController = TextEditingController();
+  final _bedroomsController = TextEditingController();
+  final _bathroomsController = TextEditingController();
+  
+  PropertyType _selectedType = PropertyType.apartment;
+  String _selectedPriceType = 'per month';
+  AvailabilityStatus _availabilityStatus = AvailabilityStatus.availableNow;
+  DateTime? _availableFrom;
+  final List<String> _selectedAmenities = [];
+  final List<File> _selectedImages = [];
+  bool _isLoading = false;
+  PropertyType? _selectedPropertyType;
+  final int _selectedBedrooms = 0;
+  final int _selectedBathrooms = 0;
+  AvailabilityStatus? _selectedAvailabilityStatus;
+  DateTime? _availableFromDate;
+  double? _selectedLatitude;
+  double? _selectedLongitude;
+
+  final List<String> _priceTypes = [
+    'per month',
+    'per night',
+    'per week',
+    'per year',
+  ];
+
+  final List<String> _availableAmenities = [
+    'WiFi',
+    'Parking',
+    'Gym',
+    'Pool',
+    'Kitchen',
+    'AC',
+    'Heating',
+    'Laundry',
+    'Garden',
+    'Garage',
+    'Fireplace',
+    'Balcony',
+    'Elevator',
+    'Security',
+    'Pet Friendly',
+  ];
+
+  final ImagePicker _picker = ImagePicker();
+
+  final List<PropertyType> _availablePropertyTypes = [
+    PropertyType.apartment,
+    PropertyType.house,
+    PropertyType.studio,
+    PropertyType.condo,
+    PropertyType.townhouse,
+    PropertyType.room,
+    PropertyType.airbnb,
+    PropertyType.hostel,
+    PropertyType.fullHouse,
+  ];
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    _locationController.dispose();
+    _addressController.dispose();
+    _areaController.dispose();
+    _bedroomsController.dispose();
+    _bathroomsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.whiteColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.whiteColor,
+            AppTheme.primaryblue.withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(25),
+          bottomRight: Radius.circular(25),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Add New Property',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.blackColor,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Fill in the details below',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.greyColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    _resetForm();
+                  },
+                  icon: Icon(
+                    Icons.refresh,
+                    color: AppTheme.primaryblue,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          _buildProgressIndicator(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicator() {
+    int completedSections = 0;
+    int totalSections = 7;
+    
+    if (_titleController.text.isNotEmpty) completedSections++;
+    if (_priceController.text.isNotEmpty) completedSections++;
+    if (_locationController.text.isNotEmpty) completedSections++;
+    if (_bedroomsController.text.isNotEmpty) completedSections++;
+    if (_selectedAmenities.isNotEmpty) completedSections++;
+    if (_selectedImages.isNotEmpty) completedSections++;
+    if (_descriptionController.text.isNotEmpty) completedSections++;
+    
+    double progress = completedSections / totalSections;
+    
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.whiteColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            blurRadius: 5,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.trending_up, color: AppTheme.primaryblue, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Upload Progress',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.blackColor,
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${(progress * 100).toInt()}%',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryblue,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: AppTheme.greyColor.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+              minHeight: 6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionCard(
+              'Basic Information',
+              Icons.info_outline,
+              _buildBasicInfoSection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
+              'Property Details',
+              Icons.home_outlined,
+              _buildPropertyDetailsSection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
+              'Location',
+              Icons.location_on_outlined,
+              _buildLocationSection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
+              'Pricing',
+              Icons.attach_money_outlined,
+              _buildPricingSection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
+              'Availability',
+              Icons.calendar_today_outlined,
+              _buildAvailabilitySection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
+              'Amenities',
+              Icons.star_outline,
+              _buildAmenitiesSection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
+              'Photos',
+              Icons.photo_camera_outlined,
+              _buildPhotosSection(),
+            ),
+            SizedBox(height: 30),
+            _buildSubmitButton(),
+            SizedBox(height: 30),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard(String title, IconData icon, Widget content) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.whiteColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryblue.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: AppTheme.primaryblue, size: 20),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.blackColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(20),
+            child: content,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetForm() {
+    setState(() {
+      _titleController.clear();
+      _priceController.clear();
+      _locationController.clear();
+      _bedroomsController.clear();
+      _descriptionController.clear();
+      _selectedAmenities.clear();
+      _selectedImages.clear();
+    });
+  }
+
+  Widget _buildBasicInfoSection() {
+    return Column(
+      children: [
+        _buildTextField(
+          controller: _titleController,
+          label: 'Property Title',
+          hint: 'Enter a catchy title for your property',
+          icon: Icons.title,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter a property title';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: 20),
+        _buildTextField(
+          controller: _descriptionController,
+          label: 'Description',
+          hint: 'Describe your property in detail',
+          icon: Icons.description,
+          maxLines: 4,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter a description';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: 20),
+        _buildPropertyTypeDropdown(),
+      ],
+    );
+  }
+
+  Widget _buildPropertyDetailsSection() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildTextField(
+                controller: _bedroomsController,
+                label: 'Bedrooms',
+                hint: '0',
+                icon: Icons.bed,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Required';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: _buildTextField(
+                controller: _bathroomsController,
+                label: 'Bathrooms',
+                hint: '0',
+                icon: Icons.bathtub,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Required';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 20),
+        _buildTextField(
+          controller: _areaController,
+          label: 'Area (sq meters)',
+          hint: 'Enter property area',
+          icon: Icons.square_foot,
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter the area';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationSection() {
+    return Column(
+      children: [
+        _buildTextField(
+          controller: _locationController,
+          label: 'Location/Neighborhood',
+          hint: 'e.g., Downtown, University District',
+          icon: Icons.location_city,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter the location';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: 20),
+        _buildTextField(
+          controller: _addressController,
+          label: 'Full Address',
+          hint: 'Enter complete address',
+          icon: Icons.home,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter the address';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPricingSection() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: _buildTextField(
+            controller: _priceController,
+            label: 'Price',
+            hint: '0',
+            icon: Icons.attach_money,
+            keyboardType: TextInputType.number,
+            prefixText: '\$',
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter the price';
+              }
+              return null;
+            },
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: _buildPriceTypeDropdown(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAvailabilitySection() {
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Column(
+            children: [
+              _buildRadioTile(
+                'Available Now',
+                AvailabilityStatus.availableNow,
+                Icons.check_circle_outline,
+              ),
+              Divider(height: 1, color: Colors.grey[300]),
+              _buildRadioTile(
+                'Available Later',
+                AvailabilityStatus.availableLater,
+                Icons.schedule,
+              ),
+            ],
+          ),
+        ),
+        if (_availabilityStatus == AvailabilityStatus.availableLater) ...[
+          SizedBox(height: 16),
+          GestureDetector(
+            onTap: _selectAvailableDate,
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.calendar_today,
+                      color: AppTheme.primaryblue,
+                      size: 20,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _availableFrom != null
+                          ? 'Available from: ${_availableFrom!.day}/${_availableFrom!.month}/${_availableFrom!.year}'
+                          : 'Select available date',
+                      style: TextStyle(
+                        color: _availableFrom != null
+                            ? AppTheme.blackColor
+                            : Colors.grey[600],
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.grey[400],
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRadioTile(String title, AvailabilityStatus value, IconData icon) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        unselectedWidgetColor: Colors.black,
+      ),
+      child: RadioListTile<AvailabilityStatus>(
+        title: Row(
+          children: [
+            Icon(icon, color: AppTheme.primaryblue, size: 20),
+            SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: AppTheme.blackColor,
+              ),
+            ),
+          ],
+        ),
+        value: value,
+        groupValue: _availabilityStatus,
+        onChanged: (newValue) {
+          setState(() {
+            _availabilityStatus = newValue!;
+            if (newValue == AvailabilityStatus.availableNow) {
+              _availableFrom = null;
+            }
+          });
+        },
+        activeColor: AppTheme.primaryblue,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      ),
+    );
+  }
+
+  Widget _buildAmenitiesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryblue.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Select amenities available in your property:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 16),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _availableAmenities.map((amenity) {
+            final isSelected = _selectedAmenities.contains(amenity);
+            return _buildAmenityChip(amenity, isSelected);
+          }).toList(),
+        ),
+        if (_selectedAmenities.isNotEmpty) ...[
+          SizedBox(height: 12),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryblue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${_selectedAmenities.length} amenities selected',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.primaryblue,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAmenityChip(String amenity, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isSelected) {
+            _selectedAmenities.remove(amenity);
+          } else {
+            _selectedAmenities.add(amenity);
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: [AppTheme.primaryblue, AppTheme.primaryblue.withOpacity(0.8)],
+                )
+              : null,
+          color: isSelected ? null : Colors.grey[100],
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryblue : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryblue.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected)
+              Icon(
+                Icons.check,
+                color: Colors.white,
+                size: 16,
+              ),
+            if (isSelected) SizedBox(width: 4),
+            Text(
+              amenity,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[700],
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotosSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryblue.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Add photos to showcase your property (max 10):',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 16),
+        SizedBox(
+          height: 140,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _buildAddPhotoCard(),
+              ..._selectedImages.map((image) => _buildPhotoCard(image)),
+            ],
+          ),
+        ),
+        if (_selectedImages.isNotEmpty) ...[
+          SizedBox(height: 12),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryblue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.photo_library, color: AppTheme.primaryblue, size: 16),
+                SizedBox(width: 8),
+                Text(
+                  '${_selectedImages.length} photo(s) selected',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.primaryblue,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    String? prefixText,
+    IconData? icon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      validator: validator,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: AppTheme.blackColor,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixText: prefixText,
+        prefixIcon: icon != null
+            ? Container(
+                margin: EdgeInsets.all(12),
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryblue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppTheme.primaryblue, size: 20),
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red, width: 2),
+        ),
+        labelStyle: TextStyle(
+          color: Colors.grey[600],
+          fontWeight: FontWeight.w500,
+        ),
+        hintStyle: TextStyle(
+          color: Colors.grey[400],
+          fontSize: 14,
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: icon != null ? 60 : 16,
+          vertical: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPropertyTypeDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1.5),
+      ),
+      child: DropdownButtonFormField<PropertyType>(
+        value: _selectedType,
+        style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          labelText: 'Property Type',
+          prefixIcon: Container(
+            margin: EdgeInsets.all(12),
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryblue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.home_work, color: AppTheme.primaryblue, size: 20),
+          ),
+          border: InputBorder.none,
+          labelStyle: TextStyle(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 60, vertical: 16),
+        ),
+        items: _availablePropertyTypes.map((type) {
+          return DropdownMenuItem(
+            value: type,
+            child: Text(
+              _getPropertyTypeDisplayName(type),
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedType = value!;
+          });
+        },
+        dropdownColor: Colors.white,
+        icon: Icon(Icons.keyboard_arrow_down, color: AppTheme.primaryblue),
+      ),
+    );
+  }
+
+  Widget _buildPriceTypeDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1.5),
+      ),
+      child: DropdownButtonFormField<String>(
+        value: _selectedPriceType,
+        style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          labelText: 'Period',
+          border: InputBorder.none,
+          labelStyle: TextStyle(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        items: _priceTypes.map((type) {
+          return DropdownMenuItem(
+            value: type,
+            child: Text(
+              type,
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedPriceType = value!;
+          });
+        },
+        dropdownColor: Colors.white,
+        icon: Icon(Icons.keyboard_arrow_down, color: AppTheme.primaryblue),
+      ),
+    );
+  }
+
+  Widget _buildAddPhotoCard() {
+    return GestureDetector(
+      onTap: _showImageSelectionDialog,
+      child: Container(
+        width: 120,
+        height: 120,
+        margin: EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppTheme.primaryblue.withOpacity(0.3),
+            width: 2,
+            style: BorderStyle.solid,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryblue.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.add_photo_alternate_outlined,
+                color: AppTheme.primaryblue,
+                size: 28,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Add Photo',
+              style: TextStyle(
+                color: AppTheme.primaryblue,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoCard(File image) {
+    return Container(
+      width: 120,
+      height: 120,
+      margin: EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.file(
+              image,
+              width: 120,
+              height: 120,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedImages.remove(image);
+                });
+              },
+              child: Container(
+                padding: EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.9),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.primaryblue, AppTheme.primaryblue.withOpacity(0.8)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryblue.withOpacity(0.3),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _submitProperty,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: _isLoading
+            ? SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 2,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.upload,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Upload Property',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  void _showImageSelectionDialog() {
+    if (_selectedImages.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Maximum 10 photos allowed', style: TextStyle(color: AppTheme.lightGreyColor),),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: Duration(milliseconds: 500),
+          backgroundColor: AppTheme.primaryblue,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Select Photo Source',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.blackColor,
+              ),
+            ),
+            SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildImageSourceOption(
+                    icon: Icons.camera_alt,
+                    label: 'Camera',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImage(ImageSource.camera);
+                    },
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: _buildImageSourceOption(
+                    icon: Icons.photo_library,
+                    label: 'Gallery',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImage(ImageSource.gallery);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSourceOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryblue.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppTheme.primaryblue.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: AppTheme.primaryblue,
+              size: 32,
+            ),
+            SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: AppTheme.primaryblue,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        setState(() {
+          _selectedImages.add(File(image.path));
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error picking image: $e', style: TextStyle(color: AppTheme.lightGreyColor),),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: Duration(milliseconds: 500),
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
+  Future<void> _selectAvailableDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _availableFrom ?? DateTime.now().add(Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryblue,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppTheme.blackColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _availableFrom = picked;
+      });
+    }
+  }
+
+  String _getPropertyTypeDisplayName(PropertyType type) {
+    switch (type) {
+      case PropertyType.apartment:
+        return 'Apartment';
+      case PropertyType.house:
+        return 'House';
+      case PropertyType.studio:
+        return 'Studio';
+      case PropertyType.room:
+        return 'Room';
+      case PropertyType.condo:
+        return 'Condo';
+      case PropertyType.townhouse:
+        return 'Townhouse';
+      case PropertyType.airbnb:
+        return 'Airbnb';
+      case PropertyType.hostel:
+        return 'Hostel';
+      case PropertyType.fullHouse:
+        return 'Full House';
+      case PropertyType.land:
+        return 'Land';
+      case PropertyType.incompleteHouse:
+        return 'Incomplete House';
+    }
+  }
+
+  Future<void> _submitProperty() async {
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please fill in all required fields', style: TextStyle(color: AppTheme.lightGreyColor),),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: Duration(milliseconds: 500),
+          margin: EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please add at least one photo', style: TextStyle(color: AppTheme.lightGreyColor),),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: Duration(milliseconds: 500),
+          backgroundColor: AppTheme.primaryblue,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
+
+    if (_availabilityStatus == AvailabilityStatus.availableLater && _availableFrom == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please select an available date', style: TextStyle(color: AppTheme.lightGreyColor),),
+          duration: Duration(milliseconds: 500),
+          backgroundColor: AppTheme.primaryblue,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final newProperty = Property(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      price: double.parse(_priceController.text),
+      priceType: _selectedPriceType,
+      location: _locationController.text.trim(),
+      address: _addressController.text.trim(),
+      type: _selectedPropertyType ?? _selectedType,
+      bedrooms: _selectedBedrooms,
+      bathrooms: _selectedBathrooms,
+      area: double.parse(_areaController.text),
+      amenities: List.from(_selectedAmenities),
+      images: _selectedImages.map((file) => file.path).toList(),
+      landlordId: widget.landlord.id,
+      landlordName: widget.user.name,
+      landlordPhone: widget.user.phone,
+      landlordEmail: widget.user.email,
+      rating: 0.0,
+      reviewCount: 0,
+      status: PropertyStatus.available,
+      availabilityStatus: _selectedAvailabilityStatus ?? _availabilityStatus,
+      availableFrom: _availableFromDate ?? _availableFrom,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      latitude: _selectedLatitude ?? 0.0,
+      longitude: _selectedLongitude ?? 0.0,
+    );
+
+    try {
+      await Future.delayed(Duration(seconds: 2));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Property uploaded successfully!', style: TextStyle(color: AppTheme.lightGreyColor),),
+            ],
+          ),
+          duration: Duration(milliseconds: 500),
+          backgroundColor: AppTheme.primaryblue,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+
+      Navigator.pop(context, newProperty);
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading property: $e', style: TextStyle(color: AppTheme.lightGreyColor),),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: Duration(milliseconds: 500),
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+}

@@ -1,0 +1,170 @@
+// ignore_for_file: library_private_types_in_public_api
+
+import 'package:flutter/material.dart';
+import 'package:pearlnest/screens/common/onboarding_screen.dart';
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
+  late AnimationController _logoController;
+  late AnimationController _titleController;
+  late AnimationController _subtitleController;
+  
+  late Animation<double> _logoAnimation;
+  late Animation<double> _titleAnimation;
+  late Animation<double> _subtitleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _logoController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    
+    _titleController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    
+    _subtitleController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _logoAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _logoController,
+      curve: Curves.elasticOut,
+    ));
+
+    _titleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _titleController,
+      curve: Curves.easeInOut,
+    ));
+
+    _subtitleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _subtitleController,
+      curve: Curves.easeInOut,
+    ));
+
+    _startAnimations();
+    _navigateToNextScreen();
+  }
+
+  void _startAnimations() async {
+    _logoController.forward();
+    
+    await Future.delayed(const Duration(milliseconds: 500));
+    _titleController.forward();
+
+    await Future.delayed(const Duration(milliseconds: 300));
+    _subtitleController.forward();
+  }
+
+  _navigateToNextScreen() async {
+    await Future.delayed(const Duration(seconds: 4));
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _logoController.dispose();
+    _titleController.dispose();
+    _subtitleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedBuilder(
+              animation: _logoAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _logoAnimation.value,
+                  child: Opacity(
+                    opacity: _logoAnimation.value,
+                    child: Image.asset(
+                      'assets/icon.png',
+                      width: 300,
+                      height: 300,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+
+            AnimatedBuilder(
+              animation: _titleAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, 30 * (1 - _titleAnimation.value)),
+                  child: Opacity(
+                    opacity: _titleAnimation.value,
+                    child: Text(
+                      'PearlNest Estates',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+
+            AnimatedBuilder(
+              animation: _subtitleAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, 20 * (1 - _subtitleAnimation.value)),
+                  child: Opacity(
+                    opacity: _subtitleAnimation.value,
+                    child: Text(
+                      'Find Your Dream Property',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

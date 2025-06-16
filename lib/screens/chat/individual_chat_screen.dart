@@ -1,0 +1,861 @@
+// ignore_for_file: library_private_types_in_public_api, deprecated_member_use
+
+import 'package:flutter/material.dart';
+import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/screens/chat/chat_conversation.dart';
+import 'package:pearlnest/screens/chat/chat_input.dart';
+import 'package:pearlnest/screens/chat/message.dart';
+import 'package:pearlnest/screens/chat/message_bubble.dart';
+import 'package:pearlnest/screens/chat/typing_indicator.dart';
+import 'package:pearlnest/widgets/app_theme.dart';
+
+class IndividualChatScreen extends StatefulWidget {
+  final ChatConversation conversation;
+  final User currentUser;
+
+  const IndividualChatScreen({
+    super.key,
+    required this.conversation,
+    required this.currentUser,
+  });
+
+  @override
+  _IndividualChatScreenState createState() => _IndividualChatScreenState();
+}
+
+class _IndividualChatScreenState extends State<IndividualChatScreen> {
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  List<Message> _messages = [];
+  bool _isTyping = false;
+  bool _showTypingIndicator = false;
+  final bool _isConnected = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+    _messageController.addListener(_onTypingChanged);
+  }
+
+  @override
+  void dispose() {
+    _messageController.removeListener(_onTypingChanged);
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _loadMessages() {
+    _messages = _getSampleMessages();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+  }
+
+  void _onTypingChanged() {
+    final isCurrentlyTyping = _messageController.text.trim().isNotEmpty;
+    if (isCurrentlyTyping != _isTyping) {
+      setState(() {
+        _isTyping = isCurrentlyTyping;
+      });
+    }
+  }
+
+  void _sendMessage() {
+    final messageText = _messageController.text.trim();
+    if (messageText.isEmpty) return;
+
+    final newMessage = Message(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      senderId: 'current_user_id',
+      receiverId: widget.conversation.landlordId,
+      content: messageText,
+      timestamp: DateTime.now(),
+      type: MessageType.text,
+    );
+    setState(() {
+      _messages.add(newMessage);
+      _messageController.clear();
+    });
+
+    _scrollToBottom();
+    
+    Future.delayed(Duration(milliseconds: 500), () {
+      if (mounted) {
+        _simulateTypingResponse();
+      }
+    });
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.whiteColor,
+      appBar: _buildAppBar(),
+      body: Column(
+        children: [
+          _buildConnectionStatus(),
+          _buildPropertyInfo(),
+          Expanded(child: _buildMessagesList()),
+          _buildMessageInput(),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppTheme.whiteColor,
+      elevation: 1,
+      shadowColor: AppTheme.greyColor.withOpacity(0.1),
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back, color: AppTheme.blackColor),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Row(
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.lightGreyColor,
+                ),
+                child: ClipOval(
+                  child: widget.conversation.landlordProfilePic.isNotEmpty
+                      ? Image.asset(
+                          widget.conversation.landlordProfilePic,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildDefaultAvatar();
+                          },
+                        )
+                      : _buildDefaultAvatar(),
+                ),
+              ),
+              if (widget.conversation.isOnline)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.whiteColor,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.conversation.landlordName,
+                  style: TextStyle(
+                    color: AppTheme.blackColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  widget.conversation.isOnline ? 'Online' : 'Last seen recently',
+                  style: TextStyle(
+                    color: AppTheme.greyColor,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.phone, color: AppTheme.primaryblue),
+          onPressed: () {
+            _showCallDialog();
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.more_vert, color: AppTheme.blackColor),
+          onPressed: () {
+            _showMoreOptions();
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDefaultAvatar() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryblue,
+            AppTheme.accentGreen,
+          ],
+        ),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          widget.conversation.landlordName.isNotEmpty 
+              ? widget.conversation.landlordName[0].toUpperCase() 
+              : '?',
+          style: TextStyle(
+            color: AppTheme.whiteColor,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPropertyInfo() {
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryblue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryblue.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.home,
+            color: AppTheme.primaryblue,
+            size: 20,
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Property Discussion',
+                  style: TextStyle(
+                    color: AppTheme.primaryblue,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  widget.conversation.propertyTitle,
+                  style: TextStyle(
+                    color: AppTheme.blackColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios,
+            color: AppTheme.primaryblue,
+            size: 16,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessagesList() {
+    if (_messages.isEmpty && !_showTypingIndicator) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 60,
+              color: AppTheme.greyColor.withOpacity(0.5),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Start the conversation',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.blackColor,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Send a message to ${widget.conversation.landlordName}',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.greyColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: _messages.length + (_showTypingIndicator ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _messages.length && _showTypingIndicator) {
+          return TypingIndicator(userName: widget.conversation.landlordName);
+        }
+        
+        final message = _messages[index];
+        final isFromCurrentUser = message.isFromCurrentUser;
+        final showTimestamp = _shouldShowTimestamp(index);
+
+        return Column(
+          children: [
+            if (showTimestamp) _buildTimestamp(message.timestamp),
+            MessageBubble(
+              message: message,
+              isFromCurrentUser: isFromCurrentUser,
+              senderAvatar: isFromCurrentUser ? null : widget.conversation.landlordProfilePic,
+              senderName: widget.conversation.landlordName,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool _shouldShowTimestamp(int index) {
+    if (index == 0) return true;
+    
+    final currentMessage = _messages[index];
+    final previousMessage = _messages[index - 1];
+    
+    final timeDifference = currentMessage.timestamp.difference(previousMessage.timestamp);
+    return timeDifference.inMinutes > 30;
+  }
+
+  Widget _buildTimestamp(DateTime timestamp) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 16),
+      child: Text(
+        _formatTimestamp(timestamp),
+        style: TextStyle(
+          color: AppTheme.greyColor,
+          fontSize: 12,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  void _simulateTypingResponse() {
+    setState(() {
+      _showTypingIndicator = true;
+    });
+    
+    Future.delayed(Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _showTypingIndicator = false;
+          _messages.add(Message(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            senderId: widget.conversation.landlordId,
+            receiverId: 'current_user_id',
+            content: 'Thanks for your message! I\'ll get back to you shortly.',
+            timestamp: DateTime.now(),
+            type: MessageType.text,
+          ));
+        });
+        _scrollToBottom();
+      }
+    });
+  }
+  
+  Widget _buildMessageInput() {
+    return ChatInput(
+      controller: _messageController,
+      onSend: _sendMessage,
+      onAttachment: _showAttachmentOptions,
+      isEnabled: true,
+    );
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    
+    if (messageDate == today) {
+      return 'Today';
+    } else if (messageDate == today.subtract(Duration(days: 1))) {
+      return 'Yesterday';
+    } else {
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+    }
+  }
+
+  void _showCallDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.whiteColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Call ${widget.conversation.landlordName}',
+            style: TextStyle(
+              color: AppTheme.blackColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Would you like to call ${widget.conversation.landlordName}?',
+            style: TextStyle(
+              color: AppTheme.greyColor,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppTheme.greyColor),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Calling ${widget.conversation.landlordName}...', style: TextStyle(color: AppTheme.lightGreyColor),),
+                    backgroundColor: AppTheme.primaryblue,
+                    duration: Duration(milliseconds: 500),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.all(16),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryblue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Call',
+                style: TextStyle(color: AppTheme.whiteColor),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showMoreOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(20),
+          color: AppTheme.whiteColor,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.greyColor.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 20),
+              _buildOptionTile(
+                icon: Icons.info_outline,
+                title: 'View Profile',
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+              _buildOptionTile(
+                icon: Icons.home_outlined,
+                title: 'View Property',
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+              _buildOptionTile(
+                icon: Icons.block,
+                title: 'Block User',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showBlockDialog();
+                },
+                isDestructive: true,
+              ),
+              _buildOptionTile(
+                icon: Icons.report_outlined,
+                title: 'Report',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showReportDialog();
+                },
+                isDestructive: true,
+              ),
+              SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOptionTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isDestructive ? Colors.red : AppTheme.blackColor,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isDestructive ? Colors.red : AppTheme.blackColor,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+
+  void _showAttachmentOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(20),
+          color: AppTheme.whiteColor,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.greyColor.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Send Attachment',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.blackColor,
+                ),
+              ),
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildAttachmentOption(
+                    icon: Icons.photo_camera,
+                    label: 'Camera',
+                    color: Colors.blue,
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildAttachmentOption(
+                    icon: Icons.photo_library,
+                    label: 'Gallery',
+                    color: Colors.green,
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildAttachmentOption(
+                    icon: Icons.insert_drive_file,
+                    label: 'Document',
+                    color: Colors.orange,
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAttachmentOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 30,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppTheme.blackColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBlockDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.whiteColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Block ${widget.conversation.landlordName}?',
+            style: TextStyle(
+              color: AppTheme.blackColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'You won\'t receive messages from this person anymore.',
+            style: TextStyle(
+              color: AppTheme.greyColor,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppTheme.greyColor),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${widget.conversation.landlordName} has been blocked', style: TextStyle(color: AppTheme.lightGreyColor),),
+                    backgroundColor: Colors.red,
+                    duration: Duration(milliseconds: 500),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.all(16),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Block',
+                style: TextStyle(color: AppTheme.whiteColor),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showReportDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.whiteColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Report ${widget.conversation.landlordName}?',
+            style: TextStyle(
+              color: AppTheme.blackColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Help us understand what\'s happening. We\'ll review this conversation.',
+            style: TextStyle(
+              color: AppTheme.greyColor,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppTheme.greyColor),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Report submitted. Thank you for your feedback.', style: TextStyle(color: AppTheme.lightGreyColor),),
+                    backgroundColor: AppTheme.primaryblue,
+                    duration: Duration(milliseconds: 500),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.all(16),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Report',
+                style: TextStyle(color: AppTheme.whiteColor),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Message> _getSampleMessages() {
+    return [
+      Message(
+        id: '1',
+        senderId: widget.conversation.landlordId,
+        receiverId: 'current_user_id',
+        content: 'Hi! I saw your interest in my property. How can I help you?',
+        timestamp: DateTime.now().subtract(Duration(hours: 2)),
+        isRead: true,
+      ),
+      Message(
+        id: '2',
+        senderId: 'current_user_id',
+        receiverId: widget.conversation.landlordId,
+        content: 'Hello! I\'m very interested in the property. Could you tell me more about the amenities?',
+        timestamp: DateTime.now().subtract(Duration(hours: 1, minutes: 45)),
+        isRead: true,
+      ),
+      Message(
+        id: '3',
+        senderId: widget.conversation.landlordId,
+        receiverId: 'current_user_id',
+        content: 'Of course! The property includes a fully equipped kitchen, air conditioning, high-speed internet, and access to a shared gym and pool.',
+        timestamp: DateTime.now().subtract(Duration(hours: 1, minutes: 30)),
+        isRead: true,
+      ),
+      Message(
+        id: '4',
+        senderId: 'current_user_id',
+        receiverId: widget.conversation.landlordId,
+        content: 'That sounds great! What about parking? Is it included in the rent?',
+        timestamp: DateTime.now().subtract(Duration(hours: 1, minutes: 15)),
+        isRead: true,
+      ),
+      Message(
+        id: '5',
+        senderId: widget.conversation.landlordId,
+        receiverId: 'current_user_id',
+        content: widget.conversation.lastMessage,
+        timestamp: widget.conversation.lastMessageTime,
+        isRead: false,
+      ),
+    ];
+  }
+
+  Widget _buildConnectionStatus() {
+    if (_isConnected) return SizedBox.shrink();
+    
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 8),
+      color: Colors.orange,
+      child: Text(
+        'Connecting...',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: AppTheme.whiteColor,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
