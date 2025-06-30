@@ -54,7 +54,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
               Text(
                 'Complete Your Profile',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -62,7 +62,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
               Text(
                 'Add your details to finish registration',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -78,7 +78,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
                         width: 120,
                         height: 120,
                         decoration: BoxDecoration(
-                          color: AppTheme.lightGreyColor,
+                          color: AppTheme.getCardColor(context),
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: AppTheme.primaryblue,
@@ -117,13 +117,13 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
 
                     TextFormField(
                       controller: _emailController,
-                      style: TextStyle(color: AppTheme.blackColor),
+                      style: TextStyle(color: AppTheme.getTextColor(context)),
                       decoration: InputDecoration(
                         labelText: 'Email',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryblue),
                         filled: true,
-                        fillColor: AppTheme.lightGreyColor,
+                        fillColor: AppTheme.getCardColor(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -148,13 +148,13 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
 
                     TextFormField(
                       controller: _phoneController,
-                      style: TextStyle(color: AppTheme.blackColor),
+                      style: TextStyle(color: AppTheme.getTextColor(context)),
                       decoration: InputDecoration(
                         labelText: 'Phone Number',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.primaryblue),
                         filled: true,
-                        fillColor: AppTheme.lightGreyColor,
+                        fillColor: AppTheme.getCardColor(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
