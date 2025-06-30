@@ -56,8 +56,8 @@ class MessageBubble extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isFromCurrentUser 
-                    ? AppTheme.primaryblue 
-                    : AppTheme.lightGreyColor,
+                    ? const Color.fromARGB(255, 43, 127, 106) 
+                    : AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(18),
                   topRight: Radius.circular(18),
@@ -66,7 +66,7 @@ class MessageBubble extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.blackColor.withOpacity(0.05),
+                    color: AppTheme.getTextColor(context).withOpacity(0.05),
                     blurRadius: 4,
                     offset: Offset(0, 1),
                   ),
@@ -80,7 +80,7 @@ class MessageBubble extends StatelessWidget {
                     style: TextStyle(
                       color: isFromCurrentUser 
                           ? AppTheme.whiteColor 
-                          : AppTheme.blackColor,
+                          : AppTheme.getSecondaryTextColor(context),
                       fontSize: 16,
                       height: 1.3,
                     ),
@@ -94,7 +94,7 @@ class MessageBubble extends StatelessWidget {
                         style: TextStyle(
                           color: isFromCurrentUser 
                               ? AppTheme.whiteColor.withOpacity(0.7)
-                              : AppTheme.greyColor,
+                              : AppTheme.getSecondaryTextColor(context),
                           fontSize: 12,
                         ),
                       ),

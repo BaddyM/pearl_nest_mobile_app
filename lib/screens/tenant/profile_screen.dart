@@ -4,6 +4,7 @@ import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/mock_booking_data.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_application_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_dashboard_screen.dart';
@@ -33,7 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
         title: Text('Profile'),
         backgroundColor: AppTheme.primaryblue,
@@ -55,6 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: 100),
           child: Column(
             children: [
               _buildProfileHeader(),
@@ -110,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: CircleAvatar(
               radius: 50,
-              backgroundColor: AppTheme.whiteColor,
+              backgroundColor: AppTheme.getCardColor(context),
               backgroundImage: widget.user.profileImage != null
                   ? NetworkImage(widget.user.profileImage!)
                   : null,
@@ -136,7 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: AppTheme.whiteColor.withOpacity(0.2),
+              color: AppTheme.whiteColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -155,14 +157,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Icon(
                   Icons.verified,
-                  color: AppTheme.whiteColor,
+                  color: AppTheme.getTextColor(context),
                   size: 16,
                 ),
                 SizedBox(width: 4),
                 Text(
                   'Verified Account',
                   style: TextStyle(
-                    color: AppTheme.whiteColor,
+                    color: AppTheme.getTextColor(context),
                     fontSize: 12,
                   ),
                 ),
@@ -217,7 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                 ),
               ),
               Text(
@@ -225,7 +227,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
             ],
@@ -278,7 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Text(
                       'Become a Landlord',
                       style: TextStyle(
-                        color: AppTheme.whiteColor,
+                        color: AppTheme.getTextColor(context),
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -290,7 +292,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(
                 'Start earning by listing your properties on PearlNest. Join thousands of successful landlords and grow your business.',
                 style: TextStyle(
-                  color: AppTheme.whiteColor.withOpacity(0.9),
+                  color: AppTheme.getTextColor(context).withOpacity(0.9),
                   fontSize: 14,
                   height: 1.4,
                 ),
@@ -309,7 +311,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.whiteColor,
+                        backgroundColor: AppTheme.getBackgroundColor(context),
                         foregroundColor: AppTheme.primaryblue,
                         padding: EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
@@ -428,6 +430,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         ),
         _buildMenuItem(
+          Icons.code,
+          "Contact Developer",
+          () {
+            Navigator.push (
+              context,
+              MaterialPageRoute(
+                builder: (context) => ContactDeveloperScreen(),
+              ),
+            );
+          },
+        ),
+        _buildMenuItem(
           Icons.privacy_tip_outlined,
           'Privacy Policy',
           () {
@@ -463,13 +477,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: isDestructive ? Colors.red : AppTheme.blackColor,
+          color: isDestructive ? Colors.red : AppTheme.getTextColor(context),
         ),
       ),
       trailing: Icon(
         Icons.arrow_forward_ios,
         size: 16,
-        color: AppTheme.greyColor,
+        color: AppTheme.getSecondaryTextColor(context),
       ),
       onTap: onTap,
     );
@@ -480,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -490,7 +504,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(width: 8),
               Text(
                 'Landlord Benefits',
-                style: TextStyle(color: AppTheme.blackColor),
+                style: TextStyle(color: AppTheme.getTextColor(context)),
               ),
             ],
           ),
@@ -501,7 +515,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(
                 'As a PearlNest landlord, you get:',
                 style: TextStyle(
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -521,7 +535,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               child: Text(
                 'Close',
-                style: TextStyle(color: AppTheme.greyColor),
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             ElevatedButton(
@@ -556,7 +570,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(color: AppTheme.greyColor),
+              style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
             ),
           ),
         ],
@@ -569,14 +583,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           title: Text(
             'Logout',
-            style: TextStyle(color: AppTheme.blackColor),
+            style: TextStyle(color: AppTheme.getTextColor(context)),
           ),
           content: Text(
             'Are you sure you want to logout?',
-            style: TextStyle(color: AppTheme.greyColor),
+            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
           ),
           actions: [
             TextButton(
@@ -585,7 +599,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.greyColor),
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             TextButton(

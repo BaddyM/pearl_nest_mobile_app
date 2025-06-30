@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(24.0),
@@ -45,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 'Welcome Back',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 'Sign in to find your dream property',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -64,16 +64,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     TextFormField(
                       controller: _emailController,
-                      style: TextStyle(color: AppTheme.blackColor),
+                      style: TextStyle(color: AppTheme.getTextColor(context)),
                       decoration: InputDecoration(
                         labelText: 'Email',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryblue),
                         filled: true,
-                        fillColor: AppTheme.lightGreyColor,
-                        border: OutlineInputBorder(
+                        fillColor: AppTheme.getCardColor(context),
+                        enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                          borderSide: BorderSide(
+                            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                            width: 1,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -94,15 +97,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
-                      style: TextStyle(color: AppTheme.blackColor),
+                      style: TextStyle(color: AppTheme.getTextColor(context)),
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primaryblue),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                           onPressed: () {
                             setState(() {
@@ -111,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
                         filled: true,
-                        fillColor: AppTheme.lightGreyColor,
+                        fillColor: AppTheme.getCardColor(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -155,32 +158,32 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryblue,
-                          foregroundColor: AppTheme.whiteColor,
+                          foregroundColor: AppTheme.getTextColor(context),
                           padding: EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: _isLoading
-                            ? CircularProgressIndicator(color: AppTheme.whiteColor)
+                            ? CircularProgressIndicator(color: AppTheme.getTextColor(context))
                             : Text(
                                 'Sign In',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.whiteColor),
                               ),
                       ),
                     ),
                     SizedBox(height: 24),
                     Row(
                       children: [
-                        Expanded(child: Divider(color: AppTheme.greyColor)),
+                        Expanded(child: Divider(color: AppTheme.getSecondaryTextColor(context))),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             'OR',
-                            style: TextStyle(color: AppTheme.greyColor),
+                            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                           ),
                         ),
-                        Expanded(child: Divider(color: AppTheme.greyColor)),
+                        Expanded(child: Divider(color: AppTheme.getSecondaryTextColor(context))),
                       ],
                     ),
                     SizedBox(height: 24),
@@ -211,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Text(
                           "Don't have an account? ",
-                          style: TextStyle(color: AppTheme.greyColor),
+                          style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         ),
                         TextButton(
                           onPressed: () {
@@ -249,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         padding: EdgeInsets.symmetric(vertical: 12),
-        side: BorderSide(color: AppTheme.greyColor),
+        side: BorderSide(color: AppTheme.getSecondaryTextColor(context)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -257,11 +260,11 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: AppTheme.greyColor),
+          Icon(icon, color: AppTheme.getSecondaryTextColor(context)),
           SizedBox(width: 8),
           Text(
             label,
-            style: TextStyle(color: AppTheme.blackColor),
+            style: TextStyle(color: AppTheme.getTextColor(context)),
           ),
         ],
       ),

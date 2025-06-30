@@ -50,16 +50,16 @@ class _ChatInputState extends State<ChatInput> {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         border: Border(
           top: BorderSide(
-            color: AppTheme.greyColor.withOpacity(0.2),
+            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
             width: 1,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.blackColor.withOpacity(0.05),
+            color: AppTheme.getTextColor(context).withOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, -2),
           ),
@@ -71,7 +71,7 @@ class _ChatInputState extends State<ChatInput> {
             IconButton(
               icon: Icon(
                 Icons.attach_file,
-                color: widget.isEnabled ? AppTheme.greyColor : AppTheme.greyColor.withOpacity(0.5),
+                color: widget.isEnabled ? AppTheme.getSecondaryTextColor(context) : AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
               ),
               onPressed: widget.isEnabled ? widget.onAttachment : null,
             ),
@@ -79,7 +79,7 @@ class _ChatInputState extends State<ChatInput> {
               child: Container(
                 constraints: BoxConstraints(maxHeight: 120),
                 decoration: BoxDecoration(
-                  color: AppTheme.lightGreyColor,
+                  color: AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(25),
                 ),
                 child: TextField(
@@ -88,7 +88,7 @@ class _ChatInputState extends State<ChatInput> {
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
                     hintStyle: TextStyle(
-                      color: AppTheme.greyColor,
+                      color: AppTheme.getSecondaryTextColor(context),
                       fontSize: 16,
                     ),
                     border: InputBorder.none,
@@ -99,7 +99,7 @@ class _ChatInputState extends State<ChatInput> {
                   ),
                   style: TextStyle(
                     fontSize: 16,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                   ),
                   maxLines: null,
                   textCapitalization: TextCapitalization.sentences,
@@ -122,7 +122,7 @@ class _ChatInputState extends State<ChatInput> {
                   decoration: BoxDecoration(
                     color: (_isTyping && widget.isEnabled) 
                         ? AppTheme.primaryblue 
-                        : AppTheme.greyColor.withOpacity(0.5),
+                        : AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

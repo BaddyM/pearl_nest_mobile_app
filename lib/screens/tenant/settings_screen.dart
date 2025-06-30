@@ -1,6 +1,10 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
+import 'package:pearlnest/widgets/theme_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/tenant/edit_profile_screen.dart';
 import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
@@ -23,7 +27,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _emailNotifications = true;
   bool _pushNotifications = true;
   bool _smsNotifications = false;
-  bool _darkModeEnabled = false;
   bool _bioEnabled = false;
   bool _locationEnabled = true;
   String _selectedLanguage = 'English';
@@ -31,8 +34,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
         backgroundColor: AppTheme.primaryblue,
         elevation: 0,
@@ -45,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingsHeader(),
               _buildAccountSection(),
               _buildNotificationSection(),
-              _buildAppearanceSection(),
+              _buildAppearanceSection(themeProvider),
               _buildPrivacySection(),
               _buildSupportSection(),
               _buildAboutSection(),
@@ -161,7 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildAppearanceSection() {
+  Widget _buildAppearanceSection(ThemeProvider themeProvider) {
     return _buildSection(
       'Appearance',
       [
@@ -169,8 +174,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Icons.dark_mode_outlined,
           'Dark Mode',
           'Switch to dark theme',
-          _darkModeEnabled,
-          (value) => setState(() => _darkModeEnabled = value),
+          themeProvider.isDarkMode,
+          (value) {
+            themeProvider.toggleTheme();
+          },
         ),
         _buildDropdownItem(
           Icons.language_outlined,
@@ -243,6 +250,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Share your feedback',
           () => _navigateToRateApp(),
         ),
+        _buildSettingsItem(
+          Icons.star_outline,
+          'Contact Developer',
+          'Vawzen',
+          () => _navigateToContactDeveloper(),
+        ),
       ],
     );
   }
@@ -292,13 +305,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
           ),
           Card(
             elevation: 2,
-            color: AppTheme.whiteColor,
+            color: AppTheme.getCardColor(context),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -337,14 +350,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: isDestructive ? Colors.red : AppTheme.blackColor,
+          color: isDestructive ? Colors.red : AppTheme.getTextColor(context),
         ),
       ),
       subtitle: Text(
         subtitle,
         style: TextStyle(
           fontSize: 12,
-          color: AppTheme.greyColor,
+          color: AppTheme.getSecondaryTextColor(context),
         ),
       ),
       trailing: trailing ??
@@ -352,7 +365,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ? Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                 )
               : null),
       onTap: onTap,
@@ -384,14 +397,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppTheme.blackColor,
+          color: AppTheme.getTextColor(context),
         ),
       ),
       subtitle: Text(
         subtitle,
         style: TextStyle(
           fontSize: 12,
-          color: AppTheme.greyColor,
+          color: AppTheme.getSecondaryTextColor(context),
         ),
       ),
       trailing: Switch(
@@ -428,29 +441,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppTheme.blackColor,
+          color: AppTheme.getTextColor(context),
         ),
       ),
       subtitle: Text(
         subtitle,
         style: TextStyle(
           fontSize: 12,
-          color: AppTheme.greyColor,
+          color: AppTheme.getSecondaryTextColor(context),
         ),
       ),
       trailing: Container(
         padding: EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: AppTheme.whiteColor,
+          color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.greyColor.withOpacity(0.5)),
+          border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5)),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: value,
             onChanged: onChanged,
-            dropdownColor: AppTheme.whiteColor,
-            style: TextStyle(color: AppTheme.blackColor),
+            dropdownColor: AppTheme.getCardColor(context),
+            style: TextStyle(color: AppTheme.getTextColor(context)),
             iconEnabledColor: AppTheme.primaryblue,
             items: options.map((String option) {
               return DropdownMenuItem<String>(
@@ -506,6 +519,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _navigateToContactDeveloper() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ContactDeveloperScreen(),
+      ),
+    );
+  }
+
   void _navigateToRateApp() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -541,18 +563,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
-
     bool obscureCurrentPassword = true;
     bool obscureNewPassword = true;
     bool obscureConfirmPassword = true;
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: AppTheme.whiteColor,
+              backgroundColor: AppTheme.getCardColor(context),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -562,7 +583,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SizedBox(width: 8),
                   Text(
                     'Change Password',
-                    style: TextStyle(color: AppTheme.blackColor),
+                    style: TextStyle(color: AppTheme.getTextColor(context)),
                   ),
                 ],
               ),
@@ -571,100 +592,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
+                    _buildPasswordField(
                       controller: currentPasswordController,
+                      labelText: 'Current Password',
                       obscureText: obscureCurrentPassword,
-                      style: TextStyle(color: AppTheme.blackColor),
-                      decoration: InputDecoration(
-                        labelText: 'Current Password',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
-                        filled: true,
-                        fillColor: AppTheme.lightGreyColor,
-                        prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primaryblue),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            obscureCurrentPassword ? Icons.visibility_off : Icons.visibility,
-                            color: AppTheme.greyColor,
-                          ),
-                          onPressed: () {
-                            setDialogState(() {
-                              obscureCurrentPassword = !obscureCurrentPassword;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
-                        ),
-                      ),
+                      onToggleVisibility: () {
+                        setDialogState(() {
+                          obscureCurrentPassword = !obscureCurrentPassword;
+                        });
+                      },
+                      icon: Icons.lock_outline,
                     ),
                     SizedBox(height: 16),
-                    TextField(
+                    _buildPasswordField(
                       controller: newPasswordController,
+                      labelText: 'New Password',
                       obscureText: obscureNewPassword,
-                      style: TextStyle(color: AppTheme.blackColor),
-                      decoration: InputDecoration(
-                        labelText: 'New Password',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
-                        filled: true,
-                        fillColor: AppTheme.lightGreyColor,
-                        prefixIcon: Icon(Icons.lock_reset_outlined, color: AppTheme.primaryblue),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            obscureNewPassword ? Icons.visibility_off : Icons.visibility,
-                            color: AppTheme.greyColor,
-                          ),
-                          onPressed: () {
-                            setDialogState(() {
-                              obscureNewPassword = !obscureNewPassword;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
-                        ),
-                      ),
+                      onToggleVisibility: () {
+                        setDialogState(() {
+                          obscureNewPassword = !obscureNewPassword;
+                        });
+                      },
+                      icon: Icons.lock_reset_outlined,
                     ),
                     SizedBox(height: 16),
-                    TextField(
+                    _buildPasswordField(
                       controller: confirmPasswordController,
+                      labelText: 'Confirm New Password',
                       obscureText: obscureConfirmPassword,
-                      style: TextStyle(color: AppTheme.blackColor),
-                      decoration: InputDecoration(
-                        labelText: 'Confirm New Password',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
-                        filled: true,
-                        fillColor: AppTheme.lightGreyColor,
-                        prefixIcon: Icon(Icons.lock_person_outlined, color: AppTheme.primaryblue),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                            color: AppTheme.greyColor,
-                          ),
-                          onPressed: () {
-                            setDialogState(() {
-                              obscureConfirmPassword = !obscureConfirmPassword;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
-                        ),
-                      ),
+                      onToggleVisibility: () {
+                        setDialogState(() {
+                          obscureConfirmPassword = !obscureConfirmPassword;
+                        });
+                      },
+                      icon: Icons.lock_person_outlined,
                     ),
                   ],
                 ),
@@ -676,60 +637,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                   child: Text(
                     'Cancel',
-                    style: TextStyle(color: AppTheme.greyColor),
+                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                   ),
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (currentPasswordController.text.isEmpty ||
-                        newPasswordController.text.isEmpty ||
-                        confirmPasswordController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Please fill all fields', style: TextStyle(color: AppTheme.lightGreyColor),),
-                          backgroundColor: Colors.red,
-                          duration: Duration(milliseconds: 500),
-                          behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.all(16),
-                        ),
-                      );
-                      return;
-                    }
-                    
-                    if (newPasswordController.text != confirmPasswordController.text) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('New passwords do not match', style: TextStyle(color: AppTheme.lightGreyColor),),
-                          backgroundColor: Colors.red,
-                          duration: Duration(milliseconds: 500),
-                          behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.all(16),
-                        ),
-                      );
-                      return;
-                    }
-                    
-                    if (newPasswordController.text.length < 6) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Password must be at least 6 characters', style: TextStyle(color: AppTheme.lightGreyColor),),
-                          backgroundColor: Colors.red,
-                          duration: Duration(milliseconds: 500),
-                          behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.all(16),
-                        ),
-                      );
-                      return;
-                    }
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Password changed successfully', style: TextStyle(color: AppTheme.lightGreyColor),),
-                        backgroundColor: AppTheme.primaryblue,
-                        duration: Duration(milliseconds: 500),
-                        behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.all(16),
-                      ),
+                    _handlePasswordChange(
+                      currentPasswordController.text,
+                      newPasswordController.text,
+                      confirmPasswordController.text,
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -749,12 +665,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String labelText,
+    required bool obscureText,
+    required VoidCallback onToggleVisibility,
+    required IconData icon,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      style: TextStyle(color: AppTheme.getTextColor(context)),
+      decoration: InputDecoration(
+        labelText: labelText,
+        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+        filled: true,
+        fillColor: AppTheme.getBackgroundColor(context),
+        prefixIcon: Icon(icon, color: AppTheme.primaryblue),
+        suffixIcon: IconButton(
+          icon: Icon(
+            obscureText ? Icons.visibility_off : Icons.visibility,
+            color: AppTheme.getSecondaryTextColor(context),
+          ),
+          onPressed: onToggleVisibility,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
+        ),
+      ),
+    );
+  }
+
+  void _handlePasswordChange(String currentPassword, String newPassword, String confirmPassword) {
+    if (currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
+      _showSnackBar('Please fill all fields', Colors.red);
+      return;
+    }
+
+    if (newPassword != confirmPassword) {
+      _showSnackBar('New passwords do not match', Colors.red);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      _showSnackBar('Password must be at least 6 characters', Colors.red);
+      return;
+    }
+
+    Navigator.of(context).pop();
+    _showSnackBar('Password changed successfully', AppTheme.primaryblue);
+  }
+
+  void _showSnackBar(String message, Color backgroundColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(color: AppTheme.whiteColor),
+        ),
+        backgroundColor: backgroundColor,
+        duration: Duration(milliseconds: 1500),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+      ),
+    );
+  }
+
   void _showDownloadDataDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -764,7 +751,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SizedBox(width: 8),
               Text(
                 'Download My Data',
-                style: TextStyle(color: AppTheme.blackColor),
+                style: TextStyle(color: AppTheme.getTextColor(context)),
               ),
             ],
           ),
@@ -774,13 +761,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Text(
                 'We will prepare a copy of your data and send it to your email address. This may take up to 24 hours.',
-                style: TextStyle(color: AppTheme.greyColor),
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
               SizedBox(height: 16),
               Text(
                 'Email: ${widget.user.email}',
                 style: TextStyle(
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -793,21 +780,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.greyColor),
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Data download request submitted', style: TextStyle(color: AppTheme.lightGreyColor),),
-                    duration: Duration(milliseconds: 500),
-                    backgroundColor: AppTheme.primaryblue,
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.all(16),
-                  ),
-                );
+                _showSnackBar('Data download request submitted', AppTheme.primaryblue);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryblue,
@@ -823,7 +802,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showDeleteAccountDialog() {
     final confirmationController = TextEditingController();
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -831,9 +810,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             bool isDeleteEnabled = confirmationController.text.trim().toUpperCase() == 'DELETE';
-            
+
             return Dialog(
-              backgroundColor: AppTheme.whiteColor,
+              backgroundColor: AppTheme.getCardColor(context),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -900,38 +879,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ],
                           ),
                         ),
-                        
                         SizedBox(height: 24),
-                        
                         Text(
                           'Are you absolutely sure?',
                           style: TextStyle(
-                            color: AppTheme.blackColor,
+                            color: AppTheme.getTextColor(context),
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        
                         SizedBox(height: 12),
-                        
                         Text(
                           'This action cannot be undone. This will permanently delete your account and remove all your data from our servers.',
                           style: TextStyle(
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                             fontSize: 14,
                             height: 1.5,
                           ),
                         ),
-                        
                         SizedBox(height: 20),
-                        
                         Container(
                           width: double.infinity,
                           padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                            border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -944,7 +917,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     child: Text(
                                       'This data will be permanently deleted:',
                                       style: TextStyle(
-                                        color: AppTheme.blackColor,
+                                        color: AppTheme.getTextColor(context),
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
                                       ),
@@ -962,35 +935,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ],
                           ),
                         ),
-                        
                         SizedBox(height: 24),
-                        
                         Text(
                           'Please type "DELETE" to confirm:',
                           style: TextStyle(
-                            color: AppTheme.blackColor,
+                            color: AppTheme.getTextColor(context),
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
                         ),
-                        
                         SizedBox(height: 8),
-                        
                         TextField(
                           controller: confirmationController,
                           style: TextStyle(
-                            color: AppTheme.blackColor,
+                            color: AppTheme.getTextColor(context),
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Type DELETE here',
                             hintStyle: TextStyle(
-                              color: AppTheme.greyColor.withOpacity(0.7),
+                              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.7),
                               fontSize: 14,
                             ),
                             filled: true,
-                            fillColor: AppTheme.lightGreyColor,
+                            fillColor: AppTheme.getBackgroundColor(context),
                             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1009,9 +978,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             setDialogState(() {});
                           },
                         ),
-                        
                         SizedBox(height: 32),
-                        
                         Row(
                           children: [
                             Expanded(
@@ -1028,7 +995,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 child: Text(
                                   'Cancel',
                                   style: TextStyle(
-                                    color: AppTheme.greyColor,
+                                    color: AppTheme.getSecondaryTextColor(context),
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1040,56 +1007,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: ElevatedButton(
                                 onPressed: isDeleteEnabled
                                     ? () {
-                                        showDialog(
-                                          context: context,
-                                          barrierDismissible: false,
-                                          builder: (context) => Center(
-                                            child: Container(
-                                              padding: EdgeInsets.all(20),
-                                              decoration: BoxDecoration(
-                                                color: AppTheme.whiteColor,
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  CircularProgressIndicator(
-                                                    color: Colors.red,
-                                                  ),
-                                                  SizedBox(height: 16),
-                                                  Text(
-                                                    'Deleting account...',
-                                                    style: TextStyle(
-                                                      color: AppTheme.blackColor,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                        
-                                        Future.delayed(Duration(seconds: 2), () {
-                                          Navigator.of(context).pop();
-                                          Navigator.of(context).pop();
-                                          
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Row(
-                                                children: [
-                                                  Icon(Icons.check_circle, color: Colors.white),
-                                                  SizedBox(width: 8),
-                                                  Text('Account deletion initiated successfully', style: TextStyle(color: AppTheme.lightGreyColor),),
-                                                ],
-                                              ),
-                                              backgroundColor: Colors.red,
-                                              duration: Duration(milliseconds: 500),
-                                              behavior: SnackBarBehavior.floating,
-                                              margin: EdgeInsets.all(16),
-                                            ),
-                                          );
-                                        });
+                                        _handleAccountDeletion();
                                       }
                                     : null,
                                 style: ElevatedButton.styleFrom(
@@ -1126,6 +1044,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _handleAccountDeletion() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppTheme.getCardColor(context),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                color: Colors.red,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Deleting account...',
+                style: TextStyle(
+                  color: AppTheme.getTextColor(context),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    Future.delayed(Duration(seconds: 2), () {
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
+      _showSnackBar('Account deletion initiated successfully', Colors.red);
+    });
+  }
+
   Widget _buildDeleteItem(String text) {
     return Padding(
       padding: EdgeInsets.only(bottom: 8),
@@ -1141,7 +1097,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               text,
               style: TextStyle(
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
                 fontSize: 13,
               ),
             ),

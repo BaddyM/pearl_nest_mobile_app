@@ -44,7 +44,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -74,7 +74,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                       Text(
                         'Enter Verification Code',
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppTheme.blackColor,
+                          color: AppTheme.getTextColor(context),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -82,13 +82,13 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                       RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
-                          style: TextStyle(color: AppTheme.greyColor, fontSize: 16),
+                          style: TextStyle(color: AppTheme.getSecondaryTextColor(context), fontSize: 16),
                           children: [
                             TextSpan(text: 'We\'ve sent a 6-digit verification code to\n'),
                             TextSpan(
                               text: widget.email,
                               style: TextStyle(
-                                color: AppTheme.blackColor,
+                                color: AppTheme.getTextColor(context),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -110,11 +110,11 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.blackColor,
+                                color: AppTheme.getTextColor(context),
                               ),
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: AppTheme.lightGreyColor,
+                                fillColor: AppTheme.getCardColor(context),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -169,14 +169,14 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                         children: [
                           Text(
                             "Didn't receive the code? ",
-                            style: TextStyle(color: AppTheme.greyColor),
+                            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                           ),
                           TextButton(
                             onPressed: _canResend ? _handleResendCode : null,
                             child: Text(
                               _canResend ? 'Resend' : 'Resend in ${_resendTimer}s',
                               style: TextStyle(
-                                color: _canResend ? AppTheme.primaryblue : AppTheme.greyColor,
+                                color: _canResend ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

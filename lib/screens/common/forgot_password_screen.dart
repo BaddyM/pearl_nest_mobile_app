@@ -20,7 +20,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -51,7 +51,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       Text(
                         'Reset Your Password',
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppTheme.blackColor,
+                          color: AppTheme.getTextColor(context),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -59,7 +59,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       Text(
                         'Enter your email address and we\'ll send you a verification code to reset your password.',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.greyColor,
+                          color: AppTheme.getSecondaryTextColor(context),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -70,13 +70,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           children: [
                             TextFormField(
                               controller: _emailController,
-                              style: TextStyle(color: AppTheme.blackColor),
+                              style: TextStyle(color: AppTheme.getSecondaryTextColor(context),),
                               decoration: InputDecoration(
                                 labelText: 'Email Address',
-                                labelStyle: TextStyle(color: AppTheme.greyColor),
+                                labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                                 prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryblue),
                                 filled: true,
-                                fillColor: AppTheme.lightGreyColor,
+                                fillColor: AppTheme.getCardColor(context),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,

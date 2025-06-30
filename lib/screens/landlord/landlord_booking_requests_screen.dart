@@ -245,7 +245,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -265,7 +265,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppTheme.whiteColor,
+            AppTheme.getBackgroundColor(context),
             AppTheme.primaryblue.withValues(alpha: 0.1),
           ],
         ),
@@ -275,7 +275,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -294,7 +294,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -302,7 +302,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                       'Manage your property bookings',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
@@ -336,11 +336,11 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 5,
             offset: Offset(0, 1),
           ),
@@ -354,15 +354,15 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
           });
         },
         style: TextStyle(
-          color: AppTheme.blackColor
+          color: AppTheme.getTextColor(context)
         ),
         decoration: InputDecoration(
           hintText: 'Search bookings, tenants, properties...',
-          hintStyle: TextStyle(color: AppTheme.greyColor),
-          prefixIcon: Icon(Icons.search, color: AppTheme.greyColor),
+          hintStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+          prefixIcon: Icon(Icons.search, color: AppTheme.getSecondaryTextColor(context)),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear, color: AppTheme.greyColor),
+                  icon: Icon(Icons.clear, color: AppTheme.getSecondaryTextColor(context)),
                   onPressed: () {
                     setState(() {
                       _searchQuery = '';
@@ -385,11 +385,11 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 5,
             offset: Offset(0, 1),
           ),
@@ -399,7 +399,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         controller: _tabController,
         isScrollable: true,
         labelColor: AppTheme.primaryblue,
-        unselectedLabelColor: AppTheme.greyColor,
+        unselectedLabelColor: AppTheme.getSecondaryTextColor(context),
         labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
         unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal, fontSize: 12),
         indicator: BoxDecoration(
@@ -478,7 +478,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
             child: Icon(
               icon,
               size: 64,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
           SizedBox(height: 24),
@@ -487,7 +487,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 8),
@@ -497,7 +497,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                 : 'New requests will appear here',
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -515,11 +515,11 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
       onTap: () => _showBookingDetails(booking),
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.whiteColor,
+          color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.blackColor.withOpacity(0.05),
+              color: AppTheme.getTextColor(context).withOpacity(0.05),
               blurRadius: 10,
               offset: Offset(0, 4),
             ),
@@ -554,7 +554,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.blackColor,
+                            color: AppTheme.getTextColor(context),
                           ),
                         ),
                         SizedBox(height: 2),
@@ -562,7 +562,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                           _getBookingTypeText(booking.type),
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                         ),
                       ],
@@ -589,7 +589,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.lightGreyColor,
+                  color: AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -597,7 +597,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.home, size: 16, color: AppTheme.greyColor),
+                        Icon(Icons.home, size: 16, color: AppTheme.getSecondaryTextColor(context)),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -605,7 +605,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.blackColor,
+                              color: AppTheme.getTextColor(context),
                             ),
                           ),
                         ),
@@ -617,13 +617,13 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                         Expanded(
                           child: Row(
                             children: [
-                              Icon(Icons.calendar_today, size: 14, color: AppTheme.greyColor),
+                              Icon(Icons.calendar_today, size: 14, color: AppTheme.getSecondaryTextColor(context)),
                               SizedBox(width: 6),
                               Text(
                                 'Check-in: ${_formatDate(booking.requestedDate)}',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppTheme.greyColor,
+                                  color: AppTheme.getSecondaryTextColor(context),
                                 ),
                               ),
                             ],
@@ -634,7 +634,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                             '${(booking.endDate!.difference(booking.startDate!).inDays)} days',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.greyColor,
+                              color: AppTheme.getSecondaryTextColor(context),
                             ),
                           ),
                       ],
@@ -643,13 +643,13 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                       SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.event, size: 14, color: AppTheme.greyColor),
+                          Icon(Icons.event, size: 14, color: AppTheme.getSecondaryTextColor(context)),
                           SizedBox(width: 6),
                           Text(
                             'Check-out: ${_formatDate(booking.endDate!)}',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.greyColor,
+                              color: AppTheme.getSecondaryTextColor(context),
                             ),
                           ),
                         ],
@@ -677,7 +677,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                           '• ${_getTimeAgo(booking.createdAt)}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                         ),
                       ],
@@ -756,7 +756,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(25),
           topRight: Radius.circular(25),
@@ -769,7 +769,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppTheme.greyColor.withOpacity(0.3),
+              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -787,7 +787,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.blackColor,
+                            color: AppTheme.getTextColor(context),
                           ),
                         ),
                       ),
@@ -859,14 +859,14 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                           width: double.infinity,
                           padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppTheme.lightGreyColor,
+                            color: AppTheme.getCardColor(context),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             booking.message!,
                             style: TextStyle(
                               fontSize: 14,
-                              color: AppTheme.blackColor,
+                              color: AppTheme.getTextColor(context),
                               height: 1.5,
                             ),
                           ),
@@ -953,8 +953,8 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                     child: ElevatedButton(
                       onPressed: () => _contactTenant(booking.tenantId),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.lightGreyColor,
-                        foregroundColor: AppTheme.blackColor,
+                        backgroundColor: AppTheme.getCardColor(context).withValues(alpha: 1.5),
+                        foregroundColor: AppTheme.getTextColor(context),
                         padding: EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1010,7 +1010,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
           ],
@@ -1020,7 +1020,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
           width: double.infinity,
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.lightGreyColor,
+            color: AppTheme.getCardColor(context).withValues(alpha: 1.5),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -1043,7 +1043,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
               label,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1053,7 +1053,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
               value,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
                 fontWeight: FontWeight.w600,
               ),
             ),

@@ -68,7 +68,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
                     ? widget.userName[0].toUpperCase() 
                     : '?',
                 style: TextStyle(
-                  color: AppTheme.whiteColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -78,7 +78,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppTheme.lightGreyColor,
+              color: AppTheme.getCardColor(context),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(18),
                 topRight: Radius.circular(18),
@@ -92,7 +92,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
                 Text(
                   '${widget.userName} is typing',
                   style: TextStyle(
-                    color: AppTheme.greyColor,
+                    color: AppTheme.getSecondaryTextColor(context),
                     fontSize: 14,
                     fontStyle: FontStyle.italic,
                   ),
@@ -113,7 +113,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
                               width: 6,
                               height: 6,
                               decoration: BoxDecoration(
-                                color: AppTheme.greyColor,
+                                color: AppTheme.getSecondaryTextColor(context),
                                 shape: BoxShape.circle,
                               ),
                             ),

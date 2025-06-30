@@ -18,16 +18,16 @@ class BookingConfirmationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: AppTheme.whiteColor,
+        backgroundColor: AppTheme.getBackgroundColor(context),
         elevation: 0,
         automaticallyImplyLeading: false,
         centerTitle: true,
         title: Text(
           'Booking Confirmation',
           style: TextStyle(
-            color: AppTheme.blackColor,
+            color: AppTheme.getTextColor(context),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -41,7 +41,7 @@ class BookingConfirmationScreen extends StatelessWidget {
               width: double.infinity,
               padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppTheme.primaryblue.withOpacity(0.1),
+                color: AppTheme.getCardColor(context).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppTheme.primaryblue.withOpacity(0.3),
@@ -68,7 +68,7 @@ class BookingConfirmationScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.blackColor,
+                      color: AppTheme.getTextColor(context),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -77,7 +77,7 @@ class BookingConfirmationScreen extends StatelessWidget {
                     'Your booking request has been sent to the landlord. You will receive a confirmation shortly.',
                     style: TextStyle(
                       fontSize: 16,
-                      color: AppTheme.greyColor,
+                      color: AppTheme.getSecondaryTextColor(context),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -90,7 +90,7 @@ class BookingConfirmationScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
             SizedBox(height: 16),
@@ -130,41 +130,45 @@ class BookingConfirmationScreen extends StatelessWidget {
   }
 
   Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.greyColor,
-                fontWeight: FontWeight.w500,
+    return Builder(
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 100,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ),
-          ),
-          Text(
-            ': ',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppTheme.greyColor,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.blackColor,
-                fontWeight: FontWeight.w600,
+              Text(
+                ': ',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.getSecondaryTextColor(context),
+                ),
               ),
-            ),
+              Expanded(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppTheme.getTextColor(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      }
     );
   }
 }

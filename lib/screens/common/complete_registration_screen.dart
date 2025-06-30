@@ -34,7 +34,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(24.0),

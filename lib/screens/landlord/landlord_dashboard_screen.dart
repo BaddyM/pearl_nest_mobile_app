@@ -29,7 +29,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: _buildBody(),
     );
   }
@@ -85,7 +85,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppTheme.whiteColor,
+            AppTheme.getBackgroundColor(context),
             AppTheme.primaryblue.withValues(alpha: 0.1),
           ],
         ),
@@ -95,7 +95,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -114,7 +114,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                       'Welcome back,',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                     Text(
@@ -122,7 +122,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -130,7 +130,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                       widget.landlord.businessName,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
@@ -158,11 +158,11 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.whiteColor,
+              color: AppTheme.getCardColor(context),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.greyColor.withValues(alpha: 0.1),
+                  color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
                   blurRadius: 5,
                   offset: Offset(0, 1),
                 ),
@@ -175,7 +175,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                 Text(
                   '${widget.landlord.rating} Rating',
                   style: TextStyle(
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -214,7 +214,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 16),
@@ -270,11 +270,11 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.blackColor.withValues(alpha: 0.05),
+            color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
             blurRadius: 10,
             offset: Offset(0, 5),
           ),
@@ -297,14 +297,14 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           Text(
             title,
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
         ],
@@ -323,7 +323,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 16),
@@ -401,7 +401,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 16),
@@ -436,7 +436,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -466,14 +466,14 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
                 Text(
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.greyColor,
+                    color: AppTheme.getSecondaryTextColor(context),
                   ),
                 ),
               ],
@@ -483,7 +483,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             time,
             style: TextStyle(
               fontSize: 11,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
         ],

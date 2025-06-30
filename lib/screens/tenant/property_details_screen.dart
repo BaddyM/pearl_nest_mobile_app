@@ -146,7 +146,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -165,7 +165,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 'Contact Landlord',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
             ],
@@ -177,7 +177,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.lightGreyColor.withValues(alpha: 0.5),
+                  color: AppTheme.lightGreyColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -188,7 +188,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     SizedBox(height: 8),
@@ -200,7 +200,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                           widget.property.landlordPhone,
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                         ),
                       ],
@@ -215,7 +215,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.greyColor),
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             ElevatedButton(
@@ -260,7 +260,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: AppTheme.whiteColor,
+              backgroundColor: AppTheme.getCardColor(context),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -279,7 +279,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                     'Write a Review',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.blackColor,
+                      color: AppTheme.getTextColor(context),
                     ),
                   ),
                 ],
@@ -293,7 +293,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.blackColor,
+                      color: AppTheme.getTextColor(context),
                     ),
                   ),
                   SizedBox(height: 12),
@@ -323,7 +323,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.blackColor,
+                      color: AppTheme.getTextColor(context),
                     ),
                   ),
                   SizedBox(height: 12),
@@ -334,25 +334,25 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       setDialogState(() {});
                     },
                     style: TextStyle(
-                      color: AppTheme.blackColor,
+                      color: AppTheme.getTextColor(context),
                       fontSize: 14,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Share your experience with this property...',
                       hintStyle: TextStyle(
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                         fontSize: 14,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppTheme.greyColor.withValues(alpha: 0.3)),
+                        borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: AppTheme.primaryblue),
                       ),
                       filled: true,
-                      fillColor: AppTheme.lightGreyColor.withValues(alpha: 0.3),
+                      fillColor: AppTheme.lightGreyColor.withValues(alpha: 0.1),
                     ),
                   ),
                 ],
@@ -366,7 +366,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   },
                   child: Text(
                     'Cancel',
-                    style: TextStyle(color: AppTheme.greyColor),
+                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                   ),
                 ),
                 ElevatedButton(
@@ -433,7 +433,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -452,7 +452,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 'Confirm Booking',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
             ],
@@ -464,7 +464,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.lightGreyColor.withValues(alpha: 0.5),
+                  color: AppTheme.lightGreyColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -475,7 +475,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     SizedBox(height: 8),
@@ -488,7 +488,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                             widget.property.address,
                             style: TextStyle(
                               fontSize: 14,
-                              color: AppTheme.greyColor,
+                              color: AppTheme.getSecondaryTextColor(context),
                             ),
                           ),
                         ),
@@ -515,7 +515,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 'Are you sure you want to proceed with booking this property?',
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                 ),
               ),
             ],
@@ -525,7 +525,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.greyColor),
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             ElevatedButton(
@@ -554,18 +554,18 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: NestedScrollView(
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return <Widget>[
               SliverAppBar(
-                expandedHeight: MediaQuery.of(context).size.height * 0.55,
+                expandedHeight: 470.0,
                 floating: false,
                 pinned: true,
                 snap: false,
-                backgroundColor: AppTheme.whiteColor,
+                backgroundColor: AppTheme.getBackgroundColor(context),
                 elevation: 0,
                 automaticallyImplyLeading: false,
                 flexibleSpace: FlexibleSpaceBar(
@@ -581,10 +581,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   preferredSize: Size.fromHeight(48.0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.whiteColor,
+                      color: AppTheme.getCardColor(context),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
                           blurRadius: 5,
                           offset: Offset(0, 2),
                         ),
@@ -595,7 +595,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       indicatorColor: AppTheme.primaryblue,
                       indicatorWeight: 3,
                       labelColor: AppTheme.primaryblue,
-                      unselectedLabelColor: AppTheme.greyColor,
+                      unselectedLabelColor: AppTheme.getSecondaryTextColor(context),
                       labelStyle: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -665,7 +665,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                           child: Center(
                             child: Icon(
                               Icons.image_not_supported,
-                              color: AppTheme.greyColor,
+                              color: AppTheme.getSecondaryTextColor(context),
                               size: 50,
                             ),
                           ),
@@ -686,9 +686,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.3),
+                    AppTheme.getTextColor(context).withValues(alpha: 0.3),
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.1),
+                    AppTheme.getTextColor(context).withValues(alpha: 0.1),
                   ],
                 ),
               ),
@@ -701,7 +701,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: AppTheme.whiteColor,
+                color: AppTheme.getCardColor(context),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -714,7 +714,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               child: IconButton(
                 icon: Icon(
                   _isFavorite ? Icons.favorite : Icons.favorite_outline,
-                  color: _isFavorite ? Colors.red : AppTheme.greyColor,
+                  color: _isFavorite ? Colors.red : AppTheme.getSecondaryTextColor(context),
                   size: 28,
                 ),
                 onPressed: _toggleFavorite,
@@ -729,7 +729,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.whiteColor.withValues(alpha: 0.9),
+                      color: AppTheme.getCardColor(context).withValues(alpha: 0.9),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -740,7 +740,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       ],
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.arrow_back, color: AppTheme.blackColor),
+                      icon: Icon(Icons.arrow_back, color: AppTheme.getTextColor(context)),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -780,7 +780,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getBackgroundColor(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -826,14 +826,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     Text(
                       ' (${_reviews.length})',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
@@ -847,7 +847,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
               height: 1.2,
             ),
           ),
@@ -861,7 +861,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   widget.property.address,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.greyColor,
+                    color: AppTheme.getSecondaryTextColor(context),
                   ),
                 ),
               ),
@@ -883,7 +883,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 widget.property.priceType,
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                 ),
               ),
               if (widget.property.isVerified) ...[
@@ -1017,14 +1017,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           Text(
             title,
             style: TextStyle(
               fontSize: 10,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1047,11 +1047,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       margin: EdgeInsets.symmetric(horizontal: 20),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -1076,7 +1076,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
             ],
@@ -1092,14 +1092,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                     decoration: BoxDecoration(
                       color: feature['available'] as bool
                           ? AppTheme.primaryblue.withValues(alpha: 0.1)
-                          : AppTheme.greyColor.withValues(alpha: 0.1),
+                          : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       feature['icon'] as IconData,
                       color: feature['available'] as bool
                           ? AppTheme.primaryblue
-                          : AppTheme.greyColor,
+                          : AppTheme.getSecondaryTextColor(context),
                       size: 16,
                     ),
                   ),
@@ -1110,8 +1110,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       style: TextStyle(
                         fontSize: 14,
                         color: feature['available'] as bool
-                            ? AppTheme.blackColor
-                            : AppTheme.greyColor,
+                            ? AppTheme.getTextColor(context)
+                            : AppTheme.getSecondaryTextColor(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1120,7 +1120,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                     feature['available'] as bool ? Icons.check_circle : Icons.cancel,
                     color: feature['available'] as bool
                         ? AppTheme.primaryblue
-                        : AppTheme.greyColor,
+                        : AppTheme.getSecondaryTextColor(context),
                     size: 18,
                   ),
                 ],
@@ -1146,11 +1146,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       margin: EdgeInsets.all(20),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -1175,7 +1175,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
             ],
@@ -1220,7 +1220,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.blackColor,
+                              color: AppTheme.getTextColor(context),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1229,7 +1229,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                             place['distance'] as String,
                             style: TextStyle(
                               fontSize: 10,
-                              color: AppTheme.greyColor,
+                              color: AppTheme.getSecondaryTextColor(context),
                             ),
                           ),
                         ],
@@ -1260,7 +1260,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 16),
@@ -1284,7 +1284,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.greyColor.withValues(alpha: 0.1),
+                        color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: Offset(0, 2),
                       ),
@@ -1301,7 +1301,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                           child: Center(
                             child: Icon(
                               Icons.image_not_supported,
-                              color: AppTheme.greyColor,
+                              color: AppTheme.getSecondaryTextColor(context),
                               size: 30,
                             ),
                           ),
@@ -1332,7 +1332,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
               Container(
@@ -1408,7 +1408,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                             child: Center(
                               child: Icon(
                                 Icons.image_not_supported,
-                                color: AppTheme.greyColor,
+                                color: AppTheme.getSecondaryTextColor(context),
                                 size: 50,
                               ),
                             ),
@@ -1445,11 +1445,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -1463,7 +1463,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 12),
@@ -1515,7 +1515,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     return Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.lightGreyColor.withValues(alpha: 0.5),
+        color: AppTheme.lightGreyColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -1526,7 +1526,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             label,
             style: TextStyle(
               fontSize: 11,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1536,7 +1536,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -1550,11 +1550,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       margin: EdgeInsets.symmetric(horizontal: 20),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -1579,7 +1579,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
             ],
@@ -1598,7 +1598,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               widget.property.description,
               style: TextStyle(
                 fontSize: 16,
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
                 height: 1.6,
               ),
             ),
@@ -1658,11 +1658,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -1676,7 +1676,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 8),
@@ -1704,15 +1704,15 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                     Icon(
                       amenity['icon'] as IconData,
                       color: AppTheme.primaryblue,
-                      size: 20,
+                      size: 25,
                     ),
                     SizedBox(height: 6),
                     Text(
                       amenity['name'] as String,
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -1733,11 +1733,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       margin: EdgeInsets.symmetric(horizontal: 20),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -1754,7 +1754,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
               TextButton.icon(
@@ -1780,7 +1780,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   widget.property.address,
                   style: TextStyle(
                     fontSize: 16,
-                    color: AppTheme.greyColor,
+                    color: AppTheme.getSecondaryTextColor(context),
                   ),
                 ),
               ),
@@ -1846,11 +1846,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       margin: EdgeInsets.all(20),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -1864,7 +1864,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 16),
@@ -1893,7 +1893,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -1901,7 +1901,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       'Property Owner',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                     SizedBox(height: 8),
@@ -1914,14 +1914,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.blackColor,
+                            color: AppTheme.getTextColor(context),
                           ),
                         ),
                         Text(
                           ' (127 reviews)',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                         ),
                       ],
@@ -1977,7 +1977,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       return Container(
         padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppTheme.lightGreyColor.withValues(alpha: 0.5),
+          color: AppTheme.getCardColor(context).withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -1985,7 +1985,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             Icon(
               Icons.rate_review_outlined,
               size: 48,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
             SizedBox(height: 12),
             Text(
@@ -1993,7 +1993,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
             SizedBox(height: 4),
@@ -2001,7 +2001,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               'Be the first to write a review!',
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
               ),
             ),
           ],
@@ -2012,11 +2012,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -2037,14 +2037,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     Text(
                       ' out of 5',
                       style: TextStyle(
                         fontSize: 16,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
@@ -2054,7 +2054,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   '${_reviews.length} review${_reviews.length != 1 ? 's' : ''}',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.greyColor,
+                    color: AppTheme.getSecondaryTextColor(context),
                   ),
                 ),
               ],
@@ -2073,7 +2073,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                         '$i',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.greyColor,
+                          color: AppTheme.getSecondaryTextColor(context),
                         ),
                       ),
                       SizedBox(width: 8),
@@ -2116,11 +2116,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       margin: EdgeInsets.only(bottom: 16),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -2159,7 +2159,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     Row(
@@ -2178,7 +2178,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                           _formatDate(review.date),
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                         ),
                       ],
@@ -2193,7 +2193,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             review.comment,
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
               height: 1.5,
             ),
           ),
@@ -2240,7 +2240,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             decoration: BoxDecoration(
               border: Border.all(color: AppTheme.primaryblue),
               borderRadius: BorderRadius.circular(12),
-              color: AppTheme.whiteColor,
+              color: AppTheme.getCardColor(context),
             ),
             child: IconButton(
               onPressed: _showContactDialog,

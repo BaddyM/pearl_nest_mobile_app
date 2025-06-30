@@ -166,6 +166,138 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         isVerified: true,
         availabilityStatus: AvailabilityStatus.availableNow,
         landlordEmail: '',
+      ),Property(
+        id: '4',
+        title: 'Luxury Downtown Apartment',
+        description: 'Beautiful modern apartment with stunning city views and premium amenities',
+        type: PropertyType.apartment,
+        price: 2500000,
+        priceType: 'per month',
+        location: 'Downtown',
+        address: '123 Main St, City Center',
+        latitude: 40.7128,
+        longitude: -74.0060,
+        images: [
+          'assets/images/img5.jpg',
+          'assets/images/img3.jpg',
+          'assets/images/img4.jpg',
+          'assets/images/img1.jpg',
+        ],
+        amenities: ['WiFi', 'Parking', 'Gym', 'Pool', 'Security'],
+        bedrooms: 3,
+        bathrooms: 2,
+        area: 120.0,
+        landlordId: 'landlord1',
+        landlordName: 'John Smith',
+        landlordPhone: '+1234567890',
+        status: PropertyStatus.available,
+        rating: 4.8,
+        reviewCount: 45,
+        createdAt: DateTime.now().subtract(Duration(days: 5)),
+        updatedAt: DateTime.now(),
+        isFeatured: true,
+        isVerified: true,
+        availabilityStatus: AvailabilityStatus.availableNow,
+        landlordEmail: '',
+      ),Property(
+        id: '5',
+        title: 'Luxury Downtown Apartment',
+        description: 'Beautiful modern apartment with stunning city views and premium amenities',
+        type: PropertyType.apartment,
+        price: 2500000,
+        priceType: 'per month',
+        location: 'Downtown',
+        address: '123 Main St, City Center',
+        latitude: 40.7128,
+        longitude: -74.0060,
+        images: [
+          'assets/images/img5.jpg',
+          'assets/images/img3.jpg',
+          'assets/images/img4.jpg',
+          'assets/images/img1.jpg',
+        ],
+        amenities: ['WiFi', 'Parking', 'Gym', 'Pool', 'Security'],
+        bedrooms: 3,
+        bathrooms: 2,
+        area: 120.0,
+        landlordId: 'landlord1',
+        landlordName: 'John Smith',
+        landlordPhone: '+1234567890',
+        status: PropertyStatus.available,
+        rating: 4.8,
+        reviewCount: 45,
+        createdAt: DateTime.now().subtract(Duration(days: 5)),
+        updatedAt: DateTime.now(),
+        isFeatured: true,
+        isVerified: true,
+        availabilityStatus: AvailabilityStatus.availableNow,
+        landlordEmail: '',
+      ),Property(
+        id: '6',
+        title: 'Luxury Downtown Apartment',
+        description: 'Beautiful modern apartment with stunning city views and premium amenities',
+        type: PropertyType.apartment,
+        price: 2500000,
+        priceType: 'per month',
+        location: 'Downtown',
+        address: '123 Main St, City Center',
+        latitude: 40.7128,
+        longitude: -74.0060,
+        images: [
+          'assets/images/img5.jpg',
+          'assets/images/img3.jpg',
+          'assets/images/img4.jpg',
+          'assets/images/img1.jpg',
+        ],
+        amenities: ['WiFi', 'Parking', 'Gym', 'Pool', 'Security'],
+        bedrooms: 3,
+        bathrooms: 2,
+        area: 120.0,
+        landlordId: 'landlord1',
+        landlordName: 'John Smith',
+        landlordPhone: '+1234567890',
+        status: PropertyStatus.available,
+        rating: 4.8,
+        reviewCount: 45,
+        createdAt: DateTime.now().subtract(Duration(days: 5)),
+        updatedAt: DateTime.now(),
+        isFeatured: true,
+        isVerified: true,
+        availabilityStatus: AvailabilityStatus.availableNow,
+        landlordEmail: '',
+      ),Property(
+        id: '7',
+        title: 'Luxury Downtown Apartment',
+        description: 'Beautiful modern apartment with stunning city views and premium amenities',
+        type: PropertyType.apartment,
+        price: 2500000,
+        priceType: 'per month',
+        location: 'Downtown',
+        address: '123 Main St, City Center',
+        latitude: 40.7128,
+        longitude: -74.0060,
+        images: [
+          'assets/images/img5.jpg',
+          'assets/images/img3.jpg',
+          'assets/images/img4.jpg',
+          'assets/images/img1.jpg',
+        ],
+        amenities: ['WiFi', 'Parking', 'Gym', 'Pool', 'Security'],
+        bedrooms: 3,
+        bathrooms: 2,
+        area: 120.0,
+        landlordId: 'landlord1',
+        landlordName: 'John Smith',
+        landlordPhone: '+1234567890',
+        status: PropertyStatus.available,
+        rating: 4.8,
+        reviewCount: 45,
+        createdAt: DateTime.now().subtract(Duration(days: 5)),
+        updatedAt: DateTime.now(),
+        isFeatured: true,
+        isVerified: true,
+        availabilityStatus: AvailabilityStatus.availableNow,
+        landlordEmail: '',
       ),
     ];
   }
@@ -229,7 +361,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.lightGreyColor.withValues(alpha: 0.5),
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -255,7 +387,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppTheme.whiteColor,
+            AppTheme.getBackgroundColor(context),
             AppTheme.primaryblue.withValues(alpha: 0.1),
           ],
         ),
@@ -265,7 +397,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -284,7 +416,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -292,7 +424,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                       '${_favoriteProperties.length} saved properties',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
@@ -327,11 +459,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -339,7 +471,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
       ),
       child: TextField(
         style: TextStyle(
-          color: AppTheme.blackColor,
+          color: AppTheme.getTextColor(context),
           fontSize: 16,
           fontWeight: FontWeight.w400,
         ),
@@ -351,7 +483,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         },
         decoration: InputDecoration(
           hintText: 'Search your favorites...',
-          hintStyle: TextStyle(color: AppTheme.greyColor),
+          hintStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
           prefixIcon: Icon(Icons.search, color: AppTheme.primaryblue),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -370,7 +502,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           Text(
             'Loading your favorites...',
             style: TextStyle(
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
               fontSize: 16,
             ),
           ),
@@ -406,7 +538,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
               SizedBox(height: 12),
@@ -415,7 +547,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                   height: 1.5,
                 ),
               ),
@@ -488,12 +620,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppTheme.primaryblue
-                      : AppTheme.whiteColor,
+                      : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
                     color: isSelected
                         ? AppTheme.primaryblue
-                        : AppTheme.greyColor.withValues(alpha: 0.3),
+                        : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
                     width: 1,
                   ),
                   boxShadow: isSelected ? [
@@ -514,7 +646,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                         color: isSelected
                             ? AppTheme.whiteColor
-                            : AppTheme.greyColor,
+                            : AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                     if (count > 0) ...[
@@ -557,7 +689,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           Icon(
             _searchQuery.isNotEmpty ? Icons.search_off : Icons.filter_list_off,
             size: 60,
-            color: AppTheme.greyColor,
+            color: AppTheme.getSecondaryTextColor(context),
           ),
           SizedBox(height: 16),
           Text(
@@ -567,7 +699,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 8),
@@ -577,7 +709,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                 : 'No $_selectedCategory properties in your favorites yet',
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
         ],
@@ -588,7 +720,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
   Widget _buildFavoritesList() {
     if (_isGridView) {
       return GridView.builder(
-        padding: EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(20, 20, 20, 100),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.5,
@@ -622,7 +754,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
     }
 
     return ListView.builder(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 100),
       itemCount: _filteredProperties.length,
       itemBuilder: (context, index) {
         final property = _filteredProperties[index];
@@ -676,11 +808,11 @@ class PropertyCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.whiteColor,
+          color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.greyColor.withValues(alpha: 0.1),
+              color: AppTheme.primaryblue.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: Offset(0, 2),
             ),
@@ -751,7 +883,7 @@ class PropertyCard extends StatelessWidget {
                         color: AppTheme.lightGreyColor,
                         child: Icon(
                           Icons.image_not_supported,
-                          color: AppTheme.greyColor,
+                          color: AppTheme.getSecondaryTextColor(context),
                           size: 40,
                         ),
                       );
@@ -832,122 +964,126 @@ class PropertyCard extends StatelessWidget {
   }
 
   Widget _buildContentSection() {
-    return Padding(
-      padding: EdgeInsets.all(isHorizontal ? 0 : 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: isHorizontal ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
-        children: [
-          Column(
+    return Builder(
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.all(isHorizontal ? 0 : 16),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                property.title,
-                style: TextStyle(
-                  fontSize: isHorizontal ? 14 : 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
-                ),
-                maxLines: isHorizontal ? 1 : 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    size: 12,
-                    color: AppTheme.greyColor,
-                  ),
-                  SizedBox(width: 2),
-                  Expanded(
-                    child: Text(
-                      property.location,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.greyColor,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 4),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentGreen.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  property.propertyTypeString,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppTheme.primaryblue,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: isHorizontal ? 4 : 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: isHorizontal ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'UGX ${property.price.toStringAsFixed(0)}',
+                    property.title,
                     style: TextStyle(
-                      fontSize: isHorizontal ? 14 : 18,
+                      fontSize: isHorizontal ? 14 : 16,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryblue,
+                      color: AppTheme.getTextColor(context),
                     ),
+                    maxLines: isHorizontal ? 1 : 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    property.priceType,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.greyColor,
+                  SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 12,
+                        color: AppTheme.getSecondaryTextColor(context),
+                      ),
+                      SizedBox(width: 2),
+                      Expanded(
+                        child: Text(
+                          property.location,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.getSecondaryTextColor(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentGreen.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      property.propertyTypeString,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppTheme.primaryblue,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
+              SizedBox(height: isHorizontal ? 4 : 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'UGX ${property.price.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: isHorizontal ? 14 : 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryblue,
+                        ),
+                      ),
+                      Text(
+                        property.priceType,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.getSecondaryTextColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (!isHorizontal) ...[
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildPropertyFeature(Icons.bed_outlined, '${property.bedrooms}', context),
+                    SizedBox(width: 16),
+                    _buildPropertyFeature(Icons.bathroom_outlined, '${property.bathrooms}', context),
+                    SizedBox(width: 16),
+                    _buildPropertyFeature(Icons.square_foot, '${property.area.toInt()}m²', context),
+                  ],
+                ),
+              ],
             ],
           ),
-          if (!isHorizontal) ...[
-            SizedBox(height: 8),
-            Row(
-              children: [
-                _buildPropertyFeature(Icons.bed_outlined, '${property.bedrooms}'),
-                SizedBox(width: 16),
-                _buildPropertyFeature(Icons.bathroom_outlined, '${property.bathrooms}'),
-                SizedBox(width: 16),
-                _buildPropertyFeature(Icons.square_foot, '${property.area.toInt()}m²'),
-              ],
-            ),
-          ],
-        ],
-      ),
+        );
+      }
     );
   }
 
-  Widget _buildPropertyFeature(IconData icon, String text) {
+  Widget _buildPropertyFeature(IconData icon, String text, BuildContext context) {
     return Row(
       children: [
         Icon(
           icon,
           size: 14,
-          color: AppTheme.greyColor,
+          color: AppTheme.getSecondaryTextColor(context),
         ),
         SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(
             fontSize: 12,
-            color: AppTheme.greyColor,
+            color: AppTheme.getSecondaryTextColor(context),
           ),
         ),
       ],

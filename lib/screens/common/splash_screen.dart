@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:pearlnest/screens/common/onboarding_screen.dart';
+import 'package:pearlnest/widgets/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -98,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -131,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Text(
                       'PearlNest Estates',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.black87,
+                        color: AppTheme.getTextColor(context),
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
                       ),
@@ -153,7 +154,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Text(
                       'Find Your Dream Property',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey[600],
+                        color: AppTheme.getSecondaryTextColor(context),
                         fontStyle: FontStyle.italic,
                       ),
                       textAlign: TextAlign.center,

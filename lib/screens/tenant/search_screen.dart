@@ -698,7 +698,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.lightGreyColor.withValues(alpha: 0.5),
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -720,7 +720,7 @@ class _SearchScreenState extends State<SearchScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppTheme.whiteColor,
+            AppTheme.getBackgroundColor(context),
             AppTheme.primaryblue.withValues(alpha: 0.1),
           ],
         ),
@@ -730,7 +730,7 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -749,7 +749,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -757,7 +757,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       'Find your perfect home',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
@@ -791,12 +791,12 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: AppTheme.greyColor.withValues(alpha: 0.2)),
+        border: Border.all(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.blackColor.withValues(alpha: 0.05),
+            color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -804,17 +804,17 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       child: TextField(
         controller: _searchController,
-        style: TextStyle(color: AppTheme.blackColor),
+        style: TextStyle(color: AppTheme.getTextColor(context),),
         decoration: InputDecoration(
           hintText: 'Search by location, property name...',
-          hintStyle: TextStyle(color: AppTheme.greyColor),
+          hintStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
           prefixIcon: Container(
             padding: EdgeInsets.all(12),
             child: Icon(Icons.search, color: AppTheme.primaryblue, size: 22),
           ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear, color: AppTheme.greyColor),
+                  icon: Icon(Icons.clear, color: AppTheme.getSecondaryTextColor(context)),
                   onPressed: () {
                     _searchController.clear();
                   },
@@ -838,12 +838,12 @@ class _SearchScreenState extends State<SearchScreen> {
               decoration: BoxDecoration(
                 color: _filters.hasActiveFilters 
                     ? AppTheme.primaryblue 
-                    : AppTheme.lightGreyColor,
+                    : AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _filters.hasActiveFilters 
                       ? AppTheme.primaryblue 
-                      : AppTheme.greyColor.withOpacity(0.3),
+                      : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                 ),
               ),
               child: Row(
@@ -854,7 +854,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     size: 18,
                     color: _filters.hasActiveFilters 
                         ? AppTheme.whiteColor 
-                        : AppTheme.greyColor,
+                        : AppTheme.getSecondaryTextColor(context),
                   ),
                   SizedBox(width: 8),
                   Text(
@@ -863,7 +863,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       fontSize: 14,
                       color: _filters.hasActiveFilters 
                           ? AppTheme.whiteColor 
-                          : AppTheme.greyColor,
+                          : AppTheme.getSecondaryTextColor(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -872,7 +872,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     Container(
                       padding: EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: AppTheme.whiteColor,
+                        color: AppTheme.getTextColor(context),
                         shape: BoxShape.circle,
                       ),
                       child: Text(
@@ -941,7 +941,7 @@ class _SearchScreenState extends State<SearchScreen> {
         '${_filteredProperties.length} properties found',
         style: TextStyle(
           fontSize: 14,
-          color: AppTheme.greyColor,
+          color: AppTheme.getSecondaryTextColor(context),
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -956,7 +956,7 @@ class _SearchScreenState extends State<SearchScreen> {
         return Container(
           margin: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.whiteColor,
+            color: AppTheme.getCardColor(context),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -967,7 +967,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: AppTheme.greyColor.withOpacity(0.2),
+                      color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
                     ),
                   ),
                 ),
@@ -978,7 +978,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     Spacer(),
@@ -986,7 +986,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       onTap: () => Navigator.pop(context),
                       child: Icon(
                         Icons.close,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
@@ -999,7 +999,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   title: Text(
                     option,
                     style: TextStyle(
-                      color: isSelected ? AppTheme.primaryblue : AppTheme.blackColor,
+                      color: isSelected ? AppTheme.primaryblue : AppTheme.getTextColor(context),
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                       fontSize: 16,
                     ),
@@ -1016,7 +1016,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppTheme.greyColor.withOpacity(0.5),
+                              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
                               width: 2,
                             ),
                           ),
@@ -1048,7 +1048,7 @@ class _SearchScreenState extends State<SearchScreen> {
           Text(
             'Loading properties...',
             style: TextStyle(
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
               fontSize: 16,
             ),
           ),
@@ -1065,7 +1065,7 @@ class _SearchScreenState extends State<SearchScreen> {
           child: _filteredProperties.isEmpty
               ? _buildEmptyState()
               : ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.only(left: 20, right: 20, bottom: 100,),
                   itemCount: _filteredProperties.length,
                   itemBuilder: (context, index) {
                     final property = _filteredProperties[index];
@@ -1088,7 +1088,7 @@ class _SearchScreenState extends State<SearchScreen> {
           Icon(
             Icons.search_off,
             size: 80,
-            color: AppTheme.greyColor.withOpacity(0.5),
+            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
           ),
           SizedBox(height: 16),
           Text(
@@ -1096,7 +1096,7 @@ class _SearchScreenState extends State<SearchScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 8),
@@ -1105,7 +1105,7 @@ class _SearchScreenState extends State<SearchScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
           SizedBox(height: 24),
@@ -1144,11 +1144,11 @@ class _SearchScreenState extends State<SearchScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.whiteColor,
+          color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.blackColor.withOpacity(0.08),
+              color: AppTheme.getTextColor(context).withOpacity(0.3),
               blurRadius: 15,
               offset: Offset(0, 5),
               spreadRadius: 0,
@@ -1191,14 +1191,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                     end: Alignment.bottomRight,
                                     colors: [
                                       AppTheme.lightGreyColor,
-                                      AppTheme.greyColor.withOpacity(0.3),
+                                      AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                                     ],
                                   ),
                                 ),
                                 child: Center(
                                   child: Icon(
                                     Icons.image_not_supported,
-                                    color: AppTheme.greyColor,
+                                    color: AppTheme.getSecondaryTextColor(context),
                                     size: 40,
                                   ),
                                 ),
@@ -1284,7 +1284,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: AppTheme.getTextColor(context).withOpacity(0.1),
                                 blurRadius: 4,
                                 offset: Offset(0, 2),
                               ),
@@ -1296,7 +1296,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 : Icons.favorite_outline,
                             color: widget.user.favoriteProperties.contains(property.id)
                                 ? Colors.red
-                                : AppTheme.greyColor,
+                                : AppTheme.getSecondaryTextColor(context),
                             size: 18,
                           ),
                         ),
@@ -1358,7 +1358,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.blackColor,
+                            color: AppTheme.getTextColor(context),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -1385,7 +1385,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.blackColor,
+                                color: AppTheme.getTextColor(context),
                               ),
                             ),
                           ],
@@ -1409,7 +1409,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           property.location,
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1426,14 +1426,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         Icon(
                           Icons.bed,
                           size: 14,
-                          color: AppTheme.greyColor,
+                          color: AppTheme.getSecondaryTextColor(context),
                         ),
                         SizedBox(width: 2),
                         Text(
                           '${property.bedrooms}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                         ),
                         SizedBox(width: 12),
@@ -1442,14 +1442,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         Icon(
                           Icons.bathroom,
                           size: 14,
-                          color: AppTheme.greyColor,
+                          color: AppTheme.getSecondaryTextColor(context),
                         ),
                         SizedBox(width: 2),
                         Text(
                           '${property.bathrooms}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                         ),
                         SizedBox(width: 12),
@@ -1457,14 +1457,14 @@ class _SearchScreenState extends State<SearchScreen> {
                       Icon(
                         Icons.square_foot,
                         size: 14,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                       SizedBox(width: 2),
                       Text(
                         '${property.area.toInt()} sqft',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.greyColor,
+                          color: AppTheme.getSecondaryTextColor(context),
                         ),
                       ),
                       Spacer(),
@@ -1472,7 +1472,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         '${property.reviewCount} reviews',
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppTheme.greyColor,
+                          color: AppTheme.getSecondaryTextColor(context),
                         ),
                       ),
                     ],
@@ -1502,7 +1502,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 property.priceType,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppTheme.greyColor,
+                                  color: AppTheme.getSecondaryTextColor(context),
                                 ),
                               ),
                             ],

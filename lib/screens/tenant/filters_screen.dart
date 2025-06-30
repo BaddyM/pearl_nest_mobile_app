@@ -72,7 +72,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
         title: Text(
           'Filters',
@@ -131,7 +131,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppTheme.blackColor,
+            color: AppTheme.getTextColor(context),
           ),
         ),
         SizedBox(height: 12),
@@ -149,16 +149,16 @@ class _FiltersScreenState extends State<FiltersScreen> {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryblue : AppTheme.lightGreyColor,
+                  color: isSelected ? AppTheme.primaryblue : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
-                    color: isSelected ? AppTheme.primaryblue : AppTheme.greyColor.withOpacity(0.3),
+                    color: isSelected ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                   ),
                 ),
                 child: Text(
                   type,
                   style: TextStyle(
-                    color: isSelected ? AppTheme.whiteColor : AppTheme.greyColor,
+                    color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
@@ -180,16 +180,16 @@ class _FiltersScreenState extends State<FiltersScreen> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppTheme.blackColor,
+            color: AppTheme.getTextColor(context),
           ),
         ),
         SizedBox(height: 12),
         Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.lightGreyColor,
+            color: AppTheme.getCardColor(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.greyColor.withOpacity(0.2)),
+            border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2)),
           ),
           child: Column(
             children: [
@@ -208,7 +208,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                     'to',
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppTheme.greyColor,
+                      color: AppTheme.getSecondaryTextColor(context),
                     ),
                   ),
                   Text(
@@ -228,7 +228,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                 max: 50000000,
                 divisions: 100,
                 activeColor: AppTheme.primaryblue,
-                inactiveColor: AppTheme.greyColor.withOpacity(0.3),
+                inactiveColor: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                 onChanged: (RangeValues values) {
                   setState(() {
                     _filters.priceRange = values;
@@ -251,7 +251,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppTheme.blackColor,
+            color: AppTheme.getTextColor(context),
           ),
         ),
         SizedBox(height: 12),
@@ -279,16 +279,16 @@ class _FiltersScreenState extends State<FiltersScreen> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryblue : AppTheme.lightGreyColor,
+          color: isSelected ? AppTheme.primaryblue : AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryblue : AppTheme.greyColor.withOpacity(0.3),
+            color: isSelected ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? AppTheme.whiteColor : AppTheme.greyColor,
+            color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
             fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
@@ -309,7 +309,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
             if (_filters.selectedAmenities.isNotEmpty)
@@ -327,9 +327,9 @@ class _FiltersScreenState extends State<FiltersScreen> {
         Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.lightGreyColor,
+            color: AppTheme.getCardColor(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.greyColor.withOpacity(0.2)),
+            border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2)),
           ),
           child: Column(
             children: _availableAmenities.map((amenity) {
@@ -352,12 +352,12 @@ class _FiltersScreenState extends State<FiltersScreen> {
                     decoration: BoxDecoration(
                       color: isSelected 
                           ? AppTheme.primaryblue.withOpacity(0.1) 
-                          : AppTheme.whiteColor,
+                          : AppTheme.getCardColor(context),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isSelected 
+                        color: isSelected
                             ? AppTheme.primaryblue 
-                            : AppTheme.greyColor.withOpacity(0.2),
+                            : AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
                       ),
                     ),
                     child: Row(
@@ -371,7 +371,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                             border: Border.all(
                               color: isSelected 
                                   ? AppTheme.primaryblue 
-                                  : AppTheme.greyColor.withOpacity(0.5),
+                                  : AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
                               width: 2,
                             ),
                           ),
@@ -379,7 +379,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                               ? Icon(
                                   Icons.check,
                                   size: 14,
-                                  color: AppTheme.whiteColor,
+                                  color: AppTheme.getCardColor(context),
                                 )
                               : null,
                         ),
@@ -389,7 +389,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                             amenity,
                             style: TextStyle(
                               fontSize: 15,
-                              color: isSelected ? AppTheme.primaryblue : AppTheme.blackColor,
+                              color: isSelected ? AppTheme.primaryblue : AppTheme.getTextColor(context),
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                             ),
                           ),
@@ -418,10 +418,10 @@ class _FiltersScreenState extends State<FiltersScreen> {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.blackColor.withOpacity(0.1),
+            color: AppTheme.getTextColor(context).withOpacity(0.1),
             blurRadius: 10,
             offset: Offset(0, -2),
           ),
@@ -438,7 +438,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                   '$matchingProperties properties match your filters',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.greyColor,
+                    color: AppTheme.getSecondaryTextColor(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

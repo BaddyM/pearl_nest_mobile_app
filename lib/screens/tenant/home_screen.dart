@@ -3,7 +3,8 @@ import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
-import 'package:pearlnest/screens/chat/chat_screen.dart';
+import 'package:pearlnest/screens/chat/chat_conversation.dart';
+import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
 import 'package:pearlnest/screens/tenant/favorites_screen.dart';
 import 'package:pearlnest/screens/tenant/notification_screen.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
@@ -76,6 +77,32 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     });
+  }
+
+  ChatConversation _createPearlNestConversation() {
+    return ChatConversation(
+      id: 'pearlnest_support',
+      landlordId: 'pearlnest_support',
+      landlordName: 'PearlNest Support',
+      landlordProfilePic: '',
+      propertyTitle: 'General Support & Inquiries',
+      lastMessage: 'Hello! How can we help you today?',
+      lastMessageTime: DateTime.now(),
+      isOnline: true,
+      unreadCount: 0,
+    );
+  }
+
+  void _navigateToPearlNestChat() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => IndividualChatScreen(
+          conversation: _createPearlNestConversation(),
+          currentUser: widget.user,
+        ),
+      ),
+    );
   }
 
   @override
@@ -663,29 +690,31 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: _buildBody(),
-      bottomNavigationBar: _buildBottomNavigationBar(),
       floatingActionButton: _currentIndex == 0 && _showBackToTop
           ? AnimatedOpacity(
               opacity: _showBackToTop ? 1.0 : 0.0,
               duration: Duration(milliseconds: 300),
-              child: FloatingActionButton(
-                onPressed: () {
-                  _scrollController.animateTo(
-                    0,
-                    duration: Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                backgroundColor: AppTheme.primaryblue,
-                // ignore: sort_child_properties_last
-                child: Icon(
-                  Icons.keyboard_arrow_up,
-                  color: AppTheme.whiteColor,
-                  size: 28,
+              child: Container(
+                margin: EdgeInsets.only(bottom: 100),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    _scrollController.animateTo(
+                      0,
+                      duration: Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  backgroundColor: AppTheme.primaryblue,
+                  // ignore: sort_child_properties_last
+                  child: Icon(
+                    Icons.arrow_upward_rounded,
+                    color: AppTheme.whiteColor,
+                    size: 28,
+                  ),
+                  mini: true,
                 ),
-                mini: true,
               ),
             )
           : null,
@@ -693,26 +722,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody() {
-    switch (_currentIndex) {
-      case 0:
-        return _buildHomeContent();
-      case 1:
-        return SearchScreen(
-          user: widget.user,
-          allProperties: _properties,
-        );
-      case 2:
-        return FavoritesScreen(user: widget.user);
-      case 3:
-        return ProfileScreen(
-          user: widget.user,
-          landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
-        );
-      case 4:
-        return ChatScreen(user: widget.user);
-      default:
-        return _buildHomeContent();
-    }
+    return Stack(
+      children: [
+        switch (_currentIndex) {
+          0 => _buildHomeContent(),
+          1 => SearchScreen(
+              user: widget.user,
+              allProperties: _properties,
+            ),
+          2 => FavoritesScreen(user: widget.user),
+          3 => ProfileScreen(
+              user: widget.user,
+              landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
+            ),
+          _ => _buildHomeContent(),
+        },
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _buildBottomNavigationBar(),
+        ),
+      ],
+    );
   }
 
   Widget _buildHomeContent() {
@@ -726,6 +758,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildCategories(),
             _buildFeaturedSection(),
             _buildRecentProperties(),
+            SizedBox(height: 100),
           ],
         ),
       ),
@@ -740,7 +773,7 @@ class _HomeScreenState extends State<HomeScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppTheme.whiteColor,
+            AppTheme.getBackgroundColor(context),
             AppTheme.primaryblue.withValues(alpha: 0.1),
           ],
         ),
@@ -750,7 +783,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -769,7 +802,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -779,7 +812,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           : 'Manage your properties',
                       style: TextStyle(
                         fontSize: 16,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
@@ -859,12 +892,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.whiteColor,
+                color: AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: AppTheme.greyColor.withValues(alpha: 0.2)),
+                border: Border.all(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.blackColor.withValues(alpha: 0.05),
+                    color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: Offset(0, 2),
                   ),
@@ -889,7 +922,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Text(
                       'Search properties, locations...',
                       style: TextStyle(
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                         fontSize: 16,
                       ),
                     ),
@@ -928,7 +961,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
           ),
@@ -960,7 +993,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           decoration: BoxDecoration(
                             color: isSelected 
                                 ? AppTheme.primaryblue 
-                                : AppTheme.lightGreyColor,
+                                : AppTheme.getCardColor(context),
                             shape: BoxShape.circle,
                             boxShadow: isSelected ? [
                               BoxShadow(
@@ -974,7 +1007,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             category['icon'],
                             color: isSelected 
                                 ? AppTheme.whiteColor 
-                                : AppTheme.greyColor,
+                                : AppTheme.getSecondaryTextColor(context),
                             size: 24,
                           ),
                         ),
@@ -988,7 +1021,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 : FontWeight.normal,
                             color: isSelected 
                                 ? AppTheme.primaryblue 
-                                : AppTheme.greyColor,
+                                : AppTheme.getSecondaryTextColor(context),
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 1,
@@ -1030,7 +1063,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
               TextButton(
@@ -1085,7 +1118,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
         ),
@@ -1122,11 +1155,11 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.whiteColor,
+          color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.blackColor.withValues(alpha: 0.08),
+              color: AppTheme.getTextColor(context).withValues(alpha: 0.08),
               blurRadius: 20,
               offset: Offset(0, 8),
               spreadRadius: 0,
@@ -1152,7 +1185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
                     ),
-                    color: AppTheme.lightGreyColor,
+                    color: AppTheme.getCardColor(context),
                   ),
                   child: property.images.isNotEmpty
                       ? ClipRRect(
@@ -1175,14 +1208,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                     end: Alignment.bottomRight,
                                     colors: [
                                       AppTheme.lightGreyColor,
-                                      AppTheme.greyColor.withValues(alpha: 0.3),
+                                      AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
                                     ],
                                   ),
                                 ),
                                 child: Center(
                                   child: Icon(
                                     Icons.image_not_supported,
-                                    color: AppTheme.greyColor,
+                                    color: AppTheme.getSecondaryTextColor(context),
                                     size: 40,
                                   ),
                                 ),
@@ -1227,7 +1260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withValues(alpha: 0.1),
+                        AppTheme.getTextColor(context).withValues(alpha: 0.1),
                       ],
                     ),
                   ),
@@ -1292,7 +1325,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
+                                color: AppTheme.getTextColor(context).withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: Offset(0, 4),
                               ),
@@ -1304,7 +1337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 : Icons.favorite_outline,
                             color: widget.user.favoriteProperties.contains(property.id)
                                 ? Colors.red
-                                : AppTheme.greyColor,
+                                : AppTheme.getSecondaryTextColor(context),
                             size: 20,
                           ),
                         ),
@@ -1325,7 +1358,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
+                          color: AppTheme.getTextColor(context).withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: Offset(0, 4),
                         ),
@@ -1368,7 +1401,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
+                            color: AppTheme.getTextColor(context).withValues(alpha: 0.1),
                             blurRadius: 8,
                             offset: Offset(0, 4),
                           ),
@@ -1398,7 +1431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.blackColor,
+                            color: AppTheme.getTextColor(context),
                             height: 1.3,
                           ),
                           maxLines: 2,
@@ -1426,7 +1459,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.blackColor,
+                                color: AppTheme.getTextColor(context),
                               ),
                             ),
                           ],
@@ -1457,7 +1490,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           property.location,
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 1,
@@ -1539,7 +1572,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   property.priceType,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: AppTheme.greyColor,
+                                    color: AppTheme.getSecondaryTextColor(context),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -1550,7 +1583,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               '${property.reviewCount} reviews',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: AppTheme.greyColor,
+                                color: AppTheme.getSecondaryTextColor(context),
                               ),
                             ),
                           ],
@@ -1569,20 +1602,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNavigationBar() {
     return Container(
-      margin: EdgeInsets.all(16),
+      margin: EdgeInsets.fromLTRB(16, 0, 16, 30),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.blackColor.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: Offset(0, 10),
+            color: AppTheme.getTextColor(context).withValues(alpha: 0.15),
+            blurRadius: 25,
+            offset: Offset(0, 15),
+            spreadRadius: 2,
           ),
           BoxShadow(
             color: AppTheme.primaryblue.withValues(alpha: 0.1),
-            blurRadius: 15,
-            offset: Offset(0, 5),
+            blurRadius: 20,
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -1622,6 +1656,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeIcon: Icons.chat_rounded,
                 label: 'Chat',
                 index: 4,
+                onTap: () => _navigateToPearlNestChat(),
               ),
             ],
           ),
@@ -1630,61 +1665,47 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _onNavItemTapped(int index) {
+    if (index == 4) return;
+    
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   Widget _buildNavItem({
     required IconData icon,
     required IconData activeIcon,
     required String label,
     required int index,
+    VoidCallback? onTap,
   }) {
-    final isSelected = _currentIndex == index;
-    
+    final isActive = _currentIndex == index;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentIndex = index;
-        });
-      },
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
-          vertical: 8,
-        ),
+      onTap: onTap ?? () => _onNavItemTapped(index), // Use custom onTap if provided
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected 
-              ? AppTheme.primaryblue.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          color: isActive ? AppTheme.primaryblue.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                color: isSelected 
-                    ? AppTheme.primaryblue 
-                    : AppTheme.greyColor,
-                size: isSelected ? 26 : 24,
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+              size: 24,
+            ),
+            SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
-            if (isSelected) ...[
-              SizedBox(width: 8),
-              AnimatedOpacity(
-                duration: Duration(milliseconds: 300),
-                opacity: isSelected ? 1.0 : 0.0,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: AppTheme.primaryblue,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),

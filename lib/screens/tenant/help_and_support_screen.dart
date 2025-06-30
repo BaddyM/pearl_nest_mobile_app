@@ -43,7 +43,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
         backgroundColor: AppTheme.primaryblue,
         elevation: 0,
@@ -117,7 +117,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 16),
@@ -180,12 +180,12 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       child: Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.whiteColor,
+          color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.greyColor.withOpacity(0.2)),
+          border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2)),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.greyColor.withOpacity(0.1),
+              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
               blurRadius: 4,
               offset: Offset(0, 2),
             ),
@@ -211,7 +211,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
             SizedBox(height: 4),
@@ -219,7 +219,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -240,7 +240,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 16),
@@ -273,9 +273,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.greyColor.withOpacity(0.2)),
+        border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2)),
       ),
       child: ExpansionTile(
         title: Text(
@@ -283,7 +283,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: AppTheme.blackColor,
+            color: AppTheme.getTextColor(context),
           ),
         ),
         children: [
@@ -293,7 +293,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               answer,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
                 height: 1.4,
               ),
             ),
@@ -314,19 +314,19 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 16),
           Container(
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppTheme.whiteColor,
+              color: AppTheme.getCardColor(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.greyColor.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2)),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.greyColor.withOpacity(0.1),
+                  color: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
                   blurRadius: 8,
                   offset: Offset(0, 4),
                 ),
@@ -340,28 +340,28 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
                 SizedBox(height: 8),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: AppTheme.whiteColor,
-                    border: Border.all(color: AppTheme.greyColor.withOpacity(0.3)),
+                    color: AppTheme.getBackgroundColor(context),
+                    border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _selectedCategory,
                       isExpanded: true,
-                      dropdownColor: AppTheme.whiteColor,
+                      dropdownColor: AppTheme.getCardColor(context),
                       items: _categories.map((String category) {
                         return DropdownMenuItem<String>(
                           value: category,
                           child: Text(
                             category,
-                            style: TextStyle(color: AppTheme.blackColor),
+                            style: TextStyle(color: AppTheme.getTextColor(context)),
                           ),
                         );
                       }).toList(),
@@ -379,24 +379,24 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
                 SizedBox(height: 8),
                 TextField(
                   controller: _messageController,
                   maxLines: 5,
-                  style: TextStyle(color: AppTheme.blackColor),
+                  style: TextStyle(color: AppTheme.getTextColor(context)),
                   decoration: InputDecoration(
                     hintText: 'Describe your issue or question...',
-                    hintStyle: TextStyle(color: AppTheme.greyColor),
+                    hintStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppTheme.greyColor.withOpacity(0.3)),
+                      borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppTheme.greyColor.withOpacity(0.3)),
+                      borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -449,7 +449,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 16),
@@ -492,9 +492,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       margin: EdgeInsets.only(bottom: 16),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.greyColor.withOpacity(0.2)),
+        border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -520,7 +520,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
                 SizedBox(height: 4),
@@ -536,7 +536,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.greyColor,
+                    color: AppTheme.getSecondaryTextColor(context),
                   ),
                 ),
               ],
@@ -552,7 +552,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -562,13 +562,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               SizedBox(width: 8),
               Text(
                 'Live Chat',
-                style: TextStyle(color: AppTheme.blackColor),
+                style: TextStyle(color: AppTheme.getTextColor(context)),
               ),
             ],
           ),
           content: Text(
             'Live chat feature will be available soon. For immediate assistance, please call us or send an email.',
-            style: TextStyle(color: AppTheme.greyColor),
+            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
           ),
           actions: [
             TextButton(
@@ -665,7 +665,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -675,13 +675,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               SizedBox(width: 8),
               Text(
                 'Success',
-                style: TextStyle(color: AppTheme.blackColor),
+                style: TextStyle(color: AppTheme.getTextColor(context)),
               ),
             ],
           ),
           content: Text(
             message,
-            style: TextStyle(color: AppTheme.greyColor),
+            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
           ),
           actions: [
             TextButton(
@@ -702,7 +702,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -712,13 +712,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               SizedBox(width: 8),
               Text(
                 'Error',
-                style: TextStyle(color: AppTheme.blackColor),
+                style: TextStyle(color: AppTheme.getTextColor(context)),
               ),
             ],
           ),
           content: Text(
             message,
-            style: TextStyle(color: AppTheme.greyColor),
+            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
           ),
           actions: [
             TextButton(

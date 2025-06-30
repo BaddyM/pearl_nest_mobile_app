@@ -101,7 +101,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -116,11 +116,11 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       elevation: 1,
-      shadowColor: AppTheme.greyColor.withOpacity(0.1),
+      shadowColor: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
       leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: AppTheme.blackColor),
+        icon: Icon(Icons.arrow_back, color: AppTheme.getTextColor(context)),
         onPressed: () => Navigator.pop(context),
       ),
       title: Row(
@@ -173,7 +173,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 Text(
                   widget.conversation.landlordName,
                   style: TextStyle(
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -183,7 +183,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 Text(
                   widget.conversation.isOnline ? 'Online' : 'Last seen recently',
                   style: TextStyle(
-                    color: AppTheme.greyColor,
+                    color: AppTheme.getSecondaryTextColor(context),
                     fontSize: 12,
                   ),
                 ),
@@ -200,7 +200,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
           },
         ),
         IconButton(
-          icon: Icon(Icons.more_vert, color: AppTheme.blackColor),
+          icon: Icon(Icons.more_vert, color: AppTheme.getTextColor(context)),
           onPressed: () {
             _showMoreOptions();
           },
@@ -272,7 +272,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 Text(
                   widget.conversation.propertyTitle,
                   style: TextStyle(
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -301,7 +301,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             Icon(
               Icons.chat_bubble_outline,
               size: 60,
-              color: AppTheme.greyColor.withOpacity(0.5),
+              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
             ),
             SizedBox(height: 16),
             Text(
@@ -309,7 +309,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
             SizedBox(height: 8),
@@ -317,7 +317,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               'Send a message to ${widget.conversation.landlordName}',
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
               ),
             ),
           ],
@@ -369,7 +369,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       child: Text(
         _formatTimestamp(timestamp),
         style: TextStyle(
-          color: AppTheme.greyColor,
+          color: AppTheme.getSecondaryTextColor(context),
           fontSize: 12,
         ),
         textAlign: TextAlign.center,
@@ -428,21 +428,21 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
             'Call ${widget.conversation.landlordName}',
             style: TextStyle(
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             'Would you like to call ${widget.conversation.landlordName}?',
             style: TextStyle(
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
           actions: [
@@ -450,7 +450,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.greyColor),
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             ElevatedButton(
@@ -492,7 +492,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       builder: (BuildContext context) {
         return Container(
           padding: EdgeInsets.all(20),
-          color: AppTheme.whiteColor,
+          color: AppTheme.getCardColor(context),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -500,7 +500,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.greyColor.withOpacity(0.3),
+                  color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -554,12 +554,12 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     return ListTile(
       leading: Icon(
         icon,
-        color: isDestructive ? Colors.red : AppTheme.blackColor,
+        color: isDestructive ? Colors.red : AppTheme.getTextColor(context),
       ),
       title: Text(
         title,
         style: TextStyle(
-          color: isDestructive ? Colors.red : AppTheme.blackColor,
+          color: isDestructive ? Colors.red : AppTheme.getTextColor(context),
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -579,7 +579,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       builder: (BuildContext context) {
         return Container(
           padding: EdgeInsets.all(20),
-          color: AppTheme.whiteColor,
+          color: AppTheme.getCardColor(context),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -587,7 +587,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.greyColor.withOpacity(0.3),
+                  color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -597,7 +597,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
               SizedBox(height: 20),
@@ -665,7 +665,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
           Text(
             label,
             style: TextStyle(
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -680,21 +680,21 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
             'Block ${widget.conversation.landlordName}?',
             style: TextStyle(
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             'You won\'t receive messages from this person anymore.',
             style: TextStyle(
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
           actions: [
@@ -740,21 +740,21 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getCardColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
             'Report ${widget.conversation.landlordName}?',
             style: TextStyle(
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             'Help us understand what\'s happening. We\'ll review this conversation.',
             style: TextStyle(
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
           actions: [
@@ -762,7 +762,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.greyColor),
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             ElevatedButton(

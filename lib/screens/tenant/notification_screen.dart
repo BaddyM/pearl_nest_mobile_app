@@ -292,7 +292,7 @@ class _NotificationScreenState extends State<NotificationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: _buildAppBar(),
       body: _isLoading ? _buildLoadingState() : _buildNotificationContent(),
     );
@@ -300,7 +300,7 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       elevation: 0,
       automaticallyImplyLeading: false,
       title: Column(
@@ -311,7 +311,7 @@ class _NotificationScreenState extends State<NotificationScreen>
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           if (_unreadCount > 0)
@@ -319,7 +319,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               '$_unreadCount unread notifications',
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
                 fontWeight: FontWeight.normal,
               ),
             ),
@@ -369,7 +369,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppTheme.primaryblue
-                    : AppTheme.lightGreyColor,
+                    : AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected
@@ -382,7 +382,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                 style: TextStyle(
                   color: isSelected
                       ? AppTheme.whiteColor
-                      : AppTheme.greyColor,
+                      : AppTheme.getSecondaryTextColor(context),
                   fontWeight: isSelected
                       ? FontWeight.w600
                       : FontWeight.normal,
@@ -406,7 +406,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           Text(
             'Loading notifications...',
             style: TextStyle(
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
               fontSize: 16,
             ),
           ),
@@ -447,7 +447,7 @@ class _NotificationScreenState extends State<NotificationScreen>
             child: Icon(
               Icons.notifications_none_outlined,
               size: 60,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context)
             ),
           ),
           SizedBox(height: 24),
@@ -458,7 +458,7 @@ class _NotificationScreenState extends State<NotificationScreen>
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 8),
@@ -468,7 +468,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                 : 'Try selecting a different filter',
             style: TextStyle(
               fontSize: 16,
-              color: AppTheme.greyColor,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -491,7 +491,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         padding: EdgeInsets.only(right: 20),
         child: Icon(
           Icons.delete_outline,
-          color: AppTheme.whiteColor,
+          color: AppTheme.getCardColor(context),
           size: 24,
         ),
       ),
@@ -519,18 +519,18 @@ class _NotificationScreenState extends State<NotificationScreen>
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: notification.isRead 
-                ? AppTheme.whiteColor 
+                ? AppTheme.getCardColor(context) 
                 : AppTheme.primaryblue.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: notification.isRead
-                  ? AppTheme.greyColor.withValues(alpha: 0.2)
+                  ? AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)
                   : AppTheme.primaryblue.withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.blackColor.withValues(alpha: 0.05),
+                color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: Offset(0, 4),
               ),
@@ -567,7 +567,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                               fontWeight: notification.isRead 
                                   ? FontWeight.w600 
                                   : FontWeight.bold,
-                              color: AppTheme.blackColor,
+                              color: AppTheme.getTextColor(context),
                             ),
                           ),
                         ),
@@ -587,7 +587,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                       notification.message,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                         height: 1.4,
                       ),
                       maxLines: 2,
@@ -598,7 +598,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppTheme.lightGreyColor,
+                          color: AppTheme.getCardColor(context),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -615,7 +615,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                                 notification.propertyTitle!,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppTheme.blackColor,
+                                  color: AppTheme.getTextColor(context),
                                   fontWeight: FontWeight.w500,
                                 ),
                                 maxLines: 1,
@@ -630,7 +630,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                       _getTimeAgo(notification.timestamp),
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -640,10 +640,10 @@ class _NotificationScreenState extends State<NotificationScreen>
               PopupMenuButton<String>(
                 icon: Icon(
                   Icons.more_vert,
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                   size: 20,
                 ),
-                color: AppTheme.whiteColor,
+                color: AppTheme.getCardColor(context),
                 elevation: 8,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -664,10 +664,10 @@ class _NotificationScreenState extends State<NotificationScreen>
                       value: 'mark_read',
                       child: Row(
                         children: [
-                          Icon(Icons.mark_email_read, size: 18, color: AppTheme.blackColor,),
+                          Icon(Icons.mark_email_read, size: 18, color: AppTheme.getTextColor(context),),
                           SizedBox(width: 8),
                           Text('Mark as read',
-                          style: TextStyle(color: AppTheme.blackColor),),
+                          style: TextStyle(color: AppTheme.getTextColor(context)),),
                         ],
                       ),
                     ),

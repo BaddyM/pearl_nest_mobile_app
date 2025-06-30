@@ -106,7 +106,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -126,7 +126,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppTheme.whiteColor,
+            AppTheme.getBackgroundColor(context),
             AppTheme.primaryblue.withValues(alpha: 0.1),
           ],
         ),
@@ -136,7 +136,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -155,7 +155,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.blackColor,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -163,7 +163,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                       'Fill in the details below',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.greyColor,
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
@@ -210,11 +210,11 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 5,
             offset: Offset(0, 1),
           ),
@@ -232,7 +232,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
               ),
@@ -258,7 +258,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: AppTheme.greyColor.withValues(alpha: 0.2),
+              backgroundColor: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
               minHeight: 6,
             ),
@@ -329,11 +329,11 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   Widget _buildSectionCard(String title, IconData icon, Widget content) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.greyColor.withValues(alpha: 0.1),
+            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -367,7 +367,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
               ],
@@ -528,7 +528,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             hint: '0',
             icon: Icons.attach_money,
             keyboardType: TextInputType.number,
-            prefixText: '\$',
+            prefixText: 'UGX',
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter the price';
@@ -551,7 +551,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: AppTheme.getCardColor(context).withValues(alpha: -3),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey[300]!),
           ),
@@ -578,7 +578,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             child: Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey[300]!),
               ),
@@ -604,8 +604,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                           : 'Select available date',
                       style: TextStyle(
                         color: _availableFrom != null
-                            ? AppTheme.blackColor
-                            : Colors.grey[600],
+                            ? AppTheme.getTextColor(context)
+                            : AppTheme.getSecondaryTextColor(context),
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -628,7 +628,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   Widget _buildRadioTile(String title, AvailabilityStatus value, IconData icon) {
     return Theme(
       data: Theme.of(context).copyWith(
-        unselectedWidgetColor: Colors.black,
+        unselectedWidgetColor: AppTheme.blackColor,
       ),
       child: RadioListTile<AvailabilityStatus>(
         title: Row(
@@ -639,7 +639,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               title,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
           ],
@@ -679,7 +679,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                   'Select amenities available in your property:',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[700],
+                    color: AppTheme.getSecondaryTextColor(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -738,7 +738,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                   colors: [AppTheme.primaryblue, AppTheme.primaryblue.withOpacity(0.8)],
                 )
               : null,
-          color: isSelected ? null : Colors.grey[100],
+          color: isSelected ? null : AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
             color: isSelected ? AppTheme.primaryblue : Colors.grey[300]!,
@@ -767,7 +767,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             Text(
               amenity,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey[700],
+                color: isSelected ? Colors.white : AppTheme.getSecondaryTextColor(context),
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
@@ -797,7 +797,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                   'Add photos to showcase your property (max 10):',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[700],
+                    color: AppTheme.getSecondaryTextColor(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -807,7 +807,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         ),
         SizedBox(height: 16),
         SizedBox(
-          height: 140,
+          height: 100,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
@@ -862,7 +862,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w500,
-        color: AppTheme.blackColor,
+        color: AppTheme.getTextColor(context),
       ),
       decoration: InputDecoration(
         labelText: label,
@@ -900,15 +900,15 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           borderSide: BorderSide(color: Colors.red, width: 2),
         ),
         labelStyle: TextStyle(
-          color: Colors.grey[600],
+          color: AppTheme.getSecondaryTextColor(context),
           fontWeight: FontWeight.w500,
         ),
         hintStyle: TextStyle(
-          color: Colors.grey[400],
+          color: AppTheme.getSecondaryTextColor(context),
           fontSize: 14,
         ),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: AppTheme.getCardColor(context),
         contentPadding: EdgeInsets.symmetric(
           horizontal: icon != null ? 60 : 16,
           vertical: 16,
@@ -920,13 +920,13 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   Widget _buildPropertyTypeDropdown() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!, width: 1.5),
       ),
       child: DropdownButtonFormField<PropertyType>(
         value: _selectedType,
-        style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
+        style: TextStyle(color: AppTheme.getTextColor(context), fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           labelText: 'Property Type',
           prefixIcon: Container(
@@ -940,8 +940,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           ),
           border: InputBorder.none,
           labelStyle: TextStyle(
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
+            color: AppTheme.getSecondaryTextColor(context),
+            fontWeight: FontWeight.w600,
           ),
           contentPadding: EdgeInsets.symmetric(horizontal: 60, vertical: 16),
         ),
@@ -959,7 +959,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             _selectedType = value!;
           });
         },
-        dropdownColor: Colors.white,
+        dropdownColor: AppTheme.getCardColor(context),
         icon: Icon(Icons.keyboard_arrow_down, color: AppTheme.primaryblue),
       ),
     );
@@ -968,18 +968,18 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   Widget _buildPriceTypeDropdown() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!, width: 1.5),
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedPriceType,
-        style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
+        style: TextStyle(color: AppTheme.getTextColor(context), fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           labelText: 'Period',
           border: InputBorder.none,
           labelStyle: TextStyle(
-            color: Colors.grey[600],
+            color: AppTheme.getSecondaryTextColor(context),
             fontWeight: FontWeight.w500,
           ),
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -998,7 +998,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             _selectedPriceType = value!;
           });
         },
-        dropdownColor: Colors.white,
+        dropdownColor: AppTheme.getCardColor(context),
         icon: Icon(Icons.keyboard_arrow_down, color: AppTheme.primaryblue),
       ),
     );
@@ -1008,11 +1008,11 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     return GestureDetector(
       onTap: _showImageSelectionDialog,
       child: Container(
-        width: 120,
-        height: 120,
+        width: 100,
+        height: 100,
         margin: EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: AppTheme.primaryblue.withOpacity(0.3),
@@ -1059,7 +1059,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppTheme.getTextColor(context).withOpacity(0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -1184,7 +1184,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: EdgeInsets.all(20),
@@ -1195,7 +1195,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1205,7 +1205,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
             SizedBox(height: 20),
@@ -1318,8 +1318,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             colorScheme: ColorScheme.light(
               primary: AppTheme.primaryblue,
               onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppTheme.blackColor,
+              surface: AppTheme.getCardColor(context),
+              onSurface: AppTheme.getTextColor(context),
             ),
           ),
           child: child!,

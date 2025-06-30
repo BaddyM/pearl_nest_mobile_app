@@ -28,7 +28,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.lightGreyColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -587,7 +587,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
               height: 1.3,
             ),
           ),
@@ -612,7 +612,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
                     item,
                     style: TextStyle(
                       fontSize: 15,
-                      color: AppTheme.blackColor,
+                      color: AppTheme.getTextColor(context),
                       height: 1.5,
                     ),
                   ),
@@ -687,7 +687,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
                     item,
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppTheme.blackColor,
+                      color: AppTheme.getSecondaryTextColor(context),
                       height: 1.4,
                     ),
                   ),
@@ -735,7 +735,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
             'If you have any questions about this policy or our practices, please contact us:',
             style: TextStyle(
               fontSize: 15,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
               height: 1.5,
             ),
           ),
@@ -787,7 +787,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
                   value,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                     height: 1.4,
                   ),
                 ),

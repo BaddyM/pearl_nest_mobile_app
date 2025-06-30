@@ -69,7 +69,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
         title: Text(
           'Edit Profile',
@@ -128,7 +128,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 child: CircleAvatar(
                   radius: 60,
-                  backgroundColor: AppTheme.whiteColor,
+                  backgroundColor: AppTheme.getCardColor(context),
                   backgroundImage: _selectedImage != null
                       ? FileImage(_selectedImage!)
                       : (widget.user.profileImage != null
@@ -267,7 +267,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppTheme.blackColor,
+        color: AppTheme.getTextColor(context),
       ),
     );
   }
@@ -285,20 +285,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
-      style: TextStyle(color: AppTheme.blackColor),
+      style: TextStyle(color: AppTheme.getTextColor(context)),
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
         prefixIcon: Icon(icon, color: AppTheme.primaryblue),
-        labelStyle: TextStyle(color: AppTheme.greyColor),
-        hintStyle: TextStyle(color: AppTheme.greyColor.withOpacity(0.7)),
+        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+        hintStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.7)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.greyColor.withOpacity(0.3)),
+          borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.greyColor.withOpacity(0.3)),
+          borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -313,7 +313,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           borderSide: BorderSide(color: Colors.red, width: 2),
         ),
         filled: true,
-        fillColor: AppTheme.whiteColor,
+        fillColor: AppTheme.getCardColor(context),
       ),
       validator: validator,
     );
@@ -335,7 +335,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppTheme.blackColor,
+              color: AppTheme.getTextColor(context),
             ),
           ),
           SizedBox(height: 12),
@@ -372,13 +372,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppTheme.greyColor),
+        Icon(icon, size: 16, color: AppTheme.getSecondaryTextColor(context)),
         SizedBox(width: 8),
         Text(
           '$label: ',
           style: TextStyle(
             fontSize: 14,
-            color: AppTheme.greyColor,
+            color: AppTheme.getSecondaryTextColor(context),
           ),
         ),
         Text(
@@ -386,7 +386,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: valueColor ?? AppTheme.blackColor,
+            color: valueColor ?? AppTheme.getTextColor(context),
           ),
         ),
       ],
@@ -432,7 +432,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void _showImagePickerDialog() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -448,7 +448,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
                 SizedBox(height: 20),
@@ -511,7 +511,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: isDestructive ? Colors.red : AppTheme.blackColor,
+              color: isDestructive ? Colors.red : AppTheme.getSecondaryTextColor(context),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -580,7 +580,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getBackgroundColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -590,13 +590,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(width: 8),
               Text(
                 'Success',
-                style: TextStyle(color: AppTheme.blackColor),
+                style: TextStyle(color: AppTheme.getTextColor(context)),
               ),
             ],
           ),
           content: Text(
             message,
-            style: TextStyle(color: AppTheme.greyColor),
+            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
           ),
           actions: [
             TextButton(
@@ -619,7 +619,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.whiteColor,
+          backgroundColor: AppTheme.getBackgroundColor(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -629,13 +629,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(width: 8),
               Text(
                 'Error',
-                style: TextStyle(color: AppTheme.blackColor),
+                style: TextStyle(color: AppTheme.getTextColor(context)),
               ),
             ],
           ),
           content: Text(
             message,
-            style: TextStyle(color: AppTheme.greyColor),
+            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
           ),
           actions: [
             TextButton(

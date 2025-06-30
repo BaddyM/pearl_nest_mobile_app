@@ -31,7 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(24.0),
@@ -50,7 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Text(
                 'Join PearlNest',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -58,7 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Text(
                 'Create your account to get started',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -71,13 +71,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     TextFormField(
                       controller: _nameController,
-                      style: TextStyle(color: AppTheme.blackColor),
+                      style: TextStyle(color: AppTheme.getTextColor(context),),
                       decoration: InputDecoration(
                         labelText: 'Full Name',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context),),
                         prefixIcon: Icon(Icons.person_outline, color: AppTheme.primaryblue),
                         filled: true,
-                        fillColor: AppTheme.lightGreyColor,
+                        fillColor: AppTheme.getCardColor(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -98,15 +98,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     TextFormField(
                       controller: _passwordController,
-                      style: TextStyle(color: AppTheme.blackColor),
+                      style: TextStyle(color: AppTheme.getTextColor(context),),
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context),),
                         prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primaryblue),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                           onPressed: () {
                             setState(() {
@@ -115,7 +115,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           },
                         ),
                         filled: true,
-                        fillColor: AppTheme.lightGreyColor,
+                        fillColor: AppTheme.getCardColor(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -140,15 +140,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     TextFormField(
                       controller: _confirmPasswordController,
-                      style: TextStyle(color: AppTheme.blackColor),
+                      style: TextStyle(color: AppTheme.getTextColor(context),),
                       decoration: InputDecoration(
                         labelText: 'Confirm Password',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context),),
                         prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primaryblue),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                           onPressed: () {
                             setState(() {
@@ -157,7 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           },
                         ),
                         filled: true,
-                        fillColor: AppTheme.lightGreyColor,
+                        fillColor: AppTheme.getCardColor(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -195,15 +195,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             checkColor: Colors.white,
                             fillColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
                               if (states.contains(MaterialState.disabled)) {
-                                return AppTheme.greyColor.withOpacity(0.3);
+                                return AppTheme.getSecondaryTextColor(context).withOpacity(0.3);
                               }
                               if (states.contains(MaterialState.selected)) {
                                 return AppTheme.primaryblue;
                               }
-                              return Colors.white;
+                              return AppTheme.getCardColor(context);
                             }),
                             side: BorderSide(
-                              color: AppTheme.greyColor.withOpacity(0.5),
+                              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
                               width: 2,
                             ),
                             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -215,7 +215,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             padding: const EdgeInsets.only(top: 8.0),
                             child: RichText(
                               text: TextSpan(
-                                style: TextStyle(color: AppTheme.greyColor, fontSize: 14),
+                                style: TextStyle(color: AppTheme.getSecondaryTextColor(context), fontSize: 14),
                                 children: [
                                   TextSpan(text: 'I agree to the '),
                                   TextSpan(
@@ -283,7 +283,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       children: [
                         Text(
                           "Already have an account? ",
-                          style: TextStyle(color: AppTheme.greyColor),
+                          style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         ),
                         TextButton(
                           onPressed: () {

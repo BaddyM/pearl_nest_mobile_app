@@ -48,6 +48,11 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
     'Kampala': ['Central Division', 'Kawempe Division', 'Makindye Division', 'Nakawa Division', 'Rubaga Division'],
     'Wakiso': ['Busukuma', 'Katabi', 'Wakiso', 'Ssisa', 'Gombe'],
     'Mukono': ['Mukono TC', 'Ntenjeru', 'Kyampisi', 'Nama', 'Ntunda'],
+    'Jinja': ['Jinja 1', 'Jinja 2', 'Jinja 3', 'Jinja 4', 'Jinja 5'],
+    'Mbarara': ['Mbarara 1', 'Mbarara 2', 'Mbarara 3', 'Mbarara 4', 'Mbarara 5'],
+    'Gulu': ['Gulu 1', 'Gulu 2', 'Gulu 3', 'Gulu 4', 'Gulu 5'],
+    'Lira': ['Lira 1', 'Lira 2', 'Lira 3', 'Lira 4', 'Lira 5'],
+    'Masaka': ['Masaka 1', 'Masaka 2', 'Masaka 3', 'Masaka 4', 'Masaka 5'],
   };
 
   final List<String> _specializationOptions = [
@@ -62,7 +67,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -165,37 +170,33 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                         title: 'Business Address',
                         icon: Icons.location_on,
                         children: [
-                          Row(
+                          Column(
                             children: [
-                              Expanded(
-                                child: _buildDropdownField(
-                                  value: _selectedDistrict,
-                                  label: 'District',
-                                  icon: Icons.map,
-                                  items: _districts,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _selectedDistrict = value;
-                                      _selectedParish = null;
-                                    });
-                                  },
-                                ),
+                              _buildDropdownField(
+                                value: _selectedDistrict,
+                                label: 'District',
+                                icon: Icons.map,
+                                items: _districts,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedDistrict = value;
+                                    _selectedParish = null;
+                                  });
+                                },
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _buildDropdownField(
-                                  value: _selectedParish,
-                                  label: 'Parish',
-                                  icon: Icons.location_city,
-                                  items: _selectedDistrict != null
-                                      ? _parishes[_selectedDistrict!] ?? []
-                                      : [],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _selectedParish = value;
-                                    });
-                                  },
-                                ),
+                              const SizedBox(height: 16),
+                              _buildDropdownField(
+                                value: _selectedParish,
+                                label: 'Parish',
+                                icon: Icons.location_city,
+                                items: _selectedDistrict != null
+                                    ? _parishes[_selectedDistrict!] ?? []
+                                    : [],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedParish = value;
+                                  });
+                                },
                               ),
                             ],
                           ),
@@ -324,17 +325,17 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.white.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
         border: Border.all(
-          color: AppTheme.greyColor.withOpacity(0.1),
+          color: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
         ),
       ),
       child: Column(
@@ -358,7 +359,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -384,22 +385,22 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       controller: controller,
       maxLines: maxLines,
       onChanged: onChanged,
-      style: const TextStyle(color: AppTheme.blackColor),
+      style: TextStyle(color: AppTheme.getTextColor(context)),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: const TextStyle(color: AppTheme.greyColor),
-        hintStyle: TextStyle(color: AppTheme.greyColor.withOpacity(0.7)),
+        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+        hintStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.7)),
         prefixIcon: Icon(icon, color: AppTheme.primaryblue),
         filled: true,
-        fillColor: AppTheme.lightGreyColor.withOpacity(0.5),
+        fillColor: AppTheme.getBackgroundColor(context).withOpacity(0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.greyColor.withOpacity(0.3)),
+          borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.greyColor.withOpacity(0.3)),
+          borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -425,17 +426,17 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       value: value,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppTheme.greyColor),
+        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
         prefixIcon: Icon(icon, color: AppTheme.primaryblue),
         filled: true,
-        fillColor: AppTheme.lightGreyColor.withOpacity(0.5),
+        fillColor: AppTheme.getBackgroundColor(context).withOpacity(0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.greyColor.withOpacity(0.3)),
+          borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.greyColor.withOpacity(0.3)),
+          borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -449,8 +450,8 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         );
       }).toList(),
       onChanged: onChanged,
-      style: const TextStyle(color: AppTheme.blackColor),
-      dropdownColor: AppTheme.whiteColor,
+      style: TextStyle(color: AppTheme.getTextColor(context)),
+      dropdownColor: AppTheme.getCardColor(context),
     );
   }
 
@@ -458,10 +459,10 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Select your property specializations:',
           style: TextStyle(
-            color: AppTheme.blackColor,
+            color: AppTheme.getTextColor(context),
             fontWeight: FontWeight.w500,
             fontSize: 16,
           ),
@@ -487,12 +488,12 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppTheme.primaryblue
-                      : AppTheme.lightGreyColor.withOpacity(0.5),
+                      : AppTheme.getBackgroundColor(context).withOpacity(0.5),
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
                     color: isSelected
                         ? AppTheme.primaryblue
-                        : AppTheme.greyColor.withOpacity(0.3),
+                        : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                   ),
                   boxShadow: isSelected ? [
                     BoxShadow(
@@ -515,7 +516,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                     Text(
                       specialization,
                       style: TextStyle(
-                        color: isSelected ? AppTheme.whiteColor : AppTheme.blackColor,
+                        color: isSelected ? AppTheme.whiteColor : AppTheme.getTextColor(context),
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
@@ -567,12 +568,12 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
             decoration: BoxDecoration(
               color: isUploaded
                   ? AppTheme.primaryblue.withOpacity(0.05)
-                  : AppTheme.lightGreyColor.withOpacity(0.5),
+                  : AppTheme.getBackgroundColor(context).withOpacity(0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isUploaded
                     ? AppTheme.primaryblue.withOpacity(0.3)
-                    : AppTheme.greyColor.withOpacity(0.3),
+                    : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
               ),
             ),
             child: Row(
@@ -582,12 +583,12 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                   decoration: BoxDecoration(
                     color: isUploaded
                         ? AppTheme.primaryblue
-                        : AppTheme.greyColor.withOpacity(0.3),
+                        : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     isUploaded ? Icons.check_circle : Icons.upload_file,
-                    color: isUploaded ? AppTheme.whiteColor : AppTheme.greyColor,
+                    color: isUploaded ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
                     size: 20,
                   ),
                 ),
@@ -598,8 +599,8 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                     children: [
                       Text(
                         documentType,
-                        style: const TextStyle(
-                          color: AppTheme.blackColor,
+                        style: TextStyle(
+                          color: AppTheme.getTextColor(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -607,8 +608,8 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                         const SizedBox(height: 4),
                         Text(
                           fileName,
-                          style: const TextStyle(
-                            color: AppTheme.greyColor,
+                          style:TextStyle(
+                            color: AppTheme.getSecondaryTextColor(context),
                             fontSize: 12,
                           ),
                         ),
@@ -728,7 +729,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.whiteColor,
+        backgroundColor: AppTheme.getCardColor(context),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -747,20 +748,20 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Application Submitted!',
               style: TextStyle(
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
                 fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Your landlord application has been submitted successfully. You will receive a notification once it\'s reviewed.\n\nExpected review time: 2-3 business days.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: AppTheme.greyColor,
+            color: AppTheme.getSecondaryTextColor(context),
             height: 1.5,
           ),
         ),

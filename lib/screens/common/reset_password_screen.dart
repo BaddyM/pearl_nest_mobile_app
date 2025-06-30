@@ -25,7 +25,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.whiteColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(24.0),
@@ -45,7 +45,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               Text(
                 'Create New Password',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -53,7 +53,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               Text(
                 'Your new password must be different from your previous password.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -65,15 +65,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   children: [
                     TextFormField(
                       controller: _passwordController,
-                      style: TextStyle(color: AppTheme.blackColor),
+                      style: TextStyle(color: AppTheme.getTextColor(context),),
                       decoration: InputDecoration(
                         labelText: 'New Password',
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primaryblue),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                           onPressed: () {
                             setState(() {
@@ -82,7 +82,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           },
                         ),
                         filled: true,
-                        fillColor: AppTheme.lightGreyColor,
+                        fillColor: AppTheme.getCardColor(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -110,15 +110,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                     TextFormField(
                       controller: _confirmPasswordController,                      
-                      style: TextStyle(color: AppTheme.blackColor),
+                      style: TextStyle(color: AppTheme.getTextColor(context),),
                       decoration: InputDecoration(
                         labelText: 'Confirm New Password',                        
-                        labelStyle: TextStyle(color: AppTheme.greyColor),
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primaryblue),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                            color: AppTheme.greyColor,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                           onPressed: () {
                             setState(() {
@@ -127,7 +127,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           },
                         ),
                         filled: true,
-                        fillColor: AppTheme.lightGreyColor,
+                        fillColor: AppTheme.getCardColor(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -154,7 +154,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       width: double.infinity,
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppTheme.lightGreyColor,
+                        color: AppTheme.getCardColor(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -164,7 +164,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             'Password must contain:',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.blackColor,
+                              color: AppTheme.getTextColor(context),
                               fontSize: 14,
                             ),
                           ),
@@ -224,14 +224,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           Icon(
             Icons.check_circle_outline,
             size: 14,
-            color: AppTheme.greyColor,
+            color: AppTheme.getSecondaryTextColor(context),
           ),
           SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
               style: TextStyle(
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
                 fontSize: 13,
               ),
             ),
@@ -261,7 +261,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            backgroundColor: AppTheme.whiteColor,
+            backgroundColor: AppTheme.getBackgroundColor(context),
             contentPadding: EdgeInsets.all(24),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -284,7 +284,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.blackColor,
+                    color: AppTheme.getTextColor(context),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -292,7 +292,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 Text(
                   'Your password has been successfully reset. You can now sign in with your new password.',
                   style: TextStyle(
-                    color: AppTheme.greyColor,
+                    color: AppTheme.getSecondaryTextColor(context),
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
