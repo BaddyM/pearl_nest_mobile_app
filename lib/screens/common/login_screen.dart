@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/screens/common/register_screen.dart';
@@ -276,47 +277,58 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _isLoading = true;
       });
+
       try {
-        User user;
-        
-        if (isLandlordCredentials(_emailController.text, _passwordController.text)) {
-          user = createLandlordUser();
+        final result = await AuthService.login(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+
+        if (result['success']) {
+          User user = result['user'];
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Welcome, ${user.name}!',
+                style: TextStyle(color: AppTheme.lightGreyColor),
+              ),
+              backgroundColor: AppTheme.primaryblue,
+              duration: Duration(milliseconds: 1500),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+            ),
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(user: user),
+            ),
+          );
         } else {
-          user = User(
-            id: 'user_${DateTime.now().millisecondsSinceEpoch}',
-            name: _emailController.text.split('@')[0],
-            email: _emailController.text.trim(),
-            phone: '+1234567890', 
-            userType: UserType.tenant,
-            profileImage: null,
-            favoriteProperties: [],
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result['message'] ?? 'Login failed. Please try again.',
+                style: TextStyle(color: AppTheme.lightGreyColor),
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(milliseconds: 2000),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+            ),
           );
         }
-
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Welcome, ${user.name}!', style: TextStyle(color: AppTheme.lightGreyColor),),
-            backgroundColor: AppTheme.primaryblue,
-            duration: Duration(milliseconds: 500),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(user: user),
-          ),
-        );
-      }
-      catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login failed. Please try again.', style: TextStyle(color: AppTheme.lightGreyColor),),
+            content: Text(
+              'Network error. Please check your connection.',
+              style: TextStyle(color: AppTheme.lightGreyColor),
+            ),
             backgroundColor: Colors.red,
-            duration: Duration(milliseconds: 500),
+            duration: Duration(milliseconds: 2000),
             behavior: SnackBarBehavior.floating,
             margin: EdgeInsets.all(16),
           ),
@@ -334,26 +346,5 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  static bool isLandlordCredentials(String email, String password) {
-    const landlordEmail = 'vawzen@gmail.com';
-    const landlordPassword = 'vawzen123';
-    
-    return email.toLowerCase().trim() == landlordEmail && password == landlordPassword;
-  }
-
-  static User createLandlordUser() {
-    return User(
-      id: 'landlord_001',
-      name: 'vawzen',
-      email: 'vawzen@gmail.com',
-      phone: '+256700123456',
-      userType: UserType.landlord,
-      profileImage: null,
-      favoriteProperties: [],
-      createdAt: DateTime.now().subtract(Duration(days: 30)),
-      updatedAt: DateTime.now(),
-    );
   }
 }

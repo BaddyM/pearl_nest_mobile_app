@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -249,29 +250,68 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
         _isLoading = true;
       });
 
-      await Future.delayed(Duration(seconds: 2));
+      try {
+        final result = await AuthService.register(
+          name: widget.name,
+          email: _emailController.text.trim(),
+          password: widget.password,
+          phone: _phoneController.text.trim(),
+          userType: widget.userType.toString().split('.').last.toUpperCase(),
+        );
 
-      setState(() {
-        _isLoading = false;
-      });
+        if (result['success']) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Registration completed successfully! Welcome, ${result['user'].name}!',
+                style: TextStyle(color: AppTheme.lightGreyColor),
+              ),
+              backgroundColor: AppTheme.primaryblue,
+              duration: Duration(milliseconds: 2000),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+            ),
+          );
 
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Registration completed successfully! Please sign in.', style: TextStyle(color: AppTheme.lightGreyColor),),
-          backgroundColor: AppTheme.primaryblue,
-            duration: Duration(milliseconds: 500),
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LoginScreen(),
+            ),
+            (route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result['message'] ?? 'Registration failed. Please try again.',
+                style: TextStyle(color: AppTheme.lightGreyColor),
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(milliseconds: 2000),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Something went wrong. Please try again.',
+              style: TextStyle(color: AppTheme.lightGreyColor),
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(milliseconds: 2000),
             behavior: SnackBarBehavior.floating,
             margin: EdgeInsets.all(16),
-        ),
-      );
-
-      Navigator.pushAndRemoveUntil(
-        // ignore: use_build_context_synchronously
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-        (route) => false,
-      );
+          ),
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

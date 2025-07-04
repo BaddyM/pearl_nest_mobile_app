@@ -123,7 +123,7 @@ class ContactDeveloperScreen extends StatelessWidget {
             'WhatsApp Support',
             '+256 757 919472',
             'Message us during working days',
-            () => _launchUrl('https://wa.me/message/DIESFSD2QMI5H1'),
+            () => _launchUrl('https://wa.me/256757919472'),
           ),
           SizedBox(height: 12),
           _buildContactItem(
