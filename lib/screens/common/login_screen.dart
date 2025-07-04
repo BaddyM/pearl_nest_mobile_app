@@ -4,7 +4,6 @@ import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/screens/common/register_screen.dart';
-import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
