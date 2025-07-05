@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'backend_url';
+  static const String baseUrl = 'https://admin.pearlnestestates.com';
   
   static Future<http.Response> post(String endpoint, Map<String, dynamic> data) async {
     try {

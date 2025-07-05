@@ -1,5 +1,5 @@
 class AppConfig {
-  static const String baseUrl = 'backend_url';
+  static const String baseUrl = 'https://admin.pearlnestestates.com';
 
   static const String devBaseUrl = 'http://localhost:3000/api';
 
