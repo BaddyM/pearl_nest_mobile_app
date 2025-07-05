@@ -36,7 +36,7 @@ class ApiClient {
       final prefs = await SharedPreferences.getInstance();
       _authToken = prefs.getString('auth_token');
       if (_authToken != null) {
-        debugPrint('ApiClient: Loaded saved auth token');
+        debugPrint('ApiClient: Loaded saved auth token - Full Token: $_authToken');
       }
     } catch (e) {
       debugPrint('ApiClient: Error loading saved token: $e');
@@ -45,7 +45,11 @@ class ApiClient {
 
   static void setAuthToken(String? token) {
     _authToken = token;
-    debugPrint('ApiClient: Auth token ${token != null ? 'set' : 'cleared'}');
+    if (token != null) {
+      debugPrint('ApiClient: Auth token set - Full Token: $token');
+    } else {
+      debugPrint('ApiClient: Auth token cleared');
+    }
   }
 
   static String? get currentAuthToken => _authToken;
@@ -71,12 +75,16 @@ class ApiClient {
     final baseUrl = _dio?.options.baseUrl ?? 'unknown';
     final fullUrl = '$baseUrl$endpoint';
     debugPrint('ApiClient: [$method] $fullUrl');
+    
+    // Log current auth token (full token for debugging)
+    if (_authToken != null) {
+      debugPrint('ApiClient: Using token: $_authToken');
+    } else {
+      debugPrint('ApiClient: No auth token set');
+    }
+    
     if (headers != null && headers.isNotEmpty) {
-      final safeHeaders = Map<String, String>.from(headers);
-      if (safeHeaders.containsKey('Authorization')) {
-        safeHeaders['Authorization'] = 'Bearer ***';
-      }
-      debugPrint('ApiClient: Headers: $safeHeaders');
+      debugPrint('ApiClient: Headers: $headers');
     }
     if (data != null && data.isNotEmpty) {
       debugPrint('ApiClient: Request data: $data');
@@ -282,6 +290,29 @@ class ApiClient {
       final response = await _dio!.post(
         endpoint,
         data: formData,
+        options: Options(headers: headers),
+      );
+
+      _logResponse(response);
+      return response;
+    } on DioException catch (e) {
+      _logError(e);
+      throw Exception(_handleError(e));
+    }
+  }
+
+  static Future<Response> patch(String endpoint, Map<String, dynamic> data) async {
+    if (_dio == null) {
+      throw Exception('ApiClient not initialized. Call ApiClient.initialize() first.');
+    }
+
+    try {
+      final headers = _getHeaders();
+      _logRequest('PATCH', endpoint, data: data, headers: headers);
+
+      final response = await _dio!.patch(
+        endpoint,
+        data: data,
         options: Options(headers: headers),
       );
 

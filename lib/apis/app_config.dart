@@ -12,7 +12,9 @@ class AppConfig {
   static const String loginEndpoint = '/user/login';
   static const String registerEndpoint = '/user/register';
   static const String profileEndpoint = '/user/userProfile/fetch';
-  static const String propertiesEndpoint = '/properties';
+  static const String updateProfileEndpoint = '/user/userProfile/update';
+  static const String propertiesEndpoint = '/property/list';
+  static const String propertySearchEndpoint = '/property/search';
   static const String favoritesEndpoint = '/favorites';
 
   static const int requestTimeout = 30; 

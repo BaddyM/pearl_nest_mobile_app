@@ -10,6 +10,10 @@ class User {
   final bool isVerified;
   final DateTime createdAt;
   final List<String> favoriteProperties;
+  final String? bio;
+  final bool pushNotifications;
+  final bool smsNotifications;
+  final bool emailNotifications;
 
   User({
     required this.id,
@@ -22,6 +26,10 @@ class User {
     required this.createdAt,
     this.favoriteProperties = const [],
     required DateTime updatedAt,
+    this.bio,
+    this.pushNotifications = true,
+    this.smsNotifications = true,
+    this.emailNotifications = true,
   });
 
   // Add this factory constructor
@@ -30,9 +38,9 @@ class User {
       id: json['id'] ?? json['_id'] ?? '',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
+      phone: json['phone'] ?? json['contact'] ?? '',
       profileImage: json['profileImage'],
-      userType: _parseUserType(json['userType'] ?? 'TENANT'),
+      userType: _parseUserType(json['userType'] ?? json['role'] ?? 'TENANT'),
       isVerified: json['isVerified'] ?? false,
       createdAt: json['createdAt'] != null 
           ? DateTime.parse(json['createdAt']) 
@@ -43,6 +51,10 @@ class User {
       updatedAt: json['updatedAt'] != null 
           ? DateTime.parse(json['updatedAt']) 
           : DateTime.now(),
+      bio: json['bio'],
+      pushNotifications: json['pushNotifications'] ?? true,
+      smsNotifications: json['smsNotifications'] ?? true,
+      emailNotifications: json['emailNotifications'] ?? true,
     );
   }
 
@@ -63,12 +75,16 @@ class User {
       'id': id,
       'name': name,
       'email': email,
-      'phone': phone,
+      'contact': phone,
       'profileImage': profileImage,
-      'userType': userType.toString().split('.').last.toUpperCase(),
+      'role': userType.toString().split('.').last.toUpperCase(),
       'isVerified': isVerified,
       'createdAt': createdAt.toIso8601String(),
       'favoriteProperties': favoriteProperties,
+      'bio': bio,
+      'pushNotifications': pushNotifications,
+      'smsNotifications': smsNotifications,
+      'emailNotifications': emailNotifications,
     };
   }
 }

@@ -632,4 +632,64 @@ class AuthService {
       return null;
     }
   }
+
+  // Update user profile
+  static Future<Map<String, dynamic>> updateProfile({
+    required String name,
+    required String email,
+    required String phone,
+    String? bio,
+    String? profilePicture,
+    bool? pushNotifications,
+    bool? smsNotifications,
+    bool? emailNotifications,
+  }) async {
+    try {
+      // Input validation
+      if (name.trim().isEmpty) throw ValidationException('Name is required');
+      if (email.trim().isEmpty) throw ValidationException('Email is required');
+      if (phone.trim().isEmpty) throw ValidationException('Phone number is required');
+
+      final requestData = <String, dynamic>{
+        'name': name.trim(),
+        'email': email.trim().toLowerCase(),
+        'contact': phone.trim(),
+      };
+
+      // Add optional fields if provided
+      if (bio != null) requestData['bio'] = bio;
+      if (profilePicture != null) requestData['profilePicture'] = profilePicture;
+      if (pushNotifications != null) requestData['pushNotifications'] = pushNotifications;
+      if (smsNotifications != null) requestData['smsNotifications'] = smsNotifications;
+      if (emailNotifications != null) requestData['emailNotifications'] = emailNotifications;
+
+      _logRequest('/user/userProfile/update', requestData);
+
+      final response = await ApiClient.patch('/user/userProfile/update', requestData);
+      _logResponse('/user/userProfile/update', response);
+
+      if (response.statusCode == 200) {
+        final responseData = _validateResponse(response, requiredFields: ['data']);
+        
+        // Update stored user data
+        final updatedUser = User.fromJson(responseData['data']);
+        await saveUserData(updatedUser);
+        
+        return {
+          'success': true,
+          'user': updatedUser,
+          'message': responseData['message'] ?? 'Profile updated successfully',
+          'statusCode': response.statusCode,
+        };
+      } else {
+        final errorData = response.data;
+        throw AuthException(
+          errorData['message'] ?? 'Profile update failed',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      return _handleError(e, 'profile update');
+    }
+  }
 }
