@@ -19,6 +19,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   
@@ -90,6 +91,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your full name';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16),
+
+                    TextFormField(
+                      controller: _emailController,
+                      style: TextStyle(color: AppTheme.getTextColor(context),),
+                      decoration: InputDecoration(
+                        labelText: 'Email Address',
+                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context),),
+                        prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryblue),
+                        filled: true,
+                        fillColor: AppTheme.getCardColor(context),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
+                        ),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your email address';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Please enter a valid email address';
                         }
                         return null;
                       },
@@ -330,6 +362,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         MaterialPageRoute(
           builder: (context) => CompleteRegistrationScreen(
             name: _nameController.text,
+            email: _emailController.text,
             password: _passwordController.text,
             userType: _selectedUserType,
           ),
@@ -341,6 +374,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();

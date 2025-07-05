@@ -536,7 +536,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _hasChanges = true;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Image picker error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error picking image: $e');
     }
   }
@@ -567,7 +569,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _isLoading = false;
       });
 
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Profile update error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
       setState(() {
         _isLoading = false;
       });

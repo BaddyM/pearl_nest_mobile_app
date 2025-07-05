@@ -1,11 +1,10 @@
 
 import 'package:flutter/material.dart';
-import 'package:pearlnest/apis/auth_service.dart';
-import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/providers/auth_provider.dart';
 import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/screens/common/register_screen.dart';
-import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -278,18 +277,17 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       try {
-        final result = await AuthService.login(
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final result = await authProvider.login(
           _emailController.text.trim(),
           _passwordController.text,
         );
 
         if (result['success']) {
-          User user = result['user'];
-          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Welcome, ${user.name}!',
+                'Welcome, ${authProvider.user?.name ?? 'User'}!',
                 style: TextStyle(color: AppTheme.lightGreyColor),
               ),
               backgroundColor: AppTheme.primaryblue,
@@ -298,13 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
               margin: EdgeInsets.all(16),
             ),
           );
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HomeScreen(user: user),
-            ),
-          );
+          // Navigation is now handled by main.dart based on auth state
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -319,7 +311,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
+        // Log the error with stack trace for debugging
+        debugPrint('Login error: $e');
+        debugPrint('Stack trace: $stackTrace');
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

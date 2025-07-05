@@ -1,19 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:pearlnest/apis/auth_service.dart';
-import 'package:pearlnest/screens/common/login_screen.dart';
+import 'package:pearlnest/providers/auth_provider.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class CompleteRegistrationScreen extends StatefulWidget {
   final String name;
+  final String email;
   final String password;
   final UserType userType;
 
   const CompleteRegistrationScreen({
     super.key,
     required this.name,
+    required this.email,
     required this.password,
     required this.userType,
   });
@@ -25,7 +27,6 @@ class CompleteRegistrationScreen extends StatefulWidget {
 
 class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   
@@ -117,14 +118,14 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
                     SizedBox(height: 32),
 
                     TextFormField(
-                      controller: _emailController,
+                      initialValue: widget.email,
                       style: TextStyle(color: AppTheme.getTextColor(context)),
                       decoration: InputDecoration(
                         labelText: 'Email',
                         labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryblue),
                         filled: true,
-                        fillColor: AppTheme.getCardColor(context),
+                        fillColor: AppTheme.getCardColor(context).withOpacity(0.7),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -135,6 +136,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
                         ),
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      readOnly: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
@@ -251,9 +253,10 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
       });
 
       try {
-        final result = await AuthService.register(
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final result = await authProvider.register(
           name: widget.name,
-          email: _emailController.text.trim(),
+          email: widget.email,
           password: widget.password,
           phone: _phoneController.text.trim(),
           userType: widget.userType.toString().split('.').last.toUpperCase(),
@@ -263,7 +266,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Registration completed successfully! Welcome, ${result['user'].name}!',
+                'Registration completed successfully! Welcome!',
                 style: TextStyle(color: AppTheme.lightGreyColor),
               ),
               backgroundColor: AppTheme.primaryblue,
@@ -272,14 +275,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
               margin: EdgeInsets.all(16),
             ),
           );
-
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => LoginScreen(),
-            ),
-            (route) => false,
-          );
+          // Navigation is now handled by main.dart based on auth state
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -294,7 +290,10 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
             ),
           );
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
+        debugPrint('Complete registration error: $e');
+        debugPrint('Stack trace: $stackTrace');
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -317,7 +316,6 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
 
   @override
   void dispose() {
-    _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
   }

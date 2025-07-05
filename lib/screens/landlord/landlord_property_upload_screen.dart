@@ -1292,7 +1292,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           _selectedImages.add(File(image.path));
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Image picker error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error picking image: $e', style: TextStyle(color: AppTheme.lightGreyColor),),
@@ -1459,7 +1462,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
       Navigator.pop(context, newProperty);
 
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Property upload error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error uploading property: $e', style: TextStyle(color: AppTheme.lightGreyColor),),

@@ -592,7 +592,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       } else {
         _showErrorDialog('Could not launch phone dialer');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Phone call error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error making phone call: $e');
     }
   }
@@ -611,7 +613,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         await Clipboard.setData(ClipboardData(text: 'pearlestates@support.com'));
         _showSuccessDialog('Email address copied to clipboard');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Email launch error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error opening email client: $e');
     }
   }
@@ -625,7 +629,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       } else {
         _showErrorDialog('Could not launch website');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Website launch error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error opening website: $e');
     }
   }
@@ -651,7 +657,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       _showSuccessDialog(
         'Your message has been sent successfully! We\'ll get back to you within 24 hours.',
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Message submission error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Failed to send message. Please try again.');
     } finally {
       setState(() {

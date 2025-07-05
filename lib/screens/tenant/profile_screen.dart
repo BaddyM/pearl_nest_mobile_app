@@ -4,6 +4,7 @@ import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/mock_booking_data.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/providers/auth_provider.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_application_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
@@ -14,6 +15,7 @@ import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
 import 'package:pearlnest/screens/tenant/settings_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   final User user;
@@ -582,36 +584,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.getCardColor(context),
-          title: Text(
-            'Logout',
-            style: TextStyle(color: AppTheme.getTextColor(context)),
-          ),
-          content: Text(
-            'Are you sure you want to logout?',
-            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Cancel',
+        return Consumer<AuthProvider>(
+          builder: (context, authProvider, child) {
+            return AlertDialog(
+              backgroundColor: AppTheme.getCardColor(context),
+              title: Text(
+                'Logout',
+                style: TextStyle(color: AppTheme.getTextColor(context)),
+              ),
+              content: Text(
+                'Are you sure you want to logout?',
                 style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Logout',
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                  ),
+                ),
+                TextButton(
+                  onPressed: authProvider.isLoading ? null : () async {
+                    Navigator.of(context).pop();
+                    await authProvider.logout();
+                    
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Logged out successfully',
+                            style: TextStyle(color: AppTheme.whiteColor),
+                          ),
+                          backgroundColor: AppTheme.primaryblue,
+                          duration: Duration(milliseconds: 1500),
+                          behavior: SnackBarBehavior.floating,
+                          margin: EdgeInsets.all(16),
+                        ),
+                      );
+                    }
+                  },
+                  child: authProvider.isLoading
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Logout',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

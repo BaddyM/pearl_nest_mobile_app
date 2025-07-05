@@ -20,6 +20,8 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _logoAnimation;
   late Animation<double> _titleAnimation;
   late Animation<double> _subtitleAnimation;
+  
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -69,18 +71,21 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _startAnimations() async {
+    if (!mounted || _isDisposed) return;
     _logoController.forward();
     
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted || _isDisposed) return;
     _titleController.forward();
 
     await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted || _isDisposed) return;
     _subtitleController.forward();
   }
 
   _navigateToNextScreen() async {
     await Future.delayed(const Duration(seconds: 4));
-    if (mounted) {
+    if (mounted && !_isDisposed) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const OnboardingScreen()),
@@ -90,6 +95,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _isDisposed = true;
     _logoController.dispose();
     _titleController.dispose();
     _subtitleController.dispose();

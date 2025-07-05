@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
+import 'package:pearlnest/apis/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
@@ -701,7 +702,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _handlePasswordChange(String currentPassword, String newPassword, String confirmPassword) {
+  void _handlePasswordChange(String currentPassword, String newPassword, String confirmPassword) async {
     if (currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
       _showSnackBar('Please fill all fields', Colors.red);
       return;
@@ -718,7 +719,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     Navigator.of(context).pop();
-    _showSnackBar('Password changed successfully', AppTheme.primaryblue);
+    
+    // Show loading
+    _showSnackBar('Changing password...', AppTheme.primaryblue);
+    
+    try {
+      final result = await AuthService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      
+      if (result['success'] == true) {
+        _showSnackBar('Password changed successfully', AppTheme.primaryblue);
+      } else {
+        // Handle specific error codes
+        final code = result['code'];
+        final message = result['message'] ?? 'Password change failed';
+        
+        if (code == 'TOKEN_EXPIRED') {
+          _showSnackBar('Session expired. Please login again.', Colors.red);
+          // TODO: Navigate to login screen or trigger re-authentication
+          // You can use Provider.of<AuthProvider>(context, listen: false).logout();
+        } else if (code == 'NO_INTERNET') {
+          _showSnackBar('No internet connection. Please try again.', Colors.red);
+        } else {
+          _showSnackBar(message, Colors.red);
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Password change error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      _showSnackBar('Network error. Please try again.', Colors.red);
+    }
   }
 
   void _showSnackBar(String message, Color backgroundColor) {
