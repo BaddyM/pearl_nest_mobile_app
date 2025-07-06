@@ -40,7 +40,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - .env
     - assets/images/img3.jpg
     - assets/images/img4.jpg
     - assets/images/img5.jpg
