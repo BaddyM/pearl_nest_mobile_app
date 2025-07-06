@@ -608,22 +608,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 TextButton(
                   onPressed: authProvider.isLoading ? null : () async {
-                    Navigator.of(context).pop();
-                    await authProvider.logout();
+                    // Store the navigator and scaffold messenger before popping
+                    final navigator = Navigator.of(context);
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
                     
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Logged out successfully',
-                            style: TextStyle(color: AppTheme.whiteColor),
+                    // Pop the dialog first
+                    navigator.pop();
+                    
+                    // Show loading indicator on the main screen if needed
+                    try {
+                      await authProvider.logout();
+                      
+                      // Check if widget is still mounted before showing snackbar
+                      if (mounted) {
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Logged out successfully',
+                              style: TextStyle(color: AppTheme.whiteColor),
+                            ),
+                            backgroundColor: AppTheme.primaryblue,
+                            duration: Duration(milliseconds: 1500),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.all(16),
                           ),
-                          backgroundColor: AppTheme.primaryblue,
-                          duration: Duration(milliseconds: 1500),
-                          behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.all(16),
-                        ),
-                      );
+                        );
+                      }
+                    } catch (e) {
+                      // Handle logout error if needed
+                      if (mounted) {
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Logout failed: ${e.toString()}',
+                              style: TextStyle(color: AppTheme.whiteColor),
+                            ),
+                            backgroundColor: Colors.red,
+                            duration: Duration(milliseconds: 2000),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.all(16),
+                          ),
+                        );
+                      }
                     }
                   },
                   child: authProvider.isLoading

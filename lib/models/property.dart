@@ -144,6 +144,7 @@ class Property {
     );
   }
 
+  // Getter to convert PropertyType enum to string for UI display
   String get propertyTypeString {
     switch (type) {
       case PropertyType.airbnb:
@@ -169,5 +170,141 @@ class Property {
       case PropertyType.room:
         return 'Room';
     }
+  }
+
+  // Factory constructor for creating Property from JSON
+  factory Property.fromJson(Map<String, dynamic> json) {
+    return Property(
+      id: json['id'] ?? json['_id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      type: _parsePropertyType(json['type'] ?? 'apartment'),
+      price: (json['price'] ?? 0).toDouble(),
+      priceType: json['priceType'] ?? 'monthly',
+      location: json['location'] ?? '',
+      address: json['address'] ?? '',
+      latitude: (json['latitude'] ?? 0.0).toDouble(),
+      longitude: (json['longitude'] ?? 0.0).toDouble(),
+      images: json['images'] != null ? List<String>.from(json['images']) : [],
+      amenities: json['amenities'] != null ? List<String>.from(json['amenities']) : [],
+      bedrooms: json['bedrooms'] ?? 0,
+      bathrooms: json['bathrooms'] ?? 0,
+      area: (json['area'] ?? 0).toDouble(),
+      landlordId: json['landlordId'] ?? json['ownerId'] ?? '',
+      landlordName: json['landlordName'] ?? json['ownerName'] ?? '',
+      landlordPhone: json['landlordPhone'] ?? json['ownerPhone'] ?? '',
+      landlordEmail: json['landlordEmail'] ?? json['ownerEmail'] ?? '',
+      status: _parsePropertyStatus(json['status'] ?? 'available'),
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      reviewCount: json['reviewCount'] ?? 0,
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt']) 
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null 
+          ? DateTime.parse(json['updatedAt']) 
+          : DateTime.now(),
+      isFeatured: json['isFeatured'] ?? false,
+      isVerified: json['isVerified'] ?? false,
+      availabilityStatus: _parseAvailabilityStatus(json['availabilityStatus'] ?? 'availableNow'),
+      availableFrom: json['availableFrom'] != null 
+          ? DateTime.parse(json['availableFrom']) 
+          : null,
+    );
+  }
+
+  // Helper method to parse PropertyType from string
+  static PropertyType _parsePropertyType(String typeString) {
+    switch (typeString.toLowerCase()) {
+      case 'airbnb':
+        return PropertyType.airbnb;
+      case 'hostel':
+        return PropertyType.hostel;
+      case 'apartment':
+        return PropertyType.apartment;
+      case 'fullhouse':
+      case 'full_house':
+        return PropertyType.fullHouse;
+      case 'land':
+        return PropertyType.land;
+      case 'incompletehouse':
+      case 'incomplete_house':
+        return PropertyType.incompleteHouse;
+      case 'house':
+        return PropertyType.house;
+      case 'studio':
+        return PropertyType.studio;
+      case 'condo':
+        return PropertyType.condo;
+      case 'townhouse':
+        return PropertyType.townhouse;
+      case 'room':
+        return PropertyType.room;
+      default:
+        return PropertyType.apartment;
+    }
+  }
+
+  // Helper method to parse PropertyStatus from string
+  static PropertyStatus _parsePropertyStatus(String statusString) {
+    switch (statusString.toLowerCase()) {
+      case 'available':
+        return PropertyStatus.available;
+      case 'booked':
+        return PropertyStatus.booked;
+      case 'pending':
+        return PropertyStatus.pending;
+      case 'unavailable':
+        return PropertyStatus.unavailable;
+      default:
+        return PropertyStatus.available;
+    }
+  }
+
+  // Helper method to parse AvailabilityStatus from string
+  static AvailabilityStatus _parseAvailabilityStatus(String statusString) {
+    switch (statusString.toLowerCase()) {
+      case 'availablenow':
+      case 'available_now':
+        return AvailabilityStatus.availableNow;
+      case 'availablelater':
+      case 'available_later':
+        return AvailabilityStatus.availableLater;
+      default:
+        return AvailabilityStatus.availableNow;
+    }
+  }
+
+  // Convert Property to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'type': type.toString().split('.').last,
+      'price': price,
+      'priceType': priceType,
+      'location': location,
+      'address': address,
+      'latitude': latitude,
+      'longitude': longitude,
+      'images': images,
+      'amenities': amenities,
+      'bedrooms': bedrooms,
+      'bathrooms': bathrooms,
+      'area': area,
+      'landlordId': landlordId,
+      'landlordName': landlordName,
+      'landlordPhone': landlordPhone,
+      'landlordEmail': landlordEmail,
+      'status': status.toString().split('.').last,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'isFeatured': isFeatured,
+      'isVerified': isVerified,
+      'availabilityStatus': availabilityStatus.toString().split('.').last,
+      'availableFrom': availableFrom?.toIso8601String(),
+    };
   }
 }

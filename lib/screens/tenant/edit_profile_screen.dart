@@ -3,9 +3,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/providers/auth_provider.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final User user;
@@ -30,6 +33,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
   bool _hasChanges = false;
+  
+  // Notification settings
+  bool _pushNotifications = true;
+  bool _smsNotifications = true;
+  bool _emailNotifications = true;
 
   @override
   void initState() {
@@ -41,7 +49,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController.text = widget.user.name;
     _emailController.text = widget.user.email;
     _phoneController.text = widget.user.phone;
-    _bioController.text = widget.user.id;
+    _bioController.text = widget.user.bio ?? '';
+    
+    // Initialize notification settings
+    _pushNotifications = widget.user.pushNotifications;
+    _smsNotifications = widget.user.smsNotifications;
+    _emailNotifications = widget.user.emailNotifications;
     
     _nameController.addListener(_onFieldChanged);
     _emailController.addListener(_onFieldChanged);
@@ -252,6 +265,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               validator: null,
             ),
             SizedBox(height: 24),
+            _buildSectionTitle('Notification Preferences'),
+            SizedBox(height: 16),
+            _buildNotificationSettings(),
+            SizedBox(height: 24),
             _buildAccountInfoSection(),
             SizedBox(height: 32),
             _buildSaveButton(),
@@ -316,6 +333,102 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         fillColor: AppTheme.getCardColor(context),
       ),
       validator: validator,
+    );
+  }
+
+  Widget _buildNotificationSettings() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildNotificationTile(
+            'Push Notifications',
+            'Receive notifications on your device',
+            Icons.notifications,
+            _pushNotifications,
+            (value) => setState(() {
+              _pushNotifications = value;
+              _onFieldChanged();
+            }),
+          ),
+          _buildNotificationTile(
+            'SMS Notifications',
+            'Receive notifications via text message',
+            Icons.sms,
+            _smsNotifications,
+            (value) => setState(() {
+              _smsNotifications = value;
+              _onFieldChanged();
+            }),
+          ),
+          _buildNotificationTile(
+            'Email Notifications',
+            'Receive notifications via email',
+            Icons.email,
+            _emailNotifications,
+            (value) => setState(() {
+              _emailNotifications = value;
+              _onFieldChanged();
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationTile(
+    String title,
+    String subtitle,
+    IconData icon,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: AppTheme.primaryblue,
+            size: 24,
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: AppTheme.primaryblue,
+          ),
+        ],
+      ),
     );
   }
 
@@ -561,13 +674,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      await Future.delayed(Duration(seconds: 2));
-      _showSuccessDialog('Profile updated successfully!');
-      
-      setState(() {
-        _hasChanges = false;
-        _isLoading = false;
-      });
+      // Call the AuthService to update profile
+      final result = await AuthService.updateProfile(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+        pushNotifications: _pushNotifications,
+        smsNotifications: _smsNotifications,
+        emailNotifications: _emailNotifications,
+      );
+
+      if (result['success'] == true) {
+        // Update the AuthProvider with the new user data
+        if (mounted) {
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          // The AuthService already saves the updated user data, 
+          // but we should update the provider as well
+          await authProvider.refreshUserData();
+        }
+
+        _showSuccessDialog('Profile updated successfully!');
+        
+        setState(() {
+          _hasChanges = false;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorDialog(result['message'] ?? 'Failed to update profile. Please try again.');
+      }
 
     } catch (e, stackTrace) {
       debugPrint('Profile update error: $e');

@@ -200,6 +200,20 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Refresh user data from storage
+  Future<void> refreshUserData() async {
+    try {
+      final user = await AuthService.getCurrentUser();
+      if (user != null) {
+        _user = user;
+        notifyListeners();
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Failed to refresh user data: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
+  }
+
   Future<void> _clearSession() async {
     try {
       _user = null;
