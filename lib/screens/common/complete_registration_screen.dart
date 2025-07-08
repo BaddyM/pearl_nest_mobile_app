@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:pearlnest/providers/auth_provider.dart';
+import 'package:pearlnest/blocs/auth/auth_bloc.dart';
+import 'package:pearlnest/blocs/auth/auth_event.dart';
+import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
-import 'package:provider/provider.dart';
 
 class CompleteRegistrationScreen extends StatefulWidget {
   final String name;
@@ -31,23 +33,57 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
   final ImagePicker _picker = ImagePicker();
   
   File? _profileImage;
-  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Image.asset(
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Registration completed successfully! Welcome!',
+                style: TextStyle(color: AppTheme.lightGreyColor),
+              ),
+              backgroundColor: AppTheme.primaryblue,
+              duration: Duration(milliseconds: 2000),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+            ),
+          );
+          // Navigation is now handled by main.dart based on auth state
+        } else if (state is AuthFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: TextStyle(color: AppTheme.lightGreyColor),
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(milliseconds: 2000),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          final isLoading = state is AuthLoading;
+          
+          return Scaffold(
+            backgroundColor: AppTheme.getBackgroundColor(context),
+            body: SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Image.asset(
                   "assets/icon.png",
                   height: 150,
                   width: 150,
@@ -180,7 +216,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleCompleteRegistration,
+                        onPressed: isLoading ? null : _handleCompleteRegistration,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryblue,
                           foregroundColor: AppTheme.whiteColor,
@@ -189,7 +225,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: _isLoading
+                        child: isLoading
                             ? CircularProgressIndicator(color: AppTheme.whiteColor)
                             : Text(
                                 'Complete Registration',
@@ -204,6 +240,9 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
           ),
         ),
       ),
+    );
+  }
+    )
     );
   }
 
@@ -248,69 +287,14 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
 
   void _handleCompleteRegistration() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      try {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final result = await authProvider.register(
-          name: widget.name,
-          email: widget.email,
-          password: widget.password,
-          phone: _phoneController.text.trim(),
-          userType: widget.userType.toString().split('.').last.toUpperCase(),
-        );
-
-        if (result['success']) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Registration completed successfully! Welcome!',
-                style: TextStyle(color: AppTheme.lightGreyColor),
-              ),
-              backgroundColor: AppTheme.primaryblue,
-              duration: Duration(milliseconds: 2000),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
-          );
-          // Navigation is now handled by main.dart based on auth state
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result['message'] ?? 'Registration failed. Please try again.',
-                style: TextStyle(color: AppTheme.lightGreyColor),
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(milliseconds: 2000),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
-          );
-        }
-      } catch (e, stackTrace) {
-        debugPrint('Complete registration error: $e');
-        debugPrint('Stack trace: $stackTrace');
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Something went wrong. Please try again.',
-              style: TextStyle(color: AppTheme.lightGreyColor),
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(milliseconds: 2000),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      final authBloc = BlocProvider.of<AuthBloc>(context);
+      authBloc.add(AuthRegisterRequested(
+        name: widget.name,
+        email: widget.email,
+        password: widget.password,
+        phone: _phoneController.text.trim(),
+        userType: widget.userType.toString().split('.').last.toUpperCase(),
+      ));
     }
   }
 

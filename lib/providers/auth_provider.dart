@@ -71,14 +71,30 @@ class AuthProvider extends ChangeNotifier {
       final result = await AuthService.login(email, password);
       
       if (result['success'] == true) {
-        _user = result['user']; // This might be null if profile fetch failed in AuthService
+        _user = result['user'];
         _token = result['token'];
-        _status = AuthStatus.authenticated;
         
         // Set token in ApiClient for future requests
         ApiClient.setAuthToken(_token);
         
+        // Update status and notify listeners with post-frame callback
+        _status = AuthStatus.authenticated;
+        
+        debugPrint('AuthProvider: Login successful, setting status to authenticated');
+        debugPrint('AuthProvider: User: ${_user?.name}');
+        debugPrint('AuthProvider: Status: $_status');
+        debugPrint('AuthProvider: About to notify listeners');
+        
+        // Use post-frame callback to ensure UI is ready for navigation
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+          debugPrint('AuthProvider: Listeners notified via post-frame callback');
+        });
+        
+        // Also notify immediately for synchronous checks
         notifyListeners();
+        debugPrint('AuthProvider: Immediate notification sent');
+        
         return {
           'success': true,
           'message': result['message'] ?? 'Login successful',
