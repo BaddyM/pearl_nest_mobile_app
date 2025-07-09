@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/api_client.dart';
@@ -393,6 +394,156 @@ class PropertyService {
       debugPrint('🏠 Property cache cleared');
     } catch (e) {
       debugPrint('❌ Error clearing property cache: $e');
+    }
+  }
+
+  /// Upload a new property
+  static Future<Map<String, dynamic>> uploadProperty({
+    required String propertyName,
+    required String propertyType,
+    required String location,
+    required double price,
+    required String amenities,
+    required String safetyAndSecurity,
+    required String description,
+    required String nearbyPlaces,
+    required int numberOfBeds,
+    required int numberOfBathrooms,
+    required String areaMeasurement,
+    required String neighborhood,
+    required String fullAddress,
+    required String propertyMap,
+    required String period,
+    bool featured = false,
+    bool isVerified = false,
+    bool availability = true,
+    List<File>? images,
+    String? userId,
+  }) async {
+    try {
+      // Create FormData for multipart request
+      final formData = FormData();
+
+      // Add text fields with proper data types
+      formData.fields.addAll([
+        MapEntry('userId', userId ?? ''), // Add userId field
+        MapEntry('propertyName', propertyName),
+        MapEntry('propertyType', propertyType),
+        MapEntry('location', location),
+        MapEntry('price', price.round().toString()), // Ensure it's an integer string
+        MapEntry('amenities', amenities),
+        MapEntry('safetyAndSecurity', safetyAndSecurity),
+        MapEntry('description', description),
+        MapEntry('nearbyPlaces', nearbyPlaces),
+        MapEntry('numberOfBeds', numberOfBeds.toString()),
+        MapEntry('numberOfBathrooms', numberOfBathrooms.toString()),
+        MapEntry('areaMeasurement', areaMeasurement),
+        MapEntry('neighborhood', neighborhood),
+        MapEntry('fullAddress', fullAddress),
+        MapEntry('propertyMap', propertyMap),
+        MapEntry('period', period),
+        MapEntry('featured', featured ? 'true' : 'false'),
+        MapEntry('isVerified', isVerified ? 'true' : 'false'),
+        MapEntry('availability', availability ? 'true' : 'false'),
+      ]);
+
+      // Add image files (limit to 10 images)
+      if (images != null && images.isNotEmpty) {
+        // Enforce limit of 10 images
+        final limitedImages = images.take(10).toList();
+        
+        for (int i = 0; i < limitedImages.length; i++) {
+          final file = limitedImages[i];
+          final fileName = file.path.split('/').last;
+          formData.files.add(MapEntry(
+            'image',
+            await MultipartFile.fromFile(
+              file.path,
+              filename: fileName,
+            ),
+          ));
+        }
+      }
+
+      _logRequest('/property/upload', {
+        'propertyName': propertyName,
+        'propertyType': propertyType,
+        'location': location,
+        'price': price,
+        'amenities': amenities,
+        'safetyAndSecurity': safetyAndSecurity,
+        'description': description,
+        'nearbyPlaces': nearbyPlaces,
+        'numberOfBeds': numberOfBeds,
+        'numberOfBathrooms': numberOfBathrooms,
+        'areaMeasurement': areaMeasurement,
+        'neighborhood': neighborhood,
+        'fullAddress': fullAddress,
+        'propertyMap': propertyMap,
+        'period': period,
+        'featured': featured,
+        'isVerified': isVerified,
+        'availability': availability,
+        'images_count': images != null ? (images.length > 10 ? 10 : images.length) : 0,
+      });
+
+      final response = await ApiClient.postMultipart('/property/upload', formData);
+      
+      _logResponse('/property/upload', response);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Property uploaded successfully',
+          'data': response.data,
+        };
+      } else {
+        throw PropertyException(
+          'Failed to upload property: ${response.statusMessage}',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      _logError('upload property', e);
+      
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw NetworkException('Connection timeout. Please check your internet connection.');
+      }
+      
+      if (e.response?.statusCode == 400) {
+        final errorData = e.response?.data;
+        String errorMessage = 'Invalid property data provided';
+        
+        if (errorData != null && errorData['message'] != null) {
+          if (errorData['message'] is List) {
+            // Handle list of error messages
+            final messages = errorData['message'] as List;
+            errorMessage = messages.join(', ');
+          } else {
+            errorMessage = errorData['message'].toString();
+          }
+        }
+        
+        throw ValidationException(errorMessage);
+      }
+      
+      if (e.response?.statusCode == 401) {
+        throw PropertyException('Authentication required', statusCode: 401);
+      }
+      
+      if (e.response?.statusCode == 403) {
+        throw PropertyException('Not authorized to upload properties', statusCode: 403);
+      }
+      
+      throw PropertyException(
+        e.response?.data?['message'] ?? 'Failed to upload property',
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      _logError('upload property', e);
+      throw PropertyException('Unexpected error: $e');
     }
   }
 }

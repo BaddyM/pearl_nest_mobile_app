@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
-import 'package:pearlnest/providers/auth_provider.dart';
 import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/blocs/property/property_bloc.dart';
+import 'package:pearlnest/blocs/property_upload/property_upload_bloc.dart';
 import 'package:pearlnest/screens/common/splash_screen.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
@@ -16,8 +16,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load environment variables with error handling
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('Warning: Could not load .env file: $e');
+    // Continue without .env file - app should still work with default values
+  }
   
   // Initialize API client
   await ApiClient.initialize();
@@ -38,12 +43,13 @@ class MyApp extends StatelessWidget {
         BlocProvider<PropertyBloc>(
           create: (context) => PropertyBloc(),
         ),
+        BlocProvider<PropertyUploadBloc>(
+          create: (context) => PropertyUploadBloc(),
+        ),
       ],
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (context) => ThemeProvider()),
-          // Keep AuthProvider for backward compatibility during transition
-          ChangeNotifierProvider(create: (context) => AuthProvider()),
         ],
         child: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
@@ -68,17 +74,16 @@ class MyApp extends StatelessWidget {
   Widget _buildHome(AuthState state) {
     debugPrint('Building home with auth state: ${state.runtimeType}');
     
-    switch (state.runtimeType) {
-      case AuthInitial:
-      case AuthInitializing:
+    switch (state) {
+      case AuthInitial _:
+      case AuthInitializing _:
         debugPrint('Showing splash screen');
         return const SplashScreen();
-      case AuthSuccess:
-        final successState = state as AuthSuccess;
+      case AuthSuccess successState:
         debugPrint('Showing home screen for user: ${successState.user.name}');
         return HomeScreen(user: successState.user);
-      case AuthUnauthenticated:
-      case AuthFailure:
+      case AuthUnauthenticated _:
+      case AuthFailure _:
         debugPrint('Showing login screen');
         return const LoginScreen();
       default:

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pearlnest/providers/auth_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pearlnest/blocs/auth/auth_bloc.dart';
+import 'package:pearlnest/blocs/auth/auth_event.dart';
+import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
-import 'package:provider/provider.dart';
 
 class LogoutButton extends StatelessWidget {
   final String? customText;
@@ -19,10 +21,12 @@ class LogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        final isLoading = state is AuthLoading;
+        
         return ElevatedButton.icon(
-          onPressed: authProvider.isLoading ? null : () => _showLogoutDialog(context, authProvider),
+          onPressed: isLoading ? null : () => _showLogoutDialog(context),
           style: ElevatedButton.styleFrom(
             backgroundColor: customColor ?? Colors.red.withOpacity(0.1),
             foregroundColor: customColor ?? Colors.red,
@@ -32,7 +36,7 @@ class LogoutButton extends StatelessWidget {
             ),
             elevation: 0,
           ),
-          icon: authProvider.isLoading
+          icon: isLoading
               ? SizedBox(
                   width: 16,
                   height: 16,
@@ -43,7 +47,7 @@ class LogoutButton extends StatelessWidget {
                 )
               : Icon(customIcon ?? Icons.logout, size: 20),
           label: Text(
-            authProvider.isLoading ? 'Logging out...' : (customText ?? 'Logout'),
+            isLoading ? 'Logging out...' : (customText ?? 'Logout'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -54,7 +58,7 @@ class LogoutButton extends StatelessWidget {
     );
   }
 
-  void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
+  void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -95,7 +99,7 @@ class LogoutButton extends StatelessWidget {
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                await _handleLogout(context, authProvider);
+                await _handleLogout(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
@@ -115,9 +119,9 @@ class LogoutButton extends StatelessWidget {
     );
   }
 
-  Future<void> _handleLogout(BuildContext context, AuthProvider authProvider) async {
+  Future<void> _handleLogout(BuildContext context) async {
     try {
-      await authProvider.logout();
+      context.read<AuthBloc>().add(AuthLogoutRequested());
       
       // Show success message
       if (context.mounted) {
@@ -171,8 +175,10 @@ class LogoutMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        final isLoading = state is AuthLoading;
+        
         return ListTile(
           leading: Icon(Icons.logout, color: Colors.red),
           title: Text(
@@ -182,9 +188,9 @@ class LogoutMenuItem extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          onTap: authProvider.isLoading 
+          onTap: isLoading 
               ? null 
-              : () => LogoutButton()._showLogoutDialog(context, authProvider),
+              : () => LogoutButton()._showLogoutDialog(context),
         );
       },
     );

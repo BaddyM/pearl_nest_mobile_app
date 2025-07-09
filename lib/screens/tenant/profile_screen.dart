@@ -1,10 +1,13 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pearlnest/blocs/auth/auth_bloc.dart';
+import 'package:pearlnest/blocs/auth/auth_event.dart';
+import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/mock_booking_data.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
-import 'package:pearlnest/providers/auth_provider.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_application_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
@@ -584,8 +587,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
+        return BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            final isLoading = state is AuthLoading;
+            
             return AlertDialog(
               backgroundColor: AppTheme.getCardColor(context),
               title: Text(
@@ -607,7 +612,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 TextButton(
-                  onPressed: authProvider.isLoading ? null : () async {
+                  onPressed: isLoading ? null : () async {
                     // Store the navigator and scaffold messenger before popping
                     final navigator = Navigator.of(context);
                     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -615,9 +620,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Pop the dialog first
                     navigator.pop();
                     
-                    // Show loading indicator on the main screen if needed
                     try {
-                      await authProvider.logout();
+                      context.read<AuthBloc>().add(AuthLogoutRequested());
                       
                       // Check if widget is still mounted before showing snackbar
                       if (mounted) {
@@ -652,7 +656,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }
                     }
                   },
-                  child: authProvider.isLoading
+                  child: isLoading
                       ? SizedBox(
                           width: 16,
                           height: 16,

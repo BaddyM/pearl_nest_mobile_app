@@ -3,11 +3,15 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/blocs/property_upload/property_upload_bloc.dart';
+import 'package:pearlnest/blocs/property_upload/property_upload_event.dart';
+import 'package:pearlnest/blocs/property_upload/property_upload_state.dart';
 
 class LandlordPropertyUploadScreen extends StatefulWidget {
   final User user;
@@ -35,6 +39,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   final _areaController = TextEditingController();
   final _bedroomsController = TextEditingController();
   final _bathroomsController = TextEditingController();
+  final _neighborhoodController = TextEditingController();
+  final _safetySecurityController = TextEditingController();
+  final _nearbyPlacesController = TextEditingController();
+  final _propertyMapController = TextEditingController();
   
   PropertyType _selectedType = PropertyType.apartment;
   String _selectedPriceType = 'per month';
@@ -42,14 +50,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   DateTime? _availableFrom;
   final List<String> _selectedAmenities = [];
   final List<File> _selectedImages = [];
-  bool _isLoading = false;
-  PropertyType? _selectedPropertyType;
-  final int _selectedBedrooms = 0;
-  final int _selectedBathrooms = 0;
-  AvailabilityStatus? _selectedAvailabilityStatus;
-  DateTime? _availableFromDate;
-  double? _selectedLatitude;
-  double? _selectedLongitude;
 
   final List<String> _priceTypes = [
     'per month',
@@ -100,21 +100,85 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     _areaController.dispose();
     _bedroomsController.dispose();
     _bathroomsController.dispose();
+    _neighborhoodController.dispose();
+    _safetySecurityController.dispose();
+    _nearbyPlacesController.dispose();
+    _propertyMapController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(child: _buildBody()),
-          ],
-        ),
-      ),
+    return BlocConsumer<PropertyUploadBloc, PropertyUploadState>(
+      listener: (context, state) {
+        if (state is PropertyUploadSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      state.message,
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              duration: Duration(milliseconds: 1500),
+              backgroundColor: AppTheme.primaryblue,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          );
+          Navigator.pop(context, true);
+        } else if (state is PropertyUploadError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              duration: Duration(milliseconds: 2000),
+              margin: EdgeInsets.all(16),
+            ),
+          );
+        } else if (state is PropertyUploadValidationError) {
+          // Show validation errors
+          final firstError = state.fieldErrors.values.first;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                firstError,
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              duration: Duration(milliseconds: 2000),
+              margin: EdgeInsets.all(16),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: AppTheme.getBackgroundColor(context),
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(child: _buildBody()),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -195,7 +259,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
   Widget _buildProgressIndicator() {
     int completedSections = 0;
-    int totalSections = 7;
+    int totalSections = 10; // Updated to include new sections
     
     if (_titleController.text.isNotEmpty) completedSections++;
     if (_priceController.text.isNotEmpty) completedSections++;
@@ -204,6 +268,9 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     if (_selectedAmenities.isNotEmpty) completedSections++;
     if (_selectedImages.isNotEmpty) completedSections++;
     if (_descriptionController.text.isNotEmpty) completedSections++;
+    if (_neighborhoodController.text.isNotEmpty) completedSections++;
+    if (_safetySecurityController.text.isNotEmpty) completedSections++;
+    if (_propertyMapController.text.isNotEmpty) completedSections++;
     
     double progress = completedSections / totalSections;
     
@@ -292,6 +359,24 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               'Location',
               Icons.location_on_outlined,
               _buildLocationSection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
+              'Property Map',
+              Icons.map_outlined,
+              _buildPropertyMapSection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
+              'Safety & Security',
+              Icons.security_outlined,
+              _buildSafetySecuritySection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
+              'Nearby Places',
+              Icons.place_outlined,
+              _buildNearbyPlacesSection(),
             ),
             SizedBox(height: 20),
             _buildSectionCard(
@@ -389,6 +474,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _locationController.clear();
       _bedroomsController.clear();
       _descriptionController.clear();
+      _neighborhoodController.clear();
+      _safetySecurityController.clear();
+      _nearbyPlacesController.clear();
+      _propertyMapController.clear();
       _selectedAmenities.clear();
       _selectedImages.clear();
     });
@@ -490,12 +579,25 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       children: [
         _buildTextField(
           controller: _locationController,
-          label: 'Location/Neighborhood',
+          label: 'Location/Area',
           hint: 'e.g., Downtown, University District',
           icon: Icons.location_city,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please enter the location';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: 20),
+        _buildTextField(
+          controller: _neighborhoodController,
+          label: 'Neighborhood',
+          hint: 'Specific neighborhood name',
+          icon: Icons.location_on,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter the neighborhood';
             }
             return null;
           },
@@ -1105,62 +1207,68 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   }
 
   Widget _buildSubmitButton() {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppTheme.primaryblue, AppTheme.primaryblue.withOpacity(0.8)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryblue.withOpacity(0.3),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _submitProperty,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
+    return BlocBuilder<PropertyUploadBloc, PropertyUploadState>(
+      builder: (context, state) {
+        final isLoading = state is PropertyUploadLoading;
+        
+        return Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppTheme.primaryblue, AppTheme.primaryblue.withOpacity(0.8)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
             borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: _isLoading
-            ? SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: 2,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.upload,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Upload Property',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryblue.withOpacity(0.3),
+                blurRadius: 12,
+                offset: Offset(0, 4),
               ),
-      ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: isLoading ? null : _submitProperty,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: isLoading
+                ? SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.upload,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Upload Property',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 
@@ -1364,15 +1472,15 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     }
   }
 
-  Future<void> _submitProperty() async {
+  void _submitProperty() {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please fill in all required fields', style: TextStyle(color: AppTheme.lightGreyColor),),
+          content: Text('Please fill in all required fields', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          duration: Duration(milliseconds: 500),
+          duration: Duration(milliseconds: 1500),
           margin: EdgeInsets.all(16),
         ),
       );
@@ -1382,11 +1490,25 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     if (_selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please add at least one photo', style: TextStyle(color: AppTheme.lightGreyColor),),
+          content: Text('Please add at least one photo', style: TextStyle(color: Colors.white)),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          duration: Duration(milliseconds: 500),
+          duration: Duration(milliseconds: 1500),
           backgroundColor: AppTheme.primaryblue,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedImages.length > 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Maximum 10 photos allowed. Please remove ${_selectedImages.length - 10} photo(s)', style: TextStyle(color: Colors.white)),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: Duration(milliseconds: 2000),
+          backgroundColor: Colors.red,
           margin: EdgeInsets.all(16),
         ),
       );
@@ -1396,8 +1518,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     if (_availabilityStatus == AvailabilityStatus.availableLater && _availableFrom == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select an available date', style: TextStyle(color: AppTheme.lightGreyColor),),
-          duration: Duration(milliseconds: 500),
+          content: Text('Please select an available date', style: TextStyle(color: Colors.white)),
+          duration: Duration(milliseconds: 1500),
           backgroundColor: AppTheme.primaryblue,
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.all(16),
@@ -1407,79 +1529,179 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    // Convert PropertyType enum to string
+    String propertyTypeString = _getPropertyTypeDisplayName(_selectedType);
 
-    final newProperty = Property(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim(),
-      price: double.parse(_priceController.text),
-      priceType: _selectedPriceType,
-      location: _locationController.text.trim(),
-      address: _addressController.text.trim(),
-      type: _selectedPropertyType ?? _selectedType,
-      bedrooms: _selectedBedrooms,
-      bathrooms: _selectedBathrooms,
-      area: double.parse(_areaController.text),
-      amenities: List.from(_selectedAmenities),
-      images: _selectedImages.map((file) => file.path).toList(),
-      landlordId: widget.landlord.id,
-      landlordName: widget.user.name,
-      landlordPhone: widget.user.phone,
-      landlordEmail: widget.user.email,
-      rating: 0.0,
-      reviewCount: 0,
-      status: PropertyStatus.available,
-      availabilityStatus: _selectedAvailabilityStatus ?? _availabilityStatus,
-      availableFrom: _availableFromDate ?? _availableFrom,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      latitude: _selectedLatitude ?? 0.0,
-      longitude: _selectedLongitude ?? 0.0,
+    // Convert amenities array to comma-separated string
+    String amenitiesString = _selectedAmenities.join(', ');
+
+    // Convert area to string
+    String areaMeasurementString = '${_areaController.text} sq meters';
+
+    // Convert availability status to boolean
+    bool availability = _availabilityStatus == AvailabilityStatus.availableNow;
+
+    // Dispatch the upload event to the BLoC
+    context.read<PropertyUploadBloc>().add(
+      PropertyUploadRequested(
+        userId: widget.user.id, // Add userId from the current user
+        propertyName: _titleController.text.trim(),
+        propertyType: propertyTypeString,
+        location: _locationController.text.trim(),
+        price: double.parse(_priceController.text),
+        amenities: amenitiesString,
+        safetyAndSecurity: _safetySecurityController.text.trim(),
+        description: _descriptionController.text.trim(),
+        nearbyPlaces: _nearbyPlacesController.text.trim(),
+        numberOfBeds: int.parse(_bedroomsController.text),
+        numberOfBathrooms: int.parse(_bathroomsController.text),
+        areaMeasurement: areaMeasurementString,
+        neighborhood: _neighborhoodController.text.trim(),
+        fullAddress: _addressController.text.trim(),
+        propertyMap: _propertyMapController.text.trim(),
+        period: _selectedPriceType,
+        featured: false, // Default value
+        isVerified: false, // Default value
+        availability: availability,
+        images: _selectedImages,
+      ),
     );
+  }
 
-    try {
-      await Future.delayed(Duration(seconds: 2));
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
+  Widget _buildPropertyMapSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryblue.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Property uploaded successfully!', style: TextStyle(color: AppTheme.lightGreyColor),),
+              Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Add a Google Maps embed link to help tenants locate your property:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.getSecondaryTextColor(context),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Steps to get iframe:\n1. Open Google Maps\n2. Search for your property address\n3. Click "Share" → "Embed a map"\n4. Choose size (Medium recommended)\n5. Copy the iframe code and paste below',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.getSecondaryTextColor(context),
+                  height: 1.4,
+                ),
+              ),
             ],
           ),
-          duration: Duration(milliseconds: 500),
-          backgroundColor: AppTheme.primaryblue,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-      );
-
-      Navigator.pop(context, newProperty);
-
-    } catch (e, stackTrace) {
-      debugPrint('Property upload error: $e');
-      debugPrint('Stack trace: $stackTrace');
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error uploading property: $e', style: TextStyle(color: AppTheme.lightGreyColor),),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          duration: Duration(milliseconds: 500),
-          margin: EdgeInsets.all(16),
+        SizedBox(height: 16),
+        _buildTextField(
+          controller: _propertyMapController,
+          label: 'Property Map (iframe)',
+          hint: '<iframe src="https://www.google.com/maps/embed?..." width="600" height="450"...></iframe>',
+          icon: Icons.map,
+          maxLines: 4,
+          validator: (value) {
+            if (value != null && value.isNotEmpty) {
+              if (!value.contains('<iframe') || !value.contains('src=')) {
+                return 'Please enter a valid iframe embed code';
+              }
+            }
+            return null;
+          },
         ),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+      ],
+    );
+  }
+
+  Widget _buildSafetySecuritySection() {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryblue.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Describe safety and security features of your property:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 16),
+        _buildTextField(
+          controller: _safetySecurityController,
+          label: 'Safety & Security Features',
+          hint: 'e.g., 24/7 Security, CCTV, Gated compound, Security lights, etc.',
+          icon: Icons.security,
+          maxLines: 3,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNearbyPlacesSection() {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryblue.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'List nearby places and amenities that tenants might find useful:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 16),
+        _buildTextField(
+          controller: _nearbyPlacesController,
+          label: 'Nearby Places',
+          hint: 'e.g., Schools, Hospitals, Shopping centers, Banks, Restaurants, Public transport, etc.',
+          icon: Icons.place,
+          maxLines: 3,
+        ),
+      ],
+    );
   }
 }
