@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
-import 'package:pearlnest/screens/tenant/booking_screen.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
@@ -442,6 +441,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   void _showBookingConfirmationDialog() {
+    // Local state for the dialog
+    DateTime? localCheckInDate = _checkInDate;
+    DateTime? localCheckOutDate = _checkOutDate;
+    
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.3),
@@ -463,230 +466,300 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 );
               }
             },
-            child: AlertDialog(
-              backgroundColor: AppTheme.getCardColor(context),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.book_online, color: AppTheme.primaryblue),
+            child: StatefulBuilder(
+              builder: (context, setDialogState) {
+                return AlertDialog(
+                  backgroundColor: AppTheme.getCardColor(context),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  SizedBox(width: 12),
-                  Text(
-                    'Confirm Booking',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.getTextColor(context),
-                    ),
-                  ),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Property details
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.lightGreyColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.property.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.getTextColor(context),
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(Icons.location_on, color: AppTheme.primaryblue, size: 16),
-                              SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  widget.property.address,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: AppTheme.getSecondaryTextColor(context),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                'UGX${widget.property.price.toStringAsFixed(0)} ${widget.property.priceType}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryblue,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    
-                    // Date selection
-                    Text(
-                      'Select Dates',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.getTextColor(context),
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    
-                    // Check-in date
-                    GestureDetector(
-                      onTap: () => _selectCheckInDate(context),
-                      child: Container(
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppTheme.lightGreyColor),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              _checkInDate != null 
-                                ? 'Check-in: ${DateFormat('MMM dd, yyyy').format(_checkInDate!)}'
-                                : 'Select check-in date',
-                              style: TextStyle(
-                                color: _checkInDate != null 
-                                  ? AppTheme.getTextColor(context)
-                                  : AppTheme.getSecondaryTextColor(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    
-                    // Check-out date
-                    GestureDetector(
-                      onTap: () => _selectCheckOutDate(context),
-                      child: Container(
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppTheme.lightGreyColor),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              _checkOutDate != null 
-                                ? 'Check-out: ${DateFormat('MMM dd, yyyy').format(_checkOutDate!)}'
-                                : 'Select check-out date',
-                              style: TextStyle(
-                                color: _checkOutDate != null 
-                                  ? AppTheme.getTextColor(context)
-                                  : AppTheme.getSecondaryTextColor(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    if (_checkInDate != null && _checkOutDate != null) ...[
-                      SizedBox(height: 12),
+                  title: Row(
+                    children: [
                       Container(
-                        padding: EdgeInsets.all(12),
+                        padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          shape: BoxShape.circle,
                         ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
-                            SizedBox(width: 8),
-                            Text(
-                              '${_checkOutDate!.difference(_checkInDate!).inDays} nights',
-                              style: TextStyle(
-                                color: AppTheme.primaryblue,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                        child: Icon(Icons.book_online, color: AppTheme.primaryblue),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        'Confirm Booking',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.getTextColor(context),
                         ),
                       ),
                     ],
-                    
-                    SizedBox(height: 16),
-                    Text(
-                      'Your booking request will be sent to the landlord for approval.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Property details
+                        Container(
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.lightGreyColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.property.title,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.getTextColor(context),
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, color: AppTheme.primaryblue, size: 16),
+                                  SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      widget.property.address,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppTheme.getSecondaryTextColor(context),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Text(
+                                    'UGX${widget.property.price.toStringAsFixed(0)} ${widget.property.priceType}',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.primaryblue,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        
+                        // Date selection
+                        Text(
+                          'Select Dates',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.getTextColor(context),
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        
+                        // Check-in date
+                        GestureDetector(
+                          onTap: () async {
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: localCheckInDate ?? DateTime.now().add(Duration(days: 1)),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(Duration(days: 365)),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: AppTheme.primaryblue,
+                                      onPrimary: AppTheme.whiteColor,
+                                      surface: AppTheme.getCardColor(context),
+                                      onSurface: AppTheme.getTextColor(context),
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            
+                            if (picked != null) {
+                              setDialogState(() {
+                                localCheckInDate = picked;
+                                // Reset checkout date if it's before the new checkin date
+                                if (localCheckOutDate != null && localCheckOutDate!.isBefore(picked)) {
+                                  localCheckOutDate = null;
+                                }
+                              });
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppTheme.lightGreyColor),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  localCheckInDate != null 
+                                    ? 'Check-in: ${DateFormat('MMM dd, yyyy').format(localCheckInDate!)}'
+                                    : 'Select check-in date',
+                                  style: TextStyle(
+                                    color: localCheckInDate != null 
+                                      ? AppTheme.getTextColor(context)
+                                      : AppTheme.getSecondaryTextColor(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        
+                        // Check-out date
+                        GestureDetector(
+                          onTap: () async {
+                            final DateTime minDate = localCheckInDate?.add(Duration(days: 1)) ?? 
+                                                    DateTime.now().add(Duration(days: 2));
+                            
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: localCheckOutDate ?? minDate,
+                              firstDate: minDate,
+                              lastDate: DateTime.now().add(Duration(days: 365)),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: AppTheme.primaryblue,
+                                      onPrimary: AppTheme.whiteColor,
+                                      surface: AppTheme.getCardColor(context),
+                                      onSurface: AppTheme.getTextColor(context),
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            
+                            if (picked != null) {
+                              setDialogState(() {
+                                localCheckOutDate = picked;
+                              });
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppTheme.lightGreyColor),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  localCheckOutDate != null 
+                                    ? 'Check-out: ${DateFormat('MMM dd, yyyy').format(localCheckOutDate!)}'
+                                    : 'Select check-out date',
+                                  style: TextStyle(
+                                    color: localCheckOutDate != null 
+                                      ? AppTheme.getTextColor(context)
+                                      : AppTheme.getSecondaryTextColor(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                        if (localCheckInDate != null && localCheckOutDate != null) ...[
+                          SizedBox(height: 12),
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
+                                SizedBox(width: 8),
+                                Text(
+                                  '${localCheckOutDate!.difference(localCheckInDate!).inDays} nights',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryblue,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        
+                        SizedBox(height: 16),
+                        Text(
+                          'Your booking request will be sent to the landlord for approval.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.getSecondaryTextColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-                  ),
-                ),
-                BlocBuilder<BookingBloc, BookingState>(
-                  builder: (context, state) {
-                    final isLoading = state is BookingLoading;
-                    final canSubmit = _checkInDate != null && _checkOutDate != null && !isLoading;
-                    
-                    return ElevatedButton(
-                      onPressed: canSubmit ? () => _submitBooking() : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryblue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: isLoading
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+                    BlocBuilder<BookingBloc, BookingState>(
+                      builder: (context, state) {
+                        final isLoading = state is BookingLoading;
+                        final canSubmit = localCheckInDate != null && localCheckOutDate != null && !isLoading;
+                        
+                        return ElevatedButton(
+                          onPressed: canSubmit ? () {
+                            // Update the main state before submitting
+                            setState(() {
+                              _checkInDate = localCheckInDate;
+                              _checkOutDate = localCheckOutDate;
+                            });
+                            _submitBooking();
+                          } : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryblue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          )
-                        : Text(
-                            'Confirm Booking',
-                            style: TextStyle(color: AppTheme.whiteColor),
+                            elevation: 0,
                           ),
-                    );
-                  },
-                ),
-              ],
+                          child: isLoading
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+                                ),
+                              )
+                            : Text(
+                                'Confirm Booking',
+                                style: TextStyle(color: AppTheme.whiteColor),
+                              ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         );
@@ -2362,19 +2435,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     }
   }
 
-  void _bookProperty() {
-    // Navigate to the new booking screen that uses BLoC
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BookingScreen(
-          property: widget.property,
-          user: widget.user,
-        ),
-      ),
-    );
-  }
-
   Widget _buildFloatingActionButtons() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20),
@@ -2466,69 +2526,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
         ),
       ),
     );
-  }
-
-  Future<void> _selectCheckInDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _checkInDate ?? DateTime.now().add(Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryblue,
-              onPrimary: AppTheme.whiteColor,
-              surface: AppTheme.getCardColor(context),
-              onSurface: AppTheme.getTextColor(context),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    
-    if (picked != null && picked != _checkInDate) {
-      setState(() {
-        _checkInDate = picked;
-        // Reset checkout date if it's before the new checkin date
-        if (_checkOutDate != null && _checkOutDate!.isBefore(picked)) {
-          _checkOutDate = null;
-        }
-      });
-    }
-  }
-
-  Future<void> _selectCheckOutDate(BuildContext context) async {
-    final DateTime minDate = _checkInDate?.add(Duration(days: 1)) ?? 
-                            DateTime.now().add(Duration(days: 2));
-    
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _checkOutDate ?? minDate,
-      firstDate: minDate,
-      lastDate: DateTime.now().add(Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryblue,
-              onPrimary: AppTheme.whiteColor,
-              surface: AppTheme.getCardColor(context),
-              onSurface: AppTheme.getTextColor(context),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    
-    if (picked != null && picked != _checkOutDate) {
-      setState(() {
-        _checkOutDate = picked;
-      });
-    }
   }
 
   void _submitBooking() {

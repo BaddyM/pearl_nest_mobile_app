@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "500920340735",
+    "project_id": "pearlnestestates-cbc62",
+    "storage_bucket": "pearlnestestates-cbc62.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:500920340735:android:18c409df5d421d3072bcca",
+        "android_client_info": {
+          "package_name": "com.example.pearlnest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAliLHUe_kHWZlQGvTowfFvnFqiZ2MtwoI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

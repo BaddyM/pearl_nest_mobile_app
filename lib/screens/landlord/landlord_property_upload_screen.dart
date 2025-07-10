@@ -1538,9 +1538,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     // Convert area to string
     String areaMeasurementString = '${_areaController.text} sq meters';
 
-    // Convert availability status to boolean
-    bool availability = _availabilityStatus == AvailabilityStatus.availableNow;
-
     // Dispatch the upload event to the BLoC
     context.read<PropertyUploadBloc>().add(
       PropertyUploadRequested(
@@ -1559,9 +1556,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         fullAddress: _addressController.text.trim(),
         propertyMap: _propertyMapController.text.trim(),
         period: _selectedPriceType,
-        featured: false, // Default value
-        isVerified: false, // Default value
-        availability: availability,
         images: _selectedImages,
       ),
     );

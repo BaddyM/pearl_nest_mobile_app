@@ -414,9 +414,6 @@ class PropertyService {
     required String fullAddress,
     required String propertyMap,
     required String period,
-    bool featured = false,
-    bool isVerified = false,
-    bool availability = true,
     List<File>? images,
   }) async {
     try {
@@ -437,9 +434,6 @@ class PropertyService {
         'fullAddress': fullAddress,
         'propertyMap': propertyMap,
         'period': period,
-        'featured': featured,
-        'isVerified': isVerified,
-        'availability': availability,
       };
 
       // Prepare files map

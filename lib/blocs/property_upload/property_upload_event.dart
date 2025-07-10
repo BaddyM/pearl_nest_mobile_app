@@ -24,9 +24,6 @@ class PropertyUploadRequested extends PropertyUploadEvent {
   final String fullAddress;
   final String propertyMap;
   final String period;
-  final bool featured;
-  final bool isVerified;
-  final bool availability;
   final List<File> images;
 
   const PropertyUploadRequested({
@@ -45,9 +42,6 @@ class PropertyUploadRequested extends PropertyUploadEvent {
     required this.fullAddress,
     required this.propertyMap,
     required this.period,
-    required this.featured,
-    required this.isVerified,
-    required this.availability,
     required this.images,
   });
 
@@ -68,9 +62,6 @@ class PropertyUploadRequested extends PropertyUploadEvent {
         fullAddress,
         propertyMap,
         period,
-        featured,
-        isVerified,
-        availability,
         images,
       ];
 }

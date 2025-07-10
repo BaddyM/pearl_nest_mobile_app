@@ -43,9 +43,6 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
         fullAddress: event.fullAddress,
         propertyMap: event.propertyMap,
         period: event.period,
-        featured: event.featured,
-        isVerified: event.isVerified,
-        availability: event.availability,
         images: event.images,
       );
 
