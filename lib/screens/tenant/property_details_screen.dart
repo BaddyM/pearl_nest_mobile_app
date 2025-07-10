@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
-import 'package:pearlnest/screens/tenant/booking_confirmation_screen.dart';
+import 'package:pearlnest/screens/tenant/booking_screen.dart';
+import 'package:pearlnest/blocs/booking/booking_bloc.dart';
+import 'package:pearlnest/blocs/booking/booking_event.dart';
+import 'package:pearlnest/blocs/booking/booking_state.dart';
 
 class Review {
   final String id;
@@ -52,6 +57,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   final TextEditingController _reviewController = TextEditingController();
   bool _showAllReviews = false;
 
+  // Booking-related state
+  DateTime? _checkInDate;
+  DateTime? _checkOutDate;
+  late BookingBloc _bookingBloc;
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +84,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     
     _animationController.forward();
     _loadMockReviews();
+    
+    // Initialize booking bloc
+    _bookingBloc = BookingBloc();
   }
 
   void _loadMockReviews() {
@@ -107,9 +120,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _tabController.dispose();
+    _bookingBloc.close();
     _animationController.dispose();
+    _tabController.dispose();
+    _pageController.dispose();
     _reviewController.dispose();
     super.dispose();
   }
@@ -432,120 +446,249 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.getCardColor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.book_online, color: AppTheme.primaryblue),
+        return BlocProvider.value(
+          value: _bookingBloc,
+          child: BlocListener<BookingBloc, BookingState>(
+            listener: (context, state) {
+              if (state is BookingSuccess) {
+                Navigator.of(context).pop(); // Close dialog
+                _showBookingSuccessBottomSheet(state.bookingData, state.message);
+              } else if (state is BookingFailure) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.error),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: AlertDialog(
+              backgroundColor: AppTheme.getCardColor(context),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              SizedBox(width: 12),
-              Text(
-                'Confirm Booking',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextColor(context),
-                ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.book_online, color: AppTheme.primaryblue),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Confirm Booking',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.lightGreyColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              content: SingleChildScrollView(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Property details
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.lightGreyColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.property.title,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.getTextColor(context),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(Icons.location_on, color: AppTheme.primaryblue, size: 16),
+                              SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  widget.property.address,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppTheme.getSecondaryTextColor(context),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(
+                                'UGX${widget.property.price.toStringAsFixed(0)} ${widget.property.priceType}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryblue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    
+                    // Date selection
                     Text(
-                      widget.property.title,
+                      'Select Dates',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.getTextColor(context),
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on, color: AppTheme.primaryblue, size: 16),
-                        SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            widget.property.address,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppTheme.getSecondaryTextColor(context),
-                            ),
-                          ),
+                    SizedBox(height: 12),
+                    
+                    // Check-in date
+                    GestureDetector(
+                      onTap: () => _selectCheckInDate(context),
+                      child: Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppTheme.lightGreyColor),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              _checkInDate != null 
+                                ? 'Check-in: ${DateFormat('MMM dd, yyyy').format(_checkInDate!)}'
+                                : 'Select check-in date',
+                              style: TextStyle(
+                                color: _checkInDate != null 
+                                  ? AppTheme.getTextColor(context)
+                                  : AppTheme.getSecondaryTextColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Text(
-                          'UGX${widget.property.price.toStringAsFixed(0)} ${widget.property.priceType}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryblue,
-                          ),
+                    
+                    // Check-out date
+                    GestureDetector(
+                      onTap: () => _selectCheckOutDate(context),
+                      child: Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppTheme.lightGreyColor),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              _checkOutDate != null 
+                                ? 'Check-out: ${DateFormat('MMM dd, yyyy').format(_checkOutDate!)}'
+                                : 'Select check-out date',
+                              style: TextStyle(
+                                color: _checkOutDate != null 
+                                  ? AppTheme.getTextColor(context)
+                                  : AppTheme.getSecondaryTextColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    if (_checkInDate != null && _checkOutDate != null) ...[
+                      SizedBox(height: 12),
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
+                            SizedBox(width: 8),
+                            Text(
+                              '${_checkOutDate!.difference(_checkInDate!).inDays} nights',
+                              style: TextStyle(
+                                color: AppTheme.primaryblue,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    
+                    SizedBox(height: 16),
+                    Text(
+                      'Your booking request will be sent to the landlord for approval.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.getSecondaryTextColor(context),
+                      ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: 16),
-              Text(
-                'Are you sure you want to proceed with booking this property?',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.getSecondaryTextColor(context),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                  ),
                 ),
-              ),
-            ],
+                BlocBuilder<BookingBloc, BookingState>(
+                  builder: (context, state) {
+                    final isLoading = state is BookingLoading;
+                    final canSubmit = _checkInDate != null && _checkOutDate != null && !isLoading;
+                    
+                    return ElevatedButton(
+                      onPressed: canSubmit ? () => _submitBooking() : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryblue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: isLoading
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+                            ),
+                          )
+                        : Text(
+                            'Confirm Booking',
+                            style: TextStyle(color: AppTheme.whiteColor),
+                          ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _bookProperty();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryblue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                'Confirm Booking',
-                style: TextStyle(color: AppTheme.whiteColor),
-              ),
-            ),
-          ],
         );
       },
     );
@@ -2220,10 +2363,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   void _bookProperty() {
+    // Navigate to the new booking screen that uses BLoC
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BookingConfirmationScreen(
+        builder: (context) => BookingScreen(
           property: widget.property,
           user: widget.user,
         ),
@@ -2319,6 +2463,227 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
         margin: EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectCheckInDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _checkInDate ?? DateTime.now().add(Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryblue,
+              onPrimary: AppTheme.whiteColor,
+              surface: AppTheme.getCardColor(context),
+              onSurface: AppTheme.getTextColor(context),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (picked != null && picked != _checkInDate) {
+      setState(() {
+        _checkInDate = picked;
+        // Reset checkout date if it's before the new checkin date
+        if (_checkOutDate != null && _checkOutDate!.isBefore(picked)) {
+          _checkOutDate = null;
+        }
+      });
+    }
+  }
+
+  Future<void> _selectCheckOutDate(BuildContext context) async {
+    final DateTime minDate = _checkInDate?.add(Duration(days: 1)) ?? 
+                            DateTime.now().add(Duration(days: 2));
+    
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _checkOutDate ?? minDate,
+      firstDate: minDate,
+      lastDate: DateTime.now().add(Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryblue,
+              onPrimary: AppTheme.whiteColor,
+              surface: AppTheme.getCardColor(context),
+              onSurface: AppTheme.getTextColor(context),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (picked != null && picked != _checkOutDate) {
+      setState(() {
+        _checkOutDate = picked;
+      });
+    }
+  }
+
+  void _submitBooking() {
+    if (_checkInDate == null || _checkOutDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please select both check-in and check-out dates'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Format dates as ISO 8601 strings for API
+    final checkInFormatted = DateFormat('yyyy-MM-dd').format(_checkInDate!);
+    final checkOutFormatted = DateFormat('yyyy-MM-dd').format(_checkOutDate!);
+
+    _bookingBloc.add(BookingCreateRequested(
+      propertyId: widget.property.id,
+      checkInDate: checkInFormatted,
+      checkOutDate: checkOutFormatted,
+    ));
+  }
+
+  void _showBookingSuccessBottomSheet(Map<String, dynamic> bookingData, String message) {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        padding: EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check,
+                color: AppTheme.whiteColor,
+                size: 30,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Booking Successful!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.getTextColor(context),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: AppTheme.getSecondaryTextColor(context),
+              ),
+            ),
+            SizedBox(height: 24),
+            
+            if (_checkInDate != null && _checkOutDate != null) ...[
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Check-in',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.getTextColor(context),
+                          ),
+                        ),
+                        Text(
+                          DateFormat('MMM dd, yyyy').format(_checkInDate!),
+                          style: TextStyle(
+                            color: AppTheme.primaryblue,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Check-out',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.getTextColor(context),
+                          ),
+                        ),
+                        Text(
+                          DateFormat('MMM dd, yyyy').format(_checkOutDate!),
+                          style: TextStyle(
+                            color: AppTheme.primaryblue,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16),
+            ],
+            
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close bottom sheet
+                setState(() {
+                  _checkInDate = null;
+                  _checkOutDate = null;
+                });
+                _bookingBloc.add(BookingReset());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryblue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              ),
+              child: Text(
+                'Done',
+                style: TextStyle(
+                  color: AppTheme.whiteColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

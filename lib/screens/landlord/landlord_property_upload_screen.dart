@@ -1544,7 +1544,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     // Dispatch the upload event to the BLoC
     context.read<PropertyUploadBloc>().add(
       PropertyUploadRequested(
-        userId: widget.user.id, // Add userId from the current user
         propertyName: _titleController.text.trim(),
         propertyType: propertyTypeString,
         location: _locationController.text.trim(),

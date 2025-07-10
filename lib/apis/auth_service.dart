@@ -18,11 +18,11 @@ class AuthException implements Exception {
 }
 
 class NetworkException extends AuthException {
-  NetworkException(String message) : super(message, code: 'NETWORK_ERROR');
+  NetworkException(super.message) : super(code: 'NETWORK_ERROR');
 }
 
 class ValidationException extends AuthException {
-  ValidationException(String message) : super(message, code: 'VALIDATION_ERROR');
+  ValidationException(super.message) : super(code: 'VALIDATION_ERROR');
 }
 
 class AuthService {

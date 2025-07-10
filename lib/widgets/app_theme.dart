@@ -24,11 +24,9 @@ class AppTheme {
       primary: primaryblue,
       secondary: accentGreen,
       surface: whiteColor,
-      background: whiteColor,
       onPrimary: whiteColor,
       onSecondary: whiteColor,
       onSurface: blackColor,
-      onBackground: blackColor,
     ),
     scaffoldBackgroundColor: whiteColor,
     cardColor: lightGreyColor,
@@ -99,11 +97,9 @@ class AppTheme {
       primary: primaryblue,
       secondary: accentGreen,
       surface: darkSurface,
-      background: darkBackground,
       onPrimary: whiteColor,
       onSecondary: blackColor,
       onSurface: darkTextPrimary,
-      onBackground: darkTextPrimary,
     ),
     scaffoldBackgroundColor: darkBackground,
     cardColor: darkCardColor,
@@ -173,7 +169,7 @@ class AppTheme {
   }
 
   static Color getTextColor(BuildContext context) {
-    return Theme.of(context).colorScheme.onBackground;
+    return Theme.of(context).colorScheme.onSurface;
   }
 
   static Color getCardColor(BuildContext context) {

@@ -18,7 +18,6 @@ import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
 import 'package:pearlnest/screens/tenant/settings_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
-import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   final User user;

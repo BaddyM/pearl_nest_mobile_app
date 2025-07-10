@@ -28,7 +28,6 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
 
       // Call the property service to upload
       final result = await PropertyService.uploadProperty(
-        userId: event.userId,
         propertyName: event.propertyName,
         propertyType: event.propertyType,
         location: event.location,

@@ -10,6 +10,7 @@ import 'package:pearlnest/screens/tenant/notification_screen.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/screens/tenant/search_screen.dart';
+import 'package:pearlnest/screens/tenant/booking_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -1589,6 +1590,53 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       ],
+                    ),
+                  ),
+
+                  SizedBox(height: 12),
+                  
+                  // Quick Book Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingScreen(
+                              property: property,
+                              user: widget.user,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryblue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            color: AppTheme.whiteColor,
+                            size: 16,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Quick Book',
+                            style: TextStyle(
+                              color: AppTheme.whiteColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

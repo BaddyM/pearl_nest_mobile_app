@@ -17,11 +17,11 @@ class PropertyException implements Exception {
 }
 
 class NetworkException extends PropertyException {
-  NetworkException(String message) : super(message, code: 'NETWORK_ERROR');
+  NetworkException(super.message) : super(code: 'NETWORK_ERROR');
 }
 
 class ValidationException extends PropertyException {
-  ValidationException(String message) : super(message, code: 'VALIDATION_ERROR');
+  ValidationException(super.message) : super(code: 'VALIDATION_ERROR');
 }
 
 class PropertyService {
@@ -418,58 +418,14 @@ class PropertyService {
     bool isVerified = false,
     bool availability = true,
     List<File>? images,
-    String? userId,
   }) async {
     try {
-      // Create FormData for multipart request
-      final formData = FormData();
-
-      // Add text fields with proper data types
-      formData.fields.addAll([
-        MapEntry('userId', userId ?? ''), // Add userId field
-        MapEntry('propertyName', propertyName),
-        MapEntry('propertyType', propertyType),
-        MapEntry('location', location),
-        MapEntry('price', price.round().toString()), // Ensure it's an integer string
-        MapEntry('amenities', amenities),
-        MapEntry('safetyAndSecurity', safetyAndSecurity),
-        MapEntry('description', description),
-        MapEntry('nearbyPlaces', nearbyPlaces),
-        MapEntry('numberOfBeds', numberOfBeds.toString()),
-        MapEntry('numberOfBathrooms', numberOfBathrooms.toString()),
-        MapEntry('areaMeasurement', areaMeasurement),
-        MapEntry('neighborhood', neighborhood),
-        MapEntry('fullAddress', fullAddress),
-        MapEntry('propertyMap', propertyMap),
-        MapEntry('period', period),
-        MapEntry('featured', featured ? 'true' : 'false'),
-        MapEntry('isVerified', isVerified ? 'true' : 'false'),
-        MapEntry('availability', availability ? 'true' : 'false'),
-      ]);
-
-      // Add image files (limit to 10 images)
-      if (images != null && images.isNotEmpty) {
-        // Enforce limit of 10 images
-        final limitedImages = images.take(10).toList();
-        
-        for (int i = 0; i < limitedImages.length; i++) {
-          final file = limitedImages[i];
-          final fileName = file.path.split('/').last;
-          formData.files.add(MapEntry(
-            'image',
-            await MultipartFile.fromFile(
-              file.path,
-              filename: fileName,
-            ),
-          ));
-        }
-      }
-
-      _logRequest('/property/upload', {
+      // Prepare fields map with actual types (like your working example)
+      Map<String, dynamic> fields = {
         'propertyName': propertyName,
         'propertyType': propertyType,
         'location': location,
-        'price': price,
+        'price': price.round(),
         'amenities': amenities,
         'safetyAndSecurity': safetyAndSecurity,
         'description': description,
@@ -484,8 +440,45 @@ class PropertyService {
         'featured': featured,
         'isVerified': isVerified,
         'availability': availability,
-        'images_count': images != null ? (images.length > 10 ? 10 : images.length) : 0,
+      };
+
+      // Prepare files map
+      Map<String, File> filesMap = {};
+      
+      // Add image files (limit to 10 images)
+      if (images != null && images.isNotEmpty) {
+        // Enforce limit of 10 images
+        final limitedImages = images.take(10).toList();
+        
+        for (int i = 0; i < limitedImages.length; i++) {
+          filesMap['image_$i'] = limitedImages[i];
+        }
+      }
+
+      // Create FormData manually like your working example
+      final formData = FormData();
+      
+      // Add text fields (convert to string like your working code does)
+      fields.forEach((key, value) {
+        debugPrint('🏠 Adding field: $key = $value (${value.runtimeType})');
+        formData.fields.add(MapEntry(key, value.toString()));
       });
+      
+      // Add files
+      for (var entry in filesMap.entries) {
+        debugPrint('🏠 Adding file: image = ${entry.value.path}');
+        formData.files.add(
+          MapEntry(
+            'image', // Use same key 'image' for all files
+            await MultipartFile.fromFile(
+              entry.value.path,
+              filename: entry.value.path.split('/').last,
+            ),
+          ),
+        );
+      }
+
+      _logRequest('/property/upload', fields..['images_count'] = filesMap.length);
 
       final response = await ApiClient.postMultipart('/property/upload', formData);
       

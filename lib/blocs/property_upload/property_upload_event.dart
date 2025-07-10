@@ -9,7 +9,6 @@ abstract class PropertyUploadEvent extends Equatable {
 }
 
 class PropertyUploadRequested extends PropertyUploadEvent {
-  final String userId;
   final String propertyName;
   final String propertyType;
   final String location;
@@ -31,7 +30,6 @@ class PropertyUploadRequested extends PropertyUploadEvent {
   final List<File> images;
 
   const PropertyUploadRequested({
-    required this.userId,
     required this.propertyName,
     required this.propertyType,
     required this.location,
@@ -55,7 +53,6 @@ class PropertyUploadRequested extends PropertyUploadEvent {
 
   @override
   List<Object?> get props => [
-        userId,
         propertyName,
         propertyType,
         location,

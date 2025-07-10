@@ -6,6 +6,7 @@ import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/blocs/property/property_bloc.dart';
 import 'package:pearlnest/blocs/property_upload/property_upload_bloc.dart';
+import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/screens/common/splash_screen.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
@@ -45,6 +46,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<PropertyUploadBloc>(
           create: (context) => PropertyUploadBloc(),
+        ),
+        BlocProvider<BookingBloc>(
+          create: (context) => BookingBloc(),
         ),
       ],
       child: MultiProvider(

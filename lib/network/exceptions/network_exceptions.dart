@@ -1,5 +1,6 @@
 /// Network-related exceptions for the Pearl Nest Estates app
 /// Provides comprehensive error handling for API requests
+library;
 
 // Base network exception
 abstract class NetworkException implements Exception {
@@ -22,11 +23,11 @@ abstract class NetworkException implements Exception {
 // Authentication related exceptions
 class AuthException extends NetworkException {
   const AuthException(
-    String message, {
-    String? code,
-    int? statusCode,
-    dynamic data,
-  }) : super(message, code: code, statusCode: statusCode, data: data);
+    super.message, {
+    super.code,
+    super.statusCode,
+    super.data,
+  });
 
   @override
   String toString() => 'AuthException: $message';
@@ -34,8 +35,7 @@ class AuthException extends NetworkException {
 
 // Network connectivity exceptions
 class ConnectivityException extends NetworkException {
-  const ConnectivityException(String message, {String? code})
-      : super(message, code: code);
+  const ConnectivityException(super.message, {super.code});
 
   @override
   String toString() => 'ConnectivityException: $message';
@@ -43,8 +43,7 @@ class ConnectivityException extends NetworkException {
 
 // Request timeout exceptions
 class TimeoutException extends NetworkException {
-  const TimeoutException(String message, {String? code})
-      : super(message, code: code);
+  const TimeoutException(super.message, {super.code});
 
   @override
   String toString() => 'TimeoutException: $message';
@@ -53,11 +52,11 @@ class TimeoutException extends NetworkException {
 // Server error exceptions (5xx)
 class ServerException extends NetworkException {
   const ServerException(
-    String message, {
-    String? code,
-    int? statusCode,
-    dynamic data,
-  }) : super(message, code: code, statusCode: statusCode, data: data);
+    super.message, {
+    super.code,
+    super.statusCode,
+    super.data,
+  });
 
   @override
   String toString() => 'ServerException: $message';
@@ -66,11 +65,11 @@ class ServerException extends NetworkException {
 // Client error exceptions (4xx)
 class ClientException extends NetworkException {
   const ClientException(
-    String message, {
-    String? code,
-    int? statusCode,
-    dynamic data,
-  }) : super(message, code: code, statusCode: statusCode, data: data);
+    super.message, {
+    super.code,
+    super.statusCode,
+    super.data,
+  });
 
   @override
   String toString() => 'ClientException: $message';
@@ -78,8 +77,7 @@ class ClientException extends NetworkException {
 
 // Validation exceptions
 class ValidationException extends NetworkException {
-  const ValidationException(String message, {String? code})
-      : super(message, code: code);
+  const ValidationException(super.message, {super.code});
 
   @override
   String toString() => 'ValidationException: $message';
@@ -87,8 +85,7 @@ class ValidationException extends NetworkException {
 
 // Parsing exceptions
 class ParseException extends NetworkException {
-  const ParseException(String message, {String? code})
-      : super(message, code: code);
+  const ParseException(super.message, {super.code});
 
   @override
   String toString() => 'ParseException: $message';
@@ -96,8 +93,7 @@ class ParseException extends NetworkException {
 
 // Request cancellation exceptions
 class CancelException extends NetworkException {
-  const CancelException(String message, {String? code})
-      : super(message, code: code);
+  const CancelException(super.message, {super.code});
 
   @override
   String toString() => 'CancelException: $message';
@@ -105,8 +101,7 @@ class CancelException extends NetworkException {
 
 // Generic unknown exceptions
 class UnknownException extends NetworkException {
-  const UnknownException(String message, {String? code})
-      : super(message, code: code);
+  const UnknownException(super.message, {super.code});
 
   @override
   String toString() => 'UnknownException: $message';
