@@ -5,6 +5,8 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/screens/tenant/filters_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/apis/property_service.dart';
+import 'package:pearlnest/apis/app_config.dart';
 
 class SearchScreen extends StatefulWidget {
   final User user;
@@ -66,10 +68,10 @@ class SearchFilters {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   SearchFilters _filters = SearchFilters();
-  List<Property> _allProperties = [];
   List<Property> _filteredProperties = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
   String _sortBy = 'Recent';
+  String? _errorMessage;
 
   final List<String> _sortOptions = [
     'Recent',
@@ -81,8 +83,8 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProperties();
     _searchController.addListener(_performSearch);
+    _performSearch();
   }
 
   @override
@@ -92,551 +94,43 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  void _loadProperties() {
-    Future.delayed(Duration(seconds: 1), () {
+  Future<void> _performSearch() async {
+    final searchQuery = _searchController.text.trim();
+    if (searchQuery.isEmpty) {
       setState(() {
-        _allProperties = _getDummyProperties();
-        _filteredProperties = _allProperties;
+        _filteredProperties = [];
+        _errorMessage = null;
         _isLoading = false;
       });
-    });
-  }
-
-  List<Property> _getDummyProperties() {
-    return [
-      Property(
-        id: '1',
-        title: 'Modern Apartment in City Center',
-        description: 'Beautiful modern apartment with city views',
-        type: PropertyType.apartment,
-        price: 2000000,
-        priceType: 'per month',
-        location: 'Downtown',
-        address: '123 Main St, City Center',
-        latitude: 40.7128,
-        longitude: -74.0060,
-        images: [
-          'assets/images/img3.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img1.jpg',
-        ],
-        amenities: ['WiFi', 'Parking', 'Gym', 'Pool'],
-        bedrooms: 2,
-        bathrooms: 2,
-        area: 85.0,
-        landlordId: 'landlord1',
-        landlordName: 'John Smith',
-        landlordPhone: '+1234567890',
-        status: PropertyStatus.available,
-        rating: 4.5,
-        reviewCount: 23,
-        createdAt: DateTime.now().subtract(Duration(days: 5)),
-        updatedAt: DateTime.now(),
-        isFeatured: true,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '2',
-        title: 'Cozy Airbnb Studio',
-        description: 'Perfect for short stays and travelers',
-        type: PropertyType.airbnb,
-        price: 100000,
-        priceType: 'per night',
-        location: 'Tourist District',
-        address: '456 Tourist Ave',
-        latitude: 40.7589,
-        longitude: -73.9851,
-        images: [
-          'assets/images/img2.jpg',
-          'assets/images/img3.jpg',
-        ],
-        amenities: ['WiFi', 'Kitchen', 'AC'],
-        bedrooms: 1,
-        bathrooms: 1,
-        area: 45.0,
-        landlordId: 'landlord2',
-        landlordName: 'Sarah Johnson',
-        landlordPhone: '+1234567891',
-        status: PropertyStatus.available,
-        rating: 4.8,
-        reviewCount: 45,
-        createdAt: DateTime.now().subtract(Duration(days: 2)),
-        updatedAt: DateTime.now(),
-        isFeatured: true,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableLater,
-        availableFrom: DateTime.now().add(Duration(days: 45)), landlordEmail: '',
-      ),
-      Property(
-        id: '3',
-        title: 'Spacious Family House',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.fullHouse,
-        price: 2000000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '789 Family Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-        ],
-        amenities: ['Garden', 'Garage', 'WiFi', 'Fireplace'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord3',
-        landlordName: 'Mike Wilson',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '4',
-        title: 'Budget Hostel Room',
-        description: 'Affordable accommodation for backpackers',
-        type: PropertyType.hostel,
-        price: 250000,
-        priceType: 'per night',
-        location: 'University Area',
-        address: '321 Student St',
-        latitude: 40.7500,
-        longitude: -73.9800,
-        images: ['assets/images/img4.jpg'],
-        amenities: ['WiFi', 'Shared Kitchen', 'Laundry'],
-        bedrooms: 1,
-        bathrooms: 1,
-        area: 20.0,
-        landlordId: 'landlord4',
-        landlordName: 'Alex Brown',
-        landlordPhone: '+1234567893',
-        status: PropertyStatus.available,
-        rating: 3.8,
-        reviewCount: 67,
-        createdAt: DateTime.now().subtract(Duration(days: 15)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '5',
-        title: 'Prime Land for Development',
-        description: 'Excellent location for commercial development',
-        type: PropertyType.land,
-        price: 2000000,
-        priceType: 'per month',
-        location: 'Business District',
-        address: '555 Commerce Blvd',
-        latitude: 40.7200,
-        longitude: -74.0100,
-        images: ['assets/images/img5.jpg'],
-        amenities: ['Road Access', 'Utilities Available'],
-        bedrooms: 0,
-        bathrooms: 0,
-        area: 5000.0,
-        landlordId: 'landlord5',
-        landlordName: 'Emma Davis',
-        landlordPhone: '+1234567894',
-        status: PropertyStatus.available,
-        rating: 4.0,
-        reviewCount: 8,
-        createdAt: DateTime.now().subtract(Duration(days: 30)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '6',
-        title: 'Perfection',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.incompleteHouse,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '684 Hunm Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Garden', 'Garage', 'WiFi', 'Fireplace', 'Utilities Available'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord3',
-        landlordName: 'Conner Price',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '7',
-        title: 'Mansion',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.fullHouse,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '789 Family Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Garden', 'Garage', 'WiFi', 'Pool', 'AC'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord4',
-        landlordName: 'Conner Price',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '8',
-        title: 'Smoky Hostel',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.fullHouse,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '789 Family Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Garden', 'Garage', 'WiFi', 'Gym', 'Pool'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord3',
-        landlordName: 'Walker Hayes',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '9',
-        title: 'Kare Hostel',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.fullHouse,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '789 Family Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Garden', 'Garage', 'WiFi', 'Pool', 'Gym', 'Parking'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord3',
-        landlordName: 'Emuron Hublot',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '10',
-        title: 'Garden Courts',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.fullHouse,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '789 Family Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Garden', 'Garage', 'WiFi', 'Fireplace', 'Parking', 'Pool', 'Gym'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord3',
-        landlordName: 'Ketra Caterfall',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '11',
-        title: 'Douglous Villa',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.fullHouse,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '789 Family Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Garden', 'Garage', 'WiFi', 'Fireplace', 'Laundry', 'Pool'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord3',
-        landlordName: 'Joseph David',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '12',
-        title: 'Cilibas Hostel',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.fullHouse,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '789 Family Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Gym', 'Garage', 'WiFi', 'Fireplace', 'Parking'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord3',
-        landlordName: 'Trejan Thunder',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '13',
-        title: 'Ryan Home',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.fullHouse,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '789 Family Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Garden', 'Garage', 'WiFi', 'Fireplace', 'Shared Kitchen', 'Road Access'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord3',
-        landlordName: 'Dead Pool',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-      Property(
-        id: '14',
-        title: 'Marvel Cinematic Universe',
-        description: 'Perfect for newly weded couples',
-        type: PropertyType.fullHouse,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Palm City',
-        address: '17 Eden Shores',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Garden', 'Garage', 'WiFi', 'Fireplace', 'Road Access', 'Utilities Available', 'Parking', 'Gym', 'Pool', 'Laundry', 'Kitchen'],
-        bedrooms: 6,
-        bathrooms: 4,
-        area: 2000.0,
-        landlordId: 'aurafarmer',
-        landlordName: 'Vawzen Kasule',
-        landlordPhone: '+256787018472',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 2)),
-        updatedAt: DateTime.now(),
-        isFeatured: true,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        landlordEmail: 'vawzen@gmail.com',
-      ),
-      Property(
-        id: '15',
-        title: 'Ditective Comics',
-        description: 'Perfect for families with garden and garage',
-        type: PropertyType.apartment,
-        price: 20000000,
-        priceType: 'per month',
-        location: 'Masajja',
-        address: 'Masajja Lane',
-        latitude: 40.6892,
-        longitude: -74.0445,
-        images: [
-          'assets/images/img1.jpg',
-          'assets/images/img8.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img2.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['Garden', 'Gmy', 'Pool', 'Kitchen', 'Parking', 'Laundry', 'WiFi', 'Fireplace'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord15',
-        landlordName: 'Timothy Trison',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.2,
-        reviewCount: 12,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow, landlordEmail: '',
-      ),
-    ];
-  }
-
-  void _performSearch() {
+      return;
+    }
     setState(() {
-      _filteredProperties = _allProperties.where((property) {
-        final searchQuery = _searchController.text.toLowerCase();
-        final matchesSearch = searchQuery.isEmpty ||
-            property.title.toLowerCase().contains(searchQuery) ||
-            property.location.toLowerCase().contains(searchQuery) ||
-            property.address.toLowerCase().contains(searchQuery) ||
-            property.description.toLowerCase().contains(searchQuery);
-
-        final matchesType = _filters.propertyType == 'All' ||
-            property.propertyTypeString == _filters.propertyType;
-
-        final matchesPrice = property.price >= _filters.priceRange.start &&
-            property.price <= _filters.priceRange.end;
-
-        final matchesBedrooms = _filters.bedrooms == null ||
-            property.bedrooms == _filters.bedrooms;
-
-        final matchesAmenities = _filters.selectedAmenities.isEmpty ||
-            _filters.selectedAmenities.every((amenity) =>
-                property.amenities.contains(amenity));
-
-        return matchesSearch && matchesType && matchesPrice && matchesBedrooms && matchesAmenities;
-      }).toList();
-
-      _applySorting();
+      _isLoading = true;
+      _errorMessage = null;
     });
+    final result = await PropertyService.searchProperties(searchString: searchQuery);
+    if (result['success'] == true) {
+      setState(() {
+        _filteredProperties = List<Property>.from(result['properties'] ?? []);
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _filteredProperties = [];
+        _errorMessage = result['message'] ?? 'Failed to load properties.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Helper to get full image URL
+  String _getFullImageUrl(String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    final String baseUrl = AppConfig.getCurrentBaseUrl();
+    String cleanUrl = url.replaceFirst(RegExp(r'^(\/|\./)'), '');
+    return '$baseUrl/$cleanUrl';
   }
 
   void _applySorting() {
@@ -682,7 +176,7 @@ class _SearchScreenState extends State<SearchScreen> {
       MaterialPageRoute(
         builder: (context) => FiltersScreen(
           currentFilters: _filters,
-          allProperties: _allProperties,
+          allProperties: _filteredProperties,
         ),
       ),
     );
@@ -704,7 +198,7 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             _buildHeader(),
             Expanded(
-              child: _isLoading ? _buildLoadingState() : _buildSearchResults(),
+              child: _buildSearchResults(),
             ),
           ],
         ),
@@ -1058,6 +552,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchResults() {
+    if (_isLoading) return _buildLoadingState();
+    if (_errorMessage != null) {
+      return Center(child: Text(_errorMessage!, style: TextStyle(color: Colors.red)));
+    }
     return Column(
       children: [
         _buildResultsCount(),
@@ -1176,8 +674,8 @@ class _SearchScreenState extends State<SearchScreen> {
                             topLeft: Radius.circular(16),
                             topRight: Radius.circular(16),
                           ),
-                          child: Image.asset(
-                            property.images.first,
+                          child: Image.network(
+                            _getFullImageUrl(property.images.first),
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(

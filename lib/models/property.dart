@@ -174,23 +174,34 @@ class Property {
 
   // Factory constructor for creating Property from JSON
   factory Property.fromJson(Map<String, dynamic> json) {
+    List<String> parseStringOrList(dynamic value) {
+      if (value == null) return [];
+      if (value is List) {
+        return value.map((e) => e.toString()).toList();
+      } else if (value is String) {
+        return value.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      }
+      return [];
+    }
+    // Support both 'images' and 'media' keys for images
+    final images = json['images'] ?? json['media'];
     return Property(
       id: json['id'] ?? json['_id'] ?? '',
-      title: json['title'] ?? '',
+      title: json['title'] ?? json['propertyName'] ?? '',
       description: json['description'] ?? '',
-      type: _parsePropertyType(json['type'] ?? 'apartment'),
+      type: _parsePropertyType(json['type'] ?? json['propertyType'] ?? 'apartment'),
       price: (json['price'] ?? 0).toDouble(),
-      priceType: json['priceType'] ?? 'monthly',
+      priceType: json['priceType'] ?? json['period'] ?? 'monthly',
       location: json['location'] ?? '',
-      address: json['address'] ?? '',
+      address: json['address'] ?? json['fullAddress'] ?? '',
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
-      images: json['images'] != null ? List<String>.from(json['images']) : [],
-      amenities: json['amenities'] != null ? List<String>.from(json['amenities']) : [],
-      bedrooms: json['bedrooms'] ?? 0,
-      bathrooms: json['bathrooms'] ?? 0,
-      area: (json['area'] ?? 0).toDouble(),
-      landlordId: json['landlordId'] ?? json['ownerId'] ?? '',
+      images: parseStringOrList(images),
+      amenities: parseStringOrList(json['amenities']),
+      bedrooms: json['bedrooms'] ?? json['numberOfBeds'] ?? 0,
+      bathrooms: json['bathrooms'] ?? json['numberOfBathrooms'] ?? 0,
+      area: double.tryParse((json['area'] ?? json['areaMeasurement'] ?? '0').toString().replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0,
+      landlordId: json['landlordId'] ?? json['ownerId'] ?? json['userId'] ?? '',
       landlordName: json['landlordName'] ?? json['ownerName'] ?? '',
       landlordPhone: json['landlordPhone'] ?? json['ownerPhone'] ?? '',
       landlordEmail: json['landlordEmail'] ?? json['ownerEmail'] ?? '',
@@ -203,7 +214,7 @@ class Property {
       updatedAt: json['updatedAt'] != null 
           ? DateTime.parse(json['updatedAt']) 
           : DateTime.now(),
-      isFeatured: json['isFeatured'] ?? false,
+      isFeatured: json['isFeatured'] ?? json['featured'] ?? false,
       isVerified: json['isVerified'] ?? false,
       availabilityStatus: _parseAvailabilityStatus(json['availabilityStatus'] ?? 'availableNow'),
       availableFrom: json['availableFrom'] != null 
