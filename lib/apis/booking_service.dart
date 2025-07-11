@@ -1,9 +1,6 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:pearlnest/apis/api_client.dart';
-import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/models/booking.dart';
 
 // Custom exceptions for better error handling
@@ -29,7 +26,7 @@ class BookingService {
     }
   }
 
-  static void _logResponse(String endpoint, Response response) {
+  static void _logDioResponse(String endpoint, Response response) {
     if (kDebugMode) {
       debugPrint('📝 BOOKING RESPONSE [$endpoint]: Status ${response.statusCode}');
       debugPrint('📝 Response Body: ${response.data}');
@@ -63,7 +60,7 @@ class BookingService {
 
       final response = await ApiClient.post('/booking/create', requestData);
       
-      _logResponse('/booking/create', response);
+      _logDioResponse('/booking/create', response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -133,11 +130,42 @@ class BookingService {
   }
 
   static Future<List<Booking>> fetchBookings() async {
-    final response = await http.get(Uri.parse('${AppConfig.getCurrentBaseUrl()}/booking/list'));
-    final data = json.decode(response.body);
-    if (data['success'] == true && data['data'] != null) {
-      return (data['data'] as List).map((json) => Booking.fromApiJson(json)).toList();
+    try {
+      _logRequest('/booking/list', null);
+      
+      final response = await ApiClient.get('/booking/list');
+      
+      _logDioResponse('/booking/list', response);
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success'] == true && data['data'] != null) {
+          final bookings = (data['data'] as List)
+              .map((json) => Booking.fromApiJson(json))
+              .toList();
+          
+          debugPrint('🏨 Successfully fetched ${bookings.length} bookings');
+          return bookings;
+        } else {
+          debugPrint('🏨 API returned success: false or no data');
+          return [];
+        }
+      } else if (response.statusCode == 401) {
+        throw BookingException('Authentication required', statusCode: 401);
+      } else if (response.statusCode == 403) {
+        throw BookingException('Not authorized to fetch bookings', statusCode: 403);
+      } else {
+        throw BookingException(
+          'Failed to fetch bookings: ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      _logError('fetch bookings', e);
+      if (e is BookingException) {
+        rethrow;
+      }
+      throw BookingException('Unexpected error while fetching bookings: $e');
     }
-    return [];
   }
 }
