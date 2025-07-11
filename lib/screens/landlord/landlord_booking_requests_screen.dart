@@ -1,23 +1,20 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pearlnest/blocs/booking/booking_bloc.dart';
+import 'package:pearlnest/blocs/booking/booking_event.dart';
+import 'package:pearlnest/blocs/booking/booking_state.dart';
 import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/landlord.dart';
-import 'package:pearlnest/models/mock_booking_data.dart';
-import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class LandlordBookingRequestsScreen extends StatefulWidget {
   final User user;
-  final List<Booking> bookings;
-  final List<Property>? properties;
-
+ 
   const LandlordBookingRequestsScreen({
     super.key,
     required this.user,
-    required this.bookings,
-    this.properties,
   });
 
   @override
@@ -29,52 +26,26 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
   late TabController _tabController;
   String _searchQuery = '';
   bool _isLoading = false;
-  List<Booking> _filteredBookings = [];
+  List<Booking> _allBookings = [];
   BookingStatus _selectedStatus = BookingStatus.pending;
-
-  final Map<String, Map<String, String>> _tenantData = {
-    'user1': {
-      'name': 'John Doe',
-      'email': 'john@example.com',
-      'phone': '+1234567890',
-      'avatar': '',
-    },
-    'user2': {
-      'name': 'Jane Smith',
-      'email': 'jane@example.com',
-      'phone': '+1234567891',
-      'avatar': '',
-    },
-    'user3': {
-      'name': 'Mike Johnson',
-      'email': 'mike@example.com',
-      'phone': '+1234567892',
-      'avatar': '',
-    },
-  };
-
-  final Map<String, String> _propertyTitles = {
-    '1': 'Modern Downtown Apartment',
-    '2': 'Cozy Studio Apartment',
-    '3': 'Spacious Family House',
-  };
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _filteredBookings = widget.bookings.isEmpty 
-        ? MockBookingData.generateMockBookings() 
-        : widget.bookings;
+    // Fetch bookings in didChangeDependencies to ensure context is available
     _tabController.addListener(_onTabChanged);
+    
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only fetch once
+    if (_allBookings.isEmpty) {
+      context.read<BookingBloc>().add(FetchBookings());
+    }
   }
-
   void _onTabChanged() {
     setState(() {
       switch (_tabController.index) {
@@ -91,91 +62,18 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
           _selectedStatus = BookingStatus.completed;
           break;
       }
-      _filterBookings();
+      // Filter bookings will be handled in build method
     });
   }
 
-  void _filterBookings() {
-    final bookingsToFilter = widget.bookings.isEmpty 
-        ? MockBookingData.generateMockBookings() 
-        : widget.bookings;
-        
-    setState(() {
-      _filteredBookings = bookingsToFilter.where((booking) {
-        final matchesStatus = booking.status == _selectedStatus;
-        final matchesSearch = _searchQuery.isEmpty ||
-            _getTenantName(booking.tenantId).toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            _getPropertyTitle(booking.propertyId).toLowerCase().contains(_searchQuery.toLowerCase());
-        return matchesStatus && matchesSearch;
-      }).toList();
-    });
-  }
-
-  String _getTenantName(String tenantId) {
-    return _tenantData[tenantId]?['name'] ?? 'Unknown User';
-  }
-
-  String _getTenantEmail(String tenantId) {
-    return _tenantData[tenantId]?['email'] ?? 'No email';
-  }
-
-  String _getTenantPhone(String tenantId) {
-    return _tenantData[tenantId]?['phone'] ?? 'No phone';
-  }
-
-  String _getPropertyTitle(String propertyId) {
-    return _propertyTitles[propertyId] ?? 'Unknown Property';
-  }
-
-  void _handleBookingAction(Booking booking, BookingStatus newStatus) {
-    setState(() {
-      _isLoading = true;
-    });
-
-    Future.delayed(Duration(seconds: 1), () {
-      setState(() {
-        _isLoading = false;
-      });
-
-      final actionText = newStatus == BookingStatus.confirmed ? 'accepted' : 'rejected';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Booking request $actionText successfully!', style: TextStyle(color: AppTheme.lightGreyColor),),
-          backgroundColor: newStatus == BookingStatus.confirmed 
-              ? AppTheme.primaryblue
-              : Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          duration: Duration(milliseconds: 500),
-          margin: EdgeInsets.all(16),
-        ),
-      );
-
-      _filterBookings();
-    });
-  }
-
-  void _showBookingDetails(Booking booking) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _buildBookingDetailsModal(booking),
-    );
-  }
-
-  void _contactTenant(String tenantId) {
-    final tenantPhone = _getTenantPhone(tenantId);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Calling $tenantPhone...', style: TextStyle(color: AppTheme.lightGreyColor),),
-        backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(milliseconds: 500),
-        margin: EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+  List<Booking> _getFilteredBookings() {
+    return _allBookings.where((booking) {
+      final matchesStatus = booking.status == _selectedStatus;
+      final matchesSearch = _searchQuery.isEmpty ||
+          booking.tenantName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          booking.propertyTitle.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesStatus && matchesSearch;
+    }).toList();
   }
 
   String _formatDate(DateTime date) {
@@ -242,20 +140,66 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(child: _buildBookingsList()),
-          ],
+  void _handleBookingAction(Booking booking, BookingStatus newStatus) {
+    setState(() {
+      _isLoading = true;
+    });      Future.delayed(Duration(seconds: 1), () {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+      });
+
+      final actionText = newStatus == BookingStatus.confirmed ? 'accepted' : 'rejected';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Booking request $actionText successfully!', style: TextStyle(color: AppTheme.lightGreyColor),),
+          backgroundColor: newStatus == BookingStatus.confirmed 
+              ? AppTheme.primaryblue
+              : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: Duration(milliseconds: 500),
+          margin: EdgeInsets.all(16),
         ),
+      );
+
+      // Filtering will be handled automatically in build method
+    });
+  }
+
+  void _showBookingDetails(Booking booking) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildBookingDetailsModal(booking),
+    );
+  }
+
+  void _contactTenant(String tenantId) {
+    final bookingBloc = context.read<BookingBloc>();
+    final state = bookingBloc.state;
+    String tenantPhone = 'No phone';
+    if (state is BookingLoaded) {
+      final booking = state.bookings.firstWhere(
+        (b) => b.tenantId == tenantId,
+        orElse: () => Booking.empty(),
+      );
+      tenantPhone = booking.tenantPhone;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Calling $tenantPhone...', style: TextStyle(color: AppTheme.lightGreyColor),),
+        backgroundColor: AppTheme.primaryblue,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(milliseconds: 500),
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
+
 
   Widget _buildHeader() {
     return Container(
@@ -350,11 +294,11 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         onChanged: (value) {
           setState(() {
             _searchQuery = value;
-            _filterBookings();
+            // Filtering will be handled automatically in build method
           });
         },
         style: TextStyle(
-          color: AppTheme.getTextColor(context)
+          color: AppTheme.getTextColor(context),
         ),
         decoration: InputDecoration(
           hintText: 'Search bookings, tenants, properties...',
@@ -366,7 +310,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                   onPressed: () {
                     setState(() {
                       _searchQuery = '';
-                      _filterBookings();
+                      // Filtering will be handled automatically in build method
                     });
                   },
                 )
@@ -379,10 +323,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
   }
 
   Widget _buildTabBar() {
-    final bookingsToCount = widget.bookings.isEmpty 
-        ? MockBookingData.generateMockBookings() 
-        : widget.bookings;
-        
+    final bookingsToCount = _allBookings;
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
@@ -418,22 +359,22 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     );
   }
 
+  // All widget methods below are inside the class
   Widget _buildBookingsList() {
     if (_isLoading) {
       return Center(
         child: CircularProgressIndicator(color: AppTheme.primaryblue),
       );
     }
-
-    if (_filteredBookings.isEmpty) {
+    final filteredBookings = _getFilteredBookings();
+    if (filteredBookings.isEmpty) {
       return _buildEmptyState();
     }
-
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      itemCount: _filteredBookings.length,
+      itemCount: filteredBookings.length,
       itemBuilder: (context, index) {
-        final booking = _filteredBookings[index];
+        final booking = filteredBookings[index];
         return Container(
           margin: EdgeInsets.only(bottom: 16),
           child: _buildBookingCard(booking),
@@ -443,9 +384,8 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
   }
 
   Widget _buildEmptyState() {
-    String message;
-    IconData icon;
-    
+    String message = '';
+    IconData icon = Icons.pending_actions;
     switch (_selectedStatus) {
       case BookingStatus.pending:
         message = 'No pending booking requests';
@@ -464,7 +404,6 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         icon = Icons.task_alt;
         break;
     }
-
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -507,9 +446,10 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
   }
 
   Widget _buildBookingCard(Booking booking) {
-    final tenantName = _getTenantName(booking.tenantId);
-    final propertyTitle = _getPropertyTitle(booking.propertyId);
+    final tenantName = booking.tenantName;
+    final propertyTitle = booking.propertyTitle;
     final statusColor = _getStatusColor(booking.status);
+    final formattedAmount = booking.amount != null ? NumberFormat('#,##0').format(booking.amount) : '0';
 
     return GestureDetector(
       onTap: () => _showBookingDetails(booking),
@@ -620,7 +560,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                               Icon(Icons.calendar_today, size: 14, color: AppTheme.getSecondaryTextColor(context)),
                               SizedBox(width: 6),
                               Text(
-                                'Check-in: ${_formatDate(booking.requestedDate)}',
+                                'Check-in: ${_formatDate(booking.startDate ?? booking.requestedDate)}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: AppTheme.getSecondaryTextColor(context),
@@ -665,7 +605,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                     child: Row(
                       children: [
                         Text(
-                          'UGX${(booking.amount ?? 0).toStringAsFixed(0)}',
+                          'UGX$formattedAmount',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -742,15 +682,14 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
             ],
           ),
         ),
-      ),
-    );
+      ));
   }
 
   Widget _buildBookingDetailsModal(Booking booking) {
-    final tenantName = _getTenantName(booking.tenantId);
-    final tenantEmail = _getTenantEmail(booking.tenantId);
-    final tenantPhone = _getTenantPhone(booking.tenantId);
-    final propertyTitle = _getPropertyTitle(booking.propertyId);
+    final tenantName = booking.tenantName;
+    final tenantEmail = booking.tenantEmail;
+    final tenantPhone = booking.tenantPhone;
+    final propertyTitle = booking.propertyTitle;
     final statusColor = _getStatusColor(booking.status);
 
     return Container(
@@ -1062,6 +1001,47 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    // Use Builder to ensure context is under MultiBlocProvider
+    return Builder(
+      builder: (context) {
+        return BlocBuilder<BookingBloc, BookingState>(
+          builder: (context, state) {
+            if (state is BookingLoading) {
+              return Scaffold(
+                backgroundColor: AppTheme.getBackgroundColor(context),
+                body: Center(child: CircularProgressIndicator(color: AppTheme.primaryblue)),
+              );
+            } else if (state is BookingLoaded) {
+              _allBookings = state.bookings;
+              return Scaffold(
+                backgroundColor: AppTheme.getBackgroundColor(context),
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(child: _buildBookingsList()),
+                    ],
+                  ),
+                ),
+              );
+            } else if (state is BookingError) {
+              return Scaffold(
+                backgroundColor: AppTheme.getBackgroundColor(context),
+                body: Center(child: Text(state.message, style: TextStyle(color: Colors.red))),
+              );
+            }
+            return Scaffold(
+              backgroundColor: AppTheme.getBackgroundColor(context),
+              body: Center(child: Text('No bookings found.')),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 class LandlordProfileScreen extends StatelessWidget {
@@ -1257,6 +1237,7 @@ class LandlordProfileScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: Colors.red,
                       ),
                     ),
                   ],

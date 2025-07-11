@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/models/landlord.dart';
-import 'package:pearlnest/models/mock_booking_data.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/landlord/landlord_property_management_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
@@ -47,7 +46,6 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
       case 2:
         return LandlordBookingRequestsScreen(
           user: widget.user,
-          bookings: MockBookingData.generateMockBookings(),
         );
       case 3:
         return ChatScreen(user: widget.user);

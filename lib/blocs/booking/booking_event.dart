@@ -25,3 +25,7 @@ class BookingCreateRequested extends BookingEvent {
 class BookingReset extends BookingEvent {
   const BookingReset();
 }
+
+class FetchBookings extends BookingEvent {
+  const FetchBookings();
+}

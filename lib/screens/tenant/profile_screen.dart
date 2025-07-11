@@ -5,7 +5,6 @@ import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/landlord.dart';
-import 'package:pearlnest/models/mock_booking_data.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
@@ -402,7 +401,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               MaterialPageRoute(
                 builder: (context) => LandlordBookingRequestsScreen(
                   user: widget.user,
-                  bookings: MockBookingData.generateMockBookings(),
                 ),
               ),
             );

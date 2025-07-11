@@ -7,6 +7,7 @@ import 'package:pearlnest/screens/tenant/filters_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/app_config.dart';
+import 'package:intl/intl.dart';
 
 class SearchScreen extends StatefulWidget {
   final User user;
@@ -628,6 +629,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildPropertyCard(Property property) {
+    final formattedPrice = NumberFormat('#,##0').format(property.price);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -988,7 +990,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                'UGX${property.price.toStringAsFixed(0)}',
+                                'UGX$formattedPrice',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,

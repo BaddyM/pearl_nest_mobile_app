@@ -13,6 +13,7 @@ import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:pearlnest/apis/booking_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +49,7 @@ class MyApp extends StatelessWidget {
           create: (context) => PropertyUploadBloc(),
         ),
         BlocProvider<BookingBloc>(
-          create: (context) => BookingBloc(),
+          create: (context) => BookingBloc(bookingService: BookingService()),
         ),
       ],
       child: MultiProvider(

@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:pearlnest/apis/api_client.dart';
+import 'package:pearlnest/apis/app_config.dart';
+import 'package:pearlnest/models/booking.dart';
 
 // Custom exceptions for better error handling
 class BookingException implements Exception {
@@ -126,5 +130,14 @@ class BookingService {
       }
       throw BookingException('Unexpected error: $e');
     }
+  }
+
+  static Future<List<Booking>> fetchBookings() async {
+    final response = await http.get(Uri.parse('${AppConfig.getCurrentBaseUrl()}/booking/list'));
+    final data = json.decode(response.body);
+    if (data['success'] == true && data['data'] != null) {
+      return (data['data'] as List).map((json) => Booking.fromApiJson(json)).toList();
+    }
+    return [];
   }
 }

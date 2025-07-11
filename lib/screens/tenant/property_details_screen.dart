@@ -85,7 +85,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     _loadMockReviews();
     
     // Initialize booking bloc
-    _bookingBloc = BookingBloc();
+    _bookingBloc = context.read<BookingBloc>();
   }
 
   void _loadMockReviews() {

@@ -5,9 +5,12 @@ import 'booking_event.dart';
 import 'booking_state.dart';
 
 class BookingBloc extends Bloc<BookingEvent, BookingState> {
-  BookingBloc() : super(const BookingInitial()) {
+  final BookingService bookingService;
+
+  BookingBloc({required this.bookingService}) : super(const BookingInitial()) {
     on<BookingCreateRequested>(_onBookingCreateRequested);
     on<BookingReset>(_onBookingReset);
+    on<FetchBookings>(_onFetchBookings);
   }
 
   void _logState(String operation, BookingState newState) {
@@ -80,6 +83,22 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     _logState('RESET', state);
   }
 
+  Future<void> _onFetchBookings(
+    FetchBookings event,
+    Emitter<BookingState> emit,
+  ) async {
+    emit(const BookingLoading());
+    _logState('FETCH_BOOKINGS', state);
+    try {
+      final bookings = await BookingService.fetchBookings();
+      emit(BookingLoaded(bookings: bookings));
+      _logState('LOADED', state);
+    } catch (e) {
+      emit(BookingError(message: 'Failed to fetch bookings: $e'));
+      _logState('ERROR', state);
+    }
+  }
+
   /// Validate booking data before sending to API
   Map<String, String> _validateBookingData(
     String propertyId,
@@ -114,7 +133,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     } else {
       try {
         final checkOut = DateTime.parse(checkOutDate);
-        
+
         // If check-in date is valid, compare with check-out
         if (!errors.containsKey('checkInDate')) {
           final checkIn = DateTime.parse(checkInDate);

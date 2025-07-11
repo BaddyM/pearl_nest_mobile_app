@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:pearlnest/models/booking.dart';
 
 abstract class BookingState extends Equatable {
   const BookingState();
@@ -50,4 +51,20 @@ class BookingValidationError extends BookingState {
 
   @override
   List<Object?> get props => [fieldErrors];
+}
+
+class BookingLoaded extends BookingState {
+  final List<Booking> bookings;
+  const BookingLoaded({required this.bookings});
+
+  @override
+  List<Object?> get props => [bookings];
+}
+
+class BookingError extends BookingState {
+  final String message;
+  const BookingError({required this.message});
+
+  @override
+  List<Object?> get props => [message];
 }
