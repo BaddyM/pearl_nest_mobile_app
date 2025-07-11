@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:pearlnest/apis/app_config.dart';
+import 'package:pearlnest/apis/property_interactions_service.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -26,6 +28,19 @@ class Review {
     required this.date,
     this.images = const [],
   });
+
+  // Factory constructor to create Review from API response
+  factory Review.fromJson(Map<String, dynamic> json) {
+    return Review(
+      id: json['id']?.toString() ?? '',
+      userName: json['user']?['name']?.toString() ?? 'Anonymous',
+      userAvatar: json['user']?['profileImage']?.toString() ?? '',
+      rating: (json['stars']?.toDouble() ?? 0.0),
+      comment: json['message']?.toString() ?? '',
+      date: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      images: [], // API might not have images initially
+    );
+  }
 }
 
 class PropertyDetailsScreen extends StatefulWidget {
@@ -61,6 +76,12 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   DateTime? _checkOutDate;
   late BookingBloc _bookingBloc;
 
+  // API data state
+  int _viewsCount = 0;
+  int _sharesCount = 0;
+  int _likesCount = 89; // Default value until we have an API
+  bool _isLoadingStats = true;
+
   @override
   void initState() {
     super.initState();
@@ -82,12 +103,105 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     ));
     
     _animationController.forward();
-    _loadMockReviews();
     
     // Initialize booking bloc
     _bookingBloc = context.read<BookingBloc>();
+    
+    // Load data from APIs
+    _loadPropertyData();
   }
 
+  // Helper to get full image URL
+  String _getFullImageUrl(String url) {
+    // Handle comma-separated URLs and filter out invalid ones
+    if (url.contains(',')) {
+      final urls = url.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty && e != 'undefined').toList();
+      if (urls.isNotEmpty) {
+        url = urls.first;
+      }
+    }
+    
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    final String baseUrl = AppConfig.getCurrentBaseUrl();
+    String cleanUrl = url.replaceFirst(RegExp(r'^(\/|\./)'), '');
+    return '$baseUrl/$cleanUrl';
+  }
+
+  // Load all property data from APIs
+  void _loadPropertyData() async {
+    // Increment view counter when property is viewed
+    PropertyInteractionsService.incrementViewCounter(widget.property.id);
+    
+    // Load statistics
+    _loadPropertyStats();
+    
+    // Load reviews
+    _loadPropertyReviews();
+  }
+
+  // Load property statistics (views, shares, likes)
+  void _loadPropertyStats() async {
+    try {
+      // Load views count
+      final viewsResult = await PropertyInteractionsService.getViewsCounter(widget.property.id);
+      if (viewsResult['success'] == true) {
+        final viewsData = viewsResult['data'];
+        if (mounted) {
+          setState(() {
+            _viewsCount = viewsData?['count'] ?? 0;
+          });
+        }
+      }
+
+      // Load shares count
+      final sharesResult = await PropertyInteractionsService.getSharesCounter(widget.property.id);
+      if (sharesResult['success'] == true) {
+        final sharesData = sharesResult['data'];
+        if (mounted) {
+          setState(() {
+            _sharesCount = sharesData?['count'] ?? 0;
+          });
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    }
+  }
+
+  // Load property reviews from API
+  void _loadPropertyReviews() async {
+    try {
+      final result = await PropertyInteractionsService.getPropertyReviews(widget.property.id);
+      if (result['success'] == true) {
+        final reviewsData = result['data'] as List<dynamic>? ?? [];
+        if (mounted) {
+          setState(() {
+            _reviews = reviewsData.map((reviewJson) => Review.fromJson(reviewJson)).toList();
+          });
+        }
+      } else {
+        // Fallback to mock data if API fails
+        _loadMockReviews();
+      }
+    } catch (e) {
+      // Fallback to mock data if API fails
+      _loadMockReviews();
+    }
+  }
+
+  // Fallback mock reviews method
   void _loadMockReviews() {
     _reviews = [
       Review(
@@ -409,35 +523,79 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     );
   }
 
-  void _submitReview() {
-    final newReview = Review(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userName: widget.user.name,
-      userAvatar: widget.user.profileImage ?? 'assets/images/gojo (3).jpg',
-      rating: _userRating,
-      comment: _reviewController.text,
-      date: DateTime.now(),
-    );
-
-    setState(() {
-      _reviews.insert(0, newReview);
-    });
-
-    _reviewController.clear();
-    _userRating = 0;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Review submitted successfully!', style: TextStyle(color: AppTheme.lightGreyColor),),
-        backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(milliseconds: 500),
-        margin: EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+  void _submitReview() async {
+    if (_userRating == 0 || _reviewController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please provide a rating and comment', style: TextStyle(color: AppTheme.whiteColor)),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
-      ),
-    );
+      );
+      return;
+    }
+
+    try {
+      // Submit review via API
+      final result = await PropertyInteractionsService.addReview(
+        propertyId: widget.property.id,
+        stars: _userRating.toInt(),
+        message: _reviewController.text.trim(),
+      );
+
+      if (result['success'] == true) {
+        // Add review to local list for immediate UI update
+        final newReview = Review(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userName: widget.user.name,
+          userAvatar: widget.user.profileImage ?? '',
+          rating: _userRating,
+          comment: _reviewController.text,
+          date: DateTime.now(),
+        );
+
+        setState(() {
+          _reviews.insert(0, newReview);
+        });
+
+        _reviewController.clear();
+        _userRating = 0;
+        Navigator.of(context).pop(); // Close dialog
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Review submitted successfully!', style: TextStyle(color: AppTheme.whiteColor)),
+            backgroundColor: AppTheme.primaryblue,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Failed to submit review', style: TextStyle(color: AppTheme.whiteColor)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting review. Please try again.', style: TextStyle(color: AppTheme.whiteColor)),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
 
   void _showBookingConfirmationDialog() {
@@ -536,7 +694,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                               Row(
                                 children: [
                                   Text(
-                                    'UGX${widget.property.price.toStringAsFixed(0)} ${widget.property.priceType}',
+                                    'UGX${NumberFormat('#,##0').format(widget.property.price)} ${widget.property.priceType}',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -872,22 +1030,53 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
-                    child: Image.asset(
-                      images[index],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: AppTheme.lightGreyColor,
-                          child: Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: AppTheme.getSecondaryTextColor(context),
-                              size: 50,
+                    child: widget.property.images.isNotEmpty
+                        ? Image.network(
+                            _getFullImageUrl(images[index]),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppTheme.lightGreyColor,
+                                      AppTheme.primaryblue.withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: AppTheme.primaryblue,
+                                    size: 50,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppTheme.primaryblue.withValues(alpha: 0.1),
+                                  AppTheme.primaryblue.withValues(alpha: 0.3),
+                                ],
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.home_rounded,
+                                color: AppTheme.primaryblue,
+                                size: 50,
+                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
                   ),
                 );
               },
@@ -1087,7 +1276,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           Row(
             children: [
               Text(
-                'UGX${widget.property.price.toStringAsFixed(0)}',
+                'UGX${NumberFormat('#,##0').format(widget.property.price)}',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -1168,7 +1357,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             child: _buildStatCard(
               icon: Icons.visibility,
               title: 'Views',
-              value: '1.2k',
+              value: _isLoadingStats ? '...' : _formatStatNumber(_viewsCount),
               color: Colors.blue,
             ),
           ),
@@ -1177,7 +1366,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             child: _buildStatCard(
               icon: Icons.favorite,
               title: 'Likes',
-              value: '89',
+              value: _formatStatNumber(_likesCount),
               color: Colors.red,
             ),
           ),
@@ -1186,8 +1375,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             child: _buildStatCard(
               icon: Icons.share,
               title: 'Shares',
-              value: '23',
+              value: _isLoadingStats ? '...' : _formatStatNumber(_sharesCount),
               color: Colors.green,
+              onTap: _shareProperty,
             ),
           ),
           SizedBox(width: 12),
@@ -1195,7 +1385,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             child: _buildStatCard(
               icon: Icons.schedule,
               title: 'Available',
-              value: 'Now',
+              value: widget.property.availabilityStatus == AvailabilityStatus.availableNow ? 'Now' : 'Later',
               color: AppTheme.primaryblue,
             ),
           ),
@@ -1204,47 +1394,62 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     );
   }
 
+  // Helper to format large numbers (e.g., 1500 -> 1.5k)
+  String _formatStatNumber(int number) {
+    if (number >= 1000000) {
+      return '${(number / 1000000).toStringAsFixed(1)}M';
+    } else if (number >= 1000) {
+      return '${(number / 1000).toStringAsFixed(1)}k';
+    } else {
+      return number.toString();
+    }
+  }
+
   Widget _buildStatCard({
     required IconData icon,
     required String title,
     required String value,
     required Color color,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.getTextColor(context),
+            SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.getTextColor(context),
+              ),
             ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 10,
-              color: AppTheme.getSecondaryTextColor(context),
-              fontWeight: FontWeight.w500,
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 10,
+                color: AppTheme.getSecondaryTextColor(context),
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1508,22 +1713,53 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      images[index],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: AppTheme.lightGreyColor,
-                          child: Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: AppTheme.getSecondaryTextColor(context),
-                              size: 30,
+                    child: widget.property.images.isNotEmpty
+                        ? Image.network(
+                            _getFullImageUrl(images[index]),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppTheme.lightGreyColor,
+                                      AppTheme.primaryblue.withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: AppTheme.primaryblue,
+                                    size: 30,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppTheme.primaryblue.withValues(alpha: 0.1),
+                                  AppTheme.primaryblue.withValues(alpha: 0.3),
+                                ],
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.home_rounded,
+                                color: AppTheme.primaryblue,
+                                size: 30,
+                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ),
               );
@@ -2682,8 +2918,41 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             ),
           ],
         ),
-      ),
-    );
+      ));
+  }
+
+  // Handle property sharing
+  void _shareProperty() async {
+    try {
+      // Increment share counter
+      await PropertyInteractionsService.incrementShareCounter(widget.property.id);
+      
+      // Update local count
+      setState(() {
+        _sharesCount++;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Property shared successfully!', style: TextStyle(color: AppTheme.whiteColor)),
+          backgroundColor: AppTheme.primaryblue,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to share property', style: TextStyle(color: AppTheme.whiteColor)),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
 }
 

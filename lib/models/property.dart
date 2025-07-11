@@ -216,7 +216,11 @@ class Property {
           : DateTime.now(),
       isFeatured: json['isFeatured'] ?? json['featured'] ?? false,
       isVerified: json['isVerified'] ?? false,
-      availabilityStatus: _parseAvailabilityStatus(json['availabilityStatus'] ?? 'availableNow'),
+      availabilityStatus: json['availability'] == true 
+          ? AvailabilityStatus.availableNow 
+          : json['availability'] == false 
+              ? AvailabilityStatus.availableLater 
+              : _parseAvailabilityStatus(json['availabilityStatus'] ?? 'availableNow'),
       availableFrom: json['availableFrom'] != null 
           ? DateTime.parse(json['availableFrom']) 
           : null,

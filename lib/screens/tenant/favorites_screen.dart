@@ -3,6 +3,8 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/apis/favorites_service.dart';
+import 'package:pearlnest/apis/app_config.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final User user;
@@ -53,287 +55,132 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
     super.dispose();
   }
 
-  void _loadFavoriteProperties() {
-    Future.delayed(Duration(seconds: 1), () {
+  void _loadFavoriteProperties() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final favorites = await FavoritesService.fetchFavorites();
       setState(() {
-        _favoriteProperties = _getDummyFavoriteProperties();
+        _favoriteProperties = favorites;
         _filteredProperties = List.from(_favoriteProperties);
         _isLoading = false;
       });
       _animationController.forward();
-    });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to load favorites: ${e.toString()}',
+              style: TextStyle(color: AppTheme.lightGreyColor),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+          ),
+        );
+      }
+    }
   }
 
-  List<Property> _getDummyFavoriteProperties() {
-    return [
-      Property(
-        id: '1',
-        title: 'Luxury Downtown Apartment',
-        description: 'Beautiful modern apartment with stunning city views and premium amenities',
-        type: PropertyType.apartment,
-        price: 2500000,
-        priceType: 'per month',
-        location: 'Downtown',
-        address: '123 Main St, City Center',
-        latitude: 40.7128,
-        longitude: -74.0060,
-        images: [
-          'assets/images/img5.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img1.jpg',
-        ],
-        amenities: ['WiFi', 'Parking', 'Gym', 'Pool', 'Security'],
-        bedrooms: 3,
-        bathrooms: 2,
-        area: 120.0,
-        landlordId: 'landlord1',
-        landlordName: 'John Smith',
-        landlordPhone: '+1234567890',
-        status: PropertyStatus.available,
-        rating: 4.8,
-        reviewCount: 45,
-        createdAt: DateTime.now().subtract(Duration(days: 5)),
-        updatedAt: DateTime.now(),
-        isFeatured: true,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        landlordEmail: '',
-      ),
-      Property(
-        id: '2',
-        title: 'Cozy Family House',
-        description: 'Spacious family home in quiet neighborhood with garden',
-        type: PropertyType.fullHouse,
-        price: 3500000,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '456 Oak Avenue, Residential Area',
-        latitude: 40.7128,
-        longitude: -74.0060,
-        images: [
-          'assets/images/img8.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img1.jpg',
-          'assets/images/img5.jpg',
-        ],
-        amenities: ['WiFi', 'Parking', 'Garden', 'Security'],
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 200.0,
-        landlordId: 'landlord2',
-        landlordName: 'Jane Doe',
-        landlordPhone: '+1234567891',
-        status: PropertyStatus.available,
-        rating: 4.6,
-        reviewCount: 32,
-        createdAt: DateTime.now().subtract(Duration(days: 10)),
-        updatedAt: DateTime.now(),
-        isFeatured: false,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        landlordEmail: '',
-      ),
-      Property(
-        id: '3',
-        title: 'Modern Airbnb Studio',
-        description: 'Perfect for short stays with all modern amenities',
-        type: PropertyType.airbnb,
-        price: 150000,
-        priceType: 'per night',
-        location: 'Tourist District',
-        address: '789 Beach Road, Tourist Area',
-        latitude: 40.7128,
-        longitude: -74.0060,
-        images: [
-          'assets/images/img2.jpg',
-          'assets/images/img1.jpg',
-          'assets/images/img3.jpg',
-        ],
-        amenities: ['WiFi', 'Kitchen', 'AC', 'TV'],
-        bedrooms: 1,
-        bathrooms: 1,
-        area: 45.0,
-        landlordId: 'landlord3',
-        landlordName: 'Mike Johnson',
-        landlordPhone: '+1234567892',
-        status: PropertyStatus.available,
-        rating: 4.9,
-        reviewCount: 78,
-        createdAt: DateTime.now().subtract(Duration(days: 3)),
-        updatedAt: DateTime.now(),
-        isFeatured: true,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        landlordEmail: '',
-      ),Property(
-        id: '4',
-        title: 'Luxury Downtown Apartment',
-        description: 'Beautiful modern apartment with stunning city views and premium amenities',
-        type: PropertyType.apartment,
-        price: 2500000,
-        priceType: 'per month',
-        location: 'Downtown',
-        address: '123 Main St, City Center',
-        latitude: 40.7128,
-        longitude: -74.0060,
-        images: [
-          'assets/images/img5.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img1.jpg',
-        ],
-        amenities: ['WiFi', 'Parking', 'Gym', 'Pool', 'Security'],
-        bedrooms: 3,
-        bathrooms: 2,
-        area: 120.0,
-        landlordId: 'landlord1',
-        landlordName: 'John Smith',
-        landlordPhone: '+1234567890',
-        status: PropertyStatus.available,
-        rating: 4.8,
-        reviewCount: 45,
-        createdAt: DateTime.now().subtract(Duration(days: 5)),
-        updatedAt: DateTime.now(),
-        isFeatured: true,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        landlordEmail: '',
-      ),Property(
-        id: '5',
-        title: 'Luxury Downtown Apartment',
-        description: 'Beautiful modern apartment with stunning city views and premium amenities',
-        type: PropertyType.apartment,
-        price: 2500000,
-        priceType: 'per month',
-        location: 'Downtown',
-        address: '123 Main St, City Center',
-        latitude: 40.7128,
-        longitude: -74.0060,
-        images: [
-          'assets/images/img5.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img1.jpg',
-        ],
-        amenities: ['WiFi', 'Parking', 'Gym', 'Pool', 'Security'],
-        bedrooms: 3,
-        bathrooms: 2,
-        area: 120.0,
-        landlordId: 'landlord1',
-        landlordName: 'John Smith',
-        landlordPhone: '+1234567890',
-        status: PropertyStatus.available,
-        rating: 4.8,
-        reviewCount: 45,
-        createdAt: DateTime.now().subtract(Duration(days: 5)),
-        updatedAt: DateTime.now(),
-        isFeatured: true,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        landlordEmail: '',
-      ),Property(
-        id: '6',
-        title: 'Luxury Downtown Apartment',
-        description: 'Beautiful modern apartment with stunning city views and premium amenities',
-        type: PropertyType.apartment,
-        price: 2500000,
-        priceType: 'per month',
-        location: 'Downtown',
-        address: '123 Main St, City Center',
-        latitude: 40.7128,
-        longitude: -74.0060,
-        images: [
-          'assets/images/img5.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img1.jpg',
-        ],
-        amenities: ['WiFi', 'Parking', 'Gym', 'Pool', 'Security'],
-        bedrooms: 3,
-        bathrooms: 2,
-        area: 120.0,
-        landlordId: 'landlord1',
-        landlordName: 'John Smith',
-        landlordPhone: '+1234567890',
-        status: PropertyStatus.available,
-        rating: 4.8,
-        reviewCount: 45,
-        createdAt: DateTime.now().subtract(Duration(days: 5)),
-        updatedAt: DateTime.now(),
-        isFeatured: true,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        landlordEmail: '',
-      ),Property(
-        id: '7',
-        title: 'Luxury Downtown Apartment',
-        description: 'Beautiful modern apartment with stunning city views and premium amenities',
-        type: PropertyType.apartment,
-        price: 2500000,
-        priceType: 'per month',
-        location: 'Downtown',
-        address: '123 Main St, City Center',
-        latitude: 40.7128,
-        longitude: -74.0060,
-        images: [
-          'assets/images/img5.jpg',
-          'assets/images/img3.jpg',
-          'assets/images/img4.jpg',
-          'assets/images/img1.jpg',
-        ],
-        amenities: ['WiFi', 'Parking', 'Gym', 'Pool', 'Security'],
-        bedrooms: 3,
-        bathrooms: 2,
-        area: 120.0,
-        landlordId: 'landlord1',
-        landlordName: 'John Smith',
-        landlordPhone: '+1234567890',
-        status: PropertyStatus.available,
-        rating: 4.8,
-        reviewCount: 45,
-        createdAt: DateTime.now().subtract(Duration(days: 5)),
-        updatedAt: DateTime.now(),
-        isFeatured: true,
-        isVerified: true,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        landlordEmail: '',
-      ),
-    ];
-  }
+  void _toggleFavorite(String propertyId) async {
+    try {
+      // Show loading indicator
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+                ),
+              ),
+              SizedBox(width: 16),
+              Text(
+                'Removing from favorites...',
+                style: TextStyle(color: AppTheme.lightGreyColor),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.primaryblue,
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+        ),
+      );
 
-  void _toggleFavorite(String propertyId) {
-    setState(() {
-      if (widget.user.favoriteProperties.contains(propertyId)) {
-        widget.user.favoriteProperties.remove(propertyId);
+      await FavoritesService.removeFromFavorites(propertyId);
+      
+      // Remove from local state
+      setState(() {
         _favoriteProperties.removeWhere((property) => property.id == propertyId);
         _filterProperties();
-      }
-    });
+      });
 
-    final scaffold = ScaffoldMessenger.of(context);
-    final snackBar = SnackBar(
-      content: Text(
-        'Removed from favorites',
-        style: TextStyle(color: AppTheme.lightGreyColor),
-      ),
-      backgroundColor: AppTheme.primaryblue,
-      duration: Duration(milliseconds: 500),
-      behavior: SnackBarBehavior.floating,
-      margin: EdgeInsets.all(16),
-      action: SnackBarAction(
-        label: 'UNDO',
-        textColor: AppTheme.whiteColor,
-        onPressed: () {
-        },
-      ),
-    );
+      // Hide loading snackbar and show success message
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      final snackBar = SnackBar(
+        content: Text(
+          'Removed from favorites',
+          style: TextStyle(color: AppTheme.lightGreyColor),
+        ),
+        backgroundColor: AppTheme.primaryblue,
+        duration: Duration(milliseconds: 1500),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+        action: SnackBarAction(
+          label: 'UNDO',
+          textColor: AppTheme.whiteColor,
+          onPressed: () async {
+            try {
+              await FavoritesService.addToFavorites(propertyId);
+              // Reload favorites to get the updated list
+              _loadFavoriteProperties();
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Failed to restore favorite: ${e.toString()}',
+                    style: TextStyle(color: AppTheme.lightGreyColor),
+                  ),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.all(16),
+                ),
+              );
+            }
+          },
+        ),
+      );
 
-    scaffold.showSnackBar(snackBar);
-
-    Future.delayed(Duration(milliseconds: 500), () {
-      scaffold.hideCurrentSnackBar();
-    });
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    } catch (e) {
+      // Hide loading snackbar and show error
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to remove from favorites: ${e.toString()}',
+            style: TextStyle(color: AppTheme.lightGreyColor),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    }
   }
 
   void _filterProperties() {
@@ -802,6 +649,16 @@ class PropertyCard extends StatelessWidget {
     this.isHorizontal = false,
   });
 
+  // Helper to get full image URL
+  static String _getFullImageUrl(String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    final String baseUrl = AppConfig.getCurrentBaseUrl();
+    String cleanUrl = url.replaceFirst(RegExp(r'^(\/|\./)'), '');
+    return '$baseUrl/$cleanUrl';
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -845,7 +702,9 @@ class PropertyCard extends StatelessWidget {
           child: Container(
             height: 120,
             padding: EdgeInsets.all(12),
-            child: _buildContentSection(),
+            child: SingleChildScrollView(
+              child: _buildContentSection(),
+            ),
           ),
         ),
       ],
@@ -875,9 +734,23 @@ class PropertyCard extends StatelessWidget {
                     bottomLeft: isHorizontal ? Radius.circular(16) : Radius.zero,
                     bottomRight: isHorizontal ? Radius.zero : Radius.zero,
                   ),
-                  child: Image.asset(
-                    property.images.first,
+                  child: Image.network(
+                    _getFullImageUrl(property.images.first),
                     fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: AppTheme.lightGreyColor,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppTheme.primaryblue,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         color: AppTheme.lightGreyColor,
@@ -970,7 +843,8 @@ class PropertyCard extends StatelessWidget {
           padding: EdgeInsets.all(isHorizontal ? 0 : 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: isHorizontal ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
+            mainAxisAlignment: isHorizontal ? MainAxisAlignment.start : MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1007,47 +881,51 @@ class PropertyCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  SizedBox(height: 4),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentGreen.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      property.propertyTypeString,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppTheme.primaryblue,
-                        fontWeight: FontWeight.w600,
+                  if (!isHorizontal) ...[
+                    SizedBox(height: 4),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentGreen.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        property.propertyTypeString,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.primaryblue,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
               SizedBox(height: isHorizontal ? 4 : 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'UGX ${property.price.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: isHorizontal ? 14 : 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryblue,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'UGX ${property.price.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontSize: isHorizontal ? 12 : 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryblue,
+                          ),
                         ),
-                      ),
-                      Text(
-                        property.priceType,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppTheme.getSecondaryTextColor(context),
+                        Text(
+                          property.priceType,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppTheme.getSecondaryTextColor(context),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
