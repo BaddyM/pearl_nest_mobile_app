@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
+import 'package:pearlnest/widgets/permission_initialization_widget.dart';
 import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/blocs/property/property_bloc.dart';
 import 'package:pearlnest/blocs/property_upload/property_upload_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
+import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/screens/common/splash_screen.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
@@ -51,6 +53,9 @@ class MyApp extends StatelessWidget {
         BlocProvider<BookingBloc>(
           create: (context) => BookingBloc(bookingService: BookingService()),
         ),
+        BlocProvider<ChatBloc>(
+          create: (context) => ChatBloc(),
+        ),
       ],
       child: MultiProvider(
         providers: [
@@ -58,16 +63,18 @@ class MyApp extends StatelessWidget {
         ],
         child: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
-            return MaterialApp(
-              title: 'PearlNest Estates',
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: themeProvider.themeMode,
-              debugShowCheckedModeBanner: false,
-              home: BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  return _buildHome(state);
-                },
+            return PermissionInitializationWidget(
+              child: MaterialApp(
+                title: 'PearlNest Estates',
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: themeProvider.themeMode,
+                debugShowCheckedModeBanner: false,
+                home: BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    return _buildHome(state);
+                  },
+                ),
               ),
             );
           },

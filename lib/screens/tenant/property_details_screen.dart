@@ -9,6 +9,11 @@ import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
+import 'package:pearlnest/blocs/chat/chat_bloc.dart';
+import 'package:pearlnest/blocs/chat/chat_event.dart';
+import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
+import 'package:pearlnest/screens/chat/chat_conversation.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Review {
   final String id;
@@ -2734,31 +2739,74 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     );
   }
 
-  void _callLandlord() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Calling ${widget.property.landlordName}...', style: TextStyle(color: AppTheme.lightGreyColor),),
-        backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(milliseconds: 500),
-        margin: EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+  void _callLandlord() async {
+    final phoneNumber = widget.property.landlordPhone;
+    if (phoneNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Phone number not available', style: TextStyle(color: AppTheme.whiteColor)),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
-      ),
-    );
+      );
+      return;
+    }
+
+    try {
+      final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        throw Exception('Could not launch phone dialer');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open phone dialer', style: TextStyle(color: AppTheme.whiteColor)),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
   }
 
   void _messageLandlord() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening message to ${widget.property.landlordName}...', style: TextStyle(color: AppTheme.lightGreyColor),),
-        backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(milliseconds: 500),
-        margin: EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+    // Initialize chat and navigate to individual chat screen
+    final chatBloc = context.read<ChatBloc>();
+    
+    // Initialize chat if not already done
+    chatBloc.add(const ChatInitialize());
+    
+    // Create a chat conversation object for the landlord
+    final conversation = ChatConversation(
+      id: 'chat_${widget.property.landlordId}',
+      landlordId: widget.property.landlordId,
+      landlordName: widget.property.landlordName,
+      landlordProfilePic: '', // Default empty profile pic
+      lastMessage: '',
+      lastMessageTime: DateTime.now(),
+      unreadCount: 0,
+      isOnline: false,
+      propertyTitle: widget.property.title,
+    );
+    
+    // Navigate to individual chat screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => IndividualChatScreen(
+          conversation: conversation,
+          currentUser: widget.user,
         ),
       ),
     );

@@ -135,9 +135,17 @@ class ApiClient {
       // Try to extract error message from JSON response
       String? errorMessage;
       if (responseData is Map<String, dynamic>) {
-        errorMessage = responseData['message'] as String? ?? 
-                      responseData['error'] as String? ??
-                      responseData['detail'] as String?;
+        // Handle different message types
+        final messageField = responseData['message'] ?? responseData['error'] ?? responseData['detail'];
+        
+        if (messageField is String) {
+          errorMessage = messageField;
+        } else if (messageField is List) {
+          // Join list items with commas (common for validation errors)
+          errorMessage = messageField.join(', ');
+        } else if (messageField != null) {
+          errorMessage = messageField.toString();
+        }
       } else if (responseData is String) {
         try {
           final decoded = jsonDecode(responseData);

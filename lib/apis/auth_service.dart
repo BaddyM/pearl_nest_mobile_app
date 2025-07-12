@@ -226,12 +226,16 @@ class AuthService {
       }
       if (phone.trim().isEmpty) throw ValidationException('Phone number is required');
 
+      // Get FCM token or use placeholder
+      String fcmToken = await _getFcmToken();
+
       final requestData = {
         'name': name.trim(),
         'email': email.trim().toLowerCase(),
         'password': password,
         'contact': phone.trim(),
         'role': userType.toUpperCase(),
+        'fcmToken': fcmToken,
       };
 
       _logRequest('/user/register', requestData);
@@ -274,9 +278,13 @@ class AuthService {
       if (email.trim().isEmpty) throw ValidationException('Email is required');
       if (password.isEmpty) throw ValidationException('Password is required');
 
+      // Get FCM token or use placeholder
+      String fcmToken = await _getFcmToken();
+
       final requestData = {
         'email': email.trim().toLowerCase(),
         'password': password,
+        'fcmToken': fcmToken,
       };
 
       _logRequest('/user/login', requestData);
@@ -690,6 +698,38 @@ class AuthService {
       }
     } catch (e) {
       return _handleError(e, 'profile update');
+    }
+  }
+
+  // Helper method to get FCM token
+  static Future<String> _getFcmToken() async {
+    try {
+      // TODO: Implement proper FCM token retrieval
+      // For now, return a placeholder token since the server requires it
+      final prefs = await SharedPreferences.getInstance();
+      String? savedToken = prefs.getString('fcm_token');
+      
+      if (savedToken != null && savedToken.isNotEmpty) {
+        return savedToken;
+      }
+      
+      // Generate a placeholder token for now
+      // In a real app, this would be obtained from Firebase Messaging
+      final String placeholderToken = 'placeholder_fcm_token_${DateTime.now().millisecondsSinceEpoch}';
+      
+      // Save it for consistency
+      await prefs.setString('fcm_token', placeholderToken);
+      
+      if (kDebugMode) {
+        debugPrint('🔔 Using placeholder FCM token: $placeholderToken');
+      }
+      
+      return placeholderToken;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error getting FCM token: $e');
+      }
+      return 'placeholder_fcm_token_error';
     }
   }
 }

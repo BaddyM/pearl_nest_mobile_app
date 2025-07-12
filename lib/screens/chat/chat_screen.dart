@@ -1,7 +1,10 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/blocs/chat/chat_bloc.dart';
+import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
@@ -29,6 +32,11 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadConversations();
     _searchController.addListener(_onSearchChanged);
+    
+    // Initialize chat service
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatBloc>().add(const ChatInitialize());
+    });
   }
 
   @override
