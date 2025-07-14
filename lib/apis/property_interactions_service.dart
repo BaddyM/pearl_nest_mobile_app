@@ -128,9 +128,7 @@ class PropertyInteractionsService {
   // Increment view counter (call when property is viewed)
   static Future<Map<String, dynamic>> incrementViewCounter(String propertyId) async {
     try {
-      final response = await ApiClient.post('/views/increment', {
-        'propertyId': propertyId,
-      });
+      final response = await ApiClient.put('/views/counter/$propertyId', {});
       
       if (response.statusCode == 200) {
         final data = response.data;
@@ -157,10 +155,11 @@ class PropertyInteractionsService {
   }
 
   // Increment share counter (call when property is shared)
-  static Future<Map<String, dynamic>> incrementShareCounter(String propertyId) async {
+  static Future<Map<String, dynamic>> incrementShareCounter(String propertyId, {String shareType = 'general'}) async {
     try {
-      final response = await ApiClient.post('/shares/increment', {
+      final response = await ApiClient.post('/shares/add', {
         'propertyId': propertyId,
+        'shareType': shareType,
       });
       
       if (response.statusCode == 200) {

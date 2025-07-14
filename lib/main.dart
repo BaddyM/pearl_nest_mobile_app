@@ -63,14 +63,14 @@ class MyApp extends StatelessWidget {
         ],
         child: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
-            return PermissionInitializationWidget(
-              child: MaterialApp(
-                title: 'PearlNest Estates',
-                theme: AppTheme.lightTheme,
-                darkTheme: AppTheme.darkTheme,
-                themeMode: themeProvider.themeMode,
-                debugShowCheckedModeBanner: false,
-                home: BlocBuilder<AuthBloc, AuthState>(
+            return MaterialApp(
+              title: 'PearlNest Estates',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeProvider.themeMode,
+              debugShowCheckedModeBanner: false,
+              home: PermissionInitializationWidget(
+                child: BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
                     return _buildHome(state);
                   },
