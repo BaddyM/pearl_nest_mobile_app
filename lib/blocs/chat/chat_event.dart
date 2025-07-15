@@ -72,21 +72,3 @@ class ChatConnectionChanged extends ChatEvent {
 class ChatClearMessages extends ChatEvent {
   const ChatClearMessages();
 }
-
-class ChatStartTyping extends ChatEvent {
-  final String toUserId;
-
-  const ChatStartTyping({required this.toUserId});
-
-  @override
-  List<Object?> get props => [toUserId];
-}
-
-class ChatStopTyping extends ChatEvent {
-  final String toUserId;
-
-  const ChatStopTyping({required this.toUserId});
-
-  @override
-  List<Object?> get props => [toUserId];
-}

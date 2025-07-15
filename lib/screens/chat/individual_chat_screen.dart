@@ -11,7 +11,6 @@ import 'package:pearlnest/screens/chat/chat_conversation.dart';
 import 'package:pearlnest/screens/chat/chat_input.dart';
 import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/screens/chat/message_bubble.dart';
-import 'package:pearlnest/screens/chat/typing_indicator.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class IndividualChatScreen extends StatefulWidget {
@@ -31,13 +30,11 @@ class IndividualChatScreen extends StatefulWidget {
 class _IndividualChatScreenState extends State<IndividualChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _isTyping = false;
 
   @override
   void initState() {
     super.initState();
     _initializeChat();
-    _messageController.addListener(_onTypingChanged);
   }
 
   void _initializeChat() {
@@ -49,27 +46,9 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   @override
   void dispose() {
-    _messageController.removeListener(_onTypingChanged);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onTypingChanged() {
-    final isCurrentlyTyping = _messageController.text.trim().isNotEmpty;
-    if (isCurrentlyTyping != _isTyping) {
-      setState(() {
-        _isTyping = isCurrentlyTyping;
-      });
-      
-      // Send typing indicators
-      final chatBloc = context.read<ChatBloc>();
-      if (isCurrentlyTyping) {
-        chatBloc.add(ChatStartTyping(toUserId: widget.conversation.landlordId));
-      } else {
-        chatBloc.add(ChatStopTyping(toUserId: widget.conversation.landlordId));
-      }
-    }
   }
 
   void _sendMessage() {
@@ -315,16 +294,12 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   Widget _buildMessagesList(ChatState state) {
     List<ChatMessage> messages = [];
-    bool showTypingIndicator = false;
     
     if (state is ChatConnected) {
       messages = state.messages;
-    } else if (state is ChatTypingState) {
-      messages = state.messages;
-      showTypingIndicator = state.isTyping;
     }
     
-    if (messages.isEmpty && !showTypingIndicator) {
+    if (messages.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -359,12 +334,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: messages.length + (showTypingIndicator ? 1 : 0),
+      itemCount: messages.length,
       itemBuilder: (context, index) {
-        if (index == messages.length && showTypingIndicator) {
-          return TypingIndicator(userName: widget.conversation.landlordName);
-        }
-        
         final message = messages[index];
         final isFromCurrentUser = message.fromUserId == widget.currentUser.id.toString();
         final showTimestamp = _shouldShowTimestamp(index, messages);

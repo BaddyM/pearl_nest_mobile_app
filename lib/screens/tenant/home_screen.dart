@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
+import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
@@ -87,16 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   ChatConversation _createPearlNestConversation() {
-    return ChatConversation(
-      id: 'pearlnest_support',
-      landlordId: 'pearlnest_support',
-      landlordName: 'PearlNest Support',
-      landlordProfilePic: '',
+    return ChatService.getAdminConversation(
       propertyTitle: 'General Support & Inquiries',
-      lastMessage: 'Hello! How can we help you today?',
-      lastMessageTime: DateTime.now(),
-      isOnline: true,
-      unreadCount: 0,
     );
   }
 

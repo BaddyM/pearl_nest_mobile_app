@@ -98,22 +98,3 @@ class ChatMessageSent extends ChatState {
   @override
   List<Object?> get props => [messages, isConnected, currentChatUserId];
 }
-
-class ChatTypingState extends ChatState {
-  final List<ChatMessage> messages;
-  final bool isConnected;
-  final String? currentChatUserId;
-  final bool isTyping;
-  final String? typingUserId;
-
-  const ChatTypingState({
-    required this.messages,
-    required this.isConnected,
-    this.currentChatUserId,
-    required this.isTyping,
-    this.typingUserId,
-  });
-
-  @override
-  List<Object?> get props => [messages, isConnected, currentChatUserId, isTyping, typingUserId];
-}

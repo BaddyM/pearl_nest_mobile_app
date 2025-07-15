@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_interactions_service.dart';
+import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -12,7 +13,6 @@ import 'package:pearlnest/blocs/booking/booking_state.dart';
 import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
-import 'package:pearlnest/screens/chat/chat_conversation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Review {
@@ -2787,16 +2787,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     // Initialize chat if not already done
     chatBloc.add(const ChatInitialize());
     
-    // Create a chat conversation object for the landlord
-    final conversation = ChatConversation(
-      id: 'chat_${widget.property.landlordId}',
-      landlordId: widget.property.landlordId,
-      landlordName: widget.property.landlordName,
-      landlordProfilePic: '', // Default empty profile pic
-      lastMessage: '',
-      lastMessageTime: DateTime.now(),
-      unreadCount: 0,
-      isOnline: false,
+    // Get admin conversation object
+    final conversation = ChatService.getAdminConversation(
       propertyTitle: widget.property.title,
     );
     
@@ -2972,12 +2964,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   // Handle property sharing
   void _shareProperty() async {
     try {
-      // Show share options dialog
-      final shareType = await _showShareOptionsDialog();
-      if (shareType == null) return; // User cancelled
-      
-      // Increment share counter with specific share type
-      await PropertyInteractionsService.incrementShareCounter(widget.property.id, shareType: shareType);
+      // Increment share counter
+      await PropertyInteractionsService.incrementShareCounter(widget.property.id);
       
       // Update local count
       setState(() {
@@ -3005,86 +2993,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
         ),
       );
     }
-  }
-
-  // Show share options dialog to track share type for analytics
-  Future<String?> _showShareOptionsDialog() async {
-    return await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'Share Property',
-            style: TextStyle(
-              color: AppTheme.getTextColor(context),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'How would you like to share this property?',
-                style: TextStyle(
-                  color: AppTheme.getSecondaryTextColor(context),
-                ),
-              ),
-              SizedBox(height: 20),
-              // Share options
-              _buildShareOption('WhatsApp', Icons.chat, 'whatsapp'),
-              _buildShareOption('Facebook', Icons.facebook, 'facebook'),
-              _buildShareOption('Instagram', Icons.camera_alt, 'instagram'),
-              _buildShareOption('Twitter', Icons.alternate_email, 'twitter'),
-              _buildShareOption('Email', Icons.email, 'email'),
-              _buildShareOption('SMS', Icons.message, 'sms'),
-              _buildShareOption('Copy Link', Icons.link, 'link'),
-              _buildShareOption('Other', Icons.share, 'other'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildShareOption(String title, IconData icon, String shareType) {
-    return InkWell(
-      onTap: () => Navigator.of(context).pop(shareType),
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        margin: EdgeInsets.symmetric(vertical: 2),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: AppTheme.getCardColor(context),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: AppTheme.primaryblue,
-              size: 24,
-            ),
-            SizedBox(width: 16),
-            Text(
-              title,
-              style: TextStyle(
-                color: AppTheme.getTextColor(context),
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

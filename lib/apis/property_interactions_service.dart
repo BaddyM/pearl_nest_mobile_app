@@ -155,11 +155,10 @@ class PropertyInteractionsService {
   }
 
   // Increment share counter (call when property is shared)
-  static Future<Map<String, dynamic>> incrementShareCounter(String propertyId, {String shareType = 'general'}) async {
+  static Future<Map<String, dynamic>> incrementShareCounter(String propertyId) async {
     try {
       final response = await ApiClient.post('/shares/add', {
         'propertyId': propertyId,
-        'shareType': shareType,
       });
       
       if (response.statusCode == 200) {

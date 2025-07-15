@@ -24,8 +24,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatMarkAsRead>(_onMarkAsRead);
     on<ChatConnectionChanged>(_onConnectionChanged);
     on<ChatClearMessages>(_onClearMessages);
-    on<ChatStartTyping>(_onStartTyping);
-    on<ChatStopTyping>(_onStopTyping);
   }
 
   Future<void> _onInitialize(ChatInitialize event, Emitter<ChatState> emit) async {
@@ -248,28 +246,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _messages.clear();
     _currentChatUserId = null;
     
-    emit(ChatConnected(
-      messages: List.from(_messages),
-      isConnected: _isConnected,
-      currentChatUserId: _currentChatUserId,
-    ));
-  }
-
-  Future<void> _onStartTyping(ChatStartTyping event, Emitter<ChatState> emit) async {
-    // Implement typing indicators if needed
-    // For now, just maintain current state
-    emit(ChatTypingState(
-      messages: List.from(_messages),
-      isConnected: _isConnected,
-      currentChatUserId: _currentChatUserId,
-      isTyping: true,
-      typingUserId: event.toUserId,
-    ));
-  }
-
-  Future<void> _onStopTyping(ChatStopTyping event, Emitter<ChatState> emit) async {
-    // Implement typing indicators if needed
-    // For now, just maintain current state
     emit(ChatConnected(
       messages: List.from(_messages),
       isConnected: _isConnected,

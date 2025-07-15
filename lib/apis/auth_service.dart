@@ -30,6 +30,7 @@ class AuthService {
   static const String _tokenKey = 'auth_token';
   static const String _lastLoginKey = 'last_login';
   static const String _tokenExpiryKey = 'token_expiry';
+  static const String _userIdKey = 'user_id';
   
   // Configuration constants
   static const int _passwordMinLength = 6;
@@ -188,6 +189,27 @@ class AuthService {
     }
   }
 
+  // Save user ID to local storage
+  static Future<void> _saveUserId(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userIdKey, userId);
+      
+      if (kDebugMode) {
+        debugPrint('💾 User ID saved successfully: $userId');
+        debugPrint('💾 UserID key used: $_userIdKey');
+        
+        // Verify it was saved
+        final savedUserId = prefs.getString(_userIdKey);
+        debugPrint('💾 Verification - Retrieved user ID: $savedUserId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error saving user ID: $e');
+      }
+    }
+  }
+
   // Check if token is expired locally
   static Future<bool> isTokenExpired() async {
     try {
@@ -298,6 +320,11 @@ class AuthService {
         // Save token with expiry
         await _saveToken(responseData['accessToken'], expiresIn: responseData['expiresIn']);
         
+        // Save userId if provided in the response
+        if (responseData['userId'] != null) {
+          await _saveUserId(responseData['userId'].toString());
+        }
+        
         // Set the token for subsequent requests
         ApiClient.setAuthToken(responseData['accessToken']);
         
@@ -309,12 +336,25 @@ class AuthService {
           if (profileResponse.statusCode == 200) {
             final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
             
+            // Create user object from profile data
+            final userData = profileData['data'];
+            
+            // If profile data doesn't have ID, use the one from login response
+            if ((userData['id'] == null || userData['id'].toString().isEmpty) && responseData['userId'] != null) {
+              userData['id'] = responseData['userId'].toString();
+              if (kDebugMode) {
+                debugPrint('🔧 Profile data missing ID, using login userId: ${responseData['userId']}');
+              }
+            }
+            
+            final user = User.fromJson(userData);
+            
             // Save user data and last login
-            await saveUserData(User.fromJson(profileData['data']));
+            await saveUserData(user);
             
             return {
               'success': true,
-              'user': User.fromJson(profileData['data']),
+              'user': user,
               'token': responseData['accessToken'],
               'message': responseData['message'] ?? 'Login successful',
               'expiresIn': responseData['expiresIn'],
@@ -489,6 +529,7 @@ class AuthService {
         prefs.remove(_userDataKey),
         prefs.remove(_lastLoginKey),
         prefs.remove(_tokenExpiryKey),
+        prefs.remove(_userIdKey),
       ]);
       
       if (kDebugMode) {
@@ -592,6 +633,27 @@ class AuthService {
     }
   }
 
+  // Get the saved user ID
+  static Future<String?> getUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(_userIdKey);
+      
+      if (kDebugMode) {
+        debugPrint('🔍 AuthService.getUserId() called');
+        debugPrint('🔍 Retrieved user ID from storage: $userId');
+        debugPrint('🔍 UserID key: $_userIdKey');
+      }
+      
+      return userId;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error getting user ID: $e');
+      }
+      return null;
+    }
+  }
+
   // Helper method to save user data
   static Future<bool> saveUserData(User user) async {
     try {
@@ -599,6 +661,16 @@ class AuthService {
       final userJson = jsonEncode(user.toJson());
       await prefs.setString(_userDataKey, userJson);
       await prefs.setInt(_lastLoginKey, DateTime.now().millisecondsSinceEpoch);
+      
+      // Only save user ID if it's not empty to avoid overwriting existing valid ID
+      if (user.id.isNotEmpty) {
+        await _saveUserId(user.id);
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ User data has empty ID, preserving existing user ID');
+        }
+      }
+      
       return true;
     } catch (e, stackTrace) {
       if (kDebugMode) {
@@ -730,6 +802,107 @@ class AuthService {
         debugPrint('❌ Error getting FCM token: $e');
       }
       return 'placeholder_fcm_token_error';
+    }
+  }
+
+  // Debug method to check all stored data
+  static Future<void> debugStoredData() async {
+    if (!kDebugMode) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      debugPrint('🔍 === AUTH SERVICE STORED DATA DEBUG ===');
+      debugPrint('🔍 Token exists: ${prefs.getString(_tokenKey) != null}');
+      debugPrint('🔍 User data exists: ${prefs.getString(_userDataKey) != null}');
+      debugPrint('🔍 User ID exists: ${prefs.getString(_userIdKey) != null}');
+      debugPrint('🔍 User ID value: ${prefs.getString(_userIdKey)}');
+      debugPrint('🔍 Last login exists: ${prefs.getInt(_lastLoginKey) != null}');
+      debugPrint('🔍 Token expiry exists: ${prefs.getInt(_tokenExpiryKey) != null}');
+      
+      // Try to get and parse user data
+      final userDataJson = prefs.getString(_userDataKey);
+      if (userDataJson != null) {
+        try {
+          final userData = jsonDecode(userDataJson);
+          debugPrint('🔍 User data ID field: ${userData['id']}');
+          debugPrint('🔍 User data name field: ${userData['name']}');
+        } catch (e) {
+          debugPrint('❌ Error parsing stored user data: $e');
+        }
+      }
+      
+      debugPrint('🔍 === END STORED DATA DEBUG ===');
+    } catch (e) {
+      debugPrint('❌ Error in debugStoredData: $e');
+    }
+  }
+
+  // Emergency method to fix user ID if it's missing but user data exists
+  static Future<bool> fixMissingUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(_userIdKey);
+      
+      if (userId != null && userId.isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint('✅ User ID already exists: $userId');
+        }
+        return true;
+      }
+      
+      // Try to get user ID from stored user data
+      final userDataJson = prefs.getString(_userDataKey);
+      if (userDataJson != null) {
+        try {
+          final userData = jsonDecode(userDataJson);
+          if (kDebugMode) {
+            debugPrint('🔍 Full user data from storage: $userData');
+            debugPrint('🔍 Available keys: ${userData.keys.toList()}');
+            debugPrint('🔍 ID field: ${userData['id']}');
+            debugPrint('🔍 _id field: ${userData['_id']}');
+            debugPrint('🔍 userId field: ${userData['userId']}');
+            debugPrint('🔍 user_id field: ${userData['user_id']}');
+          }
+          
+          // Try different possible ID fields
+          String? userIdFromData;
+          if (userData['id'] != null && userData['id'].toString().isNotEmpty) {
+            userIdFromData = userData['id'].toString();
+          } else if (userData['_id'] != null && userData['_id'].toString().isNotEmpty) {
+            userIdFromData = userData['_id'].toString();
+          } else if (userData['userId'] != null && userData['userId'].toString().isNotEmpty) {
+            userIdFromData = userData['userId'].toString();
+          } else if (userData['user_id'] != null && userData['user_id'].toString().isNotEmpty) {
+            userIdFromData = userData['user_id'].toString();
+          }
+          
+          if (userIdFromData != null && userIdFromData.isNotEmpty) {
+            await _saveUserId(userIdFromData);
+            if (kDebugMode) {
+              debugPrint('🔧 Fixed missing user ID by extracting from user data: $userIdFromData');
+            }
+            return true;
+          } else {
+            if (kDebugMode) {
+              debugPrint('❌ No valid user ID found in any expected fields');
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('❌ Error parsing user data to fix user ID: $e');
+          }
+        }
+      }
+      
+      if (kDebugMode) {
+        debugPrint('❌ Cannot fix user ID - no user data found');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error in fixMissingUserId: $e');
+      }
+      return false;
     }
   }
 }
