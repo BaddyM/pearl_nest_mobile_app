@@ -3,9 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
+import 'package:pearlnest/apis/booking_service.dart';
+import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/property.dart';
+import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
@@ -16,6 +19,7 @@ import 'package:pearlnest/screens/tenant/profile_screen.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/screens/tenant/search_screen.dart';
 import 'package:pearlnest/screens/tenant/booking_screen.dart';
+import 'package:pearlnest/screens/tenant/payment_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
@@ -38,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Property> _properties = [];
   List<Property> _featuredProperties = [];
   List<Property> _categoryProperties = []; // Properties filtered by category
+  List<Booking> _pendingBookings = []; // Pending bookings for current user
+  List<Property> _pendingProperties = []; // Properties with pending bookings
   bool _isLoading = true;
   bool _isCategoryLoading = false; // Loading state for category filtering
   String? _errorMessage;
@@ -120,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _errorMessage = null;
     });
     try {
-      // Load general properties and featured properties separately
+      // Load general properties, featured properties, and pending bookings in parallel
       final [propertiesResult, featuredResult] = await Future.wait([
         PropertyService.getProperties(),
         PropertyService.getFeaturedProperties(),
@@ -148,10 +154,16 @@ class _HomeScreenState extends State<HomeScreen> {
         });
         
         debugPrint('🏠 Properties loaded - General: ${generalProperties.length}, Featured: ${featuredProperties.length}');
+        
+        // Load pending bookings after properties are loaded
+        await _loadPendingBookings();
+        
       } else {
         setState(() {
           _errorMessage = propertiesResult['message'] ?? 'Failed to load properties.';
           _categoryProperties = []; // Initialize empty category properties
+          _pendingBookings = []; // Initialize empty pending bookings
+          _pendingProperties = []; // Initialize empty pending properties
           _isLoading = false;
         });
       }
@@ -160,6 +172,8 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _errorMessage = 'An error occurred while loading properties.';
         _categoryProperties = []; // Initialize empty category properties
+        _pendingBookings = []; // Initialize empty pending bookings
+        _pendingProperties = []; // Initialize empty pending properties
         _isLoading = false;
       });
     }
@@ -270,108 +284,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Debug method to test featured properties API (development only)
-  void _testFeaturedPropertiesAPI() async {
-    if (!kDebugMode) return;
-    
-    debugPrint('');
-    debugPrint('🧪 === TESTING FEATURED PROPERTIES API ===');
-    
-    try {
-      final result = await PropertyService.getFeaturedProperties();
-      
-      debugPrint('✅ Featured Properties API Test Results:');
-      debugPrint('   - Success: ${result['success']}');
-      debugPrint('   - Properties count: ${(result['properties'] as List?)?.length ?? 0}');
-      debugPrint('   - Has data: ${result['hasData']}');
-      debugPrint('   - Message: ${result['message']}');
-      debugPrint('   - Status code: ${result['statusCode']}');
-      
-      if (result['success'] == true) {
-        final properties = result['properties'] as List<Property>?;
-        if (properties != null && properties.isNotEmpty) {
-          debugPrint('📋 Featured Properties Found:');
-          for (int i = 0; i < properties.length; i++) {
-            final prop = properties[i];
-            debugPrint('   ${i + 1}. ${prop.title} - ${prop.location}');
-          }
-        } else {
-          debugPrint('ℹ️ No featured properties returned from API');
-        }
-      } else {
-        debugPrint('❌ Featured Properties API failed: ${result['message']}');
-      }
-      
-    } catch (e) {
-      debugPrint('❌ Featured Properties API test error: $e');
-    }
-    
-    debugPrint('🏁 === FEATURED PROPERTIES API TEST END ===');
-    debugPrint('');
-  }
-
-  // Method to refresh featured properties specifically
-  Future<void> _refreshFeaturedProperties() async {
-    debugPrint('🔄 Refreshing featured properties...');
-    
-    try {
-      final featuredResult = await PropertyService.getFeaturedProperties();
-      
-      if (featuredResult['success'] == true) {
-        final featuredProperties = List<Property>.from(featuredResult['properties'] ?? []);
-        
-        setState(() {
-          _featuredProperties = featuredProperties;
-        });
-        
-        debugPrint('✅ Featured properties refreshed: ${featuredProperties.length} properties');
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Featured properties updated: ${featuredProperties.length} properties'),
-              backgroundColor: AppTheme.primaryblue,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 2),
-              margin: EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        }
-      } else {
-        debugPrint('❌ Failed to refresh featured properties: ${featuredResult['message']}');
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to refresh featured properties'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 3),
-              margin: EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ Error refreshing featured properties: $e');
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Network error while refreshing featured properties'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 3),
-            margin: EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      }
-    }
-  }
-
   // Helper to get full image URL
   String _getFullImageUrl(String url) {
     // Handle comma-separated URLs and filter out invalid ones
@@ -448,6 +360,75 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Load pending bookings and extract their properties
+  Future<void> _loadPendingBookings() async {
+    try {
+      debugPrint('📚 Loading pending bookings...');
+      final pendingBookings = await BookingService.fetchBookings();
+      
+      // Filter for pending bookings only
+      final pendingOnly = pendingBookings.where(
+        (booking) => booking.status == BookingStatus.pending
+      ).toList();
+      
+      debugPrint('📚 Found ${pendingOnly.length} pending bookings');
+      
+      // Extract properties from pending bookings
+      final pendingPropertyIds = pendingOnly.map((b) => b.propertyId).toSet();
+      final pendingProps = _properties.where(
+        (property) => pendingPropertyIds.contains(property.id)
+      ).toList();
+      
+      setState(() {
+        _pendingBookings = pendingOnly;
+        _pendingProperties = pendingProps;
+      });
+      
+      debugPrint('📚 Extracted ${pendingProps.length} properties with pending bookings');
+      
+    } catch (e) {
+      debugPrint('❌ Error loading pending bookings: $e');
+      // Don't show error to user, just continue without pending bookings
+      setState(() {
+        _pendingBookings = [];
+        _pendingProperties = [];
+      });
+    }
+  }
+
+  // Prioritize properties with pending bookings in the list
+  List<Property> _prioritizePropertiesWithPendingBookings(List<Property> properties) {
+    if (_pendingProperties.isEmpty) {
+      // No pending bookings, return original list
+      return properties;
+    }
+
+    // Get property IDs that have pending bookings
+    final pendingPropertyIds = _pendingProperties.map((p) => p.id).toSet();
+    
+    // Separate properties into those with and without pending bookings
+    final propertiesWithPendingBookings = <Property>[];
+    final propertiesWithoutPendingBookings = <Property>[];
+    
+    for (final property in properties) {
+      if (pendingPropertyIds.contains(property.id)) {
+        propertiesWithPendingBookings.add(property);
+      } else {
+        propertiesWithoutPendingBookings.add(property);
+      }
+    }
+    
+    // Return prioritized list: pending bookings first, then others
+    final result = [
+      ...propertiesWithPendingBookings,
+      ...propertiesWithoutPendingBookings,
+    ];
+    
+    debugPrint('🏆 Prioritized properties: ${propertiesWithPendingBookings.length} with pending bookings first, ${propertiesWithoutPendingBookings.length} others');
+    
+    return result;
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -517,6 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             _buildHeader(),
             _buildCategories(),
+            _buildPendingBookingsSection(),
             _buildFeaturedSection(),
             _buildRecentProperties(),
             SizedBox(height: 100),
@@ -1081,9 +1063,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentProperties() {
     // Use category properties if a specific category is selected and loaded
-    final filteredProperties = _selectedCategory == 'All'
+    List<Property> baseProperties = _selectedCategory == 'All'
         ? _properties
         : _categoryProperties;
+
+    // Prioritize properties with pending bookings
+    final filteredProperties = _prioritizePropertiesWithPendingBookings(baseProperties);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1176,6 +1161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontWeight: FontWeight.bold,
                       color: AppTheme.getTextColor(context),
                     ),
+                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -1666,48 +1652,268 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   SizedBox(height: 10), // Reduced from 12
                   
-                  // Quick Book Button
+                  // Conditional booking/payment button
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BookingScreen(
-                              property: property,
-                              user: widget.user,
+                    child: _buildActionButton(property),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPendingBookingsSection() {
+    // Only show pending bookings section if there are pending bookings
+    if (_pendingBookings.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 20, right: 20, bottom: 16, top: 20),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.payment,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pending Bookings',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.getTextColor(context),
+                      ),
+                    ),
+                    Text(
+                      '${_pendingBookings.length} property${_pendingBookings.length > 1 ? 'ies' : ''} waiting for payment',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.getSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 200,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            itemCount: _pendingProperties.length,
+            itemBuilder: (context, index) {
+              final property = _pendingProperties[index];
+              final booking = _getPendingBookingForProperty(property.id);
+              
+              return Container(
+                width: 280,
+                margin: EdgeInsets.only(right: 16),
+                child: _buildPendingPropertyCard(property, booking),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Get pending booking for a specific property
+  Booking? _getPendingBookingForProperty(String propertyId) {
+    try {
+      return _pendingBookings.firstWhere(
+        (booking) => booking.propertyId == propertyId,
+      );
+    } catch (e) {
+      return null; // No pending booking found
+    }
+  }
+
+  Widget _buildPendingPropertyCard(Property property, Booking? booking) {
+    final formattedPrice = NumberFormat('#,##0').format(property.price);
+    
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PropertyDetailsScreen(
+              property: property,
+              user: widget.user,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.orange.withValues(alpha: 0.3),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withValues(alpha: 0.1),
+              blurRadius: 15,
+              offset: Offset(0, 8),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image with pending indicator
+            Stack(
+              children: [
+                Container(
+                  height: 120,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(18),
+                      topRight: Radius.circular(18),
+                    ),
+                    color: AppTheme.getCardColor(context),
+                  ),
+                  child: property.images.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                          ),
+                          child: Image.network(
+                            _getFullImageUrl(property.images.first),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(18),
+                                    topRight: Radius.circular(18),
+                                  ),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: AppTheme.getSecondaryTextColor(context),
+                                    size: 30,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(18),
+                              topRight: Radius.circular(18),
+                            ),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppTheme.primaryblue.withValues(alpha: 0.1),
+                                AppTheme.accentGreen.withValues(alpha: 0.1),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryblue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          child: Center(
+                            child: Icon(
+                              Icons.home_rounded,
+                              color: AppTheme.primaryblue,
+                              size: 40,
+                            ),
+                          ),
                         ),
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            color: AppTheme.whiteColor,
-                            size: 16,
+                ),
+                
+                // Pending payment indicator
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'PENDING PAYMENT',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Quick Book',
-                            style: TextStyle(
-                              color: AppTheme.whiteColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            Padding(
+              padding: EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    property.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'UGX $formattedPrice',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
                     ),
                   ),
                 ],
@@ -1716,6 +1922,260 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // Build action button based on property booking status
+  Widget _buildActionButton(Property property) {
+    final pendingBooking = _getPendingBookingForProperty(property.id);
+    
+    if (pendingBooking != null) {
+      // Property has pending booking - show payment button
+      return ElevatedButton(
+        onPressed: () => _initiatePayment(property, pendingBooking),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 12),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.payment,
+              color: AppTheme.whiteColor,
+              size: 16,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Complete Payment',
+              style: TextStyle(
+                color: AppTheme.whiteColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Property has no pending booking - show quick book button
+      return ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookingScreen(
+                property: property,
+                user: widget.user,
+              ),
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primaryblue,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 12),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.calendar_today,
+              color: AppTheme.whiteColor,
+              size: 16,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Quick Book',
+              style: TextStyle(
+                color: AppTheme.whiteColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  // Initiate payment for a pending booking
+  Future<void> _initiatePayment(Property property, Booking booking) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Preparing Payment...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Please wait while we set up your payment',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      debugPrint('💳 Initiating payment for booking: ${booking.id}');
+      
+      // Create payment
+      final paymentResult = await PaymentService.createPayment(
+        userId: widget.user.id,
+        bookingId: booking.id,
+        propertyId: property.id,
+        amount: property.price,
+      );
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (paymentResult['success'] == true) {
+        final String? redirectUrl = paymentResult['redirectUrl'];
+        final String? orderTrackingId = paymentResult['orderTrackingId'];
+        final String? merchantReference = paymentResult['merchantReference'];
+
+        if (redirectUrl != null && orderTrackingId != null && merchantReference != null) {
+          // Navigate to payment screen
+          final bool? paymentSuccess = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentScreen(
+                redirectUrl: redirectUrl,
+                orderTrackingId: orderTrackingId,
+                merchantReference: merchantReference,
+                amount: property.price,
+                propertyTitle: property.title,
+              ),
+            ),
+          );
+
+          if (paymentSuccess == true) {
+            // Payment successful - refresh data
+            _loadProperties();
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Payment completed successfully!'),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 3),
+                  margin: EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+            }
+          }
+        } else {
+          _showPaymentError('Payment setup incomplete. Please try again.');
+        }
+      } else {
+        _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
+      }
+    } catch (e) {
+      // Close loading dialog if still showing
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+      
+      debugPrint('❌ Payment initiation error: $e');
+      _showPaymentError('An error occurred while setting up payment. Please try again.');
+    }
+  }
+
+  // Show payment error dialog
+  void _showPaymentError(String message) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 28,
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Payment Error',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextColor(context),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontSize: 16,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryblue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1771,8 +2231,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 index: 3,
               ),
               _buildNavItem(
-                icon: Icons.chat_outlined,
-                activeIcon: Icons.chat_rounded,
+                icon: Icons.chat_bubble_outline,
+                activeIcon: Icons.chat_bubble,
                 label: 'Chat',
                 index: 4,
                 onTap: () => _navigateToPearlNestChat(),
@@ -1801,7 +2261,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     final isActive = _currentIndex == index;
     return GestureDetector(
-      onTap: onTap ?? () => _onNavItemTapped(index), // Use custom onTap if provided
+      onTap: onTap ?? () => _onNavItemTapped(index),
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
@@ -1820,9 +2280,9 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               label,
               style: TextStyle(
-                color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
               ),
             ),
           ],

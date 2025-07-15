@@ -73,19 +73,20 @@ class Booking {
       return BookingType.rental; // default
     }
     
-    // Determine status - for now defaulting to pending since API doesn't provide it
+    // Determine status - map from API response
     BookingStatus determineStatus() {
-      // You can enhance this logic based on additional API fields
-      final status = json['status']?.toString().toLowerCase();
+      final status = json['bookingStatus']?.toString().toUpperCase();
       switch (status) {
-        case 'confirmed':
+        case 'PENDING':
+          return BookingStatus.pending;
+        case 'CONFIRMED':
           return BookingStatus.confirmed;
-        case 'cancelled':
+        case 'CANCELLED':
           return BookingStatus.cancelled;
-        case 'completed':
+        case 'COMPLETED':
           return BookingStatus.completed;
         default:
-          return BookingStatus.pending;
+          return BookingStatus.pending; // default to pending
       }
     }
     
