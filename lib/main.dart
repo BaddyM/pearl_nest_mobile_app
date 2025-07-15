@@ -16,6 +16,7 @@ import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pearlnest/apis/booking_service.dart';
+import 'package:pearlnest/services/deep_link_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,9 @@ void main() async {
   
   // Initialize API client
   await ApiClient.initialize();
+  
+  // Initialize deep link service
+  DeepLinkService.initialize();
   
   runApp(MyApp());
 }

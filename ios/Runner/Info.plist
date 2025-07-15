@@ -145,5 +145,18 @@
 			<string>background-processing</string>
 			<string>location</string>
 		</array>
+		
+		<!-- URL Schemes for Deep Links -->
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleURLName</key>
+				<string>pearlnest.deeplink</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>pearlnest</string>
+				</array>
+			</dict>
+		</array>
 	</dict>
 </plist>
