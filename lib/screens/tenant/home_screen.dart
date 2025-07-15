@@ -95,22 +95,32 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  ChatConversation _createPearlNestConversation() {
-    return ChatService.getAdminConversation(
+  Future<ChatConversation?> _createPearlNestConversation() async {
+    return await ChatService.getAdminConversation(
       propertyTitle: 'General Support & Inquiries',
     );
   }
 
-  void _navigateToPearlNestChat() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => IndividualChatScreen(
-          conversation: _createPearlNestConversation(),
-          currentUser: widget.user,
+  void _navigateToPearlNestChat() async {
+    final conversation = await _createPearlNestConversation();
+    if (conversation != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => IndividualChatScreen(
+            conversation: conversation,
+            currentUser: widget.user,
+          ),
         ),
-      ),
-    );
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No admin available for chat at the moment'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   @override

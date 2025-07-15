@@ -1217,6 +1217,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return 'Tenant';
       case UserType.landlord:
         return 'Landlord';
+      case UserType.admin:
+        return 'Admin';
     }
   }
 }

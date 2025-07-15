@@ -1,4 +1,5 @@
 enum UserType { 
   tenant, 
-  landlord, 
+  landlord,
+  admin,
 }

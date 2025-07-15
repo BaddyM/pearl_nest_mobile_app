@@ -63,6 +63,8 @@ class User {
     switch (userTypeString.toUpperCase()) {
       case 'LANDLORD':
         return UserType.landlord;
+      case 'ADMIN':
+        return UserType.admin;
       case 'TENANT':
       default:
         return UserType.tenant;

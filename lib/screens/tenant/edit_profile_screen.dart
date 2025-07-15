@@ -800,6 +800,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return 'Tenant';
       case UserType.landlord:
         return 'Landlord';
+      case UserType.admin:
+        return 'Admin';
     }
   }
 }

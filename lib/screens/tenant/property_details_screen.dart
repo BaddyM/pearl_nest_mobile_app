@@ -3009,7 +3009,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     }
   }
 
-  void _messageLandlord() {
+  void _messageLandlord() async {
     // Initialize chat and navigate to individual chat screen
     final chatBloc = context.read<ChatBloc>();
     
@@ -3017,20 +3017,29 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     chatBloc.add(const ChatInitialize());
     
     // Get admin conversation object
-    final conversation = ChatService.getAdminConversation(
+    final conversation = await ChatService.getAdminConversation(
       propertyTitle: widget.property.title,
     );
     
-    // Navigate to individual chat screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => IndividualChatScreen(
-          conversation: conversation,
-          currentUser: widget.user,
+    // Navigate to individual chat screen only if conversation is available
+    if (conversation != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => IndividualChatScreen(
+            conversation: conversation,
+            currentUser: widget.user,
+          ),
         ),
-      ),
-    );
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No admin available for chat at the moment'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   void _submitBooking() {

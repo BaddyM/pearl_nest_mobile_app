@@ -55,37 +55,68 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     
     try {
-      // Fetch conversations from API
+      // Fetch conversations from API first
       final apiConversations = await ChatService.fetchChatList();
       
-      setState(() {
-        if (apiConversations.isNotEmpty) {
-          // Use API conversations if available
-          _allConversations = apiConversations;
-        } else {
-          // Fallback to admin conversation if no conversations found
-          _allConversations = [
-            ChatService.getAdminConversation(),
-          ];
+      // Also fetch available admin conversations
+      final adminConversations = await ChatService.getAdminConversations();
+      
+      final allConversations = <ChatConversation>[];
+      
+      // Add API conversations if available
+      if (apiConversations.isNotEmpty) {
+        allConversations.addAll(apiConversations);
+      }
+      
+      // Always include admin conversations for support
+      if (adminConversations.isNotEmpty) {
+        // Avoid duplicates by checking if admin conversations are already in API conversations
+        for (final adminConv in adminConversations) {
+          final isDuplicate = allConversations.any((conv) => conv.landlordId == adminConv.landlordId);
+          if (!isDuplicate) {
+            allConversations.add(adminConv);
+          }
         }
+      }
+      
+      // If no conversations at all, show a fallback
+      if (allConversations.isEmpty) {
+        // Try to get a single admin conversation for fallback
+        final fallbackConv = await ChatService.getAdminConversation();
+        if (fallbackConv != null) {
+          allConversations.add(fallbackConv);
+        }
+      }
+      
+      setState(() {
+        _allConversations = allConversations;
         _filteredConversations = List.from(_allConversations);
         _isLoading = false;
       });
     } catch (e) {
       // Fallback to admin conversation on error
-      setState(() {
-        _allConversations = [
-          ChatService.getAdminConversation(),
-        ];
-        _filteredConversations = List.from(_allConversations);
-        _isLoading = false;
-      });
+      try {
+        final fallbackConv = await ChatService.getAdminConversation();
+        final fallbackConversations = fallbackConv != null ? [fallbackConv] : <ChatConversation>[];
+        
+        setState(() {
+          _allConversations = fallbackConversations;
+          _filteredConversations = List.from(_allConversations);
+          _isLoading = false;
+        });
+      } catch (fallbackError) {
+        setState(() {
+          _allConversations = [];
+          _filteredConversations = [];
+          _isLoading = false;
+        });
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load conversations. Showing default chat.'),
-            backgroundColor: Colors.orange,
+            content: Text('Failed to load conversations. ${_allConversations.isEmpty ? 'No admin available.' : 'Showing available chats.'}'),
+            backgroundColor: _allConversations.isEmpty ? Colors.red : Colors.orange,
             behavior: SnackBarBehavior.floating,
             margin: EdgeInsets.all(16),
           ),

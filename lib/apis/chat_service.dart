@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 import '../models/chat_message.dart';
+import '../models/admin.dart';
 import '../screens/chat/chat_conversation.dart';
 import 'api_client.dart';
 import 'app_config.dart';
@@ -12,21 +13,23 @@ class ChatService {
   static socket_io.Socket? _socket;
   static String? _currentUserId;
   static bool _isConnected = false;
-  
-  // Admin user ID - IMPORTANT: Users can ONLY chat with this admin user
-  // All other communication attempts will be blocked
-  static const String adminUserId = '8eeb7439-007c-490b-86e0-2f284272f602';
+  static List<Admin> _availableAdmins = [];
   
   // Stream controllers for real-time updates
   static final _messageStreamController = StreamController<ChatMessage>.broadcast();
   static final _connectionStreamController = StreamController<bool>.broadcast();
+  static final _adminsStreamController = StreamController<List<Admin>>.broadcast();
   
   // Getters for streams
   static Stream<ChatMessage> get messageStream => _messageStreamController.stream;
   static Stream<bool> get connectionStream => _connectionStreamController.stream;
+  static Stream<List<Admin>> get adminsStream => _adminsStreamController.stream;
   
   // Get connection status
   static bool get isConnected => _isConnected;
+  
+  // Get available admins
+  static List<Admin> get availableAdmins => _availableAdmins;
   
   // Initialize and connect to socket with comprehensive debugging
   static Future<void> connect() async {
@@ -357,14 +360,18 @@ class ChatService {
     debugPrint('✅ All socket event listeners configured');
   }
   
-  // Send a message to admin
+  // Send a message to the first available admin (for backward compatibility)
   static Future<void> sendMessageToAdmin({
     required String text,
   }) async {
-    return sendMessage(toUserId: adminUserId, text: text);
+    final firstAdminId = getFirstAdminUserId();
+    if (firstAdminId == null) {
+      throw Exception('No admin available to send message to');
+    }
+    return sendMessage(toUserId: firstAdminId, text: text);
   }
   
-  // Send a message with comprehensive debugging
+  // Send a message with comprehensive debugging (now supports any admin)
   static Future<void> sendMessage({
     required String toUserId,
     required String text,
@@ -372,11 +379,11 @@ class ChatService {
     debugPrint('');
     debugPrint('🚀 === SEND MESSAGE START ===');
     
-    // Validate that message is only sent to admin
-    if (toUserId != adminUserId) {
+    // Validate that message is only sent to admin users
+    if (!isAdminUser(toUserId)) {
       debugPrint('❌ MESSAGE VALIDATION FAILED:');
       debugPrint('   - Attempted recipient: $toUserId');
-      debugPrint('   - Admin ID: $adminUserId');
+      debugPrint('   - Available admin IDs: ${_availableAdmins.map((a) => a.id).join(', ')}');
       debugPrint('   - Only admin communication is allowed');
       throw Exception('Only admin communication is allowed');
     }
@@ -531,31 +538,142 @@ class ChatService {
   // Get current user ID
   static String? getCurrentUserId() => _currentUserId;
   
-  // Get admin conversation for chat - this is the ONLY allowed conversation
-  static ChatConversation getAdminConversation({String? propertyTitle}) {
+  // Fetch available admins from the API
+  static Future<List<Admin>> fetchAvailableAdmins() async {
+    debugPrint('');
+    debugPrint('🚀 === FETCH ADMIN LIST API CALL START ===');
+    debugPrint('📡 Attempting to fetch admin list from /user/admin/list endpoint...');
+    
+    final stopwatch = Stopwatch()..start();
+    
+    try {
+      debugPrint('📤 Making GET request to /user/admin/list...');
+      final response = await ApiClient.get('/user/admin/list');
+      
+      stopwatch.stop();
+      debugPrint('📥 === API RESPONSE RECEIVED ===');
+      debugPrint('   - Status Code: ${response.statusCode}');
+      debugPrint('   - Response Time: ${stopwatch.elapsedMilliseconds}ms');
+      debugPrint('   - Response Data Type: ${response.data.runtimeType}');
+      debugPrint('   - Raw Response Data: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        debugPrint('✅ HTTP 200 - Success response received');
+        
+        final responseData = response.data;
+        if (responseData['success'] == true && responseData['data'] != null) {
+          debugPrint('✅ Response validation passed - processing admin data...');
+          
+          final adminData = responseData['data'] as List;
+          debugPrint('📊 Admin Data Analysis:');
+          debugPrint('   - Admin entries count: ${adminData.length}');
+          debugPrint('   - Raw admin data: $adminData');
+          
+          final admins = <Admin>[];
+          for (int i = 0; i < adminData.length; i++) {
+            final adminJson = adminData[i];
+            try {
+              final admin = Admin.fromJson(adminJson);
+              admins.add(admin);
+              debugPrint('   ✅ Successfully parsed admin: ${admin.name} (${admin.id})');
+            } catch (adminError) {
+              debugPrint('   ❌ Error parsing admin #${i + 1}: $adminError');
+            }
+          }
+          
+          debugPrint('');
+          debugPrint('✅ === ADMIN LIST PROCESSING COMPLETE ===');
+          debugPrint('   - Total admins fetched: ${admins.length}');
+          
+          // Update cached admins
+          _availableAdmins = admins;
+          _adminsStreamController.add(admins);
+          
+          return admins;
+        } else {
+          debugPrint('❌ API response validation failed');
+          return [];
+        }
+      } else {
+        debugPrint('❌ HTTP Error - API request failed: ${response.statusCode}');
+        return [];
+      }
+      
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      debugPrint('❌ === FETCH ADMIN LIST API ERROR ===');
+      debugPrint('   - Error: $e');
+      debugPrint('   - Stack trace: $stackTrace');
+      return [];
+    } finally {
+      debugPrint('🏁 === FETCH ADMIN LIST API CALL END ===');
+    }
+  }
+  
+  // Get admin conversations for chat - returns all available admins
+  static Future<List<ChatConversation>> getAdminConversations({String? propertyTitle}) async {
+    final admins = await fetchAvailableAdmins();
+    
+    if (admins.isEmpty) {
+      debugPrint('⚠️ No admins available, returning empty list');
+      return [];
+    }
+    
+    return admins.map((admin) => ChatConversation(
+      id: 'chat_admin_${admin.id}',
+      landlordId: admin.id,
+      landlordName: admin.name.isNotEmpty ? admin.name : 'PearlNest Support',
+      landlordProfilePic: admin.profilePicture ?? '',
+      lastMessage: 'Start your conversation with ${admin.name}',
+      lastMessageTime: DateTime.now(),
+      unreadCount: 0,
+      isOnline: admin.isOnline,
+      propertyTitle: propertyTitle != null 
+          ? 'Support Chat - $propertyTitle' 
+          : 'Support Chat',
+    )).toList();
+  }
+  
+  // Check if a user ID is an admin user ID
+  static bool isAdminUser(String userId) {
+    return _availableAdmins.any((admin) => admin.id == userId);
+  }
+  
+  // Get the first available admin user ID (for backward compatibility)
+  static String? getFirstAdminUserId() {
+    if (_availableAdmins.isNotEmpty) {
+      return _availableAdmins.first.id;
+    }
+    return null;
+  }
+  
+  // Get admin conversation for chat (backward compatibility - returns first available admin)
+  static Future<ChatConversation?> getAdminConversation({String? propertyTitle}) async {
+    final admins = await fetchAvailableAdmins();
+    if (admins.isEmpty) {
+      debugPrint('⚠️ No admins available for conversation');
+      return null;
+    }
+    
+    final firstAdmin = admins.first;
     return ChatConversation(
-      id: 'chat_admin',
-      landlordId: adminUserId,
-      landlordName: 'PearlNest Support',
-      landlordProfilePic: '', // Default empty profile pic
+      id: 'chat_admin_${firstAdmin.id}',
+      landlordId: firstAdmin.id,
+      landlordName: firstAdmin.name.isNotEmpty ? firstAdmin.name : 'PearlNest Support',
+      landlordProfilePic: firstAdmin.profilePicture ?? '',
       lastMessage: 'Start your conversation with our support team',
       lastMessageTime: DateTime.now(),
       unreadCount: 0,
-      isOnline: true,
+      isOnline: firstAdmin.isOnline,
       propertyTitle: propertyTitle != null 
           ? 'Support Chat - $propertyTitle' 
           : 'Support Chat',
     );
   }
   
-  // Validate that a user ID is the admin user ID
-  static bool isAdminUser(String userId) {
-    return userId == adminUserId;
-  }
-  
-  // Get the admin user ID
-  static String getAdminUserId() {
-    return adminUserId;
+  // Get the admin user ID (deprecated - use getFirstAdminUserId instead)
+  static String? getAdminUserId() {
+    return getFirstAdminUserId();
   }
   
   // Dispose resources
@@ -563,6 +681,7 @@ class ChatService {
     disconnect();
     _messageStreamController.close();
     _connectionStreamController.close();
+    _adminsStreamController.close();
   }
   
   // Reconnect if needed
@@ -774,8 +893,9 @@ class ChatService {
     debugPrint('   - Current user ID: $_currentUserId');
     debugPrint('   - User ID is null: ${_currentUserId == null}');
     debugPrint('   - User ID is empty: ${_currentUserId?.isEmpty ?? true}');
-    debugPrint('   - Admin user ID: $adminUserId');
-    debugPrint('   - Is current user admin: ${_currentUserId == adminUserId}');
+    debugPrint('   - Available admins count: ${_availableAdmins.length}');
+    debugPrint('   - Available admin IDs: ${_availableAdmins.map((a) => a.id).join(', ')}');
+    debugPrint('   - Is current user admin: ${_currentUserId != null ? isAdminUser(_currentUserId!) : false}');
     debugPrint('');
     
     // Auth state
