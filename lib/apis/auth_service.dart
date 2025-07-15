@@ -773,6 +773,105 @@ class AuthService {
     }
   }
 
+  /// Delete user account permanently
+  /// This is a destructive action that cannot be undone
+  static Future<Map<String, dynamic>> deleteAccount({
+    required String userId,
+    String? reason,
+  }) async {
+    try {
+      _logRequest('/user/delete/$userId', {
+        'reason': reason,
+      });
+
+      final token = await getCurrentToken();
+      if (token == null) {
+        throw AuthException('No authentication token found');
+      }
+
+      // Set the auth token for the request
+      ApiClient.setAuthToken(token);
+
+      final response = await ApiClient.delete('/user/delete/$userId');
+
+      _logResponse('/user/delete/$userId', response);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Account deleted successfully, clear all local data
+        await clearUserData();
+        
+        if (kDebugMode) {
+          debugPrint('✅ Account deleted successfully and local data cleared');
+        }
+
+        return {
+          'success': true,
+          'message': response.data?['message'] ?? 'Account deleted successfully',
+        };
+      } else {
+        final errorMessage = response.data?['message'] ?? 'Failed to delete account';
+        if (kDebugMode) {
+          debugPrint('❌ Account deletion failed: $errorMessage');
+        }
+        
+        return {
+          'success': false,
+          'message': errorMessage,
+        };
+      }
+    } on DioException catch (e) {
+      _logError('deleteAccount', e);
+      
+      String errorMessage;
+      if (e.response?.statusCode == 401) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (e.response?.statusCode == 403) {
+        errorMessage = 'You do not have permission to delete this account.';
+      } else if (e.response?.statusCode == 404) {
+        errorMessage = 'Account not found.';
+      } else if (e.response?.statusCode == 409) {
+        errorMessage = 'Account cannot be deleted due to pending transactions.';
+      } else {
+        errorMessage = e.response?.data?['message'] ?? 
+                      'Network error occurred while deleting account. Please try again.';
+      }
+
+      return {
+        'success': false,
+        'message': errorMessage,
+        'statusCode': e.response?.statusCode,
+      };
+    } catch (e) {
+      _logError('deleteAccount', e);
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred while deleting account. Please try again.',
+      };
+    }
+  }
+
+  /// Clear all stored user data (used during account deletion and logout)
+  static Future<void> clearUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        prefs.remove(_userDataKey),
+        prefs.remove(_tokenKey),
+        prefs.remove(_lastLoginKey),
+        prefs.remove(_tokenExpiryKey),
+        prefs.remove(_userIdKey),
+      ]);
+      
+      if (kDebugMode) {
+        debugPrint('🧹 All user data cleared from local storage');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error clearing user data: $e');
+      }
+    }
+  }
+
   // Helper method to get FCM token
   static Future<String> _getFcmToken() async {
     try {
