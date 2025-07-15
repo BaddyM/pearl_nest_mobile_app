@@ -116,7 +116,7 @@ class _SplashScreenState extends State<SplashScreen>
                 return Transform.scale(
                   scale: _logoAnimation.value,
                   child: Opacity(
-                    opacity: _logoAnimation.value,
+                    opacity: _logoAnimation.value.clamp(0.0, 1.0),
                     child: Image.asset(
                       'assets/icon.png',
                       width: 300,
@@ -134,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen>
                 return Transform.translate(
                   offset: Offset(0, 30 * (1 - _titleAnimation.value)),
                   child: Opacity(
-                    opacity: _titleAnimation.value,
+                    opacity: _titleAnimation.value.clamp(0.0, 1.0),
                     child: Text(
                       'PearlNest Estates',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -156,7 +156,7 @@ class _SplashScreenState extends State<SplashScreen>
                 return Transform.translate(
                   offset: Offset(0, 20 * (1 - _subtitleAnimation.value)),
                   child: Opacity(
-                    opacity: _subtitleAnimation.value,
+                    opacity: _subtitleAnimation.value.clamp(0.0, 1.0),
                     child: Text(
                       'Find Your Dream Property',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(

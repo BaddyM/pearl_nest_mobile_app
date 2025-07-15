@@ -92,6 +92,8 @@ class MyApp extends StatelessWidget {
     
     switch (state) {
       case AuthInitial _:
+         debugPrint('Showing splash screen');
+         return const SplashScreen();
       case AuthInitializing _:
         debugPrint('Showing splash screen');
         return const SplashScreen();
@@ -100,11 +102,11 @@ class MyApp extends StatelessWidget {
         return HomeScreen(user: successState.user);
       case AuthUnauthenticated _:
       case AuthFailure _:
-        debugPrint('Showing login screen');
-        return const LoginScreen();
+         debugPrint('Showing splash screen');
+        return const SplashScreen();
       default:
-        debugPrint('Unknown state, showing login screen');
-        return const LoginScreen();
+         debugPrint('Showing splash screen');
+        return const SplashScreen();
     }
   }
 }
