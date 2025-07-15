@@ -337,12 +337,28 @@ class PropertyService {
     }
   }
 
-  // Get featured properties (if the endpoint exists)
-  static Future<Map<String, dynamic>> getFeaturedProperties({int limit = 10, String? token}) async {
+  // Get featured properties
+  static Future<Map<String, dynamic>> getFeaturedProperties({
+    int page = 1,
+    int limit = 20,
+    String? token,
+  }) async {
     try {
-      final queryParams = {'limit': limit, 'featured': true};
+      debugPrint('');
+      debugPrint('🚀 === FETCH FEATURED PROPERTIES START ===');
+      debugPrint('🏠 Fetching featured properties from /property/featured endpoint...');
       
-      _logRequest('/property/list', queryParams, token: token);
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'limit': limit,
+      };
+
+      debugPrint('🔍 Request parameters:');
+      debugPrint('   - Page: $page');
+      debugPrint('   - Limit: $limit');
+      debugPrint('   - Auth token available: ${ApiClient.currentAuthToken != null || token != null}');
+
+      _logRequest('/property/featured', queryParams, token: token);
 
       // Set token temporarily if provided
       final originalToken = ApiClient.currentAuthToken;
@@ -350,40 +366,105 @@ class PropertyService {
         ApiClient.setAuthToken(token);
       }
 
-      final response = await ApiClient.get('/property/list', queryParameters: queryParams);
+      final stopwatch = Stopwatch()..start();
+      final response = await ApiClient.get('/property/featured', queryParameters: queryParams);
+      stopwatch.stop();
       
       // Restore original token
       if (token != null) {
         ApiClient.setAuthToken(originalToken);
       }
-      _logResponse('/property/list', response);
+
+      debugPrint('📥 === FEATURED PROPERTIES API RESPONSE ===');
+      debugPrint('   - Response time: ${stopwatch.elapsedMilliseconds}ms');
+      debugPrint('   - Status code: ${response.statusCode}');
+      debugPrint('   - Response data type: ${response.data.runtimeType}');
+      debugPrint('   - Raw response: ${response.data}');
+
+      _logResponse('/property/featured', response);
 
       if (response.statusCode == 200) {
-        final responseData = _validateResponse(response, requiredFields: ['data']);
+        debugPrint('✅ HTTP 200 - Processing featured properties response...');
         
-        final propertiesData = responseData['data'];
-        List<Property> properties = [];
+        final responseData = response.data as Map<String, dynamic>;
+        debugPrint('🔍 Response analysis:');
+        debugPrint('   - Success field: ${responseData['success']}');
+        debugPrint('   - Data field: ${responseData['data']}');
+        debugPrint('   - Data is null: ${responseData['data'] == null}');
+        debugPrint('   - Data type: ${responseData['data'].runtimeType}');
         
-        if (propertiesData is List) {
-          properties = propertiesData.map((propertyJson) => Property.fromJson(propertyJson)).toList();
+        // Handle the case where data can be null
+        List<Property> featuredProperties = [];
+        
+        if (responseData['data'] != null) {
+          final propertiesData = responseData['data'];
+          debugPrint('📊 Processing properties data:');
+          debugPrint('   - Properties data type: ${propertiesData.runtimeType}');
+          debugPrint('   - Is List: ${propertiesData is List}');
+          
+          if (propertiesData is List) {
+            debugPrint('   - Properties count: ${propertiesData.length}');
+            
+            try {
+              featuredProperties = propertiesData.map((propertyJson) {
+                debugPrint('     - Processing property: ${propertyJson['title'] ?? 'Unknown'}');
+                return Property.fromJson(propertyJson);
+              }).toList();
+              
+              debugPrint('✅ Successfully parsed ${featuredProperties.length} featured properties');
+            } catch (parseError) {
+              debugPrint('❌ Error parsing properties: $parseError');
+              throw PropertyException('Failed to parse featured properties data');
+            }
+          } else {
+            debugPrint('⚠️ Properties data is not a List, treating as no properties');
+          }
+        } else {
+          debugPrint('ℹ️ No featured properties available (data is null)');
         }
 
-        return {
+        final result = {
           'success': true,
-          'properties': properties,
-          'total': properties.length,
-          'message': 'Featured properties loaded successfully',
+          'properties': featuredProperties,
+          'total': featuredProperties.length,
+          'page': page,
+          'limit': limit,
+          'hasData': responseData['data'] != null,
+          'message': featuredProperties.isEmpty 
+              ? 'No featured properties available at the moment'
+              : 'Featured properties loaded successfully',
           'statusCode': response.statusCode,
         };
+
+        debugPrint('✅ === FEATURED PROPERTIES RESULT ===');
+        debugPrint('   - Success: ${result['success']}');
+        debugPrint('   - Properties count: ${featuredProperties.length}');
+        debugPrint('   - Has data: ${result['hasData']}');
+        debugPrint('   - Message: ${result['message']}');
+
+        return result;
       } else {
+        debugPrint('❌ HTTP Error - Featured properties request failed:');
+        debugPrint('   - Status code: ${response.statusCode}');
+        debugPrint('   - Response data: ${response.data}');
+        
         final errorData = response.data;
         throw PropertyException(
           errorData['message'] ?? 'Failed to fetch featured properties',
           statusCode: response.statusCode,
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('');
+      debugPrint('❌ === FEATURED PROPERTIES ERROR ===');
+      debugPrint('   - Error: $e');
+      debugPrint('   - Error type: ${e.runtimeType}');
+      debugPrint('   - Stack trace: $stackTrace');
+      
       return _handleError(e, 'get featured properties');
+    } finally {
+      debugPrint('🏁 === FETCH FEATURED PROPERTIES END ===');
+      debugPrint('');
     }
   }
 
@@ -531,6 +612,61 @@ class PropertyService {
     } catch (e) {
       _logError('upload property', e);
       throw PropertyException('Unexpected error: $e');
+    }
+  }
+
+  // Search properties by type or criteria
+  static Future<Map<String, dynamic>> searchPropertiesByType(String searchString) async {
+    try {
+      if (searchString.trim().isEmpty) {
+        throw ValidationException('Search string cannot be empty');
+      }
+
+      final endpoint = '/property/search/${searchString.toLowerCase()}';
+      
+      _logRequest(endpoint, null);
+
+      final response = await ApiClient.get(endpoint);
+      _logResponse(endpoint, response);
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        
+        if (responseData['success'] == true) {
+          final List<dynamic> propertiesData = responseData['data'] ?? [];
+          
+          // Convert the response data to Property objects
+          final List<Property> properties = propertiesData.map((propertyData) {
+            return Property.fromJson(propertyData);
+          }).toList();
+
+          debugPrint('🔍 Search for "$searchString" returned ${properties.length} properties');
+
+          return {
+            'success': true,
+            'properties': properties,
+            'count': properties.length,
+            'searchTerm': searchString,
+            'statusCode': response.statusCode,
+          };
+        } else {
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Search failed',
+            'properties': <Property>[],
+            'count': 0,
+            'searchTerm': searchString,
+            'statusCode': response.statusCode,
+          };
+        }
+      } else {
+        throw PropertyException(
+          'Search request failed with status: ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      return _handleError(e, 'property search for "$searchString"');
     }
   }
 }

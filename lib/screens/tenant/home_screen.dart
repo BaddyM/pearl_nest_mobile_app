@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
@@ -36,7 +37,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   List<Property> _properties = [];
   List<Property> _featuredProperties = [];
+  List<Property> _categoryProperties = []; // Properties filtered by category
   bool _isLoading = true;
+  bool _isCategoryLoading = false; // Loading state for category filtering
   String? _errorMessage;
   final ScrollController _scrollController = ScrollController();
   bool _showBackToTop = false;
@@ -117,22 +120,46 @@ class _HomeScreenState extends State<HomeScreen> {
       _errorMessage = null;
     });
     try {
-      final result = await PropertyService.getProperties();
-      if (result['success'] == true) {
+      // Load general properties and featured properties separately
+      final [propertiesResult, featuredResult] = await Future.wait([
+        PropertyService.getProperties(),
+        PropertyService.getFeaturedProperties(),
+      ]);
+      
+      if (propertiesResult['success'] == true) {
+        final generalProperties = List<Property>.from(propertiesResult['properties'] ?? []);
+        
+        List<Property> featuredProperties = [];
+        if (featuredResult['success'] == true) {
+          // Use dedicated featured properties if available
+          featuredProperties = List<Property>.from(featuredResult['properties'] ?? []);
+          debugPrint('🏠 Loaded ${featuredProperties.length} featured properties from dedicated API');
+        } else {
+          // Fallback to filtering general properties if featured API fails
+          featuredProperties = generalProperties.where((p) => p.isFeatured).toList();
+          debugPrint('🏠 Using ${featuredProperties.length} featured properties from general properties (fallback)');
+        }
+        
         setState(() {
-          _properties = List<Property>.from(result['properties'] ?? []);
-          _featuredProperties = _properties.where((p) => p.isFeatured).toList();
+          _properties = generalProperties;
+          _featuredProperties = featuredProperties;
+          _categoryProperties = List.from(generalProperties); // Initialize with all properties
           _isLoading = false;
         });
+        
+        debugPrint('🏠 Properties loaded - General: ${generalProperties.length}, Featured: ${featuredProperties.length}');
       } else {
         setState(() {
-          _errorMessage = result['message'] ?? 'Failed to load properties.';
+          _errorMessage = propertiesResult['message'] ?? 'Failed to load properties.';
+          _categoryProperties = []; // Initialize empty category properties
           _isLoading = false;
         });
       }
     } catch (e) {
+      debugPrint('❌ Error loading properties: $e');
       setState(() {
         _errorMessage = 'An error occurred while loading properties.';
+        _categoryProperties = []; // Initialize empty category properties
         _isLoading = false;
       });
     }
@@ -243,6 +270,108 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Debug method to test featured properties API (development only)
+  void _testFeaturedPropertiesAPI() async {
+    if (!kDebugMode) return;
+    
+    debugPrint('');
+    debugPrint('🧪 === TESTING FEATURED PROPERTIES API ===');
+    
+    try {
+      final result = await PropertyService.getFeaturedProperties();
+      
+      debugPrint('✅ Featured Properties API Test Results:');
+      debugPrint('   - Success: ${result['success']}');
+      debugPrint('   - Properties count: ${(result['properties'] as List?)?.length ?? 0}');
+      debugPrint('   - Has data: ${result['hasData']}');
+      debugPrint('   - Message: ${result['message']}');
+      debugPrint('   - Status code: ${result['statusCode']}');
+      
+      if (result['success'] == true) {
+        final properties = result['properties'] as List<Property>?;
+        if (properties != null && properties.isNotEmpty) {
+          debugPrint('📋 Featured Properties Found:');
+          for (int i = 0; i < properties.length; i++) {
+            final prop = properties[i];
+            debugPrint('   ${i + 1}. ${prop.title} - ${prop.location}');
+          }
+        } else {
+          debugPrint('ℹ️ No featured properties returned from API');
+        }
+      } else {
+        debugPrint('❌ Featured Properties API failed: ${result['message']}');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Featured Properties API test error: $e');
+    }
+    
+    debugPrint('🏁 === FEATURED PROPERTIES API TEST END ===');
+    debugPrint('');
+  }
+
+  // Method to refresh featured properties specifically
+  Future<void> _refreshFeaturedProperties() async {
+    debugPrint('🔄 Refreshing featured properties...');
+    
+    try {
+      final featuredResult = await PropertyService.getFeaturedProperties();
+      
+      if (featuredResult['success'] == true) {
+        final featuredProperties = List<Property>.from(featuredResult['properties'] ?? []);
+        
+        setState(() {
+          _featuredProperties = featuredProperties;
+        });
+        
+        debugPrint('✅ Featured properties refreshed: ${featuredProperties.length} properties');
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Featured properties updated: ${featuredProperties.length} properties'),
+              backgroundColor: AppTheme.primaryblue,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+              margin: EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } else {
+        debugPrint('❌ Failed to refresh featured properties: ${featuredResult['message']}');
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to refresh featured properties'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+              margin: EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error refreshing featured properties: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Network error while refreshing featured properties'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
   // Helper to get full image URL
   String _getFullImageUrl(String url) {
     // Handle comma-separated URLs and filter out invalid ones
@@ -259,6 +388,64 @@ class _HomeScreenState extends State<HomeScreen> {
     final String baseUrl = AppConfig.getCurrentBaseUrl();
     String cleanUrl = url.replaceFirst(RegExp(r'^(\/|\./)'), '');
     return '$baseUrl/$cleanUrl';
+  }
+
+  // Handle category selection and load properties for that category
+  Future<void> _onCategorySelected(String categoryName) async {
+    if (_selectedCategory == categoryName) return; // Already selected
+    
+    setState(() {
+      _selectedCategory = categoryName;
+      _isCategoryLoading = true;
+    });
+
+    try {
+      if (categoryName == 'All') {
+        // Reset to show all properties
+        setState(() {
+          _categoryProperties = List.from(_properties);
+          _isCategoryLoading = false;
+        });
+      } else {
+        // Search for properties of the selected category
+        debugPrint('🔍 Searching for properties of type: $categoryName');
+        final searchResult = await PropertyService.searchPropertiesByType(categoryName);
+        
+        if (searchResult['success'] == true) {
+          final categoryProps = List<Property>.from(searchResult['properties'] ?? []);
+          setState(() {
+            _categoryProperties = categoryProps;
+            _isCategoryLoading = false;
+          });
+          debugPrint('✅ Found ${categoryProps.length} properties for category: $categoryName');
+        } else {
+          setState(() {
+            _categoryProperties = [];
+            _isCategoryLoading = false;
+          });
+          debugPrint('❌ No properties found for category: $categoryName');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading properties for category $categoryName: $e');
+      setState(() {
+        _categoryProperties = [];
+        _isCategoryLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load $categoryName properties'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -431,27 +618,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.primaryblue, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryblue.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 25,
-                  backgroundColor: AppTheme.lightGreyColor,
-                  backgroundImage: widget.user.profileImage != null
-                      ? NetworkImage(widget.user.profileImage!)
-                      : null,
-                  child: widget.user.profileImage == null
-                      ? Icon(Icons.person, color: AppTheme.primaryblue)
-                      : null,
+              GestureDetector(
+                onTap: () { setState(() {
+                _currentIndex = 3;
+              });},
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.primaryblue, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: CircleAvatar(
+                    radius: 25,
+                    backgroundColor: AppTheme.lightGreyColor,
+                    backgroundImage: widget.user.profileImage != null
+                        ? NetworkImage(widget.user.profileImage!)
+                        : null,
+                    child: widget.user.profileImage == null
+                        ? Icon(Icons.person, color: AppTheme.primaryblue)
+                        : null,
+                  ),
                 ),
               ),
             ],
@@ -551,11 +743,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 final isSelected = _selectedCategory == category['name'];
                 
                 return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedCategory = category['name'];
-                    });
-                  },
+                  onTap: () => _onCategorySelected(category['name']),
                   child: Container(
                     width: 70,
                     margin: EdgeInsets.only(right: 16),
@@ -614,67 +802,108 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFeaturedSection() {
+    // Hide featured properties when a specific category is selected
+    if (_selectedCategory != 'All') {
+      return SizedBox.shrink(); // Return empty widget
+    }
+    
     if (_isLoading) {
       // Shimmer loading for featured section
-      return SizedBox(
-        height: 220,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          itemCount: 3,
-          itemBuilder: (context, index) {
-            return Container(
-              width: 280,
-              margin: EdgeInsets.only(right: 16),
-              child: Shimmer.fromColors(
-                baseColor: Colors.grey.shade300,
-                highlightColor: Colors.grey.shade100,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 120,
-                              height: 16,
-                              color: Colors.grey.shade300,
-                            ),
-                            SizedBox(height: 8),
-                            Container(
-                              width: 80,
-                              height: 14,
-                              color: Colors.grey.shade300,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(left: 20, right: 20, bottom: 5, top: 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Featured Properties',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 1;
+                    });
+                  },
+                  child: Text(
+                    'See All',
+                    style: TextStyle(
+                      color: AppTheme.primaryblue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              itemCount: 3,
+              itemBuilder: (context, index) {
+                return Container(
+                  width: 280,
+                  margin: EdgeInsets.only(right: 16),
+                  child: Shimmer.fromColors(
+                    baseColor: Colors.grey.shade300,
+                    highlightColor: Colors.grey.shade100,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(20),
+                                topRight: Radius.circular(20),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 120,
+                                  height: 16,
+                                  color: Colors.grey.shade300,
+                                ),
+                                SizedBox(height: 8),
+                                Container(
+                                  width: 80,
+                                  height: 14,
+                                  color: Colors.grey.shade300,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+            );},
               ),
-            );
-          },
-        ),
-      );
+            ),
+          ]);
+        
+      
     }
+    
     if (_errorMessage != null) {
       return Container(
         height: 200,
@@ -682,6 +911,116 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Center(
           child: Text(_errorMessage!, style: TextStyle(color: Colors.red)),
         ),
+      );
+    }
+
+    // Handle empty featured properties case
+    if (_featuredProperties.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(left: 20, right: 20, bottom: 8, top: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Featured Properties',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 1;
+                    });
+                  },
+                  child: Text(
+                    'See All',
+                    style: TextStyle(
+                      color: AppTheme.primaryblue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(20),
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppTheme.getCardColor(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.star_outline,
+                      size: 40,
+                      color: AppTheme.primaryblue,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No Featured Properties',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Check back later for amazing featured properties!',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentIndex = 1;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryblue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: Text(
+                      'Explore All Properties',
+                      style: TextStyle(
+                        color: AppTheme.whiteColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+        ],
       );
     }
 
@@ -701,25 +1040,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppTheme.getTextColor(context),
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 1;
-                  });
-                },
-                child: Text(
-                  'See All',
-                  style: TextStyle(
-                    color: AppTheme.primaryblue,
-                    fontWeight: FontWeight.w600,
+              // Only show "See All" when there are featured properties
+              if (_featuredProperties.isNotEmpty)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 1;
+                    });
+                  },
+                  child: Text(
+                    'See All',
+                    style: TextStyle(
+                      color: AppTheme.primaryblue,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
         SizedBox(
-          height: 473,
+          height: 480, // Reduced from 473 to prevent overflow
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 20),
@@ -739,37 +1080,132 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentProperties() {
+    // Use category properties if a specific category is selected and loaded
     final filteredProperties = _selectedCategory == 'All'
         ? _properties
-        : _properties.where((p) => p.propertyTypeString == _selectedCategory).toList();
+        : _categoryProperties;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.all(20),
-          child: Text(
-            _selectedCategory == 'All' ? 'Recent Properties' : '$_selectedCategory Properties',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.getTextColor(context),
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _selectedCategory == 'All' 
+                    ? 'Recent Properties' 
+                    : '$_selectedCategory Properties',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextColor(context),
+                ),
+              ),
+              if (_isCategoryLoading)
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                  ),
+                ),
+            ],
           ),
         ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          itemCount: filteredProperties.length,
-          itemBuilder: (context, index) {
-            final property = filteredProperties[index];
-            return Container(
-              margin: EdgeInsets.only(bottom: 16),
-              child: _buildPropertyCard(property),
-            );
-          },
-        ),
+        
+        if (_isCategoryLoading)
+          // Show loading shimmer for category properties
+          ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            itemCount: 3,
+            itemBuilder: (context, index) {
+              return Container(
+                margin: EdgeInsets.only(bottom: 16),
+                child: Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              );
+            },
+          )
+        else if (filteredProperties.isEmpty && _selectedCategory != 'All')
+          // Show empty state for category with no properties
+          Container(
+            height: 200,
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppTheme.getCardColor(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.search_off,
+                      size: 40,
+                      color: AppTheme.primaryblue,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No $_selectedCategory Properties',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Try searching for a different property type.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          // Show properties list
+          ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            itemCount: filteredProperties.length,
+            itemBuilder: (context, index) {
+              final property = filteredProperties[index];
+              return Container(
+                margin: EdgeInsets.only(bottom: 16),
+                child: _buildPropertyCard(property),
+              );
+            },
+          ),
+        
         SizedBox(height: 20),
       ],
     );
@@ -1054,7 +1490,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             Padding(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.all(16), // Reduced from 20 to prevent overflow
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1104,7 +1540,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   
-                  SizedBox(height: 12),
+                  SizedBox(height: 10), // Reduced from 12
                   
                   Row(
                     children: [
@@ -1136,7 +1572,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   
-                  SizedBox(height: 16),
+                  SizedBox(height: 12), // Reduced from 16
                   
                   if (property.availabilityStatus == AvailabilityStatus.availableLater && property.availableFrom != null)
                     Container(
@@ -1228,7 +1664,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  SizedBox(height: 12),
+                  SizedBox(height: 10), // Reduced from 12
                   
                   // Quick Book Button
                   SizedBox(
