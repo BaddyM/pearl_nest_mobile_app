@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAliLHUe_kHWZlQGvTowfFvnFqiZ2MtwoI',
-    appId: '1:500920340735:android:18c409df5d421d3072bcca',
+    appId: '1:500920340735:android:7f6e851b22bd68fc72bcca',
     messagingSenderId: '500920340735',
     projectId: 'pearlnestestates-cbc62',
     storageBucket: 'pearlnestestates-cbc62.firebasestorage.app',
@@ -59,10 +59,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyASJEObHwlBeNirezkuqS2uXE659a6s4Uk',
-    appId: '1:500920340735:ios:c6ad3932ea1ca65a72bcca',
+    appId: '1:500920340735:ios:e6641d20d87edbdb72bcca',
     messagingSenderId: '500920340735',
     projectId: 'pearlnestestates-cbc62',
     storageBucket: 'pearlnestestates-cbc62.firebasestorage.app',
-    iosBundleId: 'com.example.pearlnest',
+    iosBundleId: 'com.pearlnest.mobile',
   );
+
 }

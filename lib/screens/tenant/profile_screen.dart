@@ -8,6 +8,7 @@ import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/screens/common/onboarding_screen.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_application_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
@@ -591,11 +592,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showLogoutDialog() {
+    debugPrint('🔍 ProfileScreen: Showing logout dialog');
     showDialog(
       context: context,
+      barrierDismissible: false, // Prevent dismissal by tapping outside
       builder: (BuildContext context) {
-        return BlocBuilder<AuthBloc, AuthState>(
+        debugPrint('🔍 ProfileScreen: Building logout dialog');
+        return BlocConsumer<AuthBloc, AuthState>(
+          listener: (context, state) {
+            debugPrint('🔍 ProfileScreen: Dialog BlocListener received state: ${state.runtimeType}');
+            if (state is AuthUnauthenticated) {
+              debugPrint('🔍 ProfileScreen: Logout completed, navigating to OnboardingScreen');
+              // Close the dialog
+              Navigator.of(context).pop();
+              
+              // Navigate to OnboardingScreen and clear the entire navigation stack
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => OnboardingScreen()),
+                (route) => false,
+              );
+            }
+          },
           builder: (context, state) {
+            debugPrint('🔍 ProfileScreen: Dialog BlocBuilder received state: ${state.runtimeType}');
             final isLoading = state is AuthLoading;
             
             return AlertDialog(
@@ -610,7 +629,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
+                  onPressed: isLoading ? null : () {
+                    debugPrint('🔍 ProfileScreen: Cancel button pressed');
                     Navigator.of(context).pop();
                   },
                   child: Text(
@@ -619,49 +639,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 TextButton(
-                  onPressed: isLoading ? null : () async {
-                    // Store the navigator and scaffold messenger before popping
-                    final navigator = Navigator.of(context);
-                    final scaffoldMessenger = ScaffoldMessenger.of(context);
-                    
-                    // Pop the dialog first
-                    navigator.pop();
-                    
-                    try {
-                      context.read<AuthBloc>().add(AuthLogoutRequested());
-                      
-                      // Check if widget is still mounted before showing snackbar
-                      if (mounted) {
-                        scaffoldMessenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Logged out successfully',
-                              style: TextStyle(color: AppTheme.whiteColor),
-                            ),
-                            backgroundColor: AppTheme.primaryblue,
-                            duration: Duration(milliseconds: 1500),
-                            behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.all(16),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      // Handle logout error if needed
-                      if (mounted) {
-                        scaffoldMessenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Logout failed: ${e.toString()}',
-                              style: TextStyle(color: AppTheme.whiteColor),
-                            ),
-                            backgroundColor: Colors.red,
-                            duration: Duration(milliseconds: 2000),
-                            behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.all(16),
-                          ),
-                        );
-                      }
-                    }
+                  onPressed: isLoading ? null : () {
+                    debugPrint('🔍 ProfileScreen: Logout button pressed');
+                    // Trigger logout - BlocListener will handle navigation
+                    context.read<AuthBloc>().add(AuthLogoutRequested());
                   },
                   child: isLoading
                       ? SizedBox(

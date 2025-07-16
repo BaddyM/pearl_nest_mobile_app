@@ -135,7 +135,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

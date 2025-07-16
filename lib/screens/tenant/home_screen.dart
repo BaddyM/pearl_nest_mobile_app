@@ -77,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
     _loadProperties();
     _scrollController.addListener(() {
       if (_scrollController.offset >= 400) {
@@ -440,6 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
   
   @override
   Widget build(BuildContext context) {
+    debugPrint('🏠 HomeScreen: build() called for user: ${widget.user.name}');
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: _buildBody(),

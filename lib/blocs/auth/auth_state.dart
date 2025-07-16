@@ -37,6 +37,16 @@ class AuthFailure extends AuthState {
 
 class AuthUnauthenticated extends AuthState {}
 
+class AuthRegistrationSuccess extends AuthState {
+  final String message;
+  final String email;
+  
+  const AuthRegistrationSuccess({required this.message, required this.email});
+  
+  @override
+  List<Object?> get props => [message, email];
+}
+
 class AuthProfileUpdated extends AuthState {
   final User user;
   

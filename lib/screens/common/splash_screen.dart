@@ -68,6 +68,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     _startAnimations();
     _navigateToNextScreen();
+    // Navigation is handled by AuthBloc in main.dart
   }
 
   void _startAnimations() async {
@@ -92,6 +93,7 @@ class _SplashScreenState extends State<SplashScreen>
       );
     }
   }
+
 
   @override
   void dispose() {
