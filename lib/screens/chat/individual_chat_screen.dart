@@ -1,12 +1,16 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/models/chat_message.dart';
+import 'package:pearlnest/blocs/chat/chat_bloc.dart';
+import 'package:pearlnest/blocs/chat/chat_event.dart';
+import 'package:pearlnest/blocs/chat/chat_state.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
 import 'package:pearlnest/screens/chat/chat_input.dart';
 import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/screens/chat/message_bubble.dart';
-import 'package:pearlnest/screens/chat/typing_indicator.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class IndividualChatScreen extends StatefulWidget {
@@ -26,75 +30,53 @@ class IndividualChatScreen extends StatefulWidget {
 class _IndividualChatScreenState extends State<IndividualChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  List<Message> _messages = [];
-  bool _isTyping = false;
-  bool _showTypingIndicator = false;
-  final bool _isConnected = true;
 
   @override
   void initState() {
     super.initState();
-    _loadMessages();
-    _messageController.addListener(_onTypingChanged);
+    _initializeChat();
+  }
+
+  void _initializeChat() {
+    // Initialize chat and load messages for this conversation
+    final chatBloc = context.read<ChatBloc>();
+    chatBloc.add(const ChatInitialize());
+    chatBloc.add(ChatLoadMessages(chatWithUserId: widget.conversation.landlordId));
   }
 
   @override
   void dispose() {
-    _messageController.removeListener(_onTypingChanged);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _loadMessages() {
-    _messages = _getSampleMessages();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-    });
-  }
-
-  void _onTypingChanged() {
-    final isCurrentlyTyping = _messageController.text.trim().isNotEmpty;
-    if (isCurrentlyTyping != _isTyping) {
-      setState(() {
-        _isTyping = isCurrentlyTyping;
-      });
-    }
   }
 
   void _sendMessage() {
     final messageText = _messageController.text.trim();
     if (messageText.isEmpty) return;
 
-    final newMessage = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: 'current_user_id',
-      receiverId: widget.conversation.landlordId,
-      content: messageText,
-      timestamp: DateTime.now(),
-      type: MessageType.text,
-    );
-    setState(() {
-      _messages.add(newMessage);
-      _messageController.clear();
-    });
+    // Send message via ChatBloc
+    final chatBloc = context.read<ChatBloc>();
+    chatBloc.add(ChatSendMessage(
+      toUserId: widget.conversation.landlordId,
+      text: messageText,
+    ));
 
+    _messageController.clear();
     _scrollToBottom();
-    
-    Future.delayed(Duration(milliseconds: 500), () {
-      if (mounted) {
-        _simulateTypingResponse();
-      }
-    });
   }
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     }
   }
 
@@ -103,13 +85,31 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildConnectionStatus(),
-          _buildPropertyInfo(),
-          Expanded(child: _buildMessagesList()),
-          _buildMessageInput(),
-        ],
+      body: BlocConsumer<ChatBloc, ChatState>(
+        listener: (context, state) {
+          if (state is ChatError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.error),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          // Auto-scroll when new messages arrive
+          if (state is ChatConnected || state is ChatMessageSent) {
+            _scrollToBottom();
+          }
+        },
+        builder: (context, state) {
+          return Column(
+            children: [
+              _buildConnectionStatus(state),
+              _buildPropertyInfo(),
+              Expanded(child: _buildMessagesList(state)),
+              _buildMessageInput(state),
+            ],
+          );
+        },
       ),
     );
   }
@@ -292,8 +292,14 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     );
   }
 
-  Widget _buildMessagesList() {
-    if (_messages.isEmpty && !_showTypingIndicator) {
+  Widget _buildMessagesList(ChatState state) {
+    List<ChatMessage> messages = [];
+    
+    if (state is ChatConnected) {
+      messages = state.messages;
+    }
+    
+    if (messages.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -303,7 +309,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               size: 60,
               color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'Start the conversation',
               style: TextStyle(
@@ -312,7 +318,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 color: AppTheme.getTextColor(context),
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'Send a message to ${widget.conversation.landlordName}',
               style: TextStyle(
@@ -327,22 +333,18 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: _messages.length + (_showTypingIndicator ? 1 : 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: messages.length,
       itemBuilder: (context, index) {
-        if (index == _messages.length && _showTypingIndicator) {
-          return TypingIndicator(userName: widget.conversation.landlordName);
-        }
-        
-        final message = _messages[index];
-        final isFromCurrentUser = message.isFromCurrentUser;
-        final showTimestamp = _shouldShowTimestamp(index);
+        final message = messages[index];
+        final isFromCurrentUser = message.fromUserId == widget.currentUser.id.toString();
+        final showTimestamp = _shouldShowTimestamp(index, messages);
 
         return Column(
           children: [
             if (showTimestamp) _buildTimestamp(message.timestamp),
             MessageBubble(
-              message: message,
+              message: _convertToMessage(message),
               isFromCurrentUser: isFromCurrentUser,
               senderAvatar: isFromCurrentUser ? null : widget.conversation.landlordProfilePic,
               senderName: widget.conversation.landlordName,
@@ -353,14 +355,26 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     );
   }
 
-  bool _shouldShowTimestamp(int index) {
+  bool _shouldShowTimestamp(int index, List<ChatMessage> messages) {
     if (index == 0) return true;
     
-    final currentMessage = _messages[index];
-    final previousMessage = _messages[index - 1];
+    final currentMessage = messages[index];
+    final previousMessage = messages[index - 1];
     
     final timeDifference = currentMessage.timestamp.difference(previousMessage.timestamp);
     return timeDifference.inMinutes > 30;
+  }
+
+  // Helper method to convert ChatMessage to Message for MessageBubble
+  Message _convertToMessage(ChatMessage chatMessage) {
+    return Message(
+      id: chatMessage.id,
+      senderId: chatMessage.fromUserId,
+      receiverId: chatMessage.toUserId,
+      content: chatMessage.text,
+      timestamp: chatMessage.timestamp,
+      type: MessageType.text,
+    );
   }
 
   Widget _buildTimestamp(DateTime timestamp) {
@@ -376,36 +390,16 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       ),
     );
   }
-
-  void _simulateTypingResponse() {
-    setState(() {
-      _showTypingIndicator = true;
-    });
-    
-    Future.delayed(Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _showTypingIndicator = false;
-          _messages.add(Message(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            senderId: widget.conversation.landlordId,
-            receiverId: 'current_user_id',
-            content: 'Thanks for your message! I\'ll get back to you shortly.',
-            timestamp: DateTime.now(),
-            type: MessageType.text,
-          ));
-        });
-        _scrollToBottom();
-      }
-    });
-  }
   
-  Widget _buildMessageInput() {
+  Widget _buildMessageInput(ChatState state) {
+    final isConnected = state is ChatConnected ? state.isConnected : false;
+    final isLoading = state is ChatLoading || state is ChatMessageSending;
+    
     return ChatInput(
       controller: _messageController,
       onSend: _sendMessage,
       onAttachment: _showAttachmentOptions,
-      isEnabled: true,
+      isEnabled: isConnected && !isLoading,
     );
   }
 
@@ -795,57 +789,14 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     );
   }
 
-  List<Message> _getSampleMessages() {
-    return [
-      Message(
-        id: '1',
-        senderId: widget.conversation.landlordId,
-        receiverId: 'current_user_id',
-        content: 'Hi! I saw your interest in my property. How can I help you?',
-        timestamp: DateTime.now().subtract(Duration(hours: 2)),
-        isRead: true,
-      ),
-      Message(
-        id: '2',
-        senderId: 'current_user_id',
-        receiverId: widget.conversation.landlordId,
-        content: 'Hello! I\'m very interested in the property. Could you tell me more about the amenities?',
-        timestamp: DateTime.now().subtract(Duration(hours: 1, minutes: 45)),
-        isRead: true,
-      ),
-      Message(
-        id: '3',
-        senderId: widget.conversation.landlordId,
-        receiverId: 'current_user_id',
-        content: 'Of course! The property includes a fully equipped kitchen, air conditioning, high-speed internet, and access to a shared gym and pool.',
-        timestamp: DateTime.now().subtract(Duration(hours: 1, minutes: 30)),
-        isRead: true,
-      ),
-      Message(
-        id: '4',
-        senderId: 'current_user_id',
-        receiverId: widget.conversation.landlordId,
-        content: 'That sounds great! What about parking? Is it included in the rent?',
-        timestamp: DateTime.now().subtract(Duration(hours: 1, minutes: 15)),
-        isRead: true,
-      ),
-      Message(
-        id: '5',
-        senderId: widget.conversation.landlordId,
-        receiverId: 'current_user_id',
-        content: widget.conversation.lastMessage,
-        timestamp: widget.conversation.lastMessageTime,
-        isRead: false,
-      ),
-    ];
-  }
-
-  Widget _buildConnectionStatus() {
-    if (_isConnected) return SizedBox.shrink();
+  Widget _buildConnectionStatus(ChatState state) {
+    final isConnected = state is ChatConnected ? state.isConnected : false;
+    
+    if (isConnected) return const SizedBox.shrink();
     
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       color: Colors.orange,
       child: Text(
         'Connecting...',

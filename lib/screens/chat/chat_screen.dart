@@ -1,7 +1,12 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/apis/chat_service.dart';
+import 'package:pearlnest/blocs/chat/chat_bloc.dart';
+import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
@@ -23,12 +28,18 @@ class _ChatScreenState extends State<ChatScreen> {
   List<ChatConversation> _allConversations = [];
   List<ChatConversation> _filteredConversations = [];
   bool _isSearching = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _loadConversations();
     _searchController.addListener(_onSearchChanged);
+    
+    // Initialize chat service
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatBloc>().add(const ChatInitialize());
+    });
   }
 
   @override
@@ -38,9 +49,80 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  void _loadConversations() {
-    _allConversations = ChatConversation.getSampleConversations();
-    _filteredConversations = List.from(_allConversations);
+  Future<void> _loadConversations() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Fetch conversations from API first
+      final apiConversations = await ChatService.fetchChatList();
+      
+      // Also fetch available admin conversations
+      final adminConversations = await ChatService.getAdminConversations();
+      
+      final allConversations = <ChatConversation>[];
+      
+      // Add API conversations if available
+      if (apiConversations.isNotEmpty) {
+        allConversations.addAll(apiConversations);
+      }
+      
+      // Always include admin conversations for support
+      if (adminConversations.isNotEmpty) {
+        // Avoid duplicates by checking if admin conversations are already in API conversations
+        for (final adminConv in adminConversations) {
+          final isDuplicate = allConversations.any((conv) => conv.landlordId == adminConv.landlordId);
+          if (!isDuplicate) {
+            allConversations.add(adminConv);
+          }
+        }
+      }
+      
+      // If no conversations at all, show a fallback
+      if (allConversations.isEmpty) {
+        // Try to get a single admin conversation for fallback
+        final fallbackConv = await ChatService.getAdminConversation();
+        if (fallbackConv != null) {
+          allConversations.add(fallbackConv);
+        }
+      }
+      
+      setState(() {
+        _allConversations = allConversations;
+        _filteredConversations = List.from(_allConversations);
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Fallback to admin conversation on error
+      try {
+        final fallbackConv = await ChatService.getAdminConversation();
+        final fallbackConversations = fallbackConv != null ? [fallbackConv] : <ChatConversation>[];
+        
+        setState(() {
+          _allConversations = fallbackConversations;
+          _filteredConversations = List.from(_allConversations);
+          _isLoading = false;
+        });
+      } catch (fallbackError) {
+        setState(() {
+          _allConversations = [];
+          _filteredConversations = [];
+          _isLoading = false;
+        });
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load conversations. ${_allConversations.isEmpty ? 'No admin available.' : 'Showing available chats.'}'),
+            backgroundColor: _allConversations.isEmpty ? Colors.red : Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+          ),
+        );
+      }
+    }
   }
 
   void _onSearchChanged() {
@@ -90,11 +172,95 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
+        actions: [
+          // Debug button for development (only show in debug mode)
+          if (kDebugMode)
+            PopupMenuButton<String>(
+              icon: Icon(Icons.bug_report, color: AppTheme.blackColor),
+              onSelected: (value) {
+                if (value == 'debug_chat') {
+                  _showDebugInfo();
+                } else if (value == 'test_api') {
+                  _testApiConnectivity();
+                } else if (value == 'test_socket') {
+                  _testSocketConnectivity();
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'debug_chat',
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 18),
+                      SizedBox(width: 8),
+                      Text('Debug Chat Service'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'test_api',
+                  child: Row(
+                    children: [
+                      Icon(Icons.api, size: 18),
+                      SizedBox(width: 8),
+                      Text('Test API'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'test_socket',
+                  child: Row(
+                    children: [
+                      Icon(Icons.wifi, size: 18),
+                      SizedBox(width: 8),
+                      Text('Test Socket'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
       body: Column(
         children: [
           _buildSearchHeader(),
-          _buildConversationsList(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await _loadConversations();
+              },
+              color: AppTheme.primaryblue,
+              child: _isLoading
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            color: AppTheme.primaryblue,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Loading conversations...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppTheme.greyColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _filteredConversations.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          itemCount: _filteredConversations.length,
+                          itemBuilder: (context, index) {
+                            final conversation = _filteredConversations[index];
+                            return _buildConversationTile(conversation);
+                          },
+                        ),
+            ),
+          ),
         ],
       ),
     );
@@ -171,21 +337,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ],
       ),
-    );
-  }
-
-  Widget _buildConversationsList() {
-    return Expanded(
-      child: _filteredConversations.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              itemCount: _filteredConversations.length,
-              itemBuilder: (context, index) {
-                final conversation = _filteredConversations[index];
-                return _buildConversationTile(conversation);
-              },
-            ),
     );
   }
 
@@ -421,4 +572,60 @@ class _ChatScreenState extends State<ChatScreen> {
         _loadConversations();
       });
     }
+
+  // Debug methods for development - output to terminal only
+  void _showDebugInfo() async {
+    debugPrint('🔧 === USER REQUESTED COMPREHENSIVE DEBUG ===');
+    debugPrint('🔧 Running comprehensive chat service debug...');
+    
+    // Run the comprehensive debug
+    await ChatService.debugChatServiceState();
+    
+    debugPrint('🔧 === COMPREHENSIVE DEBUG COMPLETE ===');
+    debugPrint('🔧 Check the debug output above for detailed information.');
+  }
+
+  void _testApiConnectivity() async {
+    debugPrint('🧪 === USER REQUESTED API CONNECTIVITY TEST ===');
+    debugPrint('🧪 Testing API connectivity...');
+    
+    final isHealthy = await ChatService.isApiHealthy();
+    
+    debugPrint('🧪 === API TEST RESULT ===');
+    debugPrint('🧪 API Status: ${isHealthy ? 'HEALTHY ✅' : 'UNHEALTHY ❌'}');
+    debugPrint('🧪 Endpoint: /chat/chatList');
+    debugPrint('🧪 Result: ${isHealthy ? 'API is responding correctly' : 'API is not responding or returned error'}');
+    debugPrint('🧪 === API TEST COMPLETE ===');
+  }
+
+  void _testSocketConnectivity() async {
+    debugPrint('🔌 === USER REQUESTED SOCKET CONNECTIVITY TEST ===');
+    debugPrint('🔌 Testing socket connectivity...');
+    
+    // Test socket health
+    final isHealthy = ChatService.isSocketHealthy();
+    debugPrint('🔌 Initial socket health: ${isHealthy ? 'HEALTHY ✅' : 'UNHEALTHY ❌'}');
+    
+    // If socket is not healthy, try to connect
+    if (!isHealthy) {
+      debugPrint('🔌 Socket is unhealthy, attempting to connect...');
+      await ChatService.connect();
+    }
+    
+    final finalHealthy = ChatService.isSocketHealthy();
+    
+    debugPrint('🔌 === SOCKET TEST RESULT ===');
+    debugPrint('🔌 Socket Status: ${finalHealthy ? 'HEALTHY ✅' : 'UNHEALTHY ❌'}');
+    
+    if (!isHealthy && finalHealthy) {
+      debugPrint('🔌 Result: Socket was successfully reconnected');
+    } else if (!finalHealthy) {
+      debugPrint('🔌 Result: Unable to establish socket connection');
+      debugPrint('🔌 Possible issues: Authentication, network, server availability');
+    } else {
+      debugPrint('🔌 Result: Socket was already healthy');
+    }
+    
+    debugPrint('🔌 === SOCKET TEST COMPLETE ===');
+  }
 }

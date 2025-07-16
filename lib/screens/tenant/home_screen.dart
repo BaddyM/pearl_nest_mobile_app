@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
+import 'package:pearlnest/apis/booking_service.dart';
+import 'package:pearlnest/apis/payment_service.dart';
+import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/property.dart';
+import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
@@ -14,6 +18,7 @@ import 'package:pearlnest/screens/tenant/profile_screen.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/screens/tenant/search_screen.dart';
 import 'package:pearlnest/screens/tenant/booking_screen.dart';
+import 'package:pearlnest/screens/tenant/payment_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
@@ -35,7 +40,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   List<Property> _properties = [];
   List<Property> _featuredProperties = [];
+  List<Property> _categoryProperties = []; // Properties filtered by category
+  List<Booking> _pendingBookings = []; // Pending bookings for current user
+  List<Property> _pendingProperties = []; // Properties with pending bookings
   bool _isLoading = true;
+  bool _isCategoryLoading = false; // Loading state for category filtering
   String? _errorMessage;
   final ScrollController _scrollController = ScrollController();
   bool _showBackToTop = false;
@@ -68,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
     _loadProperties();
     _scrollController.addListener(() {
       if (_scrollController.offset >= 400) {
@@ -86,30 +96,32 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  ChatConversation _createPearlNestConversation() {
-    return ChatConversation(
-      id: 'pearlnest_support',
-      landlordId: 'pearlnest_support',
-      landlordName: 'PearlNest Support',
-      landlordProfilePic: '',
+  Future<ChatConversation?> _createPearlNestConversation() async {
+    return await ChatService.getAdminConversation(
       propertyTitle: 'General Support & Inquiries',
-      lastMessage: 'Hello! How can we help you today?',
-      lastMessageTime: DateTime.now(),
-      isOnline: true,
-      unreadCount: 0,
     );
   }
 
-  void _navigateToPearlNestChat() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => IndividualChatScreen(
-          conversation: _createPearlNestConversation(),
-          currentUser: widget.user,
+  void _navigateToPearlNestChat() async {
+    final conversation = await _createPearlNestConversation();
+    if (conversation != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => IndividualChatScreen(
+            conversation: conversation,
+            currentUser: widget.user,
+          ),
         ),
-      ),
-    );
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No admin available for chat at the moment'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   @override
@@ -124,22 +136,54 @@ class _HomeScreenState extends State<HomeScreen> {
       _errorMessage = null;
     });
     try {
-      final result = await PropertyService.getProperties();
-      if (result['success'] == true) {
+      // Load general properties, featured properties, and pending bookings in parallel
+      final [propertiesResult, featuredResult] = await Future.wait([
+        PropertyService.getProperties(),
+        PropertyService.getFeaturedProperties(),
+      ]);
+      
+      if (propertiesResult['success'] == true) {
+        final generalProperties = List<Property>.from(propertiesResult['properties'] ?? []);
+        
+        List<Property> featuredProperties = [];
+        if (featuredResult['success'] == true) {
+          // Use dedicated featured properties if available
+          featuredProperties = List<Property>.from(featuredResult['properties'] ?? []);
+          debugPrint('🏠 Loaded ${featuredProperties.length} featured properties from dedicated API');
+        } else {
+          // Fallback to filtering general properties if featured API fails
+          featuredProperties = generalProperties.where((p) => p.isFeatured).toList();
+          debugPrint('🏠 Using ${featuredProperties.length} featured properties from general properties (fallback)');
+        }
+        
         setState(() {
-          _properties = List<Property>.from(result['properties'] ?? []);
-          _featuredProperties = _properties.where((p) => p.isFeatured).toList();
+          _properties = generalProperties;
+          _featuredProperties = featuredProperties;
+          _categoryProperties = List.from(generalProperties); // Initialize with all properties
           _isLoading = false;
         });
+        
+        debugPrint('🏠 Properties loaded - General: ${generalProperties.length}, Featured: ${featuredProperties.length}');
+        
+        // Load pending bookings after properties are loaded
+        await _loadPendingBookings();
+        
       } else {
         setState(() {
-          _errorMessage = result['message'] ?? 'Failed to load properties.';
+          _errorMessage = propertiesResult['message'] ?? 'Failed to load properties.';
+          _categoryProperties = []; // Initialize empty category properties
+          _pendingBookings = []; // Initialize empty pending bookings
+          _pendingProperties = []; // Initialize empty pending properties
           _isLoading = false;
         });
       }
     } catch (e) {
+      debugPrint('❌ Error loading properties: $e');
       setState(() {
         _errorMessage = 'An error occurred while loading properties.';
+        _categoryProperties = []; // Initialize empty category properties
+        _pendingBookings = []; // Initialize empty pending bookings
+        _pendingProperties = []; // Initialize empty pending properties
         _isLoading = false;
       });
     }
@@ -268,8 +312,136 @@ class _HomeScreenState extends State<HomeScreen> {
     return '$baseUrl/$cleanUrl';
   }
 
+  // Handle category selection and load properties for that category
+  Future<void> _onCategorySelected(String categoryName) async {
+    if (_selectedCategory == categoryName) return; // Already selected
+    
+    setState(() {
+      _selectedCategory = categoryName;
+      _isCategoryLoading = true;
+    });
+
+    try {
+      if (categoryName == 'All') {
+        // Reset to show all properties
+        setState(() {
+          _categoryProperties = List.from(_properties);
+          _isCategoryLoading = false;
+        });
+      } else {
+        // Search for properties of the selected category
+        debugPrint('🔍 Searching for properties of type: $categoryName');
+        final searchResult = await PropertyService.searchPropertiesByType(categoryName);
+        
+        if (searchResult['success'] == true) {
+          final categoryProps = List<Property>.from(searchResult['properties'] ?? []);
+          setState(() {
+            _categoryProperties = categoryProps;
+            _isCategoryLoading = false;
+          });
+          debugPrint('✅ Found ${categoryProps.length} properties for category: $categoryName');
+        } else {
+          setState(() {
+            _categoryProperties = [];
+            _isCategoryLoading = false;
+          });
+          debugPrint('❌ No properties found for category: $categoryName');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading properties for category $categoryName: $e');
+      setState(() {
+        _categoryProperties = [];
+        _isCategoryLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load $categoryName properties'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
+  // Load pending bookings and extract their properties
+  Future<void> _loadPendingBookings() async {
+    try {
+      debugPrint('📚 Loading pending bookings...');
+      final pendingBookings = await BookingService.fetchBookings();
+      
+      // Filter for pending bookings only
+      final pendingOnly = pendingBookings.where(
+        (booking) => booking.status == BookingStatus.pending
+      ).toList();
+      
+      debugPrint('📚 Found ${pendingOnly.length} pending bookings');
+      
+      // Extract properties from pending bookings
+      final pendingPropertyIds = pendingOnly.map((b) => b.propertyId).toSet();
+      final pendingProps = _properties.where(
+        (property) => pendingPropertyIds.contains(property.id)
+      ).toList();
+      
+      setState(() {
+        _pendingBookings = pendingOnly;
+        _pendingProperties = pendingProps;
+      });
+      
+      debugPrint('📚 Extracted ${pendingProps.length} properties with pending bookings');
+      
+    } catch (e) {
+      debugPrint('❌ Error loading pending bookings: $e');
+      // Don't show error to user, just continue without pending bookings
+      setState(() {
+        _pendingBookings = [];
+        _pendingProperties = [];
+      });
+    }
+  }
+
+  // Prioritize properties with pending bookings in the list
+  List<Property> _prioritizePropertiesWithPendingBookings(List<Property> properties) {
+    if (_pendingProperties.isEmpty) {
+      // No pending bookings, return original list
+      return properties;
+    }
+
+    // Get property IDs that have pending bookings
+    final pendingPropertyIds = _pendingProperties.map((p) => p.id).toSet();
+    
+    // Separate properties into those with and without pending bookings
+    final propertiesWithPendingBookings = <Property>[];
+    final propertiesWithoutPendingBookings = <Property>[];
+    
+    for (final property in properties) {
+      if (pendingPropertyIds.contains(property.id)) {
+        propertiesWithPendingBookings.add(property);
+      } else {
+        propertiesWithoutPendingBookings.add(property);
+      }
+    }
+    
+    // Return prioritized list: pending bookings first, then others
+    final result = [
+      ...propertiesWithPendingBookings,
+      ...propertiesWithoutPendingBookings,
+    ];
+    
+    debugPrint('🏆 Prioritized properties: ${propertiesWithPendingBookings.length} with pending bookings first, ${propertiesWithoutPendingBookings.length} others');
+    
+    return result;
+  }
+  
   @override
   Widget build(BuildContext context) {
+    debugPrint('🏠 HomeScreen: build() called for user: ${widget.user.name}');
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: _buildBody(),
@@ -337,6 +509,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             _buildHeader(),
             _buildCategories(),
+            _buildPendingBookingsSection(),
             _buildFeaturedSection(),
             _buildRecentProperties(),
             SizedBox(height: 100),
@@ -438,27 +611,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.primaryblue, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryblue.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 25,
-                  backgroundColor: AppTheme.lightGreyColor,
-                  backgroundImage: widget.user.profileImage != null
-                      ? NetworkImage(widget.user.profileImage!)
-                      : null,
-                  child: widget.user.profileImage == null
-                      ? Icon(Icons.person, color: AppTheme.primaryblue)
-                      : null,
+              GestureDetector(
+                onTap: () { setState(() {
+                _currentIndex = 3;
+              });},
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.primaryblue, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: CircleAvatar(
+                    radius: 25,
+                    backgroundColor: AppTheme.lightGreyColor,
+                    backgroundImage: widget.user.profileImage != null
+                        ? NetworkImage(widget.user.profileImage!)
+                        : null,
+                    child: widget.user.profileImage == null
+                        ? Icon(Icons.person, color: AppTheme.primaryblue)
+                        : null,
+                  ),
                 ),
               ),
             ],
@@ -558,11 +736,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 final isSelected = _selectedCategory == category['name'];
                 
                 return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedCategory = category['name'];
-                    });
-                  },
+                  onTap: () => _onCategorySelected(category['name']),
                   child: Container(
                     width: 70,
                     margin: EdgeInsets.only(right: 16),
@@ -621,67 +795,108 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFeaturedSection() {
+    // Hide featured properties when a specific category is selected
+    if (_selectedCategory != 'All') {
+      return SizedBox.shrink(); // Return empty widget
+    }
+    
     if (_isLoading) {
       // Shimmer loading for featured section
-      return SizedBox(
-        height: 220,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          itemCount: 3,
-          itemBuilder: (context, index) {
-            return Container(
-              width: 280,
-              margin: EdgeInsets.only(right: 16),
-              child: Shimmer.fromColors(
-                baseColor: Colors.grey.shade300,
-                highlightColor: Colors.grey.shade100,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 120,
-                              height: 16,
-                              color: Colors.grey.shade300,
-                            ),
-                            SizedBox(height: 8),
-                            Container(
-                              width: 80,
-                              height: 14,
-                              color: Colors.grey.shade300,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(left: 20, right: 20, bottom: 5, top: 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Featured Properties',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 1;
+                    });
+                  },
+                  child: Text(
+                    'See All',
+                    style: TextStyle(
+                      color: AppTheme.primaryblue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              itemCount: 3,
+              itemBuilder: (context, index) {
+                return Container(
+                  width: 280,
+                  margin: EdgeInsets.only(right: 16),
+                  child: Shimmer.fromColors(
+                    baseColor: Colors.grey.shade300,
+                    highlightColor: Colors.grey.shade100,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(20),
+                                topRight: Radius.circular(20),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 120,
+                                  height: 16,
+                                  color: Colors.grey.shade300,
+                                ),
+                                SizedBox(height: 8),
+                                Container(
+                                  width: 80,
+                                  height: 14,
+                                  color: Colors.grey.shade300,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+            );},
               ),
-            );
-          },
-        ),
-      );
+            ),
+          ]);
+        
+      
     }
+    
     if (_errorMessage != null) {
       return Container(
         height: 200,
@@ -689,6 +904,116 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Center(
           child: Text(_errorMessage!, style: TextStyle(color: Colors.red)),
         ),
+      );
+    }
+
+    // Handle empty featured properties case
+    if (_featuredProperties.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(left: 20, right: 20, bottom: 8, top: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Featured Properties',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 1;
+                    });
+                  },
+                  child: Text(
+                    'See All',
+                    style: TextStyle(
+                      color: AppTheme.primaryblue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(20),
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppTheme.getCardColor(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.star_outline,
+                      size: 40,
+                      color: AppTheme.primaryblue,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No Featured Properties',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Check back later for amazing featured properties!',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentIndex = 1;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryblue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: Text(
+                      'Explore All Properties',
+                      style: TextStyle(
+                        color: AppTheme.whiteColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+        ],
       );
     }
 
@@ -708,25 +1033,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppTheme.getTextColor(context),
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 1;
-                  });
-                },
-                child: Text(
-                  'See All',
-                  style: TextStyle(
-                    color: AppTheme.primaryblue,
-                    fontWeight: FontWeight.w600,
+              // Only show "See All" when there are featured properties
+              if (_featuredProperties.isNotEmpty)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex = 1;
+                    });
+                  },
+                  child: Text(
+                    'See All',
+                    style: TextStyle(
+                      color: AppTheme.primaryblue,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
         SizedBox(
-          height: 473,
+          height: 480, // Reduced from 473 to prevent overflow
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 20),
@@ -746,37 +1073,136 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentProperties() {
-    final filteredProperties = _selectedCategory == 'All'
+    // Use category properties if a specific category is selected and loaded
+    List<Property> baseProperties = _selectedCategory == 'All'
         ? _properties
-        : _properties.where((p) => p.propertyTypeString == _selectedCategory).toList();
+        : _categoryProperties;
+
+    // Prioritize properties with pending bookings
+    final filteredProperties = _prioritizePropertiesWithPendingBookings(baseProperties);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.all(20),
-          child: Text(
-            _selectedCategory == 'All' ? 'Recent Properties' : '$_selectedCategory Properties',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.getTextColor(context),
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _selectedCategory == 'All' 
+                    ? 'Recent Properties' 
+                    : '$_selectedCategory Properties',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextColor(context),
+                ),
+              ),
+              if (_isCategoryLoading)
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                  ),
+                ),
+            ],
           ),
         ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          itemCount: filteredProperties.length,
-          itemBuilder: (context, index) {
-            final property = filteredProperties[index];
-            return Container(
-              margin: EdgeInsets.only(bottom: 16),
-              child: _buildPropertyCard(property),
-            );
-          },
-        ),
+        
+        if (_isCategoryLoading)
+          // Show loading shimmer for category properties
+          ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            itemCount: 3,
+            itemBuilder: (context, index) {
+              return Container(
+                margin: EdgeInsets.only(bottom: 16),
+                child: Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              );
+            },
+          )
+        else if (filteredProperties.isEmpty && _selectedCategory != 'All')
+          // Show empty state for category with no properties
+          Container(
+            height: 200,
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppTheme.getCardColor(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.search_off,
+                      size: 40,
+                      color: AppTheme.primaryblue,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No $_selectedCategory Properties',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Try searching for a different property type.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          // Show properties list
+          ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            itemCount: filteredProperties.length,
+            itemBuilder: (context, index) {
+              final property = filteredProperties[index];
+              return Container(
+                margin: EdgeInsets.only(bottom: 16),
+                child: _buildPropertyCard(property),
+              );
+            },
+          ),
+        
         SizedBox(height: 20),
       ],
     );
@@ -1061,7 +1487,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             Padding(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.all(16), // Reduced from 20 to prevent overflow
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1111,7 +1537,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   
-                  SizedBox(height: 12),
+                  SizedBox(height: 10), // Reduced from 12
                   
                   Row(
                     children: [
@@ -1143,7 +1569,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   
-                  SizedBox(height: 16),
+                  SizedBox(height: 12), // Reduced from 16
                   
                   if (property.availabilityStatus == AvailabilityStatus.availableLater && property.availableFrom != null)
                     Container(
@@ -1235,50 +1661,270 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  SizedBox(height: 12),
+                  SizedBox(height: 10), // Reduced from 12
                   
-                  // Quick Book Button
+                  // Conditional booking/payment button
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BookingScreen(
-                              property: property,
-                              user: widget.user,
+                    child: _buildActionButton(property),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPendingBookingsSection() {
+    // Only show pending bookings section if there are pending bookings
+    if (_pendingBookings.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 20, right: 20, bottom: 16, top: 20),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.payment,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pending Bookings',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.getTextColor(context),
+                      ),
+                    ),
+                    Text(
+                      '${_pendingBookings.length} property${_pendingBookings.length > 1 ? 'ies' : ''} waiting for payment',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.getSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 200,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            itemCount: _pendingProperties.length,
+            itemBuilder: (context, index) {
+              final property = _pendingProperties[index];
+              final booking = _getPendingBookingForProperty(property.id);
+              
+              return Container(
+                width: 280,
+                margin: EdgeInsets.only(right: 16),
+                child: _buildPendingPropertyCard(property, booking),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Get pending booking for a specific property
+  Booking? _getPendingBookingForProperty(String propertyId) {
+    try {
+      return _pendingBookings.firstWhere(
+        (booking) => booking.propertyId == propertyId,
+      );
+    } catch (e) {
+      return null; // No pending booking found
+    }
+  }
+
+  Widget _buildPendingPropertyCard(Property property, Booking? booking) {
+    final formattedPrice = NumberFormat('#,##0').format(property.price);
+    
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PropertyDetailsScreen(
+              property: property,
+              user: widget.user,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.orange.withValues(alpha: 0.3),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withValues(alpha: 0.1),
+              blurRadius: 15,
+              offset: Offset(0, 8),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image with pending indicator
+            Stack(
+              children: [
+                Container(
+                  height: 120,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(18),
+                      topRight: Radius.circular(18),
+                    ),
+                    color: AppTheme.getCardColor(context),
+                  ),
+                  child: property.images.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                          ),
+                          child: Image.network(
+                            _getFullImageUrl(property.images.first),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(18),
+                                    topRight: Radius.circular(18),
+                                  ),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: AppTheme.getSecondaryTextColor(context),
+                                    size: 30,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(18),
+                              topRight: Radius.circular(18),
+                            ),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppTheme.primaryblue.withValues(alpha: 0.1),
+                                AppTheme.accentGreen.withValues(alpha: 0.1),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryblue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          child: Center(
+                            child: Icon(
+                              Icons.home_rounded,
+                              color: AppTheme.primaryblue,
+                              size: 40,
+                            ),
+                          ),
                         ),
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            color: AppTheme.whiteColor,
-                            size: 16,
+                ),
+                
+                // Pending payment indicator
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'PENDING PAYMENT',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Quick Book',
-                            style: TextStyle(
-                              color: AppTheme.whiteColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            Padding(
+              padding: EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    property.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'UGX $formattedPrice',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
                     ),
                   ),
                 ],
@@ -1287,6 +1933,260 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // Build action button based on property booking status
+  Widget _buildActionButton(Property property) {
+    final pendingBooking = _getPendingBookingForProperty(property.id);
+    
+    if (pendingBooking != null) {
+      // Property has pending booking - show payment button
+      return ElevatedButton(
+        onPressed: () => _initiatePayment(property, pendingBooking),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 12),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.payment,
+              color: AppTheme.whiteColor,
+              size: 16,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Complete Payment',
+              style: TextStyle(
+                color: AppTheme.whiteColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Property has no pending booking - show quick book button
+      return ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookingScreen(
+                property: property,
+                user: widget.user,
+              ),
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primaryblue,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 12),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.calendar_today,
+              color: AppTheme.whiteColor,
+              size: 16,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Quick Book',
+              style: TextStyle(
+                color: AppTheme.whiteColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  // Initiate payment for a pending booking
+  Future<void> _initiatePayment(Property property, Booking booking) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Preparing Payment...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Please wait while we set up your payment',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      debugPrint('💳 Initiating payment for booking: ${booking.id}');
+      
+      // Create payment
+      final paymentResult = await PaymentService.createPayment(
+        userId: widget.user.id,
+        bookingId: booking.id,
+        propertyId: property.id,
+        amount: property.price,
+      );
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (paymentResult['success'] == true) {
+        final String? redirectUrl = paymentResult['redirectUrl'];
+        final String? orderTrackingId = paymentResult['orderTrackingId'];
+        final String? merchantReference = paymentResult['merchantReference'];
+
+        if (redirectUrl != null && orderTrackingId != null && merchantReference != null) {
+          // Navigate to payment screen
+          final bool? paymentSuccess = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentScreen(
+                redirectUrl: redirectUrl,
+                orderTrackingId: orderTrackingId,
+                merchantReference: merchantReference,
+                amount: property.price,
+                propertyTitle: property.title,
+              ),
+            ),
+          );
+
+          if (paymentSuccess == true) {
+            // Payment successful - refresh data
+            _loadProperties();
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Payment completed successfully!'),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 3),
+                  margin: EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+            }
+          }
+        } else {
+          _showPaymentError('Payment setup incomplete. Please try again.');
+        }
+      } else {
+        _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
+      }
+    } catch (e) {
+      // Close loading dialog if still showing
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+      
+      debugPrint('❌ Payment initiation error: $e');
+      _showPaymentError('An error occurred while setting up payment. Please try again.');
+    }
+  }
+
+  // Show payment error dialog
+  void _showPaymentError(String message) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 28,
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Payment Error',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextColor(context),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontSize: 16,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryblue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1342,8 +2242,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 index: 3,
               ),
               _buildNavItem(
-                icon: Icons.chat_outlined,
-                activeIcon: Icons.chat_rounded,
+                icon: Icons.chat_bubble_outline,
+                activeIcon: Icons.chat_bubble,
                 label: 'Chat',
                 index: 4,
                 onTap: () => _navigateToPearlNestChat(),
@@ -1372,7 +2272,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     final isActive = _currentIndex == index;
     return GestureDetector(
-      onTap: onTap ?? () => _onNavItemTapped(index), // Use custom onTap if provided
+      onTap: onTap ?? () => _onNavItemTapped(index),
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
@@ -1391,9 +2291,9 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               label,
               style: TextStyle(
-                color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
               ),
             ),
           ],

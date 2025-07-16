@@ -28,6 +28,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _agreeToTerms = false;
   final UserType _selectedUserType = UserType.tenant;
+  
+  // Auto-validation flags
+  bool _nameAutoValidate = false;
+  bool _emailAutoValidate = false;
+  bool _passwordAutoValidate = false;
+  bool _confirmPasswordAutoValidate = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Add listeners to start validation once user starts typing
+    _nameController.addListener(() {
+      if (!_nameAutoValidate && _nameController.text.isNotEmpty) {
+        setState(() {
+          _nameAutoValidate = true;
+        });
+      }
+    });
+    
+    _emailController.addListener(() {
+      if (!_emailAutoValidate && _emailController.text.isNotEmpty) {
+        setState(() {
+          _emailAutoValidate = true;
+        });
+      }
+    });
+    
+    _passwordController.addListener(() {
+      if (!_passwordAutoValidate && _passwordController.text.isNotEmpty) {
+        setState(() {
+          _passwordAutoValidate = true;
+        });
+      }
+    });
+    
+    _confirmPasswordController.addListener(() {
+      if (!_confirmPasswordAutoValidate && _confirmPasswordController.text.isNotEmpty) {
+        setState(() {
+          _confirmPasswordAutoValidate = true;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,10 +131,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
                         ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        errorStyle: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          height: 1,
+                        ),
                       ),
+                      autovalidateMode: _nameAutoValidate ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your full name';
+                        }
+                        if (value.trim().length < 2) {
+                          return 'Name must be at least 2 characters';
                         }
                         return null;
                       },
@@ -114,14 +175,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
                         ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        errorStyle: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          height: 1,
+                        ),
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      autovalidateMode: _emailAutoValidate ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
+                      onChanged: (value) {
+                        // Convert to lowercase to prevent capital letters
+                        if (value != value.toLowerCase()) {
+                          final selection = _emailController.selection;
+                          _emailController.value = _emailController.value.copyWith(
+                            text: value.toLowerCase(),
+                            selection: selection,
+                          );
+                        }
+                      },
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email address';
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
                           return 'Please enter a valid email address';
+                        }
+                        if (value != value.toLowerCase()) {
+                          return 'Email should be in lowercase';
                         }
                         return null;
                       },
@@ -156,14 +246,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
                         ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        errorStyle: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          height: 1,
+                        ),
                       ),
                       obscureText: !_isPasswordVisible,
+                      autovalidateMode: _passwordAutoValidate ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your password';
                         }
                         if (value.length < 6) {
                           return 'Password must be at least 6 characters';
+                        }
+                        if (!RegExp(r'^(?=.*[a-zA-Z])(?=.*\d)').hasMatch(value)) {
+                          return 'Password must contain letters and numbers';
                         }
                         return null;
                       },
@@ -198,8 +305,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
                         ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        errorStyle: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          height: 1,
+                        ),
                       ),
                       obscureText: !_isConfirmPasswordVisible,
+                      autovalidateMode: _confirmPasswordAutoValidate ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please confirm your password';

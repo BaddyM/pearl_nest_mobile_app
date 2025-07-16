@@ -43,6 +43,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       
       final result = await AuthService.login(event.email, event.password);
       
+      debugPrint('AuthBloc: Login result received: ${result.keys}');
+      debugPrint('AuthBloc: Success flag: ${result['success']}');
+      debugPrint('AuthBloc: User present: ${result['user'] != null}');
+      debugPrint('AuthBloc: Token present: ${result['token'] != null}');
+      
       if (result['success'] == true) {
         _currentUser = result['user'];
         _currentToken = result['token'];
@@ -51,16 +56,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ApiClient.setAuthToken(_currentToken);
         
         debugPrint('AuthBloc: Login successful, user: ${_currentUser?.name}');
+        debugPrint('AuthBloc: About to emit AuthSuccess state');
         
         emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
+        
+        debugPrint('AuthBloc: AuthSuccess state emitted');
       } else {
-        debugPrint('AuthBloc: Login failed - ${result['message']}');
-        emit(AuthFailure(message: result['message'] ?? 'Login failed'));
+        debugPrint('AuthBloc: Login error message - ${result['message']}');
+        debugPrint('Error result: $result');
+        // Use the actual error message from the service instead of generic message
+        final errorMessage = result['message'] ?? 'Login failed. Please try again.';
+        debugPrint('AuthBloc: Login failed - $errorMessage');
+        emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
       debugPrint('AuthBloc: Login error - $e');
       debugPrint('AuthBloc: Stack trace - $stackTrace');
-      emit(AuthFailure(message: 'Network error. Please check your connection.'));
+      
+      // Provide more specific error messages based on error type
+      String errorMessage;
+      if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+      } else if (e.toString().contains('network') || e.toString().contains('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (e.toString().contains('SocketException') || e.toString().contains('No address associated with hostname')) {
+        errorMessage = 'Unable to connect to server. Please check your internet connection.';
+      } else {
+        errorMessage = 'Login failed. Please try again.';
+      }
+      
+      emit(AuthFailure(message: errorMessage));
     }
   }
 
@@ -127,13 +152,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthUnauthenticated());
         }
       } else {
-        debugPrint('AuthBloc: Registration failed - ${result['message']}');
-        emit(AuthFailure(message: result['message'] ?? 'Registration failed'));
+        // Use the actual error message from the service
+        final errorMessage = result['message'] ?? 'Registration failed. Please try again.';
+        debugPrint('AuthBloc: Registration failed - $errorMessage');
+        emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
       debugPrint('AuthBloc: Registration error - $e');
       debugPrint('AuthBloc: Stack trace - $stackTrace');
-      emit(AuthFailure(message: 'Network error. Please check your connection.'));
+      
+      // Provide more specific error messages based on error type
+      String errorMessage;
+      if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+      } else if (e.toString().contains('network') || e.toString().contains('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (e.toString().contains('SocketException') || e.toString().contains('No address associated with hostname')) {
+        errorMessage = 'Unable to connect to server. Please check your internet connection.';
+      } else {
+        errorMessage = 'Registration failed. Please try again.';
+      }
+      
+      emit(AuthFailure(message: errorMessage));
     }
   }
 
@@ -192,13 +232,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         debugPrint('AuthBloc: Profile updated successfully');
         emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
       } else {
-        debugPrint('AuthBloc: Profile update failed - ${result['message']}');
-        emit(AuthFailure(message: result['message'] ?? 'Profile update failed'));
+        // Use the actual error message from the service
+        final errorMessage = result['message'] ?? 'Profile update failed. Please try again.';
+        debugPrint('AuthBloc: Profile update failed - $errorMessage');
+        emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
       debugPrint('AuthBloc: Profile update error - $e');
       debugPrint('AuthBloc: Stack trace - $stackTrace');
-      emit(AuthFailure(message: 'Network error. Please check your connection.'));
+      
+      // Provide more specific error messages based on error type
+      String errorMessage;
+      if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+      } else if (e.toString().contains('network') || e.toString().contains('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (e.toString().contains('SocketException') || e.toString().contains('No address associated with hostname')) {
+        errorMessage = 'Unable to connect to server. Please check your internet connection.';
+      } else {
+        errorMessage = 'Profile update failed. Please try again.';
+      }
+      
+      emit(AuthFailure(message: errorMessage));
     }
   }
 

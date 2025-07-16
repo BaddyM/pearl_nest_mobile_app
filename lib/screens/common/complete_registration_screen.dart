@@ -6,6 +6,7 @@ import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class CompleteRegistrationScreen extends StatefulWidget {
@@ -52,6 +53,27 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
             ),
           );
           // Navigation is now handled by main.dart based on auth state
+        } else if (state is AuthUnauthenticated) {
+          // Check if this is after a successful registration (registration creates user but doesn't log them in)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Account created successfully! Please login to continue.',
+                style: TextStyle(color: AppTheme.lightGreyColor),
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(milliseconds: 2000),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+            ),
+          );
+          
+          // Navigate to login screen
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+            (route) => false,
+          );
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

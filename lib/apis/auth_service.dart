@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pearlnest/services/notification_service.dart';
 
 // Custom exceptions for better error handling
 class AuthException implements Exception {
@@ -30,6 +31,7 @@ class AuthService {
   static const String _tokenKey = 'auth_token';
   static const String _lastLoginKey = 'last_login';
   static const String _tokenExpiryKey = 'token_expiry';
+  static const String _userIdKey = 'user_id';
   
   // Configuration constants
   static const int _passwordMinLength = 6;
@@ -120,10 +122,10 @@ class AuthService {
       message = error.message;
       code = error.code;
       statusCode = error.statusCode;
-    } else if (error.toString().contains('SocketException')) {
+    } else if (error.toString().contains('SocketException') || error.toString().contains('Please check your internet connection')) {
       message = 'No internet connection. Please check your network.';
       code = 'NO_INTERNET';
-    } else if (error.toString().contains('TimeoutException')) {
+    } else if (error.toString().contains('TimeoutException') || error.toString().contains('Connection timeout') ) {
       message = 'Request timed out. Please try again.';
       code = 'TIMEOUT';
     } else if (error.toString().contains('HandshakeException')) {
@@ -188,6 +190,27 @@ class AuthService {
     }
   }
 
+  // Save user ID to local storage
+  static Future<void> _saveUserId(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userIdKey, userId);
+      
+      if (kDebugMode) {
+        debugPrint('💾 User ID saved successfully: $userId');
+        debugPrint('💾 UserID key used: $_userIdKey');
+        
+        // Verify it was saved
+        final savedUserId = prefs.getString(_userIdKey);
+        debugPrint('💾 Verification - Retrieved user ID: $savedUserId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error saving user ID: $e');
+      }
+    }
+  }
+
   // Check if token is expired locally
   static Future<bool> isTokenExpired() async {
     try {
@@ -226,6 +249,7 @@ class AuthService {
       }
       if (phone.trim().isEmpty) throw ValidationException('Phone number is required');
 
+      // Create request data according to API specification
       final requestData = {
         'name': name.trim(),
         'email': email.trim().toLowerCase(),
@@ -274,9 +298,17 @@ class AuthService {
       if (email.trim().isEmpty) throw ValidationException('Email is required');
       if (password.isEmpty) throw ValidationException('Password is required');
 
+      // Get real FCM token
+      final fcmToken = await _getFcmToken();
+      if (fcmToken == null || fcmToken.isEmpty) {
+        throw AuthException('Unable to retrieve device notification token. Please check your network and try again.');
+      }
+
+      // Create request data for login
       final requestData = {
         'email': email.trim().toLowerCase(),
         'password': password,
+        'fcmToken': fcmToken,
       };
 
       _logRequest('/user/login', requestData);
@@ -290,6 +322,11 @@ class AuthService {
         // Save token with expiry
         await _saveToken(responseData['accessToken'], expiresIn: responseData['expiresIn']);
         
+        // Save userId if provided in the response
+        if (responseData['userId'] != null) {
+          await _saveUserId(responseData['userId'].toString());
+        }
+        
         // Set the token for subsequent requests
         ApiClient.setAuthToken(responseData['accessToken']);
         
@@ -301,12 +338,25 @@ class AuthService {
           if (profileResponse.statusCode == 200) {
             final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
             
+            // Create user object from profile data
+            final userData = profileData['data'];
+            
+            // If profile data doesn't have ID, use the one from login response
+            if ((userData['id'] == null || userData['id'].toString().isEmpty) && responseData['userId'] != null) {
+              userData['id'] = responseData['userId'].toString();
+              if (kDebugMode) {
+                debugPrint('🔧 Profile data missing ID, using login userId: ${responseData['userId']}');
+              }
+            }
+            
+            final user = User.fromJson(userData);
+            
             // Save user data and last login
-            await saveUserData(User.fromJson(profileData['data']));
+            await saveUserData(user);
             
             return {
               'success': true,
-              'user': User.fromJson(profileData['data']),
+              'user': user,
               'token': responseData['accessToken'],
               'message': responseData['message'] ?? 'Login successful',
               'expiresIn': responseData['expiresIn'],
@@ -349,6 +399,7 @@ class AuthService {
         );
       }
     } catch (e) {
+      debugPrint('AuthService: Login error - $e');
       return _handleError(e, 'login');
     }
   }
@@ -481,6 +532,7 @@ class AuthService {
         prefs.remove(_userDataKey),
         prefs.remove(_lastLoginKey),
         prefs.remove(_tokenExpiryKey),
+        prefs.remove(_userIdKey),
       ]);
       
       if (kDebugMode) {
@@ -584,6 +636,27 @@ class AuthService {
     }
   }
 
+  // Get the saved user ID
+  static Future<String?> getUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(_userIdKey);
+      
+      if (kDebugMode) {
+        debugPrint('🔍 AuthService.getUserId() called');
+        debugPrint('🔍 Retrieved user ID from storage: $userId');
+        debugPrint('🔍 UserID key: $_userIdKey');
+      }
+      
+      return userId;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error getting user ID: $e');
+      }
+      return null;
+    }
+  }
+
   // Helper method to save user data
   static Future<bool> saveUserData(User user) async {
     try {
@@ -591,6 +664,16 @@ class AuthService {
       final userJson = jsonEncode(user.toJson());
       await prefs.setString(_userDataKey, userJson);
       await prefs.setInt(_lastLoginKey, DateTime.now().millisecondsSinceEpoch);
+      
+      // Only save user ID if it's not empty to avoid overwriting existing valid ID
+      if (user.id.isNotEmpty) {
+        await _saveUserId(user.id);
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ User data has empty ID, preserving existing user ID');
+        }
+      }
+      
       return true;
     } catch (e, stackTrace) {
       if (kDebugMode) {
@@ -690,6 +773,216 @@ class AuthService {
       }
     } catch (e) {
       return _handleError(e, 'profile update');
+    }
+  }
+
+  /// Delete user account permanently
+  /// This is a destructive action that cannot be undone
+  static Future<Map<String, dynamic>> deleteAccount({
+    required String userId,
+    String? reason,
+  }) async {
+    try {
+      _logRequest('/user/delete/$userId', {
+        'reason': reason,
+      });
+
+      final token = await getCurrentToken();
+      if (token == null) {
+        throw AuthException('No authentication token found');
+      }
+
+      // Set the auth token for the request
+      ApiClient.setAuthToken(token);
+
+      final response = await ApiClient.delete('/user/delete/$userId');
+
+      _logResponse('/user/delete/$userId', response);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Account deleted successfully, clear all local data
+        await clearUserData();
+        
+        if (kDebugMode) {
+          debugPrint('✅ Account deleted successfully and local data cleared');
+        }
+
+        return {
+          'success': true,
+          'message': response.data?['message'] ?? 'Account deleted successfully',
+        };
+      } else {
+        final errorMessage = response.data?['message'] ?? 'Failed to delete account';
+        if (kDebugMode) {
+          debugPrint('❌ Account deletion failed: $errorMessage');
+        }
+        
+        return {
+          'success': false,
+          'message': errorMessage,
+        };
+      }
+    } on DioException catch (e) {
+      _logError('deleteAccount', e);
+      
+      String errorMessage;
+      if (e.response?.statusCode == 401) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (e.response?.statusCode == 403) {
+        errorMessage = 'You do not have permission to delete this account.';
+      } else if (e.response?.statusCode == 404) {
+        errorMessage = 'Account not found.';
+      } else if (e.response?.statusCode == 409) {
+        errorMessage = 'Account cannot be deleted due to pending transactions.';
+      } else {
+        errorMessage = e.response?.data?['message'] ?? 
+                      'Network error occurred while deleting account. Please try again.';
+      }
+
+      return {
+        'success': false,
+        'message': errorMessage,
+        'statusCode': e.response?.statusCode,
+      };
+    } catch (e) {
+      _logError('deleteAccount', e);
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred while deleting account. Please try again.',
+      };
+    }
+  }
+
+  /// Clear all stored user data (used during account deletion and logout)
+  static Future<void> clearUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        prefs.remove(_userDataKey),
+        prefs.remove(_tokenKey),
+        prefs.remove(_lastLoginKey),
+        prefs.remove(_tokenExpiryKey),
+        prefs.remove(_userIdKey),
+      ]);
+      
+      if (kDebugMode) {
+        debugPrint('🧹 All user data cleared from local storage');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error clearing user data: $e');
+      }
+    }
+  }
+
+  // Debug method to check all stored data
+  static Future<void> debugStoredData() async {
+    if (!kDebugMode) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      debugPrint('🔍 === AUTH SERVICE STORED DATA DEBUG ===');
+      debugPrint('🔍 Token exists: ${prefs.getString(_tokenKey) != null}');
+      debugPrint('🔍 User data exists: ${prefs.getString(_userDataKey) != null}');
+      debugPrint('🔍 User ID exists: ${prefs.getString(_userIdKey) != null}');
+      debugPrint('🔍 User ID value: ${prefs.getString(_userIdKey)}');
+      debugPrint('🔍 Last login exists: ${prefs.getInt(_lastLoginKey) != null}');
+      debugPrint('🔍 Token expiry exists: ${prefs.getInt(_tokenExpiryKey) != null}');
+      
+      // Try to get and parse user data
+      final userDataJson = prefs.getString(_userDataKey);
+      if (userDataJson != null) {
+        try {
+          final userData = jsonDecode(userDataJson);
+          debugPrint('🔍 User data ID field: ${userData['id']}');
+          debugPrint('🔍 User data name field: ${userData['name']}');
+        } catch (e) {
+          debugPrint('❌ Error parsing stored user data: $e');
+        }
+      }
+      
+      debugPrint('🔍 === END STORED DATA DEBUG ===');
+    } catch (e) {
+      debugPrint('❌ Error in debugStoredData: $e');
+    }
+  }
+
+  // Emergency method to fix user ID if it's missing but user data exists
+  static Future<bool> fixMissingUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(_userIdKey);
+      
+      if (userId != null && userId.isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint('✅ User ID already exists: $userId');
+        }
+        return true;
+      }
+      
+      // Try to get user ID from stored user data
+      final userDataJson = prefs.getString(_userDataKey);
+      if (userDataJson != null) {
+        try {
+          final userData = jsonDecode(userDataJson);
+          if (kDebugMode) {
+            debugPrint('🔍 Full user data from storage: $userData');
+            debugPrint('🔍 Available keys: ${userData.keys.toList()}');
+            debugPrint('🔍 ID field: ${userData['id']}');
+            debugPrint('🔍 _id field: ${userData['_id']}');
+            debugPrint('🔍 userId field: ${userData['userId']}');
+            debugPrint('🔍 user_id field: ${userData['user_id']}');
+          }
+          
+          // Try different possible ID fields
+          String? userIdFromData;
+          if (userData['id'] != null && userData['id'].toString().isNotEmpty) {
+            userIdFromData = userData['id'].toString();
+          } else if (userData['_id'] != null && userData['_id'].toString().isNotEmpty) {
+            userIdFromData = userData['_id'].toString();
+          } else if (userData['userId'] != null && userData['userId'].toString().isNotEmpty) {
+            userIdFromData = userData['userId'].toString();
+          } else if (userData['user_id'] != null && userData['user_id'].toString().isNotEmpty) {
+            userIdFromData = userData['user_id'].toString();
+          }
+          
+          if (userIdFromData != null && userIdFromData.isNotEmpty) {
+            await _saveUserId(userIdFromData);
+            if (kDebugMode) {
+              debugPrint('🔧 Fixed missing user ID by extracting from user data: $userIdFromData');
+            }
+            return true;
+          } else {
+            if (kDebugMode) {
+              debugPrint('❌ No valid user ID found in any expected fields');
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('❌ Error parsing user data to fix user ID: $e');
+          }
+        }
+      }
+      
+      if (kDebugMode) {
+        debugPrint('❌ Cannot fix user ID - no user data found');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error in fixMissingUserId: $e');
+      }
+      return false;
+    }
+  }
+
+  static Future<String?> _getFcmToken() async {
+    try {
+      return NotificationService.fcmToken ?? await NotificationService.refreshFCMToken();
+    } catch (e, stack) {
+      debugPrint('FCM token fetch error: $e');
+      debugPrint('Stack trace: $stack');
+      return null;
     }
   }
 }

@@ -1,12 +1,14 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/screens/common/onboarding_screen.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_application_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
@@ -456,6 +458,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         ),
         _buildMenuItem(
+          Icons.delete_forever_outlined,
+          'Delete Account',
+          () {
+            _showDeleteAccountDialog();
+          },
+          isDestructive: true,
+        ),
+       
+        _buildMenuItem(
           Icons.logout,
           'Logout',
           () {
@@ -581,11 +592,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showLogoutDialog() {
+    debugPrint('🔍 ProfileScreen: Showing logout dialog');
     showDialog(
       context: context,
+      barrierDismissible: false, // Prevent dismissal by tapping outside
       builder: (BuildContext context) {
-        return BlocBuilder<AuthBloc, AuthState>(
+        debugPrint('🔍 ProfileScreen: Building logout dialog');
+        return BlocConsumer<AuthBloc, AuthState>(
+          listener: (context, state) {
+            debugPrint('🔍 ProfileScreen: Dialog BlocListener received state: ${state.runtimeType}');
+            if (state is AuthUnauthenticated) {
+              debugPrint('🔍 ProfileScreen: Logout completed, navigating to OnboardingScreen');
+              // Close the dialog
+              Navigator.of(context).pop();
+              
+              // Navigate to OnboardingScreen and clear the entire navigation stack
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => OnboardingScreen()),
+                (route) => false,
+              );
+            }
+          },
           builder: (context, state) {
+            debugPrint('🔍 ProfileScreen: Dialog BlocBuilder received state: ${state.runtimeType}');
             final isLoading = state is AuthLoading;
             
             return AlertDialog(
@@ -600,7 +629,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
+                  onPressed: isLoading ? null : () {
+                    debugPrint('🔍 ProfileScreen: Cancel button pressed');
                     Navigator.of(context).pop();
                   },
                   child: Text(
@@ -609,49 +639,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 TextButton(
-                  onPressed: isLoading ? null : () async {
-                    // Store the navigator and scaffold messenger before popping
-                    final navigator = Navigator.of(context);
-                    final scaffoldMessenger = ScaffoldMessenger.of(context);
-                    
-                    // Pop the dialog first
-                    navigator.pop();
-                    
-                    try {
-                      context.read<AuthBloc>().add(AuthLogoutRequested());
-                      
-                      // Check if widget is still mounted before showing snackbar
-                      if (mounted) {
-                        scaffoldMessenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Logged out successfully',
-                              style: TextStyle(color: AppTheme.whiteColor),
-                            ),
-                            backgroundColor: AppTheme.primaryblue,
-                            duration: Duration(milliseconds: 1500),
-                            behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.all(16),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      // Handle logout error if needed
-                      if (mounted) {
-                        scaffoldMessenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Logout failed: ${e.toString()}',
-                              style: TextStyle(color: AppTheme.whiteColor),
-                            ),
-                            backgroundColor: Colors.red,
-                            duration: Duration(milliseconds: 2000),
-                            behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.all(16),
-                          ),
-                        );
-                      }
-                    }
+                  onPressed: isLoading ? null : () {
+                    debugPrint('🔍 ProfileScreen: Logout button pressed');
+                    // Trigger logout - BlocListener will handle navigation
+                    context.read<AuthBloc>().add(AuthLogoutRequested());
                   },
                   child: isLoading
                       ? SizedBox(
@@ -672,12 +663,543 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showDeleteAccountDialog() {
+    // Show initial warning dialog with important information
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent accidental dismissal
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.getCardColor(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Delete Account',
+                  style: TextStyle(
+                    color: AppTheme.getTextColor(context),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'This action cannot be undone!',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'Deleting your account will permanently remove:',
+                        style: TextStyle(
+                          color: AppTheme.getTextColor(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      ..._buildDeletionPoints(),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'If you have any active bookings or pending transactions, please resolve them before deleting your account.',
+                  style: TextStyle(
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Are you sure you want to continue?',
+                  style: TextStyle(
+                    color: AppTheme.getTextColor(context),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AppTheme.getSecondaryTextColor(context),
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showDeleteAccountConfirmation();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Continue',
+                style: TextStyle(
+                  color: AppTheme.whiteColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildDeletionPoints() {
+    final points = [
+      '• Your profile and personal information',
+      '• All your property listings (if landlord)',
+      '• Your booking history',
+      '• Your favorite properties',
+      '• All chat conversations',
+      '• Your reviews and ratings',
+    ];
+
+    return points.map((point) => Padding(
+      padding: EdgeInsets.only(bottom: 4),
+      child: Text(
+        point,
+        style: TextStyle(
+          color: AppTheme.getTextColor(context),
+          fontSize: 14,
+        ),
+      ),
+    )).toList();
+  }
+
+  void _showDeleteAccountConfirmation() {
+    final TextEditingController reasonController = TextEditingController();
+    String? selectedReason;
+    
+    final reasons = [
+      'I found a better alternative',
+      'I no longer need this service',
+      'Privacy concerns',
+      'Too many notifications',
+      'Account security issues',
+      'Other (please specify)',
+    ];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppTheme.getCardColor(context),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.delete_forever, color: Colors.red, size: 28),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Final Confirmation',
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(context),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Help us improve by telling us why you\'re leaving (optional):',
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(context),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppTheme.lightGreyColor),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: reasons.map((reason) {
+                          return RadioListTile<String>(
+                            title: Text(
+                              reason,
+                              style: TextStyle(
+                                color: AppTheme.getTextColor(context),
+                                fontSize: 14,
+                              ),
+                            ),
+                            value: reason,
+                            groupValue: selectedReason,
+                            onChanged: (value) {
+                              setDialogState(() {
+                                selectedReason = value;
+                              });
+                            },
+                            activeColor: AppTheme.primaryblue,
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    if (selectedReason == 'Other (please specify)') ...[
+                      SizedBox(height: 16),
+                      TextField(
+                        controller: reasonController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Please tell us more...',
+                          hintStyle: TextStyle(
+                            color: AppTheme.getSecondaryTextColor(context),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppTheme.lightGreyColor),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppTheme.primaryblue),
+                          ),
+                          filled: true,
+                          fillColor: AppTheme.lightGreyColor.withValues(alpha: 0.1),
+                        ),
+                        style: TextStyle(
+                          color: AppTheme.getTextColor(context),
+                        ),
+                      ),
+                    ],
+                    SizedBox(height: 20),
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.red, size: 20),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'This will permanently delete your account and all associated data.',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: AppTheme.getSecondaryTextColor(context),
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    final isLoading = state is AuthLoading;
+                    
+                    return ElevatedButton(
+                      onPressed: isLoading ? null : () {
+                        final reason = selectedReason == 'Other (please specify)' 
+                            ? reasonController.text.trim()
+                            : selectedReason;
+                        _performAccountDeletion(reason);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: isLoading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+                              ),
+                            )
+                          : Text(
+                              'Delete Account',
+                              style: TextStyle(
+                                color: AppTheme.whiteColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _performAccountDeletion(String? reason) async {
+    try {
+      // Call the delete account API
+      final result = await AuthService.deleteAccount(
+        userId: widget.user.id,
+        reason: reason,
+      );
+
+      // Close the confirmation dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (result['success'] == true) {
+        // Show success message
+        if (mounted) {
+          _showAccountDeletedDialog();
+        }
+        
+        // Trigger logout through AuthBloc to navigate to login screen
+        if (mounted) {
+          context.read<AuthBloc>().add(AuthLogoutRequested());
+        }
+      } else {
+        // Show error message
+        if (mounted) {
+          _showDeletionErrorDialog(result['message'] ?? 'Failed to delete account');
+        }
+      }
+    } catch (e) {
+      // Close the confirmation dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+      
+      // Show error dialog
+      if (mounted) {
+        _showDeletionErrorDialog('An error occurred while deleting your account. Please try again.');
+      }
+    }
+  }
+
+  void _showAccountDeletedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.getCardColor(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 28),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Account Deleted',
+                  style: TextStyle(
+                    color: AppTheme.getTextColor(context),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Your account has been permanently deleted. Thank you for using PearlNest Estates.',
+                style: TextStyle(
+                  color: AppTheme.getTextColor(context),
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'You will now be redirected to the login screen.',
+                style: TextStyle(
+                  color: AppTheme.getSecondaryTextColor(context),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryblue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: AppTheme.whiteColor,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeletionErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.getCardColor(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 28),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Deletion Failed',
+                  style: TextStyle(
+                    color: AppTheme.getTextColor(context),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              color: AppTheme.getTextColor(context),
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Try Again',
+                style: TextStyle(
+                  color: AppTheme.primaryblue,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryblue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: AppTheme.whiteColor,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   String _getUserTypeString(UserType userType) {
     switch (userType) {
       case UserType.tenant:
         return 'Tenant';
       case UserType.landlord:
         return 'Landlord';
+      case UserType.admin:
+        return 'Admin';
     }
   }
 }

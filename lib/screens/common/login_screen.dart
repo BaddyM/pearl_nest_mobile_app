@@ -5,6 +5,7 @@ import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/screens/common/register_screen.dart';
+import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -37,6 +38,10 @@ class _LoginScreenState extends State<LoginScreen> {
               behavior: SnackBarBehavior.floating,
               margin: EdgeInsets.all(16),
             ),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen(user: state.user,)),
           );
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -212,44 +217,44 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                             ),
                           ),
-                          SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(child: Divider(color: AppTheme.getSecondaryTextColor(context))),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  'OR',
-                                  style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-                                ),
-                              ),
-                              Expanded(child: Divider(color: AppTheme.getSecondaryTextColor(context))),
-                            ],
-                          ),
-                          SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _socialLoginButton(
-                                  icon: Icons.g_mobiledata,
-                                  label: 'Google',
-                                  onPressed: () {
-                                    // TODO: Implement Google login
-                                  },
-                                ),
-                              ),
-                              SizedBox(width: 16),
-                              Expanded(
-                                child: _socialLoginButton(
-                                  icon: Icons.facebook,
-                                  label: 'Facebook',
-                                  onPressed: () {
-                                    // TODO: Implement Facebook login
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
+                          // SizedBox(height: 24),
+                          // Row(
+                          //   children: [
+                          //     Expanded(child: Divider(color: AppTheme.getSecondaryTextColor(context))),
+                          //     Padding(
+                          //       padding: EdgeInsets.symmetric(horizontal: 16),
+                          //       child: Text(
+                          //         'OR',
+                          //         style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                          //       ),
+                          //     ),
+                          //     Expanded(child: Divider(color: AppTheme.getSecondaryTextColor(context))),
+                          //   ],
+                          // ),
+                          // SizedBox(height: 24),
+                          // Row(
+                          //   children: [
+                          //     Expanded(
+                          //       child: _socialLoginButton(
+                          //         icon: Icons.g_mobiledata,
+                          //         label: 'Google',
+                          //         onPressed: () {
+                          //           // TODO: Implement Google login
+                          //         },
+                          //       ),
+                          //     ),
+                          //     SizedBox(width: 16),
+                          //     Expanded(
+                          //       child: _socialLoginButton(
+                          //         icon: Icons.facebook,
+                          //         label: 'Facebook',
+                          //         onPressed: () {
+                          //           // TODO: Implement Facebook login
+                          //         },
+                          //       ),
+                          //     ),
+                          //   ],
+                          // ),
                           SizedBox(height: 40),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
