@@ -120,7 +120,7 @@ class MyApp extends StatelessWidget {
         break;
       case AuthUnauthenticated _:
         debugPrint('Showing onboarding screen - AuthUnauthenticated');
-        homeWidget = const OnboardingScreen();
+        homeWidget = const SplashScreen();
         break;
       case AuthFailure _:
         debugPrint('Showing splash screen - AuthFailure');
