@@ -6,9 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
-import 'package:pearlnest/providers/auth_provider.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
-import 'package:provider/provider.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final User user;
@@ -674,27 +672,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
+      debugPrint('🔧 EditProfileScreen: Starting profile update...');
+      
       // Call the AuthService to update profile
       final result = await AuthService.updateProfile(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
         bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+        imagePath: _selectedImage?.path,
         pushNotifications: _pushNotifications,
         smsNotifications: _smsNotifications,
         emailNotifications: _emailNotifications,
       );
 
-      if (result['success'] == true) {
-        // Update the AuthProvider with the new user data
-        if (mounted) {
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
-          // The AuthService already saves the updated user data, 
-          // but we should update the provider as well
-          await authProvider.refreshUserData();
-        }
+      debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
 
-        _showSuccessDialog('Profile updated successfully!');
+      if (result['success'] == true) {
+        // Don't trigger AuthBloc events to avoid navigation issues
+        // The AuthService already updates the stored user data
+        
+        _showSuccessSnackBar(result['message'] ?? 'Profile updated successfully!');
         
         setState(() {
           _hasChanges = false;
@@ -704,57 +702,72 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         setState(() {
           _isLoading = false;
         });
-        _showErrorDialog(result['message'] ?? 'Failed to update profile. Please try again.');
+        _showErrorSnackBar(result['message'] ?? 'Failed to update profile. Please try again.');
       }
 
     } catch (e, stackTrace) {
-      debugPrint('Profile update error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      debugPrint('🔧 EditProfileScreen: Profile update error: $e');
+      debugPrint('🔧 EditProfileScreen: Stack trace: $stackTrace');
       
       setState(() {
         _isLoading = false;
       });
-      _showErrorDialog('Failed to update profile. Please try again.');
+      _showErrorSnackBar('Failed to update profile. Please try again.');
     }
   }
 
-  void _showSuccessDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.getBackgroundColor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
+  void _showSuccessSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green),
+              Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 8),
-              Text(
-                'Success',
-                style: TextStyle(color: AppTheme.getTextColor(context)),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
-          content: Text(
-            message,
-            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'OK',
-                style: TextStyle(color: AppTheme.primaryblue),
+        ),
+      );
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
-            ),
-          ],
-        );
-      },
-    );
+            ],
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
   }
 
   void _showErrorDialog(String message) {
