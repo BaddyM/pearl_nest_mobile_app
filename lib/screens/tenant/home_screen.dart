@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_service.dart';
-import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
+import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/models/landlord.dart';
@@ -130,7 +130,117 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _loadProperties() async {
+  // Helper method to check if current user has favorited this property
+  bool _isPropertyFavorited(Property property) {
+    return property.favourites.any((favourite) => favourite['userId'] == widget.user.id);
+  }
+
+  // Toggle favorite status for a property
+  Future<void> _toggleFavorite(Property property) async {
+    try {
+      final wasLiked = _isPropertyFavorited(property);
+      
+      // Optimistically update the UI for better UX
+      setState(() {
+        if (wasLiked) {
+          // Remove from favorites
+          property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+        } else {
+          // Add to favorites
+          property.favourites.add({
+            'userId': widget.user.id,
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+        }
+      });
+      
+      // Make API call to sync with server
+      debugPrint('🤍 Toggling favorite for property: ${property.id}');
+      final result = await FavoritesService.toggleFavorite(property.id);
+      
+      if (result['success'] == true) {
+        // Success - UI is already updated optimistically
+        final message = wasLiked ? 'Removed from favorites' : 'Added to favorites';
+        debugPrint('✅ $message for property: ${property.id}');
+        
+        // Show success feedback
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: AppTheme.primaryblue,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+              margin: EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } else {
+        // API call failed, revert the optimistic update
+        setState(() {
+          if (wasLiked) {
+            // Revert: add back to favorites
+            property.favourites.add({
+              'userId': widget.user.id,
+              'createdAt': DateTime.now().toIso8601String(),
+            });
+          } else {
+            // Revert: remove from favorites
+            property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+          }
+        });
+        
+        debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update favorites. Please try again.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+              margin: EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Error toggling favorite: $e');
+      
+      // Revert the optimistic update on error
+      final wasLiked = _isPropertyFavorited(property);
+      setState(() {
+        if (!wasLiked) {
+          // Revert: add back to favorites
+          property.favourites.add({
+            'userId': widget.user.id,
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+        } else {
+          // Revert: remove from favorites
+          property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+        }
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadProperties() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -209,89 +319,6 @@ class _HomeScreenState extends State<HomeScreen> {
       createdAt: DateTime.now().subtract(Duration(days: 30)),
       updatedAt: DateTime.now(), businessRegistrationNumber: '', verificationDocuments: [], applicationDate: DateTime.now().subtract(Duration(days: 30)),
     );
-  }
-
-  void _toggleFavorite(String propertyId) async {
-    try {
-      // Show loading state
-      final currentIsFavorite = widget.user.favoriteProperties.contains(propertyId);
-      
-      // Update UI immediately for better UX
-      setState(() {
-        if (currentIsFavorite) {
-          widget.user.favoriteProperties.remove(propertyId);
-        } else {
-          widget.user.favoriteProperties.add(propertyId);
-        }
-      });
-
-      // Call API to sync with backend
-      final result = await FavoritesService.toggleFavorite(propertyId);
-      
-      if (result['success'] == true) {
-        // API call successful, UI already updated
-        final message = currentIsFavorite ? 'Removed from favorites' : 'Added to favorites';
-        
-        // Show success feedback
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: AppTheme.primaryblue,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 2),
-              margin: EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        }
-      } else {
-        // API call failed, revert UI state
-        setState(() {
-          if (currentIsFavorite) {
-            widget.user.favoriteProperties.add(propertyId);
-          } else {
-            widget.user.favoriteProperties.remove(propertyId);
-          }
-        });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to update favorites. Please try again.'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 3),
-              margin: EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      // API call failed, revert UI state
-      final currentIsFavorite = widget.user.favoriteProperties.contains(propertyId);
-      setState(() {
-        if (!currentIsFavorite) {
-          widget.user.favoriteProperties.remove(propertyId);
-        } else {
-          widget.user.favoriteProperties.add(propertyId);
-        }
-      });
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Network error. Please check your connection and try again.'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 3),
-            margin: EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      }
-    }
   }
 
   // Helper to get full image URL
@@ -502,21 +529,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomeContent() {
     return SafeArea(
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            _buildCategories(),
-            _buildPendingBookingsSection(),
-            _buildFeaturedSection(),
-            _buildRecentProperties(),
-            SizedBox(height: 100),
-          ],
+      child: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: AppTheme.primaryblue,
+        backgroundColor: AppTheme.getCardColor(context),
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: AlwaysScrollableScrollPhysics(), // Allow refresh even when content is short
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              _buildCategories(),
+              _buildPendingBookingsSection(),
+              _buildFeaturedSection(),
+              _buildRecentProperties(),
+              SizedBox(height: 100),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleRefresh() async {
+    debugPrint('🔄 Refreshing home screen...');
+    await _loadProperties();
+    debugPrint('🔄 Home screen refresh completed');
   }
 
   Widget _buildHeader() {
@@ -1386,7 +1425,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       GestureDetector(
-                        onTap: () => _toggleFavorite(property.id),
+                        onTap: () => _toggleFavorite(property),
                         child: Container(
                           padding: EdgeInsets.all(10),
                           decoration: BoxDecoration(
@@ -1401,10 +1440,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                           child: Icon(
-                            widget.user.favoriteProperties.contains(property.id)
+                            _isPropertyFavorited(property)
                                 ? Icons.favorite
                                 : Icons.favorite_outline,
-                            color: widget.user.favoriteProperties.contains(property.id)
+                            color: _isPropertyFavorited(property)
                                 ? Colors.red
                                 : AppTheme.getSecondaryTextColor(context),
                             size: 20,

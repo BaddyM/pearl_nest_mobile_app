@@ -7,6 +7,7 @@ import 'package:pearlnest/screens/tenant/filters_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/app_config.dart';
+import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:intl/intl.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -95,30 +96,76 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  // Helper method to check if current user has favorited this property
+  bool _isPropertyFavorited(Property property) {
+    return property.favourites.any((favourite) => favourite['userId'] == widget.user.id);
+  }
+
   Future<void> _performSearch() async {
     final searchQuery = _searchController.text.trim();
-    if (searchQuery.isEmpty) {
-      setState(() {
-        _filteredProperties = [];
-        _errorMessage = null;
-        _isLoading = false;
-      });
-      return;
-    }
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    final result = await PropertyService.searchProperties(searchString: searchQuery);
-    if (result['success'] == true) {
-      setState(() {
-        _filteredProperties = List<Property>.from(result['properties'] ?? []);
-        _isLoading = false;
-      });
-    } else {
+
+    try {
+      Map<String, dynamic> result;
+      
+      if (searchQuery.isEmpty) {
+        // If no search text, check if we have price filters
+        if (_filters.priceRange.start != 0 || _filters.priceRange.end != 5000) {
+          // Use price search API
+          result = await PropertyService.searchPropertiesByPrice(
+            minPrice: _filters.priceRange.start,
+            maxPrice: _filters.priceRange.end,
+            sortBy: _getSortField(_sortBy),
+            sortOrder: _getSortOrder(_sortBy),
+          );
+        } else {
+          // No search query and no price filter - clear results
+          setState(() {
+            _filteredProperties = [];
+            _errorMessage = null;
+            _isLoading = false;
+          });
+          return;
+        }
+      } else {
+        // Text search takes priority - use text search API with filters
+        result = await PropertyService.searchProperties(
+          searchString: searchQuery,
+          sortBy: _getSortField(_sortBy),
+          sortOrder: _getSortOrder(_sortBy),
+          filters: _buildApiFilters(),
+        );
+      }
+      
+      if (result['success'] == true) {
+        List<Property> properties = List<Property>.from(result['properties'] ?? []);
+        
+        // Apply local filters for features not supported by API
+        properties = _applyLocalFilters(properties);
+        
+        setState(() {
+          _filteredProperties = properties;
+          _isLoading = false;
+        });
+        
+        debugPrint('🔍 Search completed: ${properties.length} properties found');
+      } else {
+        setState(() {
+          _filteredProperties = [];
+          _errorMessage = result['message'] ?? 'Failed to load properties.';
+          _isLoading = false;
+        });
+        debugPrint('❌ Search failed: ${result['message']}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error performing search: $e');
       setState(() {
         _filteredProperties = [];
-        _errorMessage = result['message'] ?? 'Failed to load properties.';
+        _errorMessage = 'An error occurred while searching. Please try again.';
         _isLoading = false;
       });
     }
@@ -134,32 +181,202 @@ class _SearchScreenState extends State<SearchScreen> {
     return '$baseUrl/$cleanUrl';
   }
 
-  void _applySorting() {
-    switch (_sortBy) {
+  // Helper to convert UI sort option to API sort field
+  String? _getSortField(String sortBy) {
+    switch (sortBy) {
       case 'Price Low to High':
-        _filteredProperties.sort((a, b) => a.price.compareTo(b.price));
-        break;
       case 'Price High to Low':
-        _filteredProperties.sort((a, b) => b.price.compareTo(a.price));
-        break;
+        return 'price';
       case 'Rating':
-        _filteredProperties.sort((a, b) => b.rating.compareTo(a.rating));
-        break;
+        return 'rating';
       case 'Recent':
       default:
-        _filteredProperties.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        break;
+        return 'createdAt';
     }
   }
 
-  void _toggleFavorite(String propertyId) {
-    setState(() {
-      if (widget.user.favoriteProperties.contains(propertyId)) {
-        widget.user.favoriteProperties.remove(propertyId);
+  // Helper to convert UI sort option to API sort order
+  String? _getSortOrder(String sortBy) {
+    switch (sortBy) {
+      case 'Price Low to High':
+        return 'asc';
+      case 'Price High to Low':
+      case 'Rating':
+      case 'Recent':
+      default:
+        return 'desc';
+    }
+  }
+
+  // Helper to build API filters from UI filters
+  Map<String, dynamic> _buildApiFilters() {
+    final filters = <String, dynamic>{};
+    
+    // Only add filters that the API supports
+    // Property type filter - let's handle this locally for now
+    // if (_filters.propertyType != 'All') {
+    //   filters['propertyType'] = _filters.propertyType;
+    // }
+    
+    // Bedrooms filter - let's handle this locally for now
+    // if (_filters.bedrooms != null) {
+    //   filters['bedrooms'] = _filters.bedrooms;
+    // }
+    
+    // Price range is handled by the price search API, not as a filter
+    // For text search, we'll apply price filtering locally
+    
+    // Amenities filter - let's handle this locally for now
+    // if (_filters.selectedAmenities.isNotEmpty) {
+    //   filters['amenities'] = _filters.selectedAmenities;
+    // }
+    
+    return filters;
+  }
+
+  // Helper to apply local filters that aren't supported by API
+  List<Property> _applyLocalFilters(List<Property> properties) {
+    List<Property> filtered = List.from(properties);
+    
+    // Apply property type filter locally if needed
+    if (_filters.propertyType != 'All') {
+      filtered = filtered.where((property) => 
+        property.type.toString().split('.').last.toLowerCase() == _filters.propertyType.toLowerCase()
+      ).toList();
+    }
+    
+    // Apply bedrooms filter locally if needed
+    if (_filters.bedrooms != null) {
+      filtered = filtered.where((property) => 
+        property.bedrooms == _filters.bedrooms
+      ).toList();
+    }
+    
+    // Apply amenities filter locally if needed
+    if (_filters.selectedAmenities.isNotEmpty) {
+      filtered = filtered.where((property) {
+        final propertyAmenities = property.amenities.map((a) => a.toLowerCase()).toList();
+        return _filters.selectedAmenities.every((amenity) => 
+          propertyAmenities.contains(amenity.toLowerCase())
+        );
+      }).toList();
+    }
+    
+    // Apply price range filter locally if we're doing text search
+    // (price search API handles this, but text search might need local filtering)
+    if (_filters.priceRange.start != 0 || _filters.priceRange.end != 5000) {
+      filtered = filtered.where((property) => 
+        property.price >= _filters.priceRange.start && 
+        property.price <= _filters.priceRange.end
+      ).toList();
+    }
+    
+    return filtered;
+  }
+
+  // Toggle favorite status for a property
+  Future<void> _toggleFavorite(Property property) async {
+    try {
+      final wasLiked = _isPropertyFavorited(property);
+      
+      // Optimistically update the UI for better UX
+      setState(() {
+        if (wasLiked) {
+          // Remove from favorites
+          property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+        } else {
+          // Add to favorites
+          property.favourites.add({
+            'userId': widget.user.id,
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+        }
+      });
+      
+      // Make API call to sync with server
+      debugPrint('🤍 Toggling favorite for property: ${property.id}');
+      final result = await FavoritesService.toggleFavorite(property.id);
+      
+      if (result['success'] == true) {
+        // Success - UI is already updated optimistically
+        final message = wasLiked ? 'Removed from favorites' : 'Added to favorites';
+        debugPrint('✅ $message for property: ${property.id}');
+        
+        // Show success feedback
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: AppTheme.primaryblue,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+              margin: EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
       } else {
-        widget.user.favoriteProperties.add(propertyId);
+        // API call failed, revert the optimistic update
+        setState(() {
+          if (wasLiked) {
+            // Revert: add back to favorites
+            property.favourites.add({
+              'userId': widget.user.id,
+              'createdAt': DateTime.now().toIso8601String(),
+            });
+          } else {
+            // Revert: remove from favorites
+            property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+          }
+        });
+        
+        debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update favorites. Please try again.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+              margin: EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
       }
-    });
+      
+    } catch (e) {
+      debugPrint('❌ Error toggling favorite: $e');
+      
+      // Revert the optimistic update on error
+      final wasLiked = _isPropertyFavorited(property);
+      setState(() {
+        if (!wasLiked) {
+          // Revert: add back to favorites
+          property.favourites.add({
+            'userId': widget.user.id,
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+        } else {
+          // Revert: remove from favorites
+          property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+        }
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
   }
 
   void _clearFilters() {
@@ -776,7 +993,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ],
                       ),
                       GestureDetector(
-                        onTap: () => _toggleFavorite(property.id),
+                        onTap: () => _toggleFavorite(property),
                         child: Container(
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -791,10 +1008,10 @@ class _SearchScreenState extends State<SearchScreen> {
                             ],
                           ),
                           child: Icon(
-                            widget.user.favoriteProperties.contains(property.id)
+                            _isPropertyFavorited(property)
                                 ? Icons.favorite
                                 : Icons.favorite_outline,
-                            color: widget.user.favoriteProperties.contains(property.id)
+                            color: _isPropertyFavorited(property)
                                 ? Colors.red
                                 : AppTheme.getSecondaryTextColor(context),
                             size: 18,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/apis/app_config.dart';
@@ -93,15 +94,15 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   // API data state
   int _viewsCount = 0;
   int _sharesCount = 0;
-  int _likesCount = 89; // Default value until we have an API
-  bool _isLoadingStats = true;
+  int _likesCount = 0;
+  bool _isLoadingStats = false; // Changed to false since we have embedded data
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
     _tabController = TabController(length: 3, vsync: this);
-    _isFavorite = widget.user.favoriteProperties.contains(widget.property.id);
+    _isFavorite = _isPropertyFavorited();
     
     _animationController = AnimationController(
       duration: Duration(milliseconds: 300),
@@ -120,6 +121,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     
     // Initialize booking bloc
     _bookingBloc = context.read<BookingBloc>();
+    
+    // Initialize stats from embedded data
+    _initializeStatsFromEmbeddedData();
     
     // Load data from APIs
     _loadPropertyData();
@@ -148,9 +152,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     // Increment view counter when property is viewed
     PropertyInteractionsService.incrementViewCounter(widget.property.id);
     
-    // Load statistics
-    _loadPropertyStats();
-    
     // Load reviews
     _loadPropertyReviews();
     
@@ -158,43 +159,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     _loadPendingBookings();
   }
 
-  // Load property statistics (views, shares, likes)
-  void _loadPropertyStats() async {
-    try {
-      // Load views count
-      final viewsResult = await PropertyInteractionsService.getViewsCounter(widget.property.id);
-      if (viewsResult['success'] == true) {
-        final viewsData = viewsResult['data'];
-        if (mounted) {
-          setState(() {
-            _viewsCount = viewsData?['count'] ?? 0;
-          });
-        }
-      }
-
-      // Load shares count
-      final sharesResult = await PropertyInteractionsService.getSharesCounter(widget.property.id);
-      if (sharesResult['success'] == true) {
-        final sharesData = sharesResult['data'];
-        if (mounted) {
-          setState(() {
-            _sharesCount = sharesData?['count'] ?? 0;
-          });
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _isLoadingStats = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingStats = false;
-        });
-      }
-    }
+  // Initialize stats from embedded property data
+  void _initializeStatsFromEmbeddedData() {
+    setState(() {
+      _viewsCount = widget.property.views.length;
+      _sharesCount = widget.property.shares.length;
+      _likesCount = widget.property.favourites.length;
+      _isLoadingStats = false;
+    });
   }
 
   // Load property reviews from API
@@ -299,6 +271,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     _pageController.dispose();
     _reviewController.dispose();
     super.dispose();
+  }
+
+  // Helper method to check if current user has favorited this property
+  bool _isPropertyFavorited() {
+    return widget.property.favourites.any((favourite) => favourite['userId'] == widget.user.id);
   }
 
   void _toggleFavorite() {
@@ -408,15 +385,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Calling ${widget.property.landlordName}...', style: TextStyle(color: AppTheme.lightGreyColor),),
-                    backgroundColor: AppTheme.primaryblue,
-                    duration: Duration(milliseconds: 500),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.all(16),
-                  ),
-                );
+                _makePhoneCall(widget.property.landlordPhone);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryblue,
@@ -434,6 +403,28 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
         );
       },
     );
+  }
+
+  // Helper method to make phone call
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    try {
+      await launchUrl(launchUri);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not launch phone call', style: TextStyle(color: AppTheme.whiteColor)),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
 
   void _showAddReviewDialog() {
@@ -2918,9 +2909,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: hasPendingBooking ? _initiatePayment : _showBookingConfirmationDialog,
+              onPressed: _isLoadingPendingBookings? null : hasPendingBooking ? _initiatePayment : _showBookingConfirmationDialog,
               style: ElevatedButton.styleFrom(
-                backgroundColor: hasPendingBooking ? Colors.orange : AppTheme.primaryblue,
+                backgroundColor: _isLoadingPendingBookings? Colors.grey : hasPendingBooking ? Colors.orange : AppTheme.primaryblue,
                 foregroundColor: AppTheme.whiteColor,
                 padding: EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -3210,6 +3201,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
         _sharesCount++;
       });
 
+      // Share the property using the system share functionality
+      // You can add share functionality here if needed
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Property shared successfully!', style: TextStyle(color: AppTheme.whiteColor)),

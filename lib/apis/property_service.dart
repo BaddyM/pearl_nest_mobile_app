@@ -290,6 +290,87 @@ class PropertyService {
     }
   }
 
+  // Search properties by price range
+  static Future<Map<String, dynamic>> searchPropertiesByPrice({
+    required double minPrice,
+    required double maxPrice,
+    int page = 1,
+    int limit = 20,
+    String? sortBy,
+    String? sortOrder,
+    String? token,
+  }) async {
+    try {
+      // Input validation
+      if (minPrice < 0 || maxPrice < 0) {
+        throw ValidationException('Price values must be non-negative');
+      }
+      if (minPrice > maxPrice) {
+        throw ValidationException('Minimum price cannot be greater than maximum price');
+      }
+
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'limit': limit,
+      };
+
+      if (sortBy != null) queryParams['sortBy'] = sortBy;
+      if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
+
+      final endpoint = '/property/search/price/${minPrice.round()}/${maxPrice.round()}';
+      _logRequest(endpoint, queryParams, token: token);
+
+      // Set token temporarily if provided
+      final originalToken = ApiClient.currentAuthToken;
+      if (token != null) {
+        ApiClient.setAuthToken(token);
+      }
+
+      final response = await ApiClient.get(endpoint, queryParameters: queryParams);
+      
+      // Restore original token
+      if (token != null) {
+        ApiClient.setAuthToken(originalToken);
+      }
+      _logResponse(endpoint, response);
+
+      if (response.statusCode == 200) {
+        final responseData = _validateResponse(response, requiredFields: ['data']);
+        
+        // Parse properties list
+        final propertiesData = responseData['data'];
+        List<Property> properties = [];
+        
+        if (propertiesData is List) {
+          properties = propertiesData.map((propertyJson) => Property.fromJson(propertyJson)).toList();
+        }
+
+        return {
+          'success': true,
+          'properties': properties,
+          'minPrice': minPrice,
+          'maxPrice': maxPrice,
+          'total': responseData['total'] ?? properties.length,
+          'page': responseData['page'] ?? page,
+          'limit': responseData['limit'] ?? limit,
+          'totalPages': responseData['totalPages'] ?? ((responseData['total'] ?? properties.length) / limit).ceil(),
+          'hasNextPage': responseData['hasNextPage'] ?? false,
+          'hasPrevPage': responseData['hasPrevPage'] ?? false,
+          'message': responseData['message'] ?? 'Price search completed successfully',
+          'statusCode': response.statusCode,
+        };
+      } else {
+        final errorData = response.data;
+        throw PropertyException(
+          errorData['message'] ?? 'Price search failed',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      return _handleError(e, 'search properties by price');
+    }
+  }
+
   // Get property by ID (if needed)
   static Future<Map<String, dynamic>> getPropertyById(String propertyId, {String? token}) async {
     try {
