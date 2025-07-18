@@ -129,13 +129,14 @@ class BookingService {
     }
   }
 
-  static Future<List<Booking>> fetchBookings() async {
+  static Future<List<Booking>> fetchBookings({String? status}) async {
     try {
-      _logRequest('/booking/list', null);
+      final endpoint = status != null ? '/booking/list?status=$status' : '/booking/list';
+      _logRequest(endpoint, null);
       
-      final response = await ApiClient.get('/booking/list');
+      final response = await ApiClient.get(endpoint);
       
-      _logDioResponse('/booking/list', response);
+      _logDioResponse(endpoint, response);
       
       if (response.statusCode == 200) {
         final data = response.data;
@@ -166,6 +167,97 @@ class BookingService {
         rethrow;
       }
       throw BookingException('Unexpected error while fetching bookings: $e');
+    }
+  }
+
+  /// Fetch only pending bookings
+  static Future<List<Booking>> fetchPendingBookings() async {
+    final bookings = await fetchBookings(status: 'PENDING');
+    // Additional client-side filter to ensure only pending bookings are returned
+    final pendingOnly = bookings.where((booking) => booking.status == BookingStatus.pending).toList();
+    debugPrint('🏨 Server returned ${bookings.length} bookings, filtered to ${pendingOnly.length} pending bookings');
+    return pendingOnly;
+  }
+
+  /// Update booking status
+  static Future<Map<String, dynamic>> updateBookingStatus({
+    required String bookingId,
+    required String status,
+  }) async {
+    try {
+      final endpoint = '/booking/status/update/$bookingId/$status';
+      _logRequest(endpoint, {'bookingId': bookingId, 'status': status});
+      
+      final response = await ApiClient.patch(endpoint, {});
+      
+      _logDioResponse(endpoint, response);
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success'] == true) {
+          debugPrint('🏨 Successfully updated booking status to $status');
+          return {
+            'success': true,
+            'message': data['message'] ?? 'Booking status updated successfully',
+            'data': data['data'],
+          };
+        } else {
+          throw BookingException(
+            data['message'] ?? 'Failed to update booking status',
+            statusCode: response.statusCode,
+          );
+        }
+      } else if (response.statusCode == 400) {
+        final errorData = response.data;
+        throw BookingException(
+          errorData?['message'] ?? 'Invalid booking status or booking ID',
+          statusCode: 400,
+        );
+      } else if (response.statusCode == 401) {
+        throw BookingException('Authentication required', statusCode: 401);
+      } else if (response.statusCode == 403) {
+        throw BookingException('Not authorized to update booking status', statusCode: 403);
+      } else if (response.statusCode == 404) {
+        throw BookingException('Booking not found', statusCode: 404);
+      } else {
+        throw BookingException(
+          'Failed to update booking status: ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      _logError('update booking status', e);
+      
+      if (e.response?.statusCode == 400) {
+        final errorData = e.response?.data;
+        throw BookingException(
+          errorData?['message'] ?? 'Invalid booking status or booking ID',
+          statusCode: 400,
+        );
+      }
+      
+      if (e.response?.statusCode == 401) {
+        throw BookingException('Authentication required', statusCode: 401);
+      }
+      
+      if (e.response?.statusCode == 403) {
+        throw BookingException('Not authorized to update booking status', statusCode: 403);
+      }
+      
+      if (e.response?.statusCode == 404) {
+        throw BookingException('Booking not found', statusCode: 404);
+      }
+      
+      throw BookingException(
+        e.response?.data?['message'] ?? 'Failed to update booking status',
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      _logError('update booking status', e);
+      if (e is BookingException) {
+        rethrow;
+      }
+      throw BookingException('Unexpected error: $e');
     }
   }
 }

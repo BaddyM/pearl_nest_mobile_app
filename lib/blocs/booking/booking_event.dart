@@ -29,3 +29,16 @@ class BookingReset extends BookingEvent {
 class FetchBookings extends BookingEvent {
   const FetchBookings();
 }
+
+class BookingStatusUpdateRequested extends BookingEvent {
+  final String bookingId;
+  final String status;
+
+  const BookingStatusUpdateRequested({
+    required this.bookingId,
+    required this.status,
+  });
+
+  @override
+  List<Object?> get props => [bookingId, status];
+}

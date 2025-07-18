@@ -11,6 +11,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     on<BookingCreateRequested>(_onBookingCreateRequested);
     on<BookingReset>(_onBookingReset);
     on<FetchBookings>(_onFetchBookings);
+    on<BookingStatusUpdateRequested>(_onBookingStatusUpdateRequested);
   }
 
   void _logState(String operation, BookingState newState) {
@@ -96,6 +97,47 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     } catch (e) {
       emit(BookingError(message: 'Failed to fetch bookings: $e'));
       _logState('ERROR', state);
+    }
+  }
+
+  Future<void> _onBookingStatusUpdateRequested(
+    BookingStatusUpdateRequested event,
+    Emitter<BookingState> emit,
+  ) async {
+    emit(const BookingLoading());
+    _logState('STATUS_UPDATE_REQUESTED', state);
+
+    try {
+      // Call the booking service to update status
+      final result = await BookingService.updateBookingStatus(
+        bookingId: event.bookingId,
+        status: event.status,
+      );
+
+      emit(BookingSuccess(
+        bookingData: result['data'] ?? {},
+        message: result['message'] ?? 'Booking status updated successfully',
+      ));
+      _logState('STATUS_UPDATE_SUCCESS', state);
+    } on BookingException catch (e) {
+      if (e.statusCode == 400) {
+        emit(BookingFailure(error: e.message, errorCode: 'INVALID_REQUEST'));
+      } else if (e.statusCode == 401) {
+        emit(BookingFailure(error: e.message, errorCode: 'UNAUTHORIZED'));
+      } else if (e.statusCode == 403) {
+        emit(BookingFailure(error: e.message, errorCode: 'FORBIDDEN'));
+      } else if (e.statusCode == 404) {
+        emit(BookingFailure(error: e.message, errorCode: 'BOOKING_NOT_FOUND'));
+      } else {
+        emit(BookingFailure(error: e.message, errorCode: 'API_ERROR'));
+      }
+      _logState('STATUS_UPDATE_ERROR', state);
+    } catch (e) {
+      emit(BookingFailure(
+        error: 'An unexpected error occurred: $e',
+        errorCode: 'UNKNOWN_ERROR',
+      ));
+      _logState('STATUS_UPDATE_UNEXPECTED_ERROR', state);
     }
   }
 

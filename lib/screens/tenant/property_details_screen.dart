@@ -250,17 +250,12 @@ String _getFullImageUrl(String url) {
   void _loadPendingBookings() async {
     try {
       debugPrint('📚 Loading pending bookings for property: ${widget.property.id}');
-      final pendingBookings = await BookingService.fetchBookings();
-      
-      // Filter for pending bookings only
-      final pendingOnly = pendingBookings.where(
-        (booking) => booking.status == BookingStatus.pending
-      ).toList();
+      final pendingBookings = await BookingService.fetchPendingBookings();
       
       // Check if this specific property has a pending booking
       Booking? pendingBookingForThisProperty;
       try {
-        pendingBookingForThisProperty = pendingOnly.firstWhere(
+        pendingBookingForThisProperty = pendingBookings.firstWhere(
           (booking) => booking.propertyId == widget.property.id,
         );
         debugPrint('📚 Found pending booking for this property: ${pendingBookingForThisProperty.id}');
@@ -271,7 +266,7 @@ String _getFullImageUrl(String url) {
       
       if (mounted) {
         setState(() {
-          _pendingBookings = pendingOnly;
+          _pendingBookings = pendingBookings;
           _pendingBookingForProperty = pendingBookingForThisProperty;
           _isLoadingPendingBookings = false;
         });

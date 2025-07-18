@@ -82,6 +82,7 @@ class Booking {
         case 'CONFIRMED':
           return BookingStatus.confirmed;
         case 'CANCELLED':
+        case 'REJECTED':  // Map both CANCELLED and REJECTED to cancelled status
           return BookingStatus.cancelled;
         case 'COMPLETED':
           return BookingStatus.completed;
