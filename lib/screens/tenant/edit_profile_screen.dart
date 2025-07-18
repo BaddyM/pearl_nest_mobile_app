@@ -90,7 +90,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         backgroundColor: AppTheme.primaryblue,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         iconTheme: IconThemeData(color: AppTheme.whiteColor),
         actions: [
           if (_hasChanges || _selectedImage != null)

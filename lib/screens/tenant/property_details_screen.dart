@@ -93,7 +93,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   // API data state
   int _viewsCount = 0;
   int _sharesCount = 0;
-  int _likesCount = 89; // Default value until we have an API
+  final int _likesCount = 89; // Default value until we have an API
   bool _isLoadingStats = true;
 
   @override
@@ -126,22 +126,48 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   // Helper to get full image URL
-  String _getFullImageUrl(String url) {
-    // Handle comma-separated URLs and filter out invalid ones
-    if (url.contains(',')) {
-      final urls = url.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty && e != 'undefined').toList();
-      if (urls.isNotEmpty) {
-        url = urls.first;
-      }
-    }
-    
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    final String baseUrl = AppConfig.getCurrentBaseUrl();
-    String cleanUrl = url.replaceFirst(RegExp(r'^(\/|\./)'), '');
-    return '$baseUrl/$cleanUrl';
+String _getFullImageUrl(String url) {
+  if (url.isEmpty || 
+      url == 'undefined' || 
+      url == 'null' || 
+      url.contains('undefined') ||
+      url.contains('null')) {
+    return '';
   }
+  
+  if (url.contains(',')) {
+    final urls = url.split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty && 
+                     e != 'undefined' && 
+                     e != 'null' &&
+                     !e.contains('undefined') &&
+                     !e.contains('null'))
+        .toList();
+    if (urls.isNotEmpty) {
+      url = urls.first;
+    } else {
+      return '';
+    }
+  }
+  
+  if (url.isEmpty || 
+      url == 'undefined' || 
+      url == 'null' || 
+      url.contains('undefined') ||
+      url.contains('null')) {
+    return '';
+  }
+  
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  final String baseUrl = AppConfig.getCurrentBaseUrl();
+  String cleanUrl = url.replaceFirst(RegExp(r'^(\/|\./)'), '');
+  return '$baseUrl/$cleanUrl';
+}
+
 
   // Load all property data from APIs
   void _loadPropertyData() async {
@@ -1148,6 +1174,19 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenHeight = screenSize.height;
+    final screenWidth = screenSize.width;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+
+    // Increased the height multipliers to accommodate all content
+    final expandedHeight = isVerySmallScreen 
+        ? screenHeight * 0.65  // Increased from 0.55
+        : isSmallScreen 
+            ? screenHeight * 0.70  // Increased from 0.6
+            : 520.0;  // Increased from 470.0
+
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: FadeTransition(
@@ -1156,24 +1195,26 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return <Widget>[
               SliverAppBar(
-                expandedHeight: 470.0,
+                expandedHeight: expandedHeight,
                 floating: false,
                 pinned: true,
                 snap: false,
                 backgroundColor: AppTheme.getBackgroundColor(context),
                 elevation: 0,
-                automaticallyImplyLeading: false,
+                automaticallyImplyLeading: true,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Column(
                     children: [
                       _buildFixedImageSection(),
-                      _buildPropertyHeader(),
+                      Expanded(  // Added Expanded to prevent overflow
+                        child: _buildPropertyHeader(),
+                      ),
                     ],
                   ),
                   collapseMode: CollapseMode.pin,
                 ),
                 bottom: PreferredSize(
-                  preferredSize: Size.fromHeight(48.0),
+                  preferredSize: Size.fromHeight(isSmallScreen ? 44.0 : 48.0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppTheme.getCardColor(context),
@@ -1188,16 +1229,16 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                     child: TabBar(
                       controller: _tabController,
                       indicatorColor: AppTheme.primaryblue,
-                      indicatorWeight: 3,
+                      indicatorWeight: isSmallScreen ? 2 : 3,
                       labelColor: AppTheme.primaryblue,
                       unselectedLabelColor: AppTheme.getSecondaryTextColor(context),
                       labelStyle: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: isSmallScreen ? 14 : 16,
                       ),
                       unselectedLabelStyle: TextStyle(
                         fontWeight: FontWeight.w500,
-                        fontSize: 16,
+                        fontSize: isSmallScreen ? 14 : 16,
                       ),
                       tabs: [
                         Tab(text: 'About'),
@@ -1226,12 +1267,30 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   Widget _buildFixedImageSection() {
+    final screenSize = MediaQuery.of(context).size;
+    final screenHeight = screenSize.height;
+    final screenWidth = screenSize.width;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+
+    final imageHeight = isVerySmallScreen 
+        ? screenHeight * 0.35
+        : isSmallScreen 
+            ? screenHeight * 0.4
+            : 300.0;
+
+    final horizontalPadding = screenWidth * 0.04;
+    final bottomPadding = isSmallScreen ? 12.0 : 20.0;
+    final fabSize = isSmallScreen ? 48.0 : 56.0;
+    final iconSize = isSmallScreen ? 24.0 : 28.0;
+    final borderRadius = isSmallScreen ? 16.0 : 20.0;
+
     final images = widget.property.images.isNotEmpty 
         ? widget.property.images 
         : ['assets/images/img1.jpg'];
 
     return SizedBox(
-      height: 300,
+      height: imageHeight,
       child: Stack(
         children: [
           ClipPath(
@@ -1247,10 +1306,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 return Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(borderRadius),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(borderRadius),
                     child: widget.property.images.isNotEmpty
                         ? Image.network(
                             _getFullImageUrl(images[index]),
@@ -1258,7 +1317,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(borderRadius),
                                   gradient: LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -1272,7 +1331,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                                   child: Icon(
                                     Icons.image_not_supported,
                                     color: AppTheme.primaryblue,
-                                    size: 50,
+                                    size: isSmallScreen ? 40 : 50,
                                   ),
                                 ),
                               );
@@ -1280,7 +1339,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                           )
                         : Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(borderRadius),
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
@@ -1294,7 +1353,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                               child: Icon(
                                 Icons.home_rounded,
                                 color: AppTheme.primaryblue,
-                                size: 50,
+                                size: isSmallScreen ? 40 : 50,
                               ),
                             ),
                           ),
@@ -1307,7 +1366,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             clipper: HeartCutoutClipper(),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(borderRadius),
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -1321,11 +1380,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             ),
           ),
           Positioned(
-            bottom: 20,
-            right: 20,
+            bottom: bottomPadding,
+            right: horizontalPadding,
             child: Container(
-              width: 56,
-              height: 56,
+              width: fabSize,
+              height: fabSize,
               decoration: BoxDecoration(
                 color: AppTheme.getCardColor(context),
                 shape: BoxShape.circle,
@@ -1341,7 +1400,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 icon: Icon(
                   _isFavorite ? Icons.favorite : Icons.favorite_outline,
                   color: _isFavorite ? Colors.red : AppTheme.getSecondaryTextColor(context),
-                  size: 28,
+                  size: iconSize,
                 ),
                 onPressed: _toggleFavorite,
               ),
@@ -1349,7 +1408,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           ),
           SafeArea(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(horizontalPadding),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1365,17 +1424,16 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                         ),
                       ],
                     ),
-                    child: IconButton(
-                      icon: Icon(Icons.arrow_back, color: AppTheme.getTextColor(context)),
-                      onPressed: () => Navigator.pop(context),
-                    ),
                   ),
                   if (widget.property.isFeatured)
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 8 : 12, 
+                        vertical: isSmallScreen ? 4 : 6
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryblue,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
                         boxShadow: [
                           BoxShadow(
                             color: AppTheme.primaryblue.withValues(alpha: 0.3),
@@ -1388,7 +1446,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                         'Featured',
                         style: TextStyle(
                           color: AppTheme.whiteColor,
-                          fontSize: 12,
+                          fontSize: isSmallScreen ? 10 : 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1403,8 +1461,28 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   Widget _buildPropertyHeader() {
+    final screenSize = MediaQuery.of(context).size;
+    final screenHeight = screenSize.height;
+    final screenWidth = screenSize.width;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+
+    final horizontalPadding = screenWidth * 0.04;
+    final verticalPadding = isSmallScreen ? 8.0 : 16.0;
+    final spacing = isSmallScreen ? 6.0 : 12.0;
+    final titleFontSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 18.0 : 22.0;
+    final priceFontSize = isVerySmallScreen ? 20.0 : isSmallScreen ? 22.0 : 28.0;
+    final tagFontSize = isVerySmallScreen ? 8.0 : isSmallScreen ? 9.0 : 11.0;
+    final addressFontSize = isSmallScreen ? 12.0 : 14.0;
+    final priceTypeFontSize = isSmallScreen ? 11.0 : 14.0;
+    final ratingFontSize = isSmallScreen ? 11.0 : 13.0;
+    final reviewCountFontSize = isSmallScreen ? 9.0 : 11.0;
+
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.getBackgroundColor(context),
         boxShadow: [
@@ -1417,40 +1495,51 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentGreen.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  widget.property.propertyTypeString,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.primaryblue,
-                    fontWeight: FontWeight.w600,
+              Flexible(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 6 : 10,
+                    vertical: isSmallScreen ? 2 : 4
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGreen.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
+                  ),
+                  child: Text(
+                    widget.property.propertyTypeString,
+                    style: TextStyle(
+                      fontSize: tagFontSize,
+                      color: AppTheme.primaryblue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
               Spacer(),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSmallScreen ? 6 : 10,
+                  vertical: isSmallScreen ? 2 : 4
+                ),
                 decoration: BoxDecoration(
                   color: Colors.amber.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.star, color: Colors.amber, size: 14),
-                    SizedBox(width: 3),
+                    Icon(Icons.star, color: Colors.amber, size: isSmallScreen ? 10 : 14),
+                    SizedBox(width: 2),
                     Text(
                       '${widget.property.rating}',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: ratingFontSize,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.getTextColor(context),
                       ),
@@ -1458,7 +1547,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                     Text(
                       ' (${_reviews.length})',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: reviewCountFontSize,
                         color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
@@ -1467,58 +1556,87 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               ),
             ],
           ),
-          SizedBox(height: 12),
+
+          SizedBox(height: spacing),
+
           Text(
             widget.property.title,
             style: TextStyle(
-              fontSize: 22,
+              fontSize: titleFontSize,
               fontWeight: FontWeight.bold,
               color: AppTheme.getTextColor(context),
               height: 1.2,
             ),
+            maxLines: isVerySmallScreen ? 1 : isSmallScreen ? 2 : 3,
+            overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: 6),
+
+          SizedBox(height: spacing * 0.5),
+
           Row(
             children: [
-              Icon(Icons.location_on, color: AppTheme.primaryblue, size: 16),
+              Icon(
+                Icons.location_on,
+                color: AppTheme.primaryblue,
+                size: isSmallScreen ? 12 : 16
+              ),
               SizedBox(width: 4),
               Expanded(
                 child: Text(
                   widget.property.address,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: addressFontSize,
                     color: AppTheme.getSecondaryTextColor(context),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 12),
+
+          SizedBox(height: spacing),
+
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                'UGX${NumberFormat('#,##0').format(widget.property.price)}',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryblue,
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'UGX${NumberFormat('#,##0').format(widget.property.price)}',
+                        style: TextStyle(
+                          fontSize: priceFontSize,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryblue,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      widget.property.priceType,
+                      style: TextStyle(
+                        fontSize: priceTypeFontSize,
+                        color: AppTheme.getSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(width: 6),
-              Text(
-                widget.property.priceType,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.getSecondaryTextColor(context),
-                ),
-              ),
+
               if (widget.property.isVerified) ...[
-                Spacer(),
+                SizedBox(width: 8),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 6 : 10,
+                    vertical: isSmallScreen ? 2 : 4
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryblue,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(isSmallScreen ? 6 : 10),
                     boxShadow: [
                       BoxShadow(
                         color: AppTheme.primaryblue.withValues(alpha: 0.3),
@@ -1530,13 +1648,17 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.verified, color: AppTheme.whiteColor, size: 14),
-                      SizedBox(width: 3),
+                      Icon(
+                        Icons.verified,
+                        color: AppTheme.whiteColor,
+                        size: isSmallScreen ? 10 : 14
+                      ),
+                      SizedBox(width: 2),
                       Text(
                         'Verified',
                         style: TextStyle(
                           color: AppTheme.whiteColor,
-                          fontSize: 11,
+                          fontSize: tagFontSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1552,8 +1674,15 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   Widget _buildAboutTab() {
+    final screenSize = MediaQuery.of(context).size;
+    final screenHeight = screenSize.height;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+    
+    final bottomPadding = isVerySmallScreen ? 80.0 : isSmallScreen ? 90.0 : 100.0;
+    
     return SingleChildScrollView(
-      padding: EdgeInsets.only(bottom: 100),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: Column(
         children: [
           _buildQuickStats(),
@@ -1570,8 +1699,18 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   Widget _buildQuickStats() {
+    final screenSize = MediaQuery.of(context).size;
+    final screenHeight = screenSize.height;
+    final screenWidth = screenSize.width;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+    
+    // Responsive margins and spacing
+    final margin = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
+    final spacing = isVerySmallScreen ? 6.0 : isSmallScreen ? 8.0 : 12.0;
+    
     return Container(
-      margin: EdgeInsets.all(20),
+      margin: EdgeInsets.all(margin),
       child: Row(
         children: [
           Expanded(
@@ -1580,18 +1719,22 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               title: 'Views',
               value: _isLoadingStats ? '...' : _formatStatNumber(_viewsCount),
               color: Colors.blue,
+              isSmallScreen: isSmallScreen,
+              isVerySmallScreen: isVerySmallScreen,
             ),
           ),
-          SizedBox(width: 12),
+          SizedBox(width: spacing),
           Expanded(
             child: _buildStatCard(
               icon: Icons.favorite,
               title: 'Likes',
               value: _formatStatNumber(_likesCount),
               color: Colors.red,
+              isSmallScreen: isSmallScreen,
+              isVerySmallScreen: isVerySmallScreen,
             ),
           ),
-          SizedBox(width: 12),
+          SizedBox(width: spacing),
           Expanded(
             child: _buildStatCard(
               icon: Icons.share,
@@ -1599,15 +1742,19 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               value: _isLoadingStats ? '...' : _formatStatNumber(_sharesCount),
               color: Colors.green,
               onTap: _shareProperty,
+              isSmallScreen: isSmallScreen,
+              isVerySmallScreen: isVerySmallScreen,
             ),
           ),
-          SizedBox(width: 12),
+          SizedBox(width: spacing),
           Expanded(
             child: _buildStatCard(
               icon: Icons.schedule,
               title: 'Available',
               value: widget.property.availabilityStatus == AvailabilityStatus.availableNow ? 'Now' : 'Later',
               color: AppTheme.primaryblue,
+              isSmallScreen: isSmallScreen,
+              isVerySmallScreen: isVerySmallScreen,
             ),
           ),
         ],
@@ -1631,48 +1778,70 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     required String title,
     required String value,
     required Color color,
+    required bool isSmallScreen,
+    required bool isVerySmallScreen,
     VoidCallback? onTap,
   }) {
+    final cardPadding = isVerySmallScreen ? 8.0 : isSmallScreen ? 12.0 : 16.0;
+    final iconContainerPadding = isVerySmallScreen ? 4.0 : isSmallScreen ? 6.0 : 8.0;
+    final iconSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 18.0 : 20.0;
+    final borderRadius = isVerySmallScreen ? 12.0 : 16.0;
+    final spacing = isVerySmallScreen ? 4.0 : isSmallScreen ? 6.0 : 8.0;
+    
+    final valueFontSize = isVerySmallScreen ? 12.0 : isSmallScreen ? 14.0 : 16.0;
+    final titleFontSize = isVerySmallScreen ? 8.0 : isSmallScreen ? 9.0 : 10.0;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(cardPadding),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: EdgeInsets.all(8),
+              padding: EdgeInsets.all(iconContainerPadding),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: iconSize),
             ),
-            SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.getTextColor(context),
+            SizedBox(height: spacing),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: valueFontSize,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextColor(context),
+                ),
+                maxLines: 1,
               ),
             ),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 10,
-                color: AppTheme.getSecondaryTextColor(context),
-                fontWeight: FontWeight.w500,
+            SizedBox(height: spacing * 0.5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: titleFontSize,
+                  color: AppTheme.getSecondaryTextColor(context),
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                textAlign: TextAlign.center,
               ),
             ),
-          ]),
+          ],
         ),
-      );
-    
+      ),
+    );
   }
 
   Widget _buildSafetyFeatures() {
@@ -1775,6 +1944,35 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   Widget _buildNearbyPlaces() {
+    final screenSize = MediaQuery.of(context).size;
+    final screenHeight = screenSize.height;
+    final screenWidth = screenSize.width;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+    
+    // Responsive sizing
+    final margin = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
+    final padding = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
+    final borderRadius = isVerySmallScreen ? 12.0 : 16.0;
+    final headerSpacing = isVerySmallScreen ? 8.0 : isSmallScreen ? 10.0 : 12.0;
+    final sectionSpacing = isVerySmallScreen ? 12.0 : 16.0;
+    
+    // Responsive font sizes
+    final titleFontSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 18.0 : 20.0;
+    final placeFontSize = isVerySmallScreen ? 10.0 : isSmallScreen ? 11.0 : 12.0;
+    final distanceFontSize = isVerySmallScreen ? 8.0 : isSmallScreen ? 9.0 : 10.0;
+    
+    // Responsive icon sizes
+    final headerIconSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 18.0 : 20.0;
+    final placeIconSize = isVerySmallScreen ? 14.0 : isSmallScreen ? 16.0 : 18.0; // Reduced icon size
+    final iconPadding = isVerySmallScreen ? 6.0 : 8.0;
+    
+    // Grid settings - Fixed aspect ratio to give more height
+    final crossAxisSpacing = isVerySmallScreen ? 8.0 : 12.0;
+    final mainAxisSpacing = isVerySmallScreen ? 8.0 : 12.0;
+    final childAspectRatio = isVerySmallScreen ? 2.2 : isSmallScreen ? 2.3 : 2.5; // Reduced for more height
+    final gridPadding = isVerySmallScreen ? 6.0 : isSmallScreen ? 8.0 : 12.0; // Reduced padding
+
     final nearbyPlaces = [
       {'icon': Icons.school, 'name': 'University', 'distance': '0.5 km', 'color': Colors.blue},
       {'icon': Icons.local_hospital, 'name': 'Hospital', 'distance': '1.2 km', 'color': Colors.red},
@@ -1785,11 +1983,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     ];
 
     return Container(
-      margin: EdgeInsets.all(20),
-      padding: EdgeInsets.all(20),
+      margin: EdgeInsets.all(margin),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
@@ -1800,78 +1998,97 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // Header
           Row(
             children: [
               Container(
-                padding: EdgeInsets.all(8),
+                padding: EdgeInsets.all(iconPadding),
                 decoration: BoxDecoration(
                   color: Colors.purple.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.place, color: Colors.purple, size: 20),
+                child: Icon(Icons.place, color: Colors.purple, size: headerIconSize),
               ),
-              SizedBox(width: 12),
-              Text(
-                'Nearby Places',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextColor(context),
+              SizedBox(width: headerSpacing),
+              Expanded(
+                child: Text(
+                  'Nearby Places',
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: sectionSpacing),
+          
+          // Grid of nearby places
           GridView.builder(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 2.5,
+              crossAxisSpacing: crossAxisSpacing,
+              mainAxisSpacing: mainAxisSpacing,
+              childAspectRatio: childAspectRatio,
             ),
             itemCount: nearbyPlaces.length,
             itemBuilder: (context, index) {
               final place = nearbyPlaces[index];
               return Container(
-                padding: EdgeInsets.all(12),
+                padding: EdgeInsets.all(gridPadding),
                 decoration: BoxDecoration(
                   color: (place['color'] as Color).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(borderRadius * 0.75),
                   border: Border.all(
                     color: (place['color'] as Color).withValues(alpha: 0.2),
                   ),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center, // Added for better alignment
                   children: [
                     Icon(
                       place['icon'] as IconData,
                       color: place['color'] as Color,
-                      size: 20,
+                      size: placeIconSize,
                     ),
-                    SizedBox(width: 8),
+                    SizedBox(width: isVerySmallScreen ? 4.0 : 6.0), // Reduced spacing
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            place['name'] as String,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.getTextColor(context),
+                          Flexible( // Changed from FittedBox to Flexible
+                            child: Text(
+                              place['name'] as String,
+                              style: TextStyle(
+                                fontSize: placeFontSize,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.getTextColor(context),
+                                height: 1.1, // Reduced line height
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
-                            place['distance'] as String,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: AppTheme.getSecondaryTextColor(context),
+                          SizedBox(height: isVerySmallScreen ? 1.0 : 2.0),
+                          Flexible( // Added Flexible for distance too
+                            child: Text(
+                              place['distance'] as String,
+                              style: TextStyle(
+                                fontSize: distanceFontSize,
+                                color: AppTheme.getSecondaryTextColor(context),
+                                height: 1.0, // Tight line height
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -1888,10 +2105,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   Widget _buildGalleryTab() {
-    final images = widget.property.images.isNotEmpty 
-        ? widget.property.images 
-        : ['assets/images/img1.jpg', 'assets/images/img2.jpg', 'assets/images/img3.jpg'];
-
+    final images = widget.property.images;
+    
+    final validImages = images.where((image) {
+      final fullUrl = _getFullImageUrl(image);
+      final isValid = fullUrl.isNotEmpty;
+      return isValid;
+    }).toList();
+    
     return SingleChildScrollView(
       padding: EdgeInsets.only(bottom: 100, left: 20, right: 20, top: 20),
       child: Column(
@@ -1906,38 +2127,55 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             ),
           ),
           SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1,
-            ),
-            itemCount: images.length,
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () {
-                  _showImageViewer(images, index);
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+          validImages.isEmpty
+              ? _buildNoImagesPlaceholder()
+              : GridView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1,
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: widget.property.images.isNotEmpty
-                        ? Image.network(
-                            _getFullImageUrl(images[index]),
+                  itemCount: validImages.length,
+                  itemBuilder: (context, index) {
+                    final imageUrl = _getFullImageUrl(validImages[index]);
+                    
+                    return GestureDetector(
+                      onTap: () {
+                        _showImageViewer(validImages, index);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            imageUrl,
                             fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: AppTheme.lightGreyColor,
+                                ),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppTheme.primaryblue,
+                                  ),
+                                ),
+                              );
+                            },
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 decoration: BoxDecoration(
@@ -1960,33 +2198,59 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                                 ),
                               );
                             },
-                          )
-                        : Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  AppTheme.primaryblue.withValues(alpha: 0.1),
-                                  AppTheme.primaryblue.withValues(alpha: 0.3),
-                                ],
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.home_rounded,
-                                color: AppTheme.primaryblue,
-                                size: 30,
-                              ),
-                            ),
                           ),
-                  ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNoImagesPlaceholder() {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryblue.withValues(alpha: 0.1),
+            AppTheme.primaryblue.withValues(alpha: 0.3),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.photo_library_outlined,
+              color: AppTheme.primaryblue,
+              size: 48,
+            ),
+            SizedBox(height: 12),
+            Text(
+              'No images available',
+              style: TextStyle(
+                color: AppTheme.primaryblue,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Images will appear here when uploaded',
+              style: TextStyle(
+                color: AppTheme.getSecondaryTextColor(context),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2057,6 +2321,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   void _showImageViewer(List<String> images, int initialIndex) {
+    
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.9),
@@ -2070,19 +2335,45 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                 controller: PageController(initialPage: initialIndex),
                 itemCount: images.length,
                 itemBuilder: (context, index) {
+                  final imageUrl = _getFullImageUrl(images[index]);
+                  
                   return Center(
                     child: InteractiveViewer(
-                      child: Image.asset(
-                        images[index],
+                      child: Image.network(
+                        imageUrl,
                         fit: BoxFit.contain,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded / 
+                                    loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          );
+                        },
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: AppTheme.lightGreyColor,
                             child: Center(
-                              child: Icon(
-                                Icons.image_not_supported,
-                                color: AppTheme.getSecondaryTextColor(context),
-                                size: 50,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.image_not_supported,
+                                    color: AppTheme.getSecondaryTextColor(context),
+                                    size: 50,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Failed to load image',
+                                    style: TextStyle(
+                                      color: AppTheme.getSecondaryTextColor(context),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -2316,6 +2607,34 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   }
 
   Widget _buildAmenities() {
+    final screenSize = MediaQuery.of(context).size;
+    final screenHeight = screenSize.height;
+    final screenWidth = screenSize.width;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+    
+    // Responsive sizing
+    final margin = isVerySmallScreen ? 12.0 : isSmallScreen ? 14.0 : 16.0;
+    final padding = isVerySmallScreen ? 12.0 : isSmallScreen ? 14.0 : 16.0;
+    final borderRadius = isVerySmallScreen ? 10.0 : 12.0;
+    final sectionSpacing = isVerySmallScreen ? 6.0 : 8.0;
+    
+    // Responsive font sizes
+    final titleFontSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 17.0 : 18.0;
+    final amenityFontSize = isVerySmallScreen ? 8.0 : isSmallScreen ? 9.0 : 10.0;
+    
+    // Responsive icon size
+    final iconSize = isVerySmallScreen ? 18.0 : isSmallScreen ? 20.0 : 25.0;
+    
+    // Grid settings - Adjust for small screens
+    final crossAxisCount = isVerySmallScreen ? 3 : 4; // Reduce columns on very small screens
+    final crossAxisSpacing = isVerySmallScreen ? 6.0 : 8.0;
+    final mainAxisSpacing = isVerySmallScreen ? 6.0 : 8.0;
+    final childAspectRatio = isVerySmallScreen ? 0.85 : isSmallScreen ? 0.87 : 0.9;
+    final itemPadding = isVerySmallScreen ? 6.0 : 8.0;
+    final itemBorderRadius = isVerySmallScreen ? 8.0 : 10.0;
+    final iconTextSpacing = isVerySmallScreen ? 4.0 : 6.0;
+
     final amenities = [
       {'icon': Icons.wifi, 'name': 'WiFi'},
       {'icon': Icons.local_laundry_service, 'name': 'Laundry'},
@@ -2328,11 +2647,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     ];
 
     return Container(
-      margin: EdgeInsets.all(16),
-      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.all(margin),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
@@ -2343,53 +2662,65 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             'Amenities',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: titleFontSize,
               fontWeight: FontWeight.bold,
               color: AppTheme.getTextColor(context),
             ),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: sectionSpacing),
           GridView.builder(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 0.9,
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: crossAxisSpacing,
+              mainAxisSpacing: mainAxisSpacing,
+              childAspectRatio: childAspectRatio,
             ),
             itemCount: amenities.length,
             itemBuilder: (context, index) {
               final amenity = amenities[index];
               return Container(
-                padding: EdgeInsets.all(8),
+                padding: EdgeInsets.all(itemPadding),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(itemBorderRadius),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      amenity['icon'] as IconData,
-                      color: AppTheme.primaryblue,
-                      size: 25,
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      amenity['name'] as String,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.getTextColor(context),
+                    Flexible(
+                      flex: 2,
+                      child: Icon(
+                        amenity['icon'] as IconData,
+                        color: AppTheme.primaryblue,
+                        size: iconSize,
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: iconTextSpacing),
+                    Flexible(
+                      flex: 1,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          amenity['name'] as String,
+                          style: TextStyle(
+                            fontSize: amenityFontSize,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.getTextColor(context),
+                            height: 1.0, // Tight line height
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1, // Force single line on small screens
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ),
                   ],
                 ),

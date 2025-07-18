@@ -22,7 +22,7 @@ class BookingConfirmationScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppTheme.getBackgroundColor(context),
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         centerTitle: true,
         title: Text(
           'Booking Confirmation',

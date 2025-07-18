@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
@@ -500,20 +501,48 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _onRefresh() async {
+    debugPrint('🔄 HomeScreen: Refreshing data...');
+    
+    try {
+      _loadProperties();
+      
+      await Future.delayed(Duration(milliseconds: 500));
+      
+      debugPrint('✅ HomeScreen: Refresh completed');
+    } catch (e) {
+      debugPrint('❌ HomeScreen: Refresh failed - $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to refresh data'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildHomeContent() {
     return SafeArea(
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            _buildCategories(),
-            _buildPendingBookingsSection(),
-            _buildFeaturedSection(),
-            _buildRecentProperties(),
-            SizedBox(height: 100),
-          ],
+      child: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: AppTheme.primaryblue,
+        backgroundColor: AppTheme.getBackgroundColor(context),
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              _buildCategories(),
+              _buildPendingBookingsSection(),
+              _buildFeaturedSection(),
+              _buildRecentProperties(),
+              SizedBox(height: 100),
+            ],
+          ),
         ),
       ),
     );
@@ -889,12 +918,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-            );},
-              ),
+                );
+              },
             ),
-          ]);
-        
-      
+          ),
+        ]
+      );       
     }
     
     if (_errorMessage != null) {
@@ -2255,13 +2284,31 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _onNavItemTapped(int index) {
-    if (index == 4) return;
+void _onNavItemTapped(int index) {
+  if (index == 4) return;
+  
+  if (index == 0 && _currentIndex == 0) {
+    debugPrint('🏠 HomeScreen: Home icon tapped while on home - triggering refresh');
     
-    setState(() {
-      _currentIndex = index;
-    });
+    HapticFeedback.lightImpact();
+    
+    _onRefresh();
+    
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+    return;
   }
+  
+  setState(() {
+    _currentIndex = index;
+  });
+}
+
 
   Widget _buildNavItem({
     required IconData icon,

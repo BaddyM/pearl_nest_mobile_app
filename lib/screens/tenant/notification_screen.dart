@@ -302,7 +302,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     return AppBar(
       backgroundColor: AppTheme.getBackgroundColor(context),
       elevation: 0,
-      automaticallyImplyLeading: false,
+      automaticallyImplyLeading: true,
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

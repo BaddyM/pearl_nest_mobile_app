@@ -57,6 +57,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.height < 700;
+    final horizontalPadding = screenSize.width * 0.06;
+    final bottomPadding = isSmallScreen ? 16.0 : 32.0;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -75,13 +80,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     itemCount: _items.length,
                     onPageChanged: _onPageChanged,
                     itemBuilder: (context, index) {
-                      return OnboardingPage(item: _items[index]);
+                      return OnboardingPage(
+                        item: _items[index],
+                        screenSize: screenSize,
+                      );
                     },
                   ),
                 ),
                 
                 Container(
-                  padding: const EdgeInsets.all(32),
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    16,
+                    horizontalPadding,
+                    bottomPadding,
+                  ),
                   child: Column(
                     children: [
                       Row(
@@ -91,8 +104,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           (index) => AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             margin: const EdgeInsets.only(right: 8),
-                            height: 8,
-                            width: _currentPage == index ? 32 : 8,
+                            height: isSmallScreen ? 6 : 8,
+                            width: _currentPage == index 
+                                ? (isSmallScreen ? 24 : 32) 
+                                : (isSmallScreen ? 6 : 8),
                             decoration: BoxDecoration(
                               color: _currentPage == index
                                   ? Colors.white
@@ -103,11 +118,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                       ),
                       
-                      const SizedBox(height: 32),
-                      
+                      SizedBox(height: isSmallScreen ? 20 : 32),
+                
                       SizedBox(
                         width: double.infinity,
-                        height: 56,
+                        height: isSmallScreen ? 48 : 56,
                         child: ElevatedButton(
                           onPressed: _nextPage,
                           style: ElevatedButton.styleFrom(
@@ -116,7 +131,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             elevation: 8,
                             shadowColor: Colors.black.withOpacity(0.3),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
+                              borderRadius: BorderRadius.circular(
+                                isSmallScreen ? 24 : 28
+                              ),
                             ),
                           ),
                           child: Row(
@@ -126,8 +143,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 _currentPage == _items.length - 1
                                     ? 'Get Started'
                                     : 'Continue',
-                                style: const TextStyle(
-                                  fontSize: 18,
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 16 : 18,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -136,7 +153,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 _currentPage == _items.length - 1
                                     ? Icons.rocket_launch
                                     : Icons.arrow_forward,
-                                size: 20,
+                                size: isSmallScreen ? 18 : 20,
                               ),
                             ],
                           ),
@@ -168,79 +185,117 @@ class OnboardingItem {
 
 class OnboardingPage extends StatelessWidget {
   final OnboardingItem item;
+  final Size screenSize;
 
-  const OnboardingPage({super.key, required this.item});
+  const OnboardingPage({
+    super.key, 
+    required this.item,
+    required this.screenSize,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            height: 320,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+    final isSmallScreen = screenSize.height < 700;
+    final isVerySmallScreen = screenSize.height < 600;
+    final horizontalPadding = screenSize.width * 0.08;
+    
+    final imageHeight = isVerySmallScreen 
+        ? screenSize.height * 0.25
+        : isSmallScreen 
+            ? screenSize.height * 0.3
+            : screenSize.height * 0.35;
+    
+    final titleFontSize = isVerySmallScreen ? 24.0 : isSmallScreen ? 28.0 : 32.0;
+    final descriptionFontSize = isVerySmallScreen ? 14.0 : isSmallScreen ? 16.0 : 18.0;
+
+    final spacingAfterImage = isVerySmallScreen ? 24.0 : isSmallScreen ? 32.0 : 48.0;
+    final spacingAfterTitle = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
+    final spacingAfterDescription = isVerySmallScreen ? 20.0 : isSmallScreen ? 30.0 : 40.0;
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(height: screenSize.height * 0.05),
+            
+            Container(
+              height: imageHeight,
+              width: double.infinity,
+              constraints: BoxConstraints(
+                maxHeight: 320,
+                minHeight: isVerySmallScreen ? 150 : 200,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: isSmallScreen ? 15 : 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 24),
+                child: Image.asset(
+                  item.image,
+                  fit: BoxFit.cover,
                 ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.asset(
-                item.image,
-                fit: BoxFit.cover,
               ),
             ),
-          ),
-          
-          const SizedBox(height: 48),
-          
-          Text(
-            item.title,
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              height: 1.2,
-              letterSpacing: -0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 20),
-          
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              item.description,
+            
+            SizedBox(height: spacingAfterImage),
+
+            Text(
+              item.title,
               style: TextStyle(
-                fontSize: 18,
-                color: Colors.white.withOpacity(0.9),
-                height: 1.5,
-                letterSpacing: 0.2,
+                fontSize: titleFontSize,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                height: 1.2,
+                letterSpacing: -0.5,
               ),
               textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          
-          const SizedBox(height: 40),
-          
-          Container(
-            width: 60,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(2),
+            
+            SizedBox(height: spacingAfterTitle),
+
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 8 : 16
+              ),
+              child: Text(
+                item.description,
+                style: TextStyle(
+                  fontSize: descriptionFontSize,
+                  color: Colors.white.withOpacity(0.9),
+                  height: 1.5,
+                  letterSpacing: 0.2,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-        ],
+            
+            SizedBox(height: spacingAfterDescription),
+
+            Container(
+              width: isSmallScreen ? 40 : 60,
+              height: isSmallScreen ? 3 : 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+ 
+            SizedBox(height: screenSize.height * 0.05),
+          ],
+        ),
       ),
     );
   }
