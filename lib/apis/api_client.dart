@@ -331,4 +331,44 @@ class ApiClient {
       throw Exception(_handleError(e));
     }
   }
+
+  static Future<Response> patchMultipart(String endpoint, FormData formData) async {
+    if (_dio == null) {
+      throw Exception('ApiClient not initialized. Call ApiClient.initialize() first.');
+    }
+
+    try {
+      final headers = _getHeaders(additionalHeaders: {
+        'Content-Type': 'multipart/form-data',
+      });
+      
+      _logRequest('PATCH (multipart)', endpoint, headers: headers);
+      
+      // Detailed FormData debugging
+      debugPrint('🔍 FormData fields detail:');
+      for (var field in formData.fields) {
+        debugPrint('  - ${field.key}: "${field.value}" (length: ${field.value.length})');
+      }
+      
+      debugPrint('🔍 FormData files detail:');
+      for (var file in formData.files) {
+        debugPrint('  - ${file.key}: ${file.value.filename} (${file.value.length} bytes)');
+      }
+      
+      debugPrint('ApiClient: FormData fields: ${formData.fields.map((e) => '${e.key}: ${e.value}').join(', ')}');
+      debugPrint('ApiClient: FormData files: ${formData.files.map((e) => '${e.key}: ${e.value.filename}').join(', ')}');
+
+      final response = await _dio!.patch(
+        endpoint,
+        data: formData,
+        options: Options(headers: headers),
+      );
+
+      _logResponse(response);
+      return response;
+    } on DioException catch (e) {
+      _logError(e);
+      throw Exception(_handleError(e));
+    }
+  }
 }

@@ -50,6 +50,10 @@ class Property {
   final bool isVerified;
   final AvailabilityStatus availabilityStatus;
   final DateTime? availableFrom;
+  final List<Map<String, dynamic>> views;
+  final List<Map<String, dynamic>> shares;
+  final List<Map<String, dynamic>> favourites;
+  final Map<String, dynamic>? user; // Landlord information
 
   Property({
     required this.id,
@@ -80,6 +84,10 @@ class Property {
     this.isVerified = false,
     required this.availabilityStatus,
     this.availableFrom,
+    this.views = const [],
+    this.shares = const [],
+    this.favourites = const [],
+    this.user,
   });
 
   Property copyWith({
@@ -111,6 +119,10 @@ class Property {
     bool? isVerified,
     AvailabilityStatus? availabilityStatus,
     DateTime? availableFrom,
+    List<Map<String, dynamic>>? views,
+    List<Map<String, dynamic>>? shares,
+    List<Map<String, dynamic>>? favourites,
+    Map<String, dynamic>? user,
   }) {
     return Property(
       id: id ?? this.id,
@@ -141,6 +153,10 @@ class Property {
       isVerified: isVerified ?? this.isVerified,
       availabilityStatus: availabilityStatus ?? this.availabilityStatus,
       availableFrom: availableFrom ?? this.availableFrom,
+      views: views ?? this.views,
+      shares: shares ?? this.shares,
+      favourites: favourites ?? this.favourites,
+      user: user ?? this.user,
     );
   }
 
@@ -185,6 +201,8 @@ class Property {
     }
     // Support both 'images' and 'media' keys for images
     final images = json['images'] ?? json['media'];
+    final user = json['user'] as Map<String, dynamic>?;
+    
     return Property(
       id: json['id'] ?? json['_id'] ?? '',
       title: json['title'] ?? json['propertyName'] ?? '',
@@ -202,9 +220,9 @@ class Property {
       bathrooms: json['bathrooms'] ?? json['numberOfBathrooms'] ?? 0,
       area: double.tryParse((json['area'] ?? json['areaMeasurement'] ?? '0').toString().replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0,
       landlordId: json['landlordId'] ?? json['ownerId'] ?? json['userId'] ?? '',
-      landlordName: json['landlordName'] ?? json['ownerName'] ?? '',
-      landlordPhone: json['landlordPhone'] ?? json['ownerPhone'] ?? '',
-      landlordEmail: json['landlordEmail'] ?? json['ownerEmail'] ?? '',
+      landlordName: json['landlordName'] ?? json['ownerName'] ?? user?['name'] ?? '',
+      landlordPhone: json['landlordPhone'] ?? json['ownerPhone'] ?? user?['contact'] ?? '',
+      landlordEmail: json['landlordEmail'] ?? json['ownerEmail'] ?? user?['email'] ?? '',
       status: _parsePropertyStatus(json['status'] ?? 'available'),
       rating: (json['rating'] ?? 0.0).toDouble(),
       reviewCount: json['reviewCount'] ?? 0,
@@ -224,6 +242,10 @@ class Property {
       availableFrom: json['availableFrom'] != null 
           ? DateTime.parse(json['availableFrom']) 
           : null,
+      views: (json['views'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
+      shares: (json['shares'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
+      favourites: (json['favourites'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
+      user: user,
     );
   }
 
@@ -320,6 +342,10 @@ class Property {
       'isVerified': isVerified,
       'availabilityStatus': availabilityStatus.toString().split('.').last,
       'availableFrom': availableFrom?.toIso8601String(),
+      'views': views,
+      'shares': shares,
+      'favourites': favourites,
+      'user': user,
     };
   }
 }

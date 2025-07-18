@@ -12,6 +12,7 @@ import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/screens/common/splash_screen.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/widgets/permission_initialization_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pearlnest/apis/booking_service.dart';
@@ -82,7 +83,7 @@ class MyApp extends StatelessWidget {
                   darkTheme: AppTheme.darkTheme,
                   themeMode: themeProvider.themeMode,
                   debugShowCheckedModeBanner: false,
-                  home: _buildHome(state),
+                  home: PermissionInitializationWidget(child:_buildHome(state)),
                 );
               },
             );

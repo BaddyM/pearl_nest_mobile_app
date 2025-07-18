@@ -220,7 +220,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.updates['email'] ?? _currentUser!.email,
         phone: event.updates['phone'] ?? _currentUser!.phone,
         bio: event.updates['bio'],
-        profilePicture: event.updates['profilePicture'],
+        imagePath: event.updates['imagePath'],
         pushNotifications: event.updates['pushNotifications'],
         smsNotifications: event.updates['smsNotifications'],
         emailNotifications: event.updates['emailNotifications'],

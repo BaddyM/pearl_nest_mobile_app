@@ -115,13 +115,16 @@ class AuthService {
     _logError(operation, error);
     
     String message;
-    String? code;
+    String? code;  
     int? statusCode;
     
     if (error is AuthException) {
       message = error.message;
       code = error.code;
       statusCode = error.statusCode;
+    } else if (error.toString().contains('userId should not be empty')) {
+      message = 'User session expired. Please login again.';
+      code = 'USER_ID_MISSING';
     } else if (error.toString().contains('SocketException') || error.toString().contains('Please check your internet connection')) {
       message = 'No internet connection. Please check your network.';
       code = 'NO_INTERNET';
@@ -158,6 +161,8 @@ class AuthService {
         message = 'Registration failed. Please try again.';
       } else if (operation == 'password change') {
         message = 'Password change failed. Please try again.';
+      } else if (operation == 'profile update') {
+        message = 'Profile update failed. Please try again.';
       } else {
         message = 'An unexpected error occurred. Please try again.';
       }
@@ -624,6 +629,18 @@ class AuthService {
       
       if (userJson != null && userJson.isNotEmpty) {
         final userData = jsonDecode(userJson);
+        
+        // Check if user ID is missing in user data but exists in separate storage
+        if ((userData['id'] == null || userData['id'].toString().isEmpty)) {
+          final separateUserId = prefs.getString(_userIdKey);
+          if (separateUserId != null && separateUserId.isNotEmpty) {
+            userData['id'] = separateUserId;
+            if (kDebugMode) {
+              debugPrint('🔧 getCurrentUser: Fixed missing user ID from separate storage: $separateUserId');
+            }
+          }
+        }
+        
         return User.fromJson(userData);
       }
       return null;
@@ -722,7 +739,7 @@ class AuthService {
     required String email,
     required String phone,
     String? bio,
-    String? profilePicture,
+    String? imagePath,
     bool? pushNotifications,
     bool? smsNotifications,
     bool? emailNotifications,
@@ -733,43 +750,217 @@ class AuthService {
       if (email.trim().isEmpty) throw ValidationException('Email is required');
       if (phone.trim().isEmpty) throw ValidationException('Phone number is required');
 
-      final requestData = <String, dynamic>{
-        'name': name.trim(),
-        'email': email.trim().toLowerCase(),
-        'contact': phone.trim(),
-      };
+      // Get current user data to get userId and role
+      final currentUser = await getCurrentUser();
+      if (currentUser == null) {
+        throw AuthException('User not found. Please login again.');
+      }
 
-      // Add optional fields if provided
-      if (bio != null) requestData['bio'] = bio;
-      if (profilePicture != null) requestData['profilePicture'] = profilePicture;
-      if (pushNotifications != null) requestData['pushNotifications'] = pushNotifications;
-      if (smsNotifications != null) requestData['smsNotifications'] = smsNotifications;
-      if (emailNotifications != null) requestData['emailNotifications'] = emailNotifications;
-
-      _logRequest('/user/userProfile/update', requestData);
-
-      final response = await ApiClient.patch('/user/userProfile/update', requestData);
-      _logResponse('/user/userProfile/update', response);
-
-      if (response.statusCode == 200) {
-        final responseData = _validateResponse(response, requiredFields: ['data']);
+      // Check if userId is still empty after getCurrentUser() fix
+      if (currentUser.id.isEmpty) {
+        debugPrint('🔧 User ID is empty even after getCurrentUser() fix, attempting manual fix...');
+        final fixResult = await fixMissingUserId();
+        if (!fixResult) {
+          throw AuthException('User ID not found. Please login again.');
+        }
+        // Try to get user again after fixing
+        final updatedUser = await getCurrentUser();
+        if (updatedUser == null || updatedUser.id.isEmpty) {
+          throw AuthException('Unable to retrieve user ID. Please login again.');
+        }
+        debugPrint('🔧 Using updated user with ID: ${updatedUser.id}');
         
-        // Update stored user data
-        final updatedUser = User.fromJson(responseData['data']);
-        await saveUserData(updatedUser);
+        // Use multipart request if image is provided
+        if (imagePath != null && imagePath.isNotEmpty) {
+          debugPrint('🔧 Building multipart request with userId: "${updatedUser.id}"');
+          debugPrint('🔧 UserId isEmpty: ${updatedUser.id.isEmpty}');
+          debugPrint('🔧 UserId length: ${updatedUser.id.length}');
+          
+          // Ensure userId is not empty
+          if (updatedUser.id.isEmpty) {
+            throw AuthException('User ID is empty after fix attempt. Please login again.');
+          }
+          
+          final formData = FormData();
+          
+          // Add text fields as proper form fields
+          formData.fields.addAll([
+            MapEntry('name', name.trim()),
+            MapEntry('email', email.trim().toLowerCase()),
+            MapEntry('contact', phone.trim()),
+            MapEntry('role', updatedUser.userType.toString().split('.').last.toUpperCase()),
+            MapEntry('isVerified', updatedUser.isVerified.toString()),
+          ]);
+          
+          // Add image file
+          formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath, filename: 'profile_image.jpg')));
+
+          // Add optional fields if provided
+          if (bio != null) formData.fields.add(MapEntry('bio', bio));
+          if (pushNotifications != null) formData.fields.add(MapEntry('pushNotifications', pushNotifications.toString()));
+          if (smsNotifications != null) formData.fields.add(MapEntry('smsNotifications', smsNotifications.toString()));
+          if (emailNotifications != null) formData.fields.add(MapEntry('emailNotifications', emailNotifications.toString()));
+
+          debugPrint('🔧 FormData built successfully');
+          _logRequest('/user/userProfile/update', {'multipart': 'true', 'hasImage': true});
+
+          // Try using POST instead of PATCH for multipart with userId as query parameter
+          final response = await ApiClient.postMultipart('/user/userProfile/update?userId=${updatedUser.id}', formData);
+          _logResponse('/user/userProfile/update', response);
+
+          if (response.statusCode == 200) {
+            final responseData = _validateResponse(response, requiredFields: ['data']);
+            
+            // Update stored user data
+            final finalUpdatedUser = User.fromJson(responseData['data']);
+            await saveUserData(finalUpdatedUser);
+            
+            return {
+              'success': true,
+              'user': finalUpdatedUser,
+              'message': responseData['message'] ?? 'Profile updated successfully',
+              'statusCode': response.statusCode,
+            };
+          } else {
+            final errorData = response.data;
+            throw AuthException(
+              errorData['message'] ?? 'Profile update failed',
+              statusCode: response.statusCode,
+            );
+          }
+        } else {
+          // Use regular JSON request if no image
+          final requestData = <String, dynamic>{
+            'userId': updatedUser.id,
+            'name': name.trim(),
+            'email': email.trim().toLowerCase(),
+            'contact': phone.trim(),
+            'role': updatedUser.userType.toString().split('.').last.toUpperCase(),
+            'isVerified': updatedUser.isVerified,
+          };
+
+          // Add optional fields if provided
+          if (bio != null) requestData['bio'] = bio;
+          if (pushNotifications != null) requestData['pushNotifications'] = pushNotifications;
+          if (smsNotifications != null) requestData['smsNotifications'] = smsNotifications;
+          if (emailNotifications != null) requestData['emailNotifications'] = emailNotifications;
+
+          _logRequest('/user/userProfile/update', requestData);
+
+          final response = await ApiClient.patch('/user/userProfile/update', requestData);
+          _logResponse('/user/userProfile/update', response);
+
+          if (response.statusCode == 200) {
+            final responseData = _validateResponse(response, requiredFields: ['data']);
+            
+            // Update stored user data
+            final finalUpdatedUser = User.fromJson(responseData['data']);
+            await saveUserData(finalUpdatedUser);
+            
+            return {
+              'success': true,
+              'user': finalUpdatedUser,
+              'message': responseData['message'] ?? 'Profile updated successfully',
+              'statusCode': response.statusCode,
+            };
+          } else {
+            final errorData = response.data;
+            throw AuthException(
+              errorData['message'] ?? 'Profile update failed',
+              statusCode: response.statusCode,
+            );
+          }
+        }
+      }
+
+      // Use multipart request if image is provided
+      if (imagePath != null && imagePath.isNotEmpty) {
+        final formData = FormData();
         
-        return {
-          'success': true,
-          'user': updatedUser,
-          'message': responseData['message'] ?? 'Profile updated successfully',
-          'statusCode': response.statusCode,
-        };
+        // Add text fields
+        formData.fields.add(MapEntry('userId', currentUser.id));
+        formData.fields.add(MapEntry('name', name.trim()));
+        formData.fields.add(MapEntry('email', email.trim().toLowerCase()));
+        formData.fields.add(MapEntry('contact', phone.trim()));
+        formData.fields.add(MapEntry('role', currentUser.userType.toString().split('.').last.toUpperCase()));
+        formData.fields.add(MapEntry('isVerified', currentUser.isVerified.toString()));
+        
+        // Add image file
+        formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath, filename: 'profile_image.jpg')));
+
+        // Add optional fields if provided
+        if (bio != null) formData.fields.add(MapEntry('bio', bio));
+        if (pushNotifications != null) formData.fields.add(MapEntry('pushNotifications', pushNotifications.toString()));
+        if (smsNotifications != null) formData.fields.add(MapEntry('smsNotifications', smsNotifications.toString()));
+        if (emailNotifications != null) formData.fields.add(MapEntry('emailNotifications', emailNotifications.toString()));
+
+        _logRequest('/user/userProfile/update', {'multipart': 'true', 'hasImage': true});
+
+        final response = await ApiClient.patchMultipart('/user/userProfile/update', formData);
+        _logResponse('/user/userProfile/update', response);
+
+        if (response.statusCode == 200) {
+          final responseData = _validateResponse(response, requiredFields: ['data']);
+          
+          // Update stored user data
+          final updatedUser = User.fromJson(responseData['data']);
+          await saveUserData(updatedUser);
+          
+          return {
+            'success': true,
+            'user': updatedUser,
+            'message': responseData['message'] ?? 'Profile updated successfully',
+            'statusCode': response.statusCode,
+          };
+        } else {
+          final errorData = response.data;
+          throw AuthException(
+            errorData['message'] ?? 'Profile update failed',
+            statusCode: response.statusCode,
+          );
+        }
       } else {
-        final errorData = response.data;
-        throw AuthException(
-          errorData['message'] ?? 'Profile update failed',
-          statusCode: response.statusCode,
-        );
+        // Use regular JSON request if no image
+        final requestData = <String, dynamic>{
+          'userId': currentUser.id,
+          'name': name.trim(),
+          'email': email.trim().toLowerCase(),
+          'contact': phone.trim(),
+          'role': currentUser.userType.toString().split('.').last.toUpperCase(),
+          'isVerified': currentUser.isVerified,
+        };
+
+        // Add optional fields if provided
+        if (bio != null) requestData['bio'] = bio;
+        if (pushNotifications != null) requestData['pushNotifications'] = pushNotifications;
+        if (smsNotifications != null) requestData['smsNotifications'] = smsNotifications;
+        if (emailNotifications != null) requestData['emailNotifications'] = emailNotifications;
+
+        _logRequest('/user/userProfile/update', requestData);
+
+        final response = await ApiClient.patch('/user/userProfile/update', requestData);
+        _logResponse('/user/userProfile/update', response);
+
+        if (response.statusCode == 200) {
+          final responseData = _validateResponse(response, requiredFields: ['data']);
+          
+          // Update stored user data
+          final updatedUser = User.fromJson(responseData['data']);
+          await saveUserData(updatedUser);
+          
+          return {
+            'success': true,
+            'user': updatedUser,
+            'message': responseData['message'] ?? 'Profile updated successfully',
+            'statusCode': response.statusCode,
+          };
+        } else {
+          final errorData = response.data;
+          throw AuthException(
+            errorData['message'] ?? 'Profile update failed',
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       return _handleError(e, 'profile update');
