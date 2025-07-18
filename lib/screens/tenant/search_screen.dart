@@ -416,7 +416,9 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             _buildHeader(),
             Expanded(
-              child: _buildSearchResults(),
+              child: SingleChildScrollView(
+                child: _buildSearchResults(),
+              ),
             ),
           ],
         ),

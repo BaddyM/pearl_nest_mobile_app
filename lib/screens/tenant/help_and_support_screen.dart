@@ -47,7 +47,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       appBar: AppBar(
         backgroundColor: AppTheme.primaryblue,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         iconTheme: IconThemeData(color: AppTheme.whiteColor),
       ),
       body: SafeArea(

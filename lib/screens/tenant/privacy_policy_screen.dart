@@ -29,29 +29,55 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildPrivacyPolicyTab(),
-                  _buildTermsAndConditionsTab(),
-                  _buildCancellationPolicyTab(),
-                ],
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Container(
+          margin: EdgeInsets.only(left: 8, top: 8),
+          child: IconButton(
+            icon: Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.whiteColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.whiteColor.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Icon(
+                Icons.arrow_back_ios,
+                color: AppTheme.whiteColor,
+                size: 18,
               ),
             ),
-          ],
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
         ),
+      ),
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildPrivacyPolicyTab(),
+                _buildTermsAndConditionsTab(),
+                _buildCancellationPolicyTab(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHeader() {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, 60, 20, 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -75,29 +101,23 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
       ),
       child: Column(
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Legal Information',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.whiteColor,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Privacy, Terms & Policies',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.whiteColor.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ],
+              Text(
+                'Legal Information',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.whiteColor,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Privacy, Terms & Policies',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.whiteColor.withValues(alpha: 0.8),
                 ),
               ),
             ],

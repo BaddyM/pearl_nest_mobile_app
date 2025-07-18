@@ -30,7 +30,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _smsNotifications = false;
   bool _bioEnabled = false;
   bool _locationEnabled = true;
-  String _selectedLanguage = 'English';
   String _selectedCurrency = 'USD';
 
   @override
@@ -42,7 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: AppTheme.primaryblue,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -181,19 +180,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
         _buildDropdownItem(
-          Icons.language_outlined,
-          'Language',
-          'Choose your preferred language',
-          _selectedLanguage,
-          ['English', 'Spanish', 'French', 'German', 'Chinese'],
-          (value) => setState(() => _selectedLanguage = value!),
-        ),
-        _buildDropdownItem(
           Icons.attach_money_outlined,
           'Currency',
           'Select your preferred currency',
           _selectedCurrency,
-          ['USD', 'EUR', 'GBP', 'CAD', 'AUD'],
+          ['UGX', 'USD'],
           (value) => setState(() => _selectedCurrency = value!),
         ),
       ],

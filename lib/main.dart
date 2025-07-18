@@ -10,7 +10,6 @@ import 'package:pearlnest/blocs/property_upload/property_upload_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/screens/common/splash_screen.dart';
-import 'package:pearlnest/screens/common/onboarding_screen.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/widgets/permission_initialization_widget.dart';

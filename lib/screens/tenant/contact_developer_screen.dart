@@ -13,7 +13,7 @@ class ContactDeveloperScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppTheme.primaryblue,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         iconTheme: IconThemeData(color: AppTheme.whiteColor),
       ),
       body: SafeArea(
@@ -64,7 +64,7 @@ class ContactDeveloperScreen extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            'Vawzen',
+            'DevelopWithEffect',
             style: TextStyle(
               fontSize: 16,
               color: AppTheme.whiteColor.withValues(alpha: 0.9),
@@ -112,7 +112,7 @@ class ContactDeveloperScreen extends StatelessWidget {
             context,
             Icons.lightbulb_outline,
             'Feature Request',
-            'vawzenmaya@gmail.com',
+            'info@developwitheffect.com',
             'Suggest new features or improvements',
             () => _launchEmail('vawzenmaya@gmail.com'),
           ),
@@ -233,7 +233,6 @@ class ContactDeveloperScreen extends StatelessWidget {
                 SizedBox(height: 12),
                 _buildInfoRow('Version', '1.0.0'),
                 _buildInfoRow('Build', '100'),
-                _buildInfoRow('Platform', 'Flutter'),
                 _buildInfoRow('Last Updated', 'December 2024'),
               ],
             ),

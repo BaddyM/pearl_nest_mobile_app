@@ -12,6 +12,7 @@ import 'package:pearlnest/screens/chat/chat_input.dart';
 import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/screens/chat/message_bubble.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class IndividualChatScreen extends StatefulWidget {
   final ChatConversation conversation;
@@ -448,17 +449,49 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Calling ${widget.conversation.landlordName}...', style: TextStyle(color: AppTheme.lightGreyColor),),
-                    backgroundColor: AppTheme.primaryblue,
-                    duration: Duration(milliseconds: 500),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.all(16),
-                  ),
-                );
+                
+                String phoneNumber = "+256787018472";
+                // Edit this to pick the landlord number from the backend
+                // String phoneNumber = widget.conversation.landlordPhone;
+                
+                String cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+                
+                // Create the tel URL
+                final Uri phoneUri = Uri(scheme: 'tel', path: cleanedNumber);
+                
+                try {
+                  if (await canLaunchUrl(phoneUri)) {
+                    await launchUrl(phoneUri);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Phone calls are not supported on this device',
+                          style: TextStyle(color: AppTheme.lightGreyColor),
+                        ),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        margin: EdgeInsets.all(16),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Failed to make call: ${e.toString()}',
+                        style: TextStyle(color: AppTheme.lightGreyColor),
+                      ),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.all(16),
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryblue,
@@ -499,13 +532,6 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 ),
               ),
               SizedBox(height: 20),
-              _buildOptionTile(
-                icon: Icons.info_outline,
-                title: 'View Profile',
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
               _buildOptionTile(
                 icon: Icons.home_outlined,
                 title: 'View Property',

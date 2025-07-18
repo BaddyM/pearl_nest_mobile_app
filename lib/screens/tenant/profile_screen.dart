@@ -44,7 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text('Profile'),
         backgroundColor: AppTheme.primaryblue,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         actions: [
           IconButton(
             icon: Icon(Icons.edit),
