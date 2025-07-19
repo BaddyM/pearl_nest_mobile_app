@@ -8,7 +8,13 @@ import 'package:pearlnest/apis/app_config.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final User user;
-  const FavoritesScreen({super.key, required this.user});
+  final VoidCallback? onNavigateToExplore;
+  
+  const FavoritesScreen({
+    super.key, 
+    required this.user,
+    this.onNavigateToExplore,
+  });
 
   @override
   _FavoritesScreenState createState() => _FavoritesScreenState();
@@ -450,7 +456,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
               SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.pop(context);
+                  // Use the callback to navigate to explore tab if available
+                  if (widget.onNavigateToExplore != null) {
+                    widget.onNavigateToExplore!();
+                  } else {
+                    // Fallback for when used outside of HomeScreen
+                    Navigator.pop(context);
+                  }
                 },
                 icon: Icon(
                   Icons.explore,
@@ -1102,32 +1114,6 @@ class PropertyCard extends StatelessWidget {
           color: AppTheme.getSecondaryTextColor(context),
         ),
         SizedBox(width: 2),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: responsive['subtitleFontSize'],
-            color: AppTheme.getSecondaryTextColor(context),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPropertyFeature(
-    IconData icon, 
-    String text, 
-    BuildContext context,
-    Map<String, dynamic> responsive,
-  ) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: responsive['iconSize'],
-          color: AppTheme.getSecondaryTextColor(context),
-        ),
-        SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(

@@ -521,7 +521,14 @@ class _HomeScreenState extends State<HomeScreen> {
               user: widget.user,
               allProperties: _properties,
             ),
-          2 => FavoritesScreen(user: widget.user),
+          2 => FavoritesScreen(
+              user: widget.user,
+              onNavigateToExplore: () {
+                setState(() {
+                  _currentIndex = 0; // Navigate to home/explore tab
+                });
+              },
+            ),
           3 => ProfileScreen(
               user: widget.user,
               landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
