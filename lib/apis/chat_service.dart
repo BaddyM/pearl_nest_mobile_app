@@ -671,6 +671,38 @@ class ChatService {
     );
   }
   
+  // Get or create a conversation with a specific admin
+  static Future<ChatConversation?> getOrCreateConversation({
+    required String adminId,
+    required String adminName,
+    String? propertyTitle,
+  }) async {
+    try {
+      debugPrint('💬 Getting/creating conversation with admin: $adminName ($adminId)');
+      
+      // Create a conversation object with the admin
+      final conversation = ChatConversation(
+        id: 'admin_$adminId', // Prefix with 'admin_' to distinguish from property-based conversations
+        landlordId: adminId,
+        landlordName: adminName,
+        landlordProfilePic: '', // Will use default avatar
+        lastMessage: propertyTitle != null 
+            ? 'Chat about: $propertyTitle' 
+            : 'Chat with $adminName',
+        lastMessageTime: DateTime.now(),
+        unreadCount: 0,
+        isOnline: true, // Assume admin is online
+        propertyTitle: propertyTitle ?? 'General Support',
+      );
+      
+      debugPrint('✅ Created conversation with admin: ${conversation.landlordName}');
+      return conversation;
+    } catch (e) {
+      debugPrint('❌ Error creating conversation with admin: $e');
+      return null;
+    }
+  }
+  
   // Get the admin user ID (deprecated - use getFirstAdminUserId instead)
   static String? getAdminUserId() {
     return getFirstAdminUserId();

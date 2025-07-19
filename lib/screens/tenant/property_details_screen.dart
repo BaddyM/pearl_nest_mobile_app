@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_interactions_service.dart';
-import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/models/property.dart';
@@ -16,7 +15,7 @@ import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
 import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/blocs/chat/chat_event.dart';
-import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
+import 'package:pearlnest/screens/chat/admin_list_screen.dart';
 import 'package:pearlnest/screens/tenant/payment_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -3327,36 +3326,22 @@ String _getFullImageUrl(String url) {
   }
 
   void _messageLandlord() async {
-    // Initialize chat and navigate to individual chat screen
+    // Initialize chat and navigate to admin list screen
     final chatBloc = context.read<ChatBloc>();
     
     // Initialize chat if not already done
     chatBloc.add(const ChatInitialize());
     
-    // Get admin conversation object
-    final conversation = await ChatService.getAdminConversation(
-      propertyTitle: widget.property.title,
+    // Navigate to admin list screen instead of direct chat
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AdminListScreen(
+          user: widget.user,
+          propertyTitle: widget.property.title,
+        ),
+      ),
     );
-    
-    // Navigate to individual chat screen only if conversation is available
-    if (conversation != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => IndividualChatScreen(
-            conversation: conversation,
-            currentUser: widget.user,
-          ),
-        ),
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No admin available for chat at the moment'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
   }
 
   void _submitBooking() {

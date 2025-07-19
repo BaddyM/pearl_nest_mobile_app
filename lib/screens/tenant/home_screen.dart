@@ -6,7 +6,6 @@ import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
-import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
@@ -15,8 +14,7 @@ import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
-import 'package:pearlnest/screens/chat/chat_conversation.dart';
-import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
+import 'package:pearlnest/screens/chat/admin_list_screen.dart';
 import 'package:pearlnest/screens/tenant/favorites_screen.dart';
 import 'package:pearlnest/screens/tenant/notification_screen.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
@@ -101,32 +99,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<ChatConversation?> _createPearlNestConversation() async {
-    return await ChatService.getAdminConversation(
-      propertyTitle: 'General Support & Inquiries',
-    );
-  }
-
   void _navigateToPearlNestChat() async {
-    final conversation = await _createPearlNestConversation();
-    if (conversation != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => IndividualChatScreen(
-            conversation: conversation,
-            currentUser: widget.user,
-          ),
+    // Navigate to admin list screen instead of direct chat
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AdminListScreen(
+          user: widget.user,
+          propertyTitle: 'General Support & Inquiries',
         ),
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No admin available for chat at the moment'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
+      ),
+    );
   }
 
   @override

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/screens/chat/admin_list_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HelpSupportScreen extends StatefulWidget {
@@ -548,39 +549,15 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   }
 
   void _startLiveChat() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.getCardColor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.chat, color: AppTheme.primaryblue),
-              SizedBox(width: 8),
-              Text(
-                'Live Chat',
-                style: TextStyle(color: AppTheme.getTextColor(context)),
-              ),
-            ],
-          ),
-          content: Text(
-            'Live chat feature will be available soon. For immediate assistance, please call us or send an email.',
-            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'OK',
-                style: TextStyle(color: AppTheme.primaryblue),
-              ),
-            ),
-          ],
-        );
-      },
+    // Navigate to admin list screen for live chat
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AdminListScreen(
+          user: widget.user,
+          propertyTitle: 'Help & Support',
+        ),
+      ),
     );
   }
 
