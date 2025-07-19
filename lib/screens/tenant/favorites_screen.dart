@@ -115,10 +115,30 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
     }
   }
 
-  void _toggleFavorite(String propertyId) async {
+  // Helper method to check if current user has favorited this property
+  // In FavoritesScreen, all properties are favorited by definition since they come from favorites API
+  // We only check if the property still exists in our local favorites list
+  bool _isPropertyFavorited(Property property) {
+    // Since this is the favorites screen, properties are favorited by default
+    // unless they've been removed from our local list
+    return _favoriteProperties.any((favProp) => favProp.id == property.id);
+  }
+
+  void _toggleFavorite(Property property) async {
     final responsive = _getResponsiveValues(context);
     
     try {
+      final wasLiked = _isPropertyFavorited(property);
+      
+      // Since this is favorites screen, properties should always be "liked" initially
+      // So tapping the heart should remove from favorites
+      if (!wasLiked) {
+        // This shouldn't happen in favorites screen, but handle it just in case
+        debugPrint('⚠️ Property not found in favorites list, this is unexpected in FavoritesScreen');
+        return;
+      }
+      
+      // Show loading feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -150,65 +170,107 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         ),
       );
 
-      await FavoritesService.removeFromFavorites(propertyId);
+      // Make API call to sync with server using the working toggle method
+      debugPrint('🤍 Toggling favorite for property: ${property.id}');
+      final result = await FavoritesService.toggleFavorite(property.id);
       
-      setState(() {
-        _favoriteProperties.removeWhere((property) => property.id == propertyId);
-        _filterProperties();
-      });
-
+      // Hide loading message
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       
-      final snackBar = SnackBar(
-        content: Text(
-          'Removed from favorites',
-          style: TextStyle(
-            color: AppTheme.lightGreyColor,
-            fontSize: responsive['subtitleFontSize'],
-          ),
-        ),
-        backgroundColor: AppTheme.primaryblue,
-        duration: Duration(milliseconds: 1500),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(responsive['horizontalPadding']),
-        action: SnackBarAction(
-          label: 'UNDO',
-          textColor: AppTheme.whiteColor,
-          onPressed: () async {
-            try {
-              await FavoritesService.addToFavorites(propertyId);
-              _loadFavoriteProperties();
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Failed to restore favorite: ${e.toString()}',
-                    style: TextStyle(color: AppTheme.lightGreyColor),
-                  ),
-                  backgroundColor: Colors.red,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.all(responsive['horizontalPadding']),
-                ),
-              );
-            }
-          },
-        ),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      if (result['success'] == true) {
+        // Success - remove from local lists and update UI
+        debugPrint('✅ Removed from favorites for property: ${property.id}');
+        
+        setState(() {
+          // Remove from favorites list since it was toggled off
+          _favoriteProperties.removeWhere((prop) => prop.id == property.id);
+          _filterProperties();
+        });
+        
+        // Show success feedback with undo option
+        if (mounted) {
+          final snackBar = SnackBar(
+            content: Text(
+              'Removed from favorites',
+              style: TextStyle(
+                color: AppTheme.lightGreyColor,
+                fontSize: responsive['subtitleFontSize'],
+              ),
+            ),
+            backgroundColor: AppTheme.primaryblue,
+            duration: Duration(milliseconds: 1500),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(responsive['horizontalPadding']),
+            action: SnackBarAction(
+              label: 'UNDO',
+              textColor: AppTheme.whiteColor,
+              onPressed: () async {
+                try {
+                  // Toggle back to add to favorites
+                  final undoResult = await FavoritesService.toggleFavorite(property.id);
+                  if (undoResult['success'] == true) {
+                    // Reload favorites to restore the item
+                    _loadFavoriteProperties();
+                  } else {
+                    throw Exception('Failed to restore favorite');
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Failed to restore favorite: ${e.toString()}',
+                        style: TextStyle(color: AppTheme.lightGreyColor),
+                      ),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.all(responsive['horizontalPadding']),
+                    ),
+                  );
+                }
+              },
+            ),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        }
+      } else {
+        // API call failed, show error
+        debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Failed to update favorites. Please try again.',
+                style: TextStyle(color: AppTheme.lightGreyColor),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+              margin: EdgeInsets.all(responsive['horizontalPadding']),
+            ),
+          );
+        }
+      }
+      
     } catch (e) {
+      debugPrint('❌ Error toggling favorite: $e');
+      
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to remove from favorites: ${e.toString()}',
-            style: TextStyle(color: AppTheme.lightGreyColor),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'An error occurred. Please try again.',
+              style: TextStyle(color: AppTheme.lightGreyColor),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+            margin: EdgeInsets.all(responsive['horizontalPadding']),
           ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(responsive['horizontalPadding']),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -696,7 +758,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
               );
             },
             onFavorite: () {
-              _toggleFavorite(property.id);
+              _toggleFavorite(property);
             },
             isFavorite: true,
           );
@@ -732,7 +794,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
               );
             },
             onFavorite: () {
-              _toggleFavorite(property.id);
+              _toggleFavorite(property);
             },
             isFavorite: true,
           ),
