@@ -5,6 +5,7 @@ import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/screens/common/register_screen.dart';
+import 'package:pearlnest/screens/common/otp_verification_screen.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
@@ -42,6 +43,18 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => HomeScreen(user: state.user,)),
+          );
+        } else if (state is AuthOtpRequired) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OtpVerificationScreen(
+                email: state.email,
+                tempToken: state.tempToken,
+                serverOtp: state.serverOtp,
+                message: state.message,
+              ),
+            ),
           );
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(

@@ -35,3 +35,27 @@ class AuthProfileUpdateRequested extends AuthEvent {
 }
 
 class AuthCheckSessionRequested extends AuthEvent {}
+
+class AuthOtpVerificationRequested extends AuthEvent {
+  final String email;
+  final String userInputOtp;
+  final String serverOtp;
+  final String tempToken;
+  
+  AuthOtpVerificationRequested({
+    required this.email,
+    required this.userInputOtp,
+    required this.serverOtp,
+    required this.tempToken,
+  });
+}
+
+class AuthOtpResendRequested extends AuthEvent {
+  final String email;
+  final String tempToken;
+  
+  AuthOtpResendRequested({
+    required this.email,
+    required this.tempToken,
+  });
+}

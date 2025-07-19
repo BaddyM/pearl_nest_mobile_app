@@ -22,6 +22,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthTokenExpired>(_onTokenExpired);
     on<AuthProfileUpdateRequested>(_onProfileUpdateRequested);
     on<AuthCheckSessionRequested>(_onCheckSessionRequested);
+    on<AuthOtpVerificationRequested>(_onOtpVerificationRequested);
+    on<AuthOtpResendRequested>(_onOtpResendRequested);
     
     // Initialize session check
     add(AuthCheckSessionRequested());
@@ -49,6 +51,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       debugPrint('AuthBloc: Token present: ${result['token'] != null}');
       
       if (result['success'] == true) {
+        // Check if OTP verification is required
+        if (result['requiresOtp'] == true) {
+          debugPrint('AuthBloc: OTP verification required for ${event.email}');
+          emit(AuthOtpRequired(
+            email: result['email'] ?? event.email,
+            tempToken: result['tempToken'] ?? '',
+            message: result['message'] ?? 'Please verify your login with the OTP code',
+            serverOtp: result['otp']?.toString() ?? '', // Pass the OTP from response
+          ));
+          return;
+        }
+        
         _currentUser = result['user'];
         _currentToken = result['token'];
         
@@ -288,6 +302,113 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       debugPrint('AuthBloc: Session check error - $e');
       emit(AuthUnauthenticated());
+    }
+  }
+
+  Future<void> _onOtpVerificationRequested(
+    AuthOtpVerificationRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthOtpVerificationLoading());
+    
+    try {
+      debugPrint('AuthBloc: Processing OTP verification for ${event.email}');
+      debugPrint('AuthBloc: User input OTP: ${event.userInputOtp}');
+      debugPrint('AuthBloc: Server OTP: ${event.serverOtp}');
+      
+      final result = await AuthService.verifyOtp(event.email, event.userInputOtp, event.serverOtp, event.tempToken);
+      
+      debugPrint('AuthBloc: OTP verification result received: ${result.keys}');
+      debugPrint('AuthBloc: Success flag: ${result['success']}');
+      
+      if (result['success'] == true) {
+        _currentUser = result['user'];
+        _currentToken = result['token'];
+        
+        // Set token in ApiClient
+        ApiClient.setAuthToken(_currentToken);
+        
+        debugPrint('AuthBloc: OTP verification successful, user: ${_currentUser?.name}');
+        debugPrint('AuthBloc: About to emit AuthSuccess state after OTP');
+        
+        emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
+        
+        debugPrint('AuthBloc: AuthSuccess state emitted after OTP verification');
+      } else {
+        debugPrint('AuthBloc: OTP verification error message - ${result['message']}');
+        final errorMessage = result['message'] ?? 'OTP verification failed. Please try again.';
+        debugPrint('AuthBloc: OTP verification failed - $errorMessage');
+        emit(AuthFailure(message: errorMessage));
+      }
+    } catch (e, stackTrace) {
+      debugPrint('AuthBloc: OTP verification error - $e');
+      debugPrint('AuthBloc: Stack trace - $stackTrace');
+      
+      // Provide more specific error messages based on error type
+      String errorMessage;
+      if (e.toString().contains('Invalid OTP') || e.toString().contains('INVALID_OTP')) {
+        errorMessage = 'Invalid OTP. Please check the code and try again.';
+      } else if (e.toString().contains('expired')) {
+        errorMessage = 'OTP has expired. Please request a new one.';
+      } else if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+      } else if (e.toString().contains('network') || e.toString().contains('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else {
+        errorMessage = 'OTP verification failed. Please try again.';
+      }
+      
+      emit(AuthFailure(message: errorMessage));
+    }
+  }
+
+  Future<void> _onOtpResendRequested(
+    AuthOtpResendRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthOtpVerificationLoading());
+    
+    try {
+      debugPrint('AuthBloc: Processing OTP resend for ${event.email}');
+      
+      final result = await AuthService.resendOtp(event.email, event.tempToken);
+      
+      debugPrint('AuthBloc: OTP resend result received: ${result.keys}');
+      debugPrint('AuthBloc: Success flag: ${result['success']}');
+      
+      if (result['success'] == true) {
+        debugPrint('AuthBloc: OTP resend successful');
+        
+        // Return to OTP required state with updated message
+        emit(AuthOtpRequired(
+          email: event.email,
+          tempToken: event.tempToken,
+          message: result['message'] ?? 'A new OTP has been generated',
+          serverOtp: result['otp']?.toString() ?? '', // Include new OTP if provided
+        ));
+      } else {
+        debugPrint('AuthBloc: OTP resend error message - ${result['message']}');
+        final errorMessage = result['message'] ?? 'Failed to resend OTP. Please try again.';
+        debugPrint('AuthBloc: OTP resend failed - $errorMessage');
+        emit(AuthFailure(message: errorMessage));
+      }
+    } catch (e, stackTrace) {
+      debugPrint('AuthBloc: OTP resend error - $e');
+      debugPrint('AuthBloc: Stack trace - $stackTrace');
+      
+      // Provide more specific error messages based on error type
+      String errorMessage;
+      if (e.toString().contains('Too many requests') || e.toString().contains('TOO_MANY_REQUESTS')) {
+        errorMessage = 'Too many requests. Please wait before requesting another OTP.';
+      } else if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+      } else if (e.toString().contains('network') || e.toString().contains('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else {
+        errorMessage = 'Failed to resend OTP. Please try again.';
+      }
+      
+      emit(AuthFailure(message: errorMessage));
     }
   }
 }

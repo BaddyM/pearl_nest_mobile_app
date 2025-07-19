@@ -166,18 +166,20 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       } else {
         // API call failed, revert the optimistic update
-        setState(() {
-          if (wasLiked) {
-            // Revert: add back to favorites
-            property.favourites.add({
-              'userId': widget.user.id,
-              'createdAt': DateTime.now().toIso8601String(),
-            });
-          } else {
-            // Revert: remove from favorites
-            property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
-          }
-        });
+        if (mounted) {
+          setState(() {
+            if (wasLiked) {
+              // Revert: add back to favorites
+              property.favourites.add({
+                'userId': widget.user.id,
+                'createdAt': DateTime.now().toIso8601String(),
+              });
+            } else {
+              // Revert: remove from favorites
+              property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+            }
+          });
+        }
         
         debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
         
@@ -200,18 +202,20 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Revert the optimistic update on error
       final wasLiked = _isPropertyFavorited(property);
-      setState(() {
-        if (!wasLiked) {
-          // Revert: add back to favorites
-          property.favourites.add({
-            'userId': widget.user.id,
-            'createdAt': DateTime.now().toIso8601String(),
-          });
-        } else {
-          // Revert: remove from favorites
-          property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
-        }
-      });
+      if (mounted) {
+        setState(() {
+          if (!wasLiked) {
+            // Revert: add back to favorites
+            property.favourites.add({
+              'userId': widget.user.id,
+              'createdAt': DateTime.now().toIso8601String(),
+            });
+          } else {
+            // Revert: remove from favorites
+            property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+          }
+        });
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -229,6 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadProperties() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -254,12 +259,14 @@ class _HomeScreenState extends State<HomeScreen> {
           debugPrint('🏠 Using ${featuredProperties.length} featured properties from general properties (fallback)');
         }
         
-        setState(() {
-          _properties = generalProperties;
-          _featuredProperties = featuredProperties;
-          _categoryProperties = List.from(generalProperties); // Initialize with all properties
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _properties = generalProperties;
+            _featuredProperties = featuredProperties;
+            _categoryProperties = List.from(generalProperties); // Initialize with all properties
+            _isLoading = false;
+          });
+        }
         
         debugPrint('🏠 Properties loaded - General: ${generalProperties.length}, Featured: ${featuredProperties.length}');
         
@@ -267,23 +274,27 @@ class _HomeScreenState extends State<HomeScreen> {
         await _loadPendingBookings();
         
       } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = propertiesResult['message'] ?? 'Failed to load properties.';
+            _categoryProperties = []; // Initialize empty category properties
+            _pendingBookings = []; // Initialize empty pending bookings
+            _pendingProperties = []; // Initialize empty pending properties
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading properties: $e');
+      if (mounted) {
         setState(() {
-          _errorMessage = propertiesResult['message'] ?? 'Failed to load properties.';
+          _errorMessage = 'An error occurred while loading properties.';
           _categoryProperties = []; // Initialize empty category properties
           _pendingBookings = []; // Initialize empty pending bookings
           _pendingProperties = []; // Initialize empty pending properties
           _isLoading = false;
         });
       }
-    } catch (e) {
-      debugPrint('❌ Error loading properties: $e');
-      setState(() {
-        _errorMessage = 'An error occurred while loading properties.';
-        _categoryProperties = []; // Initialize empty category properties
-        _pendingBookings = []; // Initialize empty pending bookings
-        _pendingProperties = []; // Initialize empty pending properties
-        _isLoading = false;
-      });
     }
   }
 
@@ -339,10 +350,12 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       if (categoryName == 'All') {
         // Reset to show all properties
-        setState(() {
-          _categoryProperties = List.from(_properties);
-          _isCategoryLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _categoryProperties = List.from(_properties);
+            _isCategoryLoading = false;
+          });
+        }
       } else {
         // Search for properties of the selected category
         debugPrint('🔍 Searching for properties of type: $categoryName');
@@ -350,25 +363,31 @@ class _HomeScreenState extends State<HomeScreen> {
         
         if (searchResult['success'] == true) {
           final categoryProps = List<Property>.from(searchResult['properties'] ?? []);
-          setState(() {
-            _categoryProperties = categoryProps;
-            _isCategoryLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _categoryProperties = categoryProps;
+              _isCategoryLoading = false;
+            });
+          }
           debugPrint('✅ Found ${categoryProps.length} properties for category: $categoryName');
         } else {
-          setState(() {
-            _categoryProperties = [];
-            _isCategoryLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _categoryProperties = [];
+              _isCategoryLoading = false;
+            });
+          }
           debugPrint('❌ No properties found for category: $categoryName');
         }
       }
     } catch (e) {
       debugPrint('❌ Error loading properties for category $categoryName: $e');
-      setState(() {
-        _categoryProperties = [];
-        _isCategoryLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _categoryProperties = [];
+          _isCategoryLoading = false;
+        });
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -404,20 +423,24 @@ class _HomeScreenState extends State<HomeScreen> {
         (property) => pendingPropertyIds.contains(property.id)
       ).toList();
       
-      setState(() {
-        _pendingBookings = pendingBookings;
-        _pendingProperties = pendingProps;
-      });
+      if (mounted) {
+        setState(() {
+          _pendingBookings = pendingBookings;
+          _pendingProperties = pendingProps;
+        });
+      }
       
       debugPrint('📚 Extracted ${pendingProps.length} properties with pending bookings');
       
     } catch (e) {
       debugPrint('❌ Error loading pending bookings: $e');
       // Don't show error to user, just continue without pending bookings
-      setState(() {
-        _pendingBookings = [];
-        _pendingProperties = [];
-      });
+      if (mounted) {
+        setState(() {
+          _pendingBookings = [];
+          _pendingProperties = [];
+        });
+      }
     }
   }
 
@@ -561,12 +584,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _handleRefresh() async {
-    debugPrint('🔄 Refreshing home screen...');
-    await _loadProperties();
-    debugPrint('🔄 Home screen refresh completed');
   }
 
   Widget _buildHeader() {

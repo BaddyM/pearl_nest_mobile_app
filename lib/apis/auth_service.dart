@@ -324,13 +324,28 @@ class AuthService {
       if (response.statusCode == 200) {
         final responseData = _validateResponse(response, requiredFields: ['accessToken']);
         
-        // Save token with expiry
-        await _saveToken(responseData['accessToken'], expiresIn: responseData['expiresIn']);
-        
         // Save userId if provided in the response
         if (responseData['userId'] != null) {
           await _saveUserId(responseData['userId'].toString());
         }
+        
+        // Check if OTP verification is required
+        if (responseData['otp'] != null) {
+          // Don't save token yet - only save after OTP verification
+          // Don't set token globally yet - only set temporarily for OTP verification
+          return {
+            'success': true,
+            'requiresOtp': true,
+            'tempToken': responseData['accessToken'],
+            'email': email.trim().toLowerCase(),
+            'otp': responseData['otp'].toString(), // Include the OTP from response
+            'message': 'An OTP has been sent to your email. Please verify your login.',
+            'statusCode': response.statusCode,
+          };
+        }
+        
+        // If no OTP required, save token and proceed with normal login
+        await _saveToken(responseData['accessToken'], expiresIn: responseData['expiresIn']);
         
         // Set the token for subsequent requests
         ApiClient.setAuthToken(responseData['accessToken']);
@@ -406,6 +421,130 @@ class AuthService {
     } catch (e) {
       debugPrint('AuthService: Login error - $e');
       return _handleError(e, 'login');
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyOtp(String email, String userInputOtp, String serverOtp, String tempToken) async {
+    try {
+      // Input validation
+      if (email.trim().isEmpty) throw ValidationException('Email is required');
+      if (userInputOtp.trim().isEmpty) throw ValidationException('OTP is required');
+      if (serverOtp.isEmpty) throw ValidationException('Server OTP is required');
+      if (tempToken.isEmpty) throw ValidationException('Temporary token is required');
+
+      debugPrint('🔐 Client-side OTP verification:');
+      debugPrint('User Input: ${userInputOtp.trim()}');
+      debugPrint('Server OTP: $serverOtp');
+      
+      // Client-side OTP verification
+      if (userInputOtp.trim() != serverOtp.trim()) {
+        throw AuthException('Invalid OTP. Please check the code and try again.', code: 'INVALID_OTP');
+      }
+      
+      debugPrint('✅ OTP verification successful - proceeding with user profile fetch');
+      
+      // Save the token only after successful OTP verification
+      await _saveToken(tempToken);
+      
+      // Set the token for subsequent requests
+      ApiClient.setAuthToken(tempToken);
+      
+      // Fetch user profile data after successful OTP verification
+      try {
+        final profileResponse = await ApiClient.get('/user/userProfile/fetch');
+        _logResponse('/user/userProfile/fetch', profileResponse);
+        
+        if (profileResponse.statusCode == 200) {
+          final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
+          
+          // Create user object from profile data
+          final userData = profileData['data'];
+          
+          final user = User.fromJson(userData);
+          
+          // Save user data and last login
+          await saveUserData(user);
+          
+          return {
+            'success': true,
+            'user': user,
+            'token': tempToken,
+            'message': 'OTP verification successful',
+            'statusCode': 200,
+          };
+        } else {
+          // If profile fetch fails, still return successful verification
+          return {
+            'success': true,
+            'token': tempToken,
+            'message': 'OTP verification successful',
+            'statusCode': 200,
+          };
+        }
+      } catch (profileError) {
+        // If profile fetch fails, still return successful verification
+        _logError('profile fetch after OTP', profileError);
+        return {
+          'success': true,
+          'token': tempToken,
+          'message': 'OTP verification successful',
+          'statusCode': 200,
+        };
+      }
+    } catch (e) {
+      debugPrint('AuthService: OTP verification error - $e');
+      return _handleError(e, 'OTP verification');
+    }
+  }
+
+  static Future<Map<String, dynamic>> resendOtp(String email, String tempToken) async {
+    try {
+      // Input validation
+      if (email.trim().isEmpty) throw ValidationException('Email is required');
+      if (tempToken.isEmpty) throw ValidationException('Temporary token is required');
+
+      final requestData = {
+        'email': email.trim().toLowerCase(),
+      };
+
+      _logRequest('/auth/resend-otp', requestData, token: tempToken);
+
+      // Set the temporary token for this request
+      final originalToken = ApiClient.currentAuthToken;
+      ApiClient.setAuthToken(tempToken);
+      
+      try {
+        final response = await ApiClient.post('/auth/resend-otp', requestData);
+        _logResponse('/auth/resend-otp', response);
+
+        if (response.statusCode == 200) {
+          final responseData = _validateResponse(response);
+          
+          return {
+            'success': true,
+            'message': responseData['message'] ?? 'OTP has been resent to your email',
+            'statusCode': response.statusCode,
+          };
+        } else if (response.statusCode == 429) {
+          final errorData = response.data;
+          throw AuthException(
+            errorData['message'] ?? 'Too many requests. Please wait before requesting another OTP.',
+            code: 'TOO_MANY_REQUESTS',
+          );
+        } else {
+          final errorData = response.data;
+          throw AuthException(
+            errorData['message'] ?? 'Failed to resend OTP',
+            statusCode: response.statusCode,
+          );
+        }
+      } finally {
+        // Restore original token
+        ApiClient.setAuthToken(originalToken);
+      }
+    } catch (e) {
+      debugPrint('AuthService: OTP resend error - $e');
+      return _handleError(e, 'OTP resend');
     }
   }
 
