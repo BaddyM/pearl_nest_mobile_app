@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_interactions_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
@@ -17,7 +18,6 @@ import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/screens/chat/admin_list_screen.dart';
 import 'package:pearlnest/screens/tenant/payment_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class Review {
   final String id;
@@ -2784,50 +2784,115 @@ String _getFullImageUrl(String url) {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: AppTheme.lightGreyColor,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.map,
-                            size: 48,
-                            color: AppTheme.greyColor,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Map View',
-                            style: TextStyle(
-                              color: AppTheme.greyColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _openMap,
-                        child: Container(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: widget.property.propertyMap != null && widget.property.propertyMap!.isNotEmpty
+                  ? _buildMapWebView()
+                  : _buildMapPlaceholder(),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildMapWebView() {
+    final controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (String url) {
+            debugPrint('Page started loading: $url');
+          },
+          onPageFinished: (String url) {
+            debugPrint('Page finished loading: $url');
+          },
+          onWebResourceError: (WebResourceError error) {
+            debugPrint('Map loading error: ${error.description}');
+          },
+        ),
+      )
+      ..loadHtmlString(_createMapHtml());
+
+    return WebViewWidget(controller: controller);
+  }
+
+  Widget _buildMapPlaceholder() {
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: AppTheme.lightGreyColor,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.map,
+                  size: 48,
+                  color: AppTheme.greyColor,
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Map View',
+                  style: TextStyle(
+                    color: AppTheme.greyColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _openMap,
+              child: Container(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _createMapHtml() {
+    String iframeContent = widget.property.propertyMap ?? '';
+    
+    // Clean up the iframe content if needed
+    if (!iframeContent.startsWith('<iframe')) {
+      // If it's just the src URL, wrap it in iframe tags
+      if (iframeContent.contains('google.com/maps/embed')) {
+        iframeContent = '<iframe src="$iframeContent" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>';
+      }
+    }
+    
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body { 
+                margin: 0; 
+                padding: 0; 
+                overflow: hidden;
+                background-color: #f5f5f5;
+            }
+            iframe { 
+                width: 100%; 
+                height: 100vh; 
+                border: none; 
+                display: block;
+            }
+        </style>
+    </head>
+    <body>
+        $iframeContent
+    </body>
+    </html>
+    ''';
   }
 
   Widget _buildLandlordInfo() {

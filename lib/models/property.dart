@@ -54,6 +54,7 @@ class Property {
   final List<Map<String, dynamic>> shares;
   final List<Map<String, dynamic>> favourites;
   final Map<String, dynamic>? user; // Landlord information
+  final String? propertyMap; // Iframe HTML for embedded map
 
   Property({
     required this.id,
@@ -88,6 +89,7 @@ class Property {
     this.shares = const [],
     this.favourites = const [],
     this.user,
+    this.propertyMap,
   });
 
   Property copyWith({
@@ -123,6 +125,7 @@ class Property {
     List<Map<String, dynamic>>? shares,
     List<Map<String, dynamic>>? favourites,
     Map<String, dynamic>? user,
+    String? propertyMap,
   }) {
     return Property(
       id: id ?? this.id,
@@ -157,6 +160,7 @@ class Property {
       shares: shares ?? this.shares,
       favourites: favourites ?? this.favourites,
       user: user ?? this.user,
+      propertyMap: propertyMap ?? this.propertyMap,
     );
   }
 
@@ -246,6 +250,7 @@ class Property {
       shares: (json['shares'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
       favourites: (json['favourites'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
       user: user,
+      propertyMap: json['propertyMap'] as String?,
     );
   }
 
