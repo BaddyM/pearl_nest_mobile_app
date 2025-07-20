@@ -684,6 +684,14 @@ String _getFullImageUrl(String url) {
       return;
     }
 
+    // First show dialog to get payment amount
+    final double? paymentAmount = await _showPaymentAmountDialog();
+    
+    if (paymentAmount == null) {
+      // User cancelled the dialog
+      return;
+    }
+
     try {
       // Show loading dialog
       showDialog(
@@ -711,14 +719,14 @@ String _getFullImageUrl(String url) {
         },
       );
 
-      debugPrint('💳 Initiating payment for booking: ${_pendingBookingForProperty!.id}');
+      debugPrint('💳 Initiating payment for booking: ${_pendingBookingForProperty!.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
       
-      // Create payment
+      // Create payment with the user-specified amount
       final paymentResult = await PaymentService.createPayment(
         userId: widget.user.id,
         bookingId: _pendingBookingForProperty!.id,
         propertyId: widget.property.id,
-        amount: widget.property.price,
+        amount: paymentAmount, // Use the user-specified amount instead of widget.property.price
       );
 
       // Close loading dialog
@@ -741,7 +749,7 @@ String _getFullImageUrl(String url) {
                 orderTrackingId: orderTrackingId,
                 merchantReference: merchantReference,
                 propertyTitle: widget.property.title,
-                amount: widget.property.price,
+                amount: paymentAmount, // Use the user-specified amount
               ),
             ),
           );
@@ -823,6 +831,217 @@ String _getFullImageUrl(String url) {
                 'OK',
                 style: TextStyle(color: AppTheme.whiteColor),
               ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show dialog to get payment amount from user
+  Future<double?> _showPaymentAmountDialog() async {
+    final TextEditingController amountController = TextEditingController();
+    final formattedPropertyPrice = NumberFormat('#,##0').format(widget.property.price);
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    
+    return await showDialog<double>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.getCardColor(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.payment,
+                  color: AppTheme.primaryblue,
+                  size: 24,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Payment Amount',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Property: ${widget.property.title}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Full Price: UGX $formattedPropertyPrice',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Enter the amount you want to pay to secure this booking:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                SizedBox(height: 12),
+                TextFormField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Payment Amount',
+                    hintText: 'Enter amount (UGX)',
+                    prefixText: 'UGX ',
+                    prefixStyle: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryblue,
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.getBackgroundColor(context),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter an amount';
+                    }
+                    
+                    final double? amount = double.tryParse(value.trim().replaceAll(',', ''));
+                    if (amount == null) {
+                      return 'Please enter a valid number';
+                    }
+                    
+                    if (amount <= 0) {
+                      return 'Amount must be greater than 0';
+                    }
+                    
+                    if (amount > widget.property.price) {
+                      return 'Amount cannot exceed UGX $formattedPropertyPrice';
+                    }
+                    
+                    return null;
+                  },
+                ),
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: AppTheme.primaryblue,
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'You can pay any amount up to the full property price to secure your booking.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.primaryblue,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(null);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: AppTheme.getSecondaryTextColor(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (formKey.currentState!.validate()) {
+                        final String value = amountController.text.trim().replaceAll(',', '');
+                        final double amount = double.parse(value);
+                        Navigator.of(context).pop(amount);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryblue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Continue',
+                      style: TextStyle(
+                        color: AppTheme.whiteColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         );
@@ -3454,18 +3673,18 @@ String _getFullImageUrl(String url) {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: Colors.green,
+                color: Colors.orange, // Changed from green to orange to indicate pending
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.check,
+                Icons.pending_actions, // Changed from check to pending icon
                 color: AppTheme.whiteColor,
                 size: 30,
               ),
             ),
             SizedBox(height: 16),
             Text(
-              'Booking Successful!',
+              'Booking Created!', // Changed from "Booking Successful"
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -3474,14 +3693,48 @@ String _getFullImageUrl(String url) {
             ),
             SizedBox(height: 8),
             Text(
-              message,
+              'Your booking has been created and is pending payment. Complete the payment to secure your reservation.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
                 color: AppTheme.getSecondaryTextColor(context),
               ),
             ),
-            SizedBox(height: 24),
+            SizedBox(height: 16),
+            
+            // Add payment reminder container
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.orange.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.payment,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Payment required to complete your booking',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
             
             if (_checkInDate != null && _checkOutDate != null) ...[
               Container(
@@ -3545,16 +3798,19 @@ String _getFullImageUrl(String url) {
                   _checkOutDate = null;
                 });
                 _bookingBloc.add(BookingReset());
+                
+                // Refresh pending bookings to update the UI
+                _loadPendingBookings();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryblue,
+                backgroundColor: Colors.orange, // Changed to orange to indicate next action is payment
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
               child: Text(
-                'Done',
+                'Proceed to Payment', // Changed button text to be more actionable
                 style: TextStyle(
                   color: AppTheme.whiteColor,
                   fontWeight: FontWeight.w600,

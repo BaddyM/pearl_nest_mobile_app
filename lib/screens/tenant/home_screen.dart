@@ -2123,8 +2123,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       // Property has no pending booking - show quick book button
       return ElevatedButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final bool? bookingCreated = await Navigator.push<bool>(
             context,
             MaterialPageRoute(
               builder: (context) => BookingScreen(
@@ -2133,6 +2133,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           );
+          
+          // If booking was created successfully, refresh the data
+          if (bookingCreated == true) {
+            _loadProperties(); // This will also trigger _loadPendingBookings()
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryblue,
@@ -2167,6 +2172,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Initiate payment for a pending booking
   Future<void> _initiatePayment(Property property, Booking booking) async {
+    // First show dialog to get payment amount
+    final double? paymentAmount = await _showPaymentAmountDialog(property);
+    
+    if (paymentAmount == null) {
+      // User cancelled the dialog
+      return;
+    }
+
     try {
       // Show loading dialog
       showDialog(
@@ -2207,14 +2220,14 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
 
-      debugPrint('💳 Initiating payment for booking: ${booking.id}');
+      debugPrint('💳 Initiating payment for booking: ${booking.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
       
-      // Create payment
+      // Create payment with the user-specified amount
       final paymentResult = await PaymentService.createPayment(
         userId: widget.user.id,
         bookingId: booking.id,
         propertyId: property.id,
-        amount: property.price,
+        amount: paymentAmount, // Use the user-specified amount instead of property.price
       );
 
       // Close loading dialog
@@ -2236,7 +2249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 redirectUrl: redirectUrl,
                 orderTrackingId: orderTrackingId,
                 merchantReference: merchantReference,
-                amount: property.price,
+                amount: paymentAmount, // Use the user-specified amount
                 propertyTitle: property.title,
               ),
             ),
@@ -2331,6 +2344,216 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show dialog to get payment amount from user
+  Future<double?> _showPaymentAmountDialog(Property property) async {
+    final TextEditingController amountController = TextEditingController();
+    final formattedPropertyPrice = NumberFormat('#,##0').format(property.price);
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    
+    return await showDialog<double>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.payment,
+                  color: AppTheme.primaryblue,
+                  size: 24,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Payment Amount',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Property: ${property.title}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Full Price: UGX $formattedPropertyPrice',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Enter the amount you want to pay to secure this booking:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                SizedBox(height: 12),
+                TextFormField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Payment Amount',
+                    hintText: 'Enter amount (UGX)',
+                    prefixText: 'UGX ',
+                    prefixStyle: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryblue,
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.getBackgroundColor(context),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter an amount';
+                    }
+                    
+                    final double? amount = double.tryParse(value.trim().replaceAll(',', ''));
+                    if (amount == null) {
+                      return 'Please enter a valid number';
+                    }
+                    
+                    if (amount <= 0) {
+                      return 'Amount must be greater than 0';
+                    }
+                    
+                    if (amount > property.price) {
+                      return 'Amount cannot exceed UGX $formattedPropertyPrice';
+                    }
+                    
+                    return null;
+                  },
+                ),
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: AppTheme.primaryblue,
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'You can pay any amount up to the full property price to secure your booking.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.primaryblue,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(null);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: AppTheme.getSecondaryTextColor(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (formKey.currentState!.validate()) {
+                        final String value = amountController.text.trim().replaceAll(',', '');
+                        final double amount = double.parse(value);
+                        Navigator.of(context).pop(amount);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryblue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Continue',
+                      style: TextStyle(
+                        color: AppTheme.whiteColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         );
@@ -2476,13 +2699,17 @@ void _onNavItemTapped(int index) {
         value: context.read<BookingBloc>(),
         child: BlocListener<BookingBloc, BookingState>(
           listener: (context, state) {
+            if (!mounted) return; // Safety check
+            
             if (state is BookingSuccess) {
               Navigator.of(context).pop(); // Close dialog
               _showSuccessSnackBar('Booking cancelled successfully');
               debugPrint('✅ Booking cancellation successful, refreshing all data...');
               // Add slight delay to ensure server has processed the update
               Future.delayed(Duration(milliseconds: 1000), () {
-                _onRefresh(); // Use full refresh instead of just pending bookings
+                if (mounted) {
+                  _onRefresh(); // Use full refresh instead of just pending bookings
+                }
               });
             } else if (state is BookingFailure) {
               Navigator.of(context).pop(); // Close dialog
@@ -2596,12 +2823,20 @@ void _onNavItemTapped(int index) {
                   final isLoading = state is BookingLoading;
                   return ElevatedButton(
                     onPressed: isLoading ? null : () {
-                      context.read<BookingBloc>().add(
-                        BookingStatusUpdateRequested(
-                          bookingId: booking.id,
-                          status: 'REJECTED',
-                        ),
-                      );
+                      try {
+                        if (mounted) {
+                          context.read<BookingBloc>().add(
+                            BookingStatusUpdateRequested(
+                              bookingId: booking.id,
+                              status: 'REJECTED',
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint('❌ Error adding booking event: $e');
+                        Navigator.of(context).pop(); // Close dialog
+                        _showErrorSnackBar('Unable to cancel booking. Please try again.');
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,

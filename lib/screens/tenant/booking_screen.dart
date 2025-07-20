@@ -376,18 +376,18 @@ class _BookingScreenState extends State<BookingScreen> {
               width: 60,
               height: 60,
               decoration: const BoxDecoration(
-                color: Colors.green,
+                color: Colors.orange, // Changed from green to orange
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.check,
+                Icons.pending_actions, // Changed from check to pending icon
                 color: Colors.white,
                 size: 30,
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Booking Successful!',
+              'Booking Created!', // Changed from "Booking Successful!"
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -397,13 +397,48 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              message,
+              'Your booking has been created and is pending payment. Please complete the payment to secure your reservation.',
               style: TextStyle(
                 color: AppTheme.getSecondaryTextColor(context),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            
+            // Add payment reminder container
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.orange.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.payment,
+                    color: Colors.orange,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Payment required to complete booking',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
             if (_checkInDate != null && _checkOutDate != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -460,18 +495,18 @@ class _BookingScreenState extends State<BookingScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(); // Go back to previous screen
+                Navigator.of(context).pop(true); // Go back to previous screen with success result
                 context.read<BookingBloc>().add(const BookingReset());
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryblue,
+                backgroundColor: Colors.orange, // Changed to orange to indicate next action is payment
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               child: Text(
-                'Done',
+                'Proceed to Payment', // Changed button text to be more actionable
                 style: TextStyle(
                   color: AppTheme.whiteColor,
                   fontWeight: FontWeight.w600,
