@@ -18,7 +18,8 @@ class ApiClient {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 60), // Longer for file uploads
+      sendTimeout: const Duration(seconds: 60), // Longer for file uploads
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -287,9 +288,14 @@ class ApiClient {
     }
 
     try {
-      final headers = _getHeaders(additionalHeaders: {
-        'Content-Type': 'multipart/form-data',
-      });
+      // Get headers without Content-Type for multipart - let Dio handle it
+      final headers = <String, String>{
+        'Accept': 'application/json',
+      };
+      
+      if (_authToken != null) {
+        headers['Authorization'] = 'Bearer $_authToken';
+      }
       
       _logRequest('POST (multipart)', endpoint, headers: headers);
       debugPrint('ApiClient: FormData fields: ${formData.fields.map((e) => '${e.key}: ${e.value}').join(', ')}');
@@ -338,9 +344,14 @@ class ApiClient {
     }
 
     try {
-      final headers = _getHeaders(additionalHeaders: {
-        'Content-Type': 'multipart/form-data',
-      });
+      // Get headers without Content-Type for multipart - let Dio handle it
+      final headers = <String, String>{
+        'Accept': 'application/json',
+      };
+      
+      if (_authToken != null) {
+        headers['Authorization'] = 'Bearer $_authToken';
+      }
       
       _logRequest('PATCH (multipart)', endpoint, headers: headers);
       

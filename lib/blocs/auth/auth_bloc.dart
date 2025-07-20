@@ -64,6 +64,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
         
         _currentUser = result['user'];
+        debugPrint('AuthBloc: Current user set: $_currentUser');
         _currentToken = result['token'];
         
         // Set token in ApiClient
@@ -71,6 +72,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         
         debugPrint('AuthBloc: Login successful, user: ${_currentUser?.name}');
         debugPrint('AuthBloc: About to emit AuthSuccess state');
+        debugPrint('AuthBloc: Current user: $_currentUser');
         
         emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
         
@@ -281,18 +283,43 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       debugPrint('AuthBloc: Checking session validity');
       
       if (await AuthService.isSessionValid()) {
-        final user = await AuthService.getCurrentUser();
         final token = await AuthService.getCurrentToken();
         
-        if (user != null && token != null) {
-          _currentUser = user;
-          _currentToken = token;
-          ApiClient.setAuthToken(_currentToken);
+        if (token != null) {
+          // First try to get fresh user data from server
+          debugPrint('AuthBloc: Session valid, refreshing user profile...');
+          final freshUser = await AuthService.refreshUserProfile();
           
-          debugPrint('AuthBloc: Session valid, user: ${_currentUser?.name}');
-          emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
+          if (freshUser != null) {
+            // Use fresh data from server
+            _currentUser = freshUser;
+            _currentToken = token;
+            ApiClient.setAuthToken(_currentToken);
+            
+            debugPrint('AuthBloc: Session valid with fresh data, user: ${_currentUser?.name}');
+            debugPrint('AuthBloc: Fresh profile image: ${_currentUser?.profileImage}');
+            debugPrint(_currentUser!.toString());
+            emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
+          } else {
+            // Fallback to cached user data if server refresh fails
+            debugPrint('AuthBloc: Failed to refresh profile, using cached data...');
+            final cachedUser = await AuthService.getCurrentUser();
+            
+            if (cachedUser != null) {
+              _currentUser = cachedUser;
+              _currentToken = token;
+              ApiClient.setAuthToken(_currentToken);
+              
+              debugPrint('AuthBloc: Session valid with cached data, user: ${_currentUser?.name}');
+              debugPrint(_currentUser!.toString());
+              emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
+            } else {
+              debugPrint('AuthBloc: Session invalid, no user data available');
+              emit(AuthUnauthenticated());
+            }
+          }
         } else {
-          debugPrint('AuthBloc: Session invalid, missing user or token');
+          debugPrint('AuthBloc: Session invalid, missing token');
           emit(AuthUnauthenticated());
         }
       } else {
@@ -324,7 +351,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (result['success'] == true) {
         _currentUser = result['user'];
         _currentToken = result['token'];
-        
+        debugPrint('AuthBloc: OTP verification successful, user: $_currentUser');
         // Set token in ApiClient
         ApiClient.setAuthToken(_currentToken);
         

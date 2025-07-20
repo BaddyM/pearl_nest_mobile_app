@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/apis/landlord_service.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 
 class LandlordApplicationScreen extends StatefulWidget {
   final User user;
@@ -27,8 +30,14 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
     'Proof of Address': null,
     'Tax Registration': null,
   };
+  final Map<String, String?> _documentFilePaths = {
+    'Business Registration Certificate': null,
+    'Valid ID/Passport': null,
+    'Proof of Address': null,
+    'Tax Registration': null,
+  };
 
-  bool _isLoading = false;
+  bool _isSubmittingApplication = false;
 
   String? _selectedDistrict;
   String? _selectedParish;
@@ -284,7 +293,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleSubmitApplication,
+                          onPressed: _isSubmittingApplication ? null : _handleSubmitApplication,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -292,7 +301,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: _isLoading
+                          child: _isSubmittingApplication
                               ? const CircularProgressIndicator(color: AppTheme.whiteColor)
                               : const Text(
                                   'Submit Application',
@@ -546,12 +555,25 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
               const Icon(Icons.info_outline, color: AppTheme.primaryblue),
               const SizedBox(width: 12),
               Expanded(
-                child: const Text(
-                  'Upload each document separately for faster verification',
-                  style: TextStyle(
-                    color: AppTheme.primaryblue,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Upload each document separately for faster verification',
+                      style: TextStyle(
+                        color: AppTheme.primaryblue,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Accepted formats: PDF, DOC, DOCX • Maximum size: 10MB',
+                      style: TextStyle(
+                        color: AppTheme.primaryblue.withOpacity(0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -622,6 +644,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                     onPressed: () {
                       setState(() {
                         _uploadedDocuments[documentType] = null;
+                        _documentFilePaths[documentType] = null;
                       });
                     },
                     icon: const Icon(Icons.delete, color: Colors.red),
@@ -647,30 +670,77 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
     );
   }
 
-  void _handleDocumentUpload(String documentType) {
-    setState(() {
-      _uploadedDocuments[documentType] =
-          '${documentType.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    });
+  void _handleDocumentUpload(String documentType) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'], // Only allow supported formats
+        allowMultiple: false,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: AppTheme.whiteColor),
-            const SizedBox(width: 12),
-            Text('$documentType uploaded successfully', style: TextStyle(color: AppTheme.lightGreyColor),),
-          ],
-        ),
-        duration: Duration(milliseconds: 500),
-        backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final fileName = result.files.single.name;
+        final fileExtension = fileName.split('.').last.toLowerCase();
+        
+        // Double-check file extension (extra validation)
+        if (!['pdf', 'doc', 'docx'].contains(fileExtension)) {
+          _showErrorSnackBar('Invalid file type. Please select a PDF, DOC, or DOCX file.');
+          return;
+        }
+        
+        // Check file size (10MB limit)
+        final fileSize = await file.length();
+        final fileSizeMB = fileSize / (1024 * 1024);
+        if (fileSize > 10 * 1024 * 1024) {
+          _showErrorSnackBar('File too large. Maximum size is 10MB. Your file is ${fileSizeMB.toStringAsFixed(1)}MB.');
+          return;
+        }
+        
+        // Store the file path for later upload
+        setState(() {
+          _uploadedDocuments[documentType] = fileName;
+          _documentFilePaths[documentType] = file.path;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: AppTheme.whiteColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '$documentType selected successfully (${fileSizeMB.toStringAsFixed(1)}MB)',
+                    style: const TextStyle(color: AppTheme.whiteColor),
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(milliseconds: 2000),
+            backgroundColor: AppTheme.primaryblue,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      String errorMessage = 'Failed to select file';
+      
+      // Handle specific file picker errors
+      if (e.toString().contains('User canceled')) {
+        return; // Don't show error for user cancellation
+      } else if (e.toString().contains('Permission denied')) {
+        errorMessage = 'Permission denied. Please allow file access.';
+      } else if (e.toString().contains('No application found')) {
+        errorMessage = 'No file manager app found. Please install one.';
+      }
+      
+      _showErrorSnackBar('$errorMessage: ${e.toString()}');
+    }
   }
 
   void _handleSubmitApplication() async {
@@ -690,16 +760,93 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       }
 
       setState(() {
-        _isLoading = true;
+        _isSubmittingApplication = true;
       });
 
-      await Future.delayed(const Duration(seconds: 3));
+      try {
+        // Step 1: Upload documents first
+        final documentsToUpload = <String, String>{};
+        _documentFilePaths.forEach((key, value) {
+          if (value != null) {
+            documentsToUpload[key] = value;
+          }
+        });
 
-      setState(() {
-        _isLoading = false;
-      });
+        if (documentsToUpload.isEmpty) {
+          setState(() {
+            _isSubmittingApplication = false;
+          });
+          _showErrorSnackBar('No documents selected for upload');
+          return;
+        }
 
-      _showSuccessDialog();
+        print('📁 Documents to upload: ${documentsToUpload.keys.toList()}');
+        for (var entry in documentsToUpload.entries) {
+          print('📄 ${entry.key}: ${entry.value}');
+        }
+
+        _showProgressSnackBar('Uploading documents...');
+        
+        final documentUploadResult = await LandlordService.uploadMultipleDocuments(
+          documents: documentsToUpload,
+          onDocumentUploaded: (documentType, success) {
+            if (success) {
+              print('✅ $documentType uploaded successfully');
+            } else {
+              print('❌ $documentType upload failed');
+            }
+          },
+        );
+
+        if (!documentUploadResult['success']) {
+          setState(() {
+            _isSubmittingApplication = false;
+          });
+          
+          // Show specific error message
+          String errorMessage = documentUploadResult['message'] ?? 'Document upload failed';
+          
+          // If there are failed documents, show which ones failed
+          if (documentUploadResult['failedDocuments'] != null) {
+            final failedDocs = documentUploadResult['failedDocuments'] as List<String>;
+            errorMessage = 'Failed to upload: ${failedDocs.join(', ')}. Please check file formats (PDF, DOC, DOCX only) and try again.';
+          }
+          
+          _showErrorSnackBar(errorMessage);
+          return;
+        }
+
+        // Step 2: Submit landlord application
+        _showProgressSnackBar('Submitting application...');
+        
+        final fullAddress = '${_selectedDistrict ?? ''}, ${_selectedParish ?? ''}';
+        
+        final applicationResult = await LandlordService.submitLandlordApplication(
+          businessName: _businessNameController.text.trim(),
+          regNo: _registrationNumberController.text.trim(),
+          district: fullAddress,
+          parish: _selectedParish ?? '',
+          propertySpecialization: _selectedSpecializations,
+          about: _descriptionController.text.trim(),
+        );
+
+        setState(() {
+          _isSubmittingApplication = false;
+        });
+
+        if (applicationResult['success']) {
+          _showSuccessDialog();
+        } else {
+          _showErrorSnackBar(applicationResult['message'] ?? 'Application submission failed');
+        }
+
+      } catch (e) {
+        setState(() {
+          _isSubmittingApplication = false;
+        });
+        _showErrorSnackBar('An error occurred. Please try again.');
+        print('Application submission error: $e');
+      }
     }
   }
 
@@ -710,13 +857,48 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           children: [
             const Icon(Icons.error_outline, color: AppTheme.whiteColor),
             const SizedBox(width: 12),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message, 
+                style: const TextStyle(color: AppTheme.whiteColor),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
-        duration: Duration(milliseconds: 500),
-        margin: EdgeInsets.all(16),
+        duration: const Duration(milliseconds: 4000),
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  void _showProgressSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message, style: const TextStyle(color: AppTheme.whiteColor))),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryblue,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(milliseconds: 1500),
+        margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -758,7 +940,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           ],
         ),
         content: Text(
-          'Your landlord application has been submitted successfully. You will receive a notification once it\'s reviewed.\n\nExpected review time: 2-3 business days.',
+          'Your landlord application has been submitted successfully. You will receive a notification once it\'s reviewed by our team.\n\nYour account will be upgraded to LANDLORD status once approved, allowing you to list properties.\n\nExpected review time: 2-3 business days.',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: AppTheme.getSecondaryTextColor(context),

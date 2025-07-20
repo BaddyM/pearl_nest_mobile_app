@@ -28,9 +28,9 @@ class ApiService {
   static void initialize() {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-      sendTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -63,21 +63,35 @@ class ApiService {
     if (kDebugMode) {
       debugPrint('🌐 API $method: $baseUrl$endpoint');
       if (data != null) {
-        // Don't log sensitive data like passwords
-        dynamic sanitizedData = data;
-        if (data is Map<String, dynamic>) {
-          sanitizedData = Map<String, dynamic>.from(data);
-          if (sanitizedData.containsKey('password')) {
-            sanitizedData['password'] = '[REDACTED]';
+        if (data is FormData) {
+          debugPrint('📤 Request Data: FormData (multipart)');
+          // Log form fields without sensitive data
+          for (var field in data.fields) {
+            if (field.key != 'password' && field.key != 'token') {
+              debugPrint('  📋 ${field.key}: ${field.value}');
+            }
           }
-          if (sanitizedData.containsKey('currentPassword')) {
-            sanitizedData['currentPassword'] = '[REDACTED]';
+          debugPrint('  📎 Files: ${data.files.length} file(s)');
+          for (var file in data.files) {
+            debugPrint('  📄 File: ${file.key} -> ${file.value.filename}');
           }
-          if (sanitizedData.containsKey('newPassword')) {
-            sanitizedData['newPassword'] = '[REDACTED]';
+        } else {
+          // Don't log sensitive data like passwords
+          dynamic sanitizedData = data;
+          if (data is Map<String, dynamic>) {
+            sanitizedData = Map<String, dynamic>.from(data);
+            if (sanitizedData.containsKey('password')) {
+              sanitizedData['password'] = '[REDACTED]';
+            }
+            if (sanitizedData.containsKey('currentPassword')) {
+              sanitizedData['currentPassword'] = '[REDACTED]';
+            }
+            if (sanitizedData.containsKey('newPassword')) {
+              sanitizedData['newPassword'] = '[REDACTED]';
+            }
           }
+          debugPrint('📤 Request Data: ${jsonEncode(sanitizedData)}');
         }
-        debugPrint('📤 Request Data: ${jsonEncode(sanitizedData)}');
       }
       if (token != null) {
         // Extract just the token part from "Bearer token"
@@ -351,6 +365,70 @@ class ApiService {
       return prefs.getString('auth_token');
     } catch (e) {
       return null;
+    }
+  }
+
+  // File upload method
+  static Future<ApiResponse> uploadFile(String endpoint, String filePath, {String? title}) async {
+    try {
+      if (_dio.options.baseUrl != baseUrl) {
+        _dio.options.baseUrl = baseUrl;
+      }
+      
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      // Create multipart file
+      String fileName = filePath.split('/').last;
+      MultipartFile multipartFile = await MultipartFile.fromFile(
+        filePath,
+        filename: fileName,
+      );
+      
+      // Create form data - matching your API specification
+      FormData formData = FormData.fromMap({
+        'file': multipartFile,
+        if (title != null) 'title': title,
+      });
+      
+      // Don't set Content-Type header - let Dio handle it for multipart
+      final options = Options(
+        headers: {
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+      
+      if (kDebugMode) {
+        debugPrint('📤 Uploading file: $fileName');
+        debugPrint('📁 File path: $filePath');
+        debugPrint('📋 Title: $title');
+        debugPrint('🔑 Has token: ${token != null}');
+      }
+      
+      final response = await _dio.post(endpoint, data: formData, options: options);
+      
+      if (kDebugMode) {
+        debugPrint('✅ Upload response status: ${response.statusCode}');
+        debugPrint('📝 Upload response data: ${response.data}');
+      }
+      
+      return _convertResponse(response);
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ File upload DioException: ${e.type}');
+        debugPrint('📊 Status Code: ${e.response?.statusCode}');
+        debugPrint('📝 Error Data: ${e.response?.data}');
+        debugPrint('💥 Error Message: ${e.message}');
+        debugPrint('🔗 Request URI: ${e.requestOptions.uri}');
+        debugPrint('📋 Request Headers: ${e.requestOptions.headers}');
+      }
+      throw _handleDioError(e);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ FILE UPLOAD $endpoint error: $e');
+        debugPrint('🔍 Error type: ${e.runtimeType}');
+      }
+      throw Exception('Network error: $e');
     }
   }
 }

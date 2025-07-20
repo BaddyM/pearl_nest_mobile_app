@@ -705,7 +705,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     radius: 25,
                     backgroundColor: AppTheme.lightGreyColor,
                     backgroundImage: widget.user.profileImage != null
-                        ? NetworkImage(widget.user.profileImage!)
+                        ? NetworkImage(_getFullImageUrl(widget.user.profileImage!))
                         : null,
                     child: widget.user.profileImage == null
                         ? Icon(Icons.person, color: AppTheme.primaryblue)

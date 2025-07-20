@@ -39,7 +39,7 @@ class User {
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'] ?? json['contact'] ?? '',
-      profileImage: json['profileImage'],
+      profileImage: json['profileImage'] ?? json['profilePicture'],
       userType: _parseUserType(json['userType'] ?? json['role'] ?? 'TENANT'),
       isVerified: json['isVerified'] ?? false,
       createdAt: json['createdAt'] != null 
@@ -78,7 +78,7 @@ class User {
       'name': name,
       'email': email,
       'contact': phone,
-      'profileImage': profileImage,
+      'profilePicture': profileImage, // Use profilePicture for backend
       'role': userType.toString().split('.').last.toUpperCase(),
       'isVerified': isVerified,
       'createdAt': createdAt.toIso8601String(),
@@ -88,5 +88,25 @@ class User {
       'smsNotifications': smsNotifications,
       'emailNotifications': emailNotifications,
     };
+  }
+
+  // Override toString for better debugging and logging
+  @override
+  String toString() {
+    return '''User {
+  id: $id,
+  name: $name,
+  email: $email,
+  phone: $phone,
+  profileImage: $profileImage,
+  userType: ${userType.toString().split('.').last},
+  isVerified: $isVerified,
+  createdAt: $createdAt,
+  favoriteProperties: $favoriteProperties,
+  bio: ${bio ?? 'null'},
+  pushNotifications: $pushNotifications,
+  smsNotifications: $smsNotifications,
+  emailNotifications: $emailNotifications
+}''';
   }
 }

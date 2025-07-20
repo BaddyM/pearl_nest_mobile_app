@@ -862,6 +862,47 @@ class AuthService {
     }
   }
 
+  // Refresh user profile data from server
+  static Future<User?> refreshUserProfile() async {
+    try {
+      final token = await getCurrentToken();
+      if (token == null) {
+        debugPrint('🔄 No token available for profile refresh');
+        return null;
+      }
+
+      debugPrint('🔄 Refreshing user profile from server...');
+      
+      // Set the token for the request
+      ApiClient.setAuthToken(token);
+      
+      final response = await ApiClient.get('/user/userProfile/fetch');
+      _logResponse('/user/userProfile/fetch', response);
+      
+      if (response.statusCode == 200) {
+        final responseData = _validateResponse(response, requiredFields: ['data']);
+        
+        // Create user object from fresh profile data
+        final userData = responseData['data'];
+        final user = User.fromJson(userData);
+        
+        // Save the fresh user data
+        await saveUserData(user);
+        
+        debugPrint('✅ User profile refreshed successfully');
+        debugPrint('🔄 Fresh profile image: ${user.profileImage}');
+        
+        return user;
+      } else {
+        debugPrint('❌ Failed to refresh user profile: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ Error refreshing user profile: $e');
+      return null;
+    }
+  }
+
   // Get current token
   static Future<String?> getCurrentToken() async {
     try {
@@ -869,6 +910,69 @@ class AuthService {
       return prefs.getString(_tokenKey);
     } catch (e) {
       return null;
+    }
+  }
+
+  // Update profile picture using dedicated endpoint
+  static Future<Map<String, dynamic>> updateProfilePicture({
+    required String imagePath,
+  }) async {
+    try {
+      // Get current user data to get userId
+      final currentUser = await getCurrentUser();
+      if (currentUser == null) {
+        throw AuthException('User not found. Please login again.');
+      }
+
+      if (currentUser.id.isEmpty) {
+        debugPrint('🔧 User ID is empty, attempting manual fix...');
+        final fixResult = await fixMissingUserId();
+        if (!fixResult) {
+          throw AuthException('User ID not found. Please login again.');
+        }
+        // Try to get user again after fixing
+        final updatedUser = await getCurrentUser();
+        if (updatedUser == null || updatedUser.id.isEmpty) {
+          throw AuthException('Unable to retrieve user ID. Please login again.');
+        }
+      }
+
+      final userId = currentUser.id;
+      debugPrint('🔧 Updating profile picture for userId: $userId');
+      debugPrint('🔧 Image path: $imagePath');
+
+      // Create multipart form data for the image
+      final formData = FormData();
+      formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath, filename: 'profile_image.jpg')));
+
+      _logRequest('/user/profilePicture/$userId', {'multipart': 'true', 'hasImage': true});
+
+      // Use the dedicated profile picture endpoint
+      final response = await ApiClient.patchMultipart('/user/profilePicture/$userId', formData);
+      _logResponse('/user/profilePicture/$userId', response);
+
+      if (response.statusCode == 200) {
+        final responseData = _validateResponse(response, requiredFields: ['data']);
+        
+        // Update stored user data with new profile image
+        final updatedUser = User.fromJson(responseData['data']);
+        await saveUserData(updatedUser);
+        
+        return {
+          'success': true,
+          'user': updatedUser,
+          'message': responseData['message'] ?? 'Profile picture updated successfully',
+          'statusCode': response.statusCode,
+        };
+      } else {
+        final errorData = response.data;
+        throw AuthException(
+          errorData['message'] ?? 'Profile picture update failed',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      return _handleError(e, 'profile picture update');
     }
   }
 
@@ -908,198 +1012,63 @@ class AuthService {
           throw AuthException('Unable to retrieve user ID. Please login again.');
         }
         debugPrint('🔧 Using updated user with ID: ${updatedUser.id}');
-        
-        // Use multipart request if image is provided
-        if (imagePath != null && imagePath.isNotEmpty) {
-          debugPrint('🔧 Building multipart request with userId: "${updatedUser.id}"');
-          debugPrint('🔧 UserId isEmpty: ${updatedUser.id.isEmpty}');
-          debugPrint('🔧 UserId length: ${updatedUser.id.length}');
-          
-          // Ensure userId is not empty
-          if (updatedUser.id.isEmpty) {
-            throw AuthException('User ID is empty after fix attempt. Please login again.');
-          }
-          
-          final formData = FormData();
-          
-          // Add text fields as proper form fields
-          formData.fields.addAll([
-            MapEntry('name', name.trim()),
-            MapEntry('email', email.trim().toLowerCase()),
-            MapEntry('contact', phone.trim()),
-            MapEntry('role', updatedUser.userType.toString().split('.').last.toUpperCase()),
-            MapEntry('isVerified', updatedUser.isVerified.toString()),
-          ]);
-          
-          // Add image file
-          formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath, filename: 'profile_image.jpg')));
-
-          // Add optional fields if provided
-          if (bio != null) formData.fields.add(MapEntry('bio', bio));
-          if (pushNotifications != null) formData.fields.add(MapEntry('pushNotifications', pushNotifications.toString()));
-          if (smsNotifications != null) formData.fields.add(MapEntry('smsNotifications', smsNotifications.toString()));
-          if (emailNotifications != null) formData.fields.add(MapEntry('emailNotifications', emailNotifications.toString()));
-
-          debugPrint('🔧 FormData built successfully');
-          _logRequest('/user/userProfile/update', {'multipart': 'true', 'hasImage': true});
-
-          // Try using POST instead of PATCH for multipart with userId as query parameter
-          final response = await ApiClient.postMultipart('/user/userProfile/update?userId=${updatedUser.id}', formData);
-          _logResponse('/user/userProfile/update', response);
-
-          if (response.statusCode == 200) {
-            final responseData = _validateResponse(response, requiredFields: ['data']);
-            
-            // Update stored user data
-            final finalUpdatedUser = User.fromJson(responseData['data']);
-            await saveUserData(finalUpdatedUser);
-            
-            return {
-              'success': true,
-              'user': finalUpdatedUser,
-              'message': responseData['message'] ?? 'Profile updated successfully',
-              'statusCode': response.statusCode,
-            };
-          } else {
-            final errorData = response.data;
-            throw AuthException(
-              errorData['message'] ?? 'Profile update failed',
-              statusCode: response.statusCode,
-            );
-          }
-        } else {
-          // Use regular JSON request if no image
-          final requestData = <String, dynamic>{
-            'userId': updatedUser.id,
-            'name': name.trim(),
-            'email': email.trim().toLowerCase(),
-            'contact': phone.trim(),
-            'role': updatedUser.userType.toString().split('.').last.toUpperCase(),
-            'isVerified': updatedUser.isVerified,
-          };
-
-          // Add optional fields if provided
-          if (bio != null) requestData['bio'] = bio;
-          if (pushNotifications != null) requestData['pushNotifications'] = pushNotifications;
-          if (smsNotifications != null) requestData['smsNotifications'] = smsNotifications;
-          if (emailNotifications != null) requestData['emailNotifications'] = emailNotifications;
-
-          _logRequest('/user/userProfile/update', requestData);
-
-          final response = await ApiClient.patch('/user/userProfile/update', requestData);
-          _logResponse('/user/userProfile/update', response);
-
-          if (response.statusCode == 200) {
-            final responseData = _validateResponse(response, requiredFields: ['data']);
-            
-            // Update stored user data
-            final finalUpdatedUser = User.fromJson(responseData['data']);
-            await saveUserData(finalUpdatedUser);
-            
-            return {
-              'success': true,
-              'user': finalUpdatedUser,
-              'message': responseData['message'] ?? 'Profile updated successfully',
-              'statusCode': response.statusCode,
-            };
-          } else {
-            final errorData = response.data;
-            throw AuthException(
-              errorData['message'] ?? 'Profile update failed',
-              statusCode: response.statusCode,
-            );
-          }
-        }
       }
 
-      // Use multipart request if image is provided
+      Map<String, dynamic> profileUpdateResult = {};
+      
+      // First, update the profile picture if provided using the dedicated endpoint
       if (imagePath != null && imagePath.isNotEmpty) {
-        final formData = FormData();
+        debugPrint('🔧 Updating profile picture using dedicated endpoint...');
+        profileUpdateResult = await updateProfilePicture(imagePath: imagePath);
         
-        // Add text fields
-        formData.fields.add(MapEntry('userId', currentUser.id));
-        formData.fields.add(MapEntry('name', name.trim()));
-        formData.fields.add(MapEntry('email', email.trim().toLowerCase()));
-        formData.fields.add(MapEntry('contact', phone.trim()));
-        formData.fields.add(MapEntry('role', currentUser.userType.toString().split('.').last.toUpperCase()));
-        formData.fields.add(MapEntry('isVerified', currentUser.isVerified.toString()));
-        
-        // Add image file
-        formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath, filename: 'profile_image.jpg')));
-
-        // Add optional fields if provided
-        if (bio != null) formData.fields.add(MapEntry('bio', bio));
-        if (pushNotifications != null) formData.fields.add(MapEntry('pushNotifications', pushNotifications.toString()));
-        if (smsNotifications != null) formData.fields.add(MapEntry('smsNotifications', smsNotifications.toString()));
-        if (emailNotifications != null) formData.fields.add(MapEntry('emailNotifications', emailNotifications.toString()));
-
-        _logRequest('/user/userProfile/update', {'multipart': 'true', 'hasImage': true});
-
-        final response = await ApiClient.patchMultipart('/user/userProfile/update', formData);
-        _logResponse('/user/userProfile/update', response);
-
-        if (response.statusCode == 200) {
-          final responseData = _validateResponse(response, requiredFields: ['data']);
-          
-          // Update stored user data
-          final updatedUser = User.fromJson(responseData['data']);
-          await saveUserData(updatedUser);
-          
-          return {
-            'success': true,
-            'user': updatedUser,
-            'message': responseData['message'] ?? 'Profile updated successfully',
-            'statusCode': response.statusCode,
-          };
-        } else {
-          final errorData = response.data;
-          throw AuthException(
-            errorData['message'] ?? 'Profile update failed',
-            statusCode: response.statusCode,
-          );
+        if (profileUpdateResult['success'] != true) {
+          // If profile picture update fails, return the error
+          return profileUpdateResult;
         }
-      } else {
-        // Use regular JSON request if no image
-        final requestData = <String, dynamic>{
-          'userId': currentUser.id,
-          'name': name.trim(),
-          'email': email.trim().toLowerCase(),
-          'contact': phone.trim(),
-          'role': currentUser.userType.toString().split('.').last.toUpperCase(),
-          'isVerified': currentUser.isVerified,
+        
+        debugPrint('🔧 Profile picture updated successfully');
+      }
+
+      // Then update other profile information using the regular endpoint
+      final requestData = <String, dynamic>{
+        'userId': currentUser.id,
+        'name': name.trim(),
+        'email': email.trim().toLowerCase(),
+        'contact': phone.trim(),
+        'role': currentUser.userType.toString().split('.').last.toUpperCase(),
+        'isVerified': currentUser.isVerified,
+      };
+
+      // Add optional fields if provided
+      if (bio != null) requestData['bio'] = bio;
+      if (pushNotifications != null) requestData['pushNotifications'] = pushNotifications;
+      if (smsNotifications != null) requestData['smsNotifications'] = smsNotifications;
+      if (emailNotifications != null) requestData['emailNotifications'] = emailNotifications;
+
+      _logRequest('/user/userProfile/update', requestData);
+
+      final response = await ApiClient.patch('/user/userProfile/update', requestData);
+      _logResponse('/user/userProfile/update', response);
+
+      if (response.statusCode == 200) {
+        final responseData = _validateResponse(response, requiredFields: ['data']);
+        
+        // Update stored user data
+        final finalUpdatedUser = User.fromJson(responseData['data']);
+        await saveUserData(finalUpdatedUser);
+        
+        return {
+          'success': true,
+          'user': finalUpdatedUser,
+          'message': responseData['message'] ?? 'Profile updated successfully',
+          'statusCode': response.statusCode,
         };
-
-        // Add optional fields if provided
-        if (bio != null) requestData['bio'] = bio;
-        if (pushNotifications != null) requestData['pushNotifications'] = pushNotifications;
-        if (smsNotifications != null) requestData['smsNotifications'] = smsNotifications;
-        if (emailNotifications != null) requestData['emailNotifications'] = emailNotifications;
-
-        _logRequest('/user/userProfile/update', requestData);
-
-        final response = await ApiClient.patch('/user/userProfile/update', requestData);
-        _logResponse('/user/userProfile/update', response);
-
-        if (response.statusCode == 200) {
-          final responseData = _validateResponse(response, requiredFields: ['data']);
-          
-          // Update stored user data
-          final updatedUser = User.fromJson(responseData['data']);
-          await saveUserData(updatedUser);
-          
-          return {
-            'success': true,
-            'user': updatedUser,
-            'message': responseData['message'] ?? 'Profile updated successfully',
-            'statusCode': response.statusCode,
-          };
-        } else {
-          final errorData = response.data;
-          throw AuthException(
-            errorData['message'] ?? 'Profile update failed',
-            statusCode: response.statusCode,
-          );
-        }
+      } else {
+        final errorData = response.data;
+        throw AuthException(
+          errorData['message'] ?? 'Profile update failed',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       return _handleError(e, 'profile update');
