@@ -25,12 +25,22 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _emailNotifications = true;
-  bool _pushNotifications = true;
-  bool _smsNotifications = false;
+  late bool _emailNotifications;
+  late bool _pushNotifications;
+  late bool _smsNotifications;
   bool _bioEnabled = false;
   bool _locationEnabled = true;
   String _selectedCurrency = 'USD';
+  bool _isUpdatingNotifications = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize notification preferences from user data
+    _emailNotifications = widget.user.emailNotifications;
+    _pushNotifications = widget.user.pushNotifications;
+    _smsNotifications = widget.user.smsNotifications;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,21 +156,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Push Notifications',
           'Receive notifications on your device',
           _pushNotifications,
-          (value) => setState(() => _pushNotifications = value),
+          (value) => _updateNotificationPreference(
+            preferenceType: 'push',
+            value: value,
+          ),
+          isLoading: _isUpdatingNotifications,
         ),
         _buildSwitchItem(
           Icons.email_outlined,
           'Email Notifications',
           'Receive notifications via email',
           _emailNotifications,
-          (value) => setState(() => _emailNotifications = value),
+          (value) => _updateNotificationPreference(
+            preferenceType: 'email',
+            value: value,
+          ),
+          isLoading: _isUpdatingNotifications,
         ),
         _buildSwitchItem(
           Icons.sms_outlined,
           'SMS Notifications',
           'Receive notifications via SMS',
           _smsNotifications,
-          (value) => setState(() => _smsNotifications = value),
+          (value) => _updateNotificationPreference(
+            preferenceType: 'sms',
+            value: value,
+          ),
+          isLoading: _isUpdatingNotifications,
         ),
       ],
     );
@@ -202,19 +224,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _locationEnabled,
           (value) => setState(() => _locationEnabled = value),
         ),
-        _buildSwitchItem(
-          Icons.fingerprint,
-          'Biometric Authentication',
-          'Use fingerprint or face ID to login',
-          _bioEnabled,
-          (value) => setState(() => _bioEnabled = value),
-        ),
-        _buildSettingsItem(
-          Icons.download_outlined,
-          'Download My Data',
-          'Get a copy of your data',
-          () => _showDownloadDataDialog(),
-        ),
+       
+        // _buildSettingsItem(
+        //   Icons.download_outlined,
+        //   'Download My Data',
+        //   'Get a copy of your data',
+        //   () => _showDownloadDataDialog(),
+        // ),
         _buildSettingsItem(
           Icons.delete_outline,
           'Delete Account',
@@ -245,7 +261,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildSettingsItem(
           Icons.star_outline,
           'Contact Developer',
-          'Vawzen',
+          'Develop With Effect',
           () => _navigateToContactDeveloper(),
         ),
       ],
@@ -369,8 +385,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String title,
     String subtitle,
     bool value,
-    ValueChanged<bool> onChanged,
-  ) {
+    ValueChanged<bool> onChanged, {
+    bool isLoading = false,
+  }) {
     return ListTile(
       leading: Container(
         padding: EdgeInsets.all(8),
@@ -399,11 +416,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: AppTheme.getSecondaryTextColor(context),
         ),
       ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: AppTheme.primaryblue,
-      ),
+      trailing: isLoading
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+              ),
+            )
+          : Switch(
+              value: value,
+              onChanged: isLoading ? null : onChanged,
+              activeColor: AppTheme.primaryblue,
+            ),
     );
   }
 
@@ -476,6 +502,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (context) => EditProfileScreen(user: widget.user),
       ),
     );
+  }
+
+  // Method to update notification preferences
+  Future<void> _updateNotificationPreference({
+    required String preferenceType,
+    required bool value,
+  }) async {
+    if (_isUpdatingNotifications) return;
+
+    setState(() {
+      _isUpdatingNotifications = true;
+    });
+
+    try {
+      // Update the specific preference locally first for immediate UI feedback
+      switch (preferenceType) {
+        case 'push':
+          _pushNotifications = value;
+          break;
+        case 'email':
+          _emailNotifications = value;
+          break;
+        case 'sms':
+          _smsNotifications = value;
+          break;
+      }
+      setState(() {});
+
+      // Call the updateProfile method with all current values and the updated notification preferences
+      final result = await AuthService.updateProfile(
+        name: widget.user.name,
+        email: widget.user.email,
+        phone: widget.user.phone,
+        bio: widget.user.bio,
+        pushNotifications: _pushNotifications,
+        smsNotifications: _smsNotifications,
+        emailNotifications: _emailNotifications,
+      );
+
+      if (result['success'] == true) {
+        // Show success feedback
+        _showSnackBar(
+          '${_getPreferenceDisplayName(preferenceType)} ${value ? 'enabled' : 'disabled'}',
+          AppTheme.primaryblue,
+        );
+      } else {
+        // Revert the local change if update failed
+        switch (preferenceType) {
+          case 'push':
+            _pushNotifications = !value;
+            break;
+          case 'email':
+            _emailNotifications = !value;
+            break;
+          case 'sms':
+            _smsNotifications = !value;
+            break;
+        }
+        setState(() {});
+        
+        _showSnackBar(
+          'Failed to update notification preference: ${result['message'] ?? 'Unknown error'}',
+          Colors.red,
+        );
+      }
+    } catch (e) {
+      // Revert the local change if update failed
+      switch (preferenceType) {
+        case 'push':
+          _pushNotifications = !value;
+          break;
+        case 'email':
+          _emailNotifications = !value;
+          break;
+        case 'sms':
+          _smsNotifications = !value;
+          break;
+      }
+      setState(() {});
+      
+      _showSnackBar(
+        'Network error. Please try again.',
+        Colors.red,
+      );
+    } finally {
+      setState(() {
+        _isUpdatingNotifications = false;
+      });
+    }
+  }
+
+  String _getPreferenceDisplayName(String preferenceType) {
+    switch (preferenceType) {
+      case 'push':
+        return 'Push notifications';
+      case 'email':
+        return 'Email notifications';
+      case 'sms':
+        return 'SMS notifications';
+      default:
+        return 'Notification preference';
+    }
   }
 
   void _navigateToEmailPreferences() {

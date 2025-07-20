@@ -34,8 +34,8 @@ class SearchFilters {
     this.propertyType = 'All',
     this.priceRange = const RangeValues(0, 5000),
     this.bedrooms,
-    this.selectedAmenities = const [],
-  });
+    List<String>? selectedAmenities,
+  }) : selectedAmenities = selectedAmenities ?? [];
 
   SearchFilters copyWith({
     String? propertyType,
@@ -380,12 +380,44 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _clearFilters() {
+    // Check if there are any filters to clear
+    final hasSearchText = _searchController.text.trim().isNotEmpty;
+    final hasActiveFilters = _filters.hasActiveFilters;
+    final isNotDefaultSort = _sortBy != 'Recent';
+    
+    if (!hasSearchText && !hasActiveFilters && !isNotDefaultSort) {
+      // No filters to clear, show a message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No filters to clear'),
+          backgroundColor: AppTheme.getSecondaryTextColor(context),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+    
     setState(() {
       _searchController.clear();
       _filters.clear();
       _sortBy = 'Recent';
       _performSearch();
     });
+    
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Filters cleared successfully'),
+        backgroundColor: AppTheme.primaryblue,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   void _openFilters() async {

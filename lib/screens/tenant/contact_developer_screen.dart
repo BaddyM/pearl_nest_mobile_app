@@ -46,7 +46,6 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
             SizedBox(height: 24),
             _buildContactMethods(context),
             SizedBox(height: 24),
-            _buildAppInfo(),
             SizedBox(height: 24),
             _buildFeedbackSection(context),
           ],
@@ -142,18 +141,18 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
             context,
             Icons.chat_outlined,
             'WhatsApp Support',
-            '+256 778 632 307',
+            '+256 757 919 472',
             'Message us during working days',
-            () => _launchUrl('https://wa.me/256778632307'),
+            () => _launchUrl('https://wa.me/256757919472'),
           ),
           SizedBox(height: 12),
           _buildContactItem(
             context,
             Icons.phone,
             'Phone Support',
-            '+256 700 140 826',
+            '+256 757 919 472',
             'Call us during business hours',
-            () => _launchPhone('+256700140826'),
+            () => _launchPhone('+256757919472'),
           ),
         ],
       ),
@@ -229,40 +228,7 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
     );
   }
 
-  Widget _buildAppInfo() {
-    return Builder(
-      builder: (context) {
-        return Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          color: AppTheme.getCardColor(context),
-          child: Padding(
-            padding: EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'App Information',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.getTextColor(context),
-                  ),
-                ),
-                SizedBox(height: 12),
-                _buildInfoRow('Version', _packageInfo?.version ?? 'Loading...'),
-                _buildInfoRow('Build', _packageInfo?.buildNumber ?? 'Loading...'),
-                _buildInfoRow('App Name', _packageInfo?.appName ?? 'Loading...'),
-                _buildInfoRow('Package Name', _packageInfo?.packageName ?? 'Loading...'),
-              ],
-            ),
-          ),
-        );
-      }
-    );
-  }
+
 
   Widget _buildInfoRow(String label, String value) {
     return Builder(
