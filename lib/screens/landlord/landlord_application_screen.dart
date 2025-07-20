@@ -755,7 +755,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       }
       final uploadedCount = _uploadedDocuments.values.where((v) => v != null).length;
       if (uploadedCount < 2) {
-        _showErrorSnackBar('Please upload at least 2 required documents');
+        _showErrorSnackBar('Please upload at least 2 required documents.\n\nRequired documents:\n• Business Registration Certificate\n• Valid ID/Passport\n• Proof of Address\n• Tax Registration\n\nSupported formats: PDF, DOC, DOCX (max 10MB each)');
         return;
       }
 
@@ -785,31 +785,62 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           print('📄 ${entry.key}: ${entry.value}');
         }
 
-        _showProgressSnackBar('Uploading documents...');
+        _showProgressSnackBar('Starting document upload...');
         
         final documentUploadResult = await LandlordService.uploadMultipleDocuments(
           documents: documentsToUpload,
+          onDocumentStartUpload: (documentType, current, total) {
+            final shortName = _shortenDocumentName(documentType);
+            _showProgressSnackBar('Uploading $current/$total: $shortName...');
+          },
           onDocumentUploaded: (documentType, success) {
+            final shortName = _shortenDocumentName(documentType);
             if (success) {
               print('✅ $documentType uploaded successfully');
+              // Don't show individual success snackbars to avoid spam - show final summary instead
             } else {
               print('❌ $documentType upload failed');
+              _showWarningSnackBar('❌ Failed to upload: $shortName');
             }
           },
         );
+
+        // Show final upload summary
+        final uploadedCount = documentUploadResult['uploadedDocuments']?.length ?? 0;
+        final totalCount = documentsToUpload.length;
+        
+        if (uploadedCount == totalCount) {
+          _showSuccessSnackBar('🎉 All $totalCount documents uploaded successfully!');
+        } else if (uploadedCount > 0) {
+          _showWarningSnackBar('⚠️ Upload complete: $uploadedCount/$totalCount documents successful');
+        } else {
+          _showErrorSnackBar('❌ All document uploads failed');
+        }
 
         if (!documentUploadResult['success']) {
           setState(() {
             _isSubmittingApplication = false;
           });
           
-          // Show specific error message
+          // Show specific error message with retry information
           String errorMessage = documentUploadResult['message'] ?? 'Document upload failed';
           
-          // If there are failed documents, show which ones failed
+          // If there are failed documents, show which ones failed with more specific guidance
           if (documentUploadResult['failedDocuments'] != null) {
             final failedDocs = documentUploadResult['failedDocuments'] as List<String>;
-            errorMessage = 'Failed to upload: ${failedDocs.join(', ')}. Please check file formats (PDF, DOC, DOCX only) and try again.';
+            final uploadedDocs = documentUploadResult['uploadedDocuments'] as List<String>? ?? [];
+            
+            if (uploadedDocs.isNotEmpty) {
+              errorMessage = '✅ Successfully uploaded: ${uploadedDocs.join(', ')}\n\n❌ Failed to upload: ${failedDocs.join(', ')}\n\nYou can continue with the uploaded documents or retry uploading the failed ones. The most common causes are:\n• Network connection issues\n• File format (must be PDF, DOC, or DOCX)\n• File size (maximum 10MB)';
+              
+              // Allow user to proceed with partial uploads if at least 2 documents were uploaded
+              if (uploadedDocs.length >= 2) {
+                _showPartialUploadDialog(uploadedDocs, failedDocs);
+                return;
+              }
+            } else {
+              errorMessage = 'Failed to upload: ${failedDocs.join(', ')}\n\nPlease check:\n• Internet connection\n• File format (PDF, DOC, or DOCX only)\n• File size (maximum 10MB)\n• Try uploading smaller files or retry';
+            }
           }
           
           _showErrorSnackBar(errorMessage);
@@ -817,28 +848,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         }
 
         // Step 2: Submit landlord application
-        _showProgressSnackBar('Submitting application...');
-        
-        final fullAddress = '${_selectedDistrict ?? ''}, ${_selectedParish ?? ''}';
-        
-        final applicationResult = await LandlordService.submitLandlordApplication(
-          businessName: _businessNameController.text.trim(),
-          regNo: _registrationNumberController.text.trim(),
-          district: fullAddress,
-          parish: _selectedParish ?? '',
-          propertySpecialization: _selectedSpecializations,
-          about: _descriptionController.text.trim(),
-        );
-
-        setState(() {
-          _isSubmittingApplication = false;
-        });
-
-        if (applicationResult['success']) {
-          _showSuccessDialog();
-        } else {
-          _showErrorSnackBar(applicationResult['message'] ?? 'Application submission failed');
-        }
+        _proceedWithApplication();
 
       } catch (e) {
         setState(() {
@@ -850,10 +860,197 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
     }
   }
 
+  void _showPartialUploadDialog(List<String> uploadedDocs, List<String> failedDocs) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.getCardColor(context),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.warning_amber,
+                color: Colors.orange,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Partial Upload Complete',
+              style: TextStyle(
+                color: AppTheme.getTextColor(context),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '✅ Successfully uploaded (${uploadedDocs.length}):',
+              style: TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...uploadedDocs.map((doc) => Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 4),
+              child: Text(
+                '• $doc',
+                style: TextStyle(
+                  color: AppTheme.getTextColor(context),
+                  fontSize: 14,
+                ),
+              ),
+            )),
+            const SizedBox(height: 16),
+            Text(
+              '❌ Failed to upload (${failedDocs.length}):',
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...failedDocs.map((doc) => Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 4),
+              child: Text(
+                '• $doc',
+                style: TextStyle(
+                  color: AppTheme.getTextColor(context),
+                  fontSize: 14,
+                ),
+              ),
+            )),
+            const SizedBox(height: 16),
+            Text(
+              'You have uploaded ${uploadedDocs.length} documents successfully. You can proceed with your application or retry uploading the failed documents.',
+              style: TextStyle(
+                color: AppTheme.getSecondaryTextColor(context),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Allow user to retry uploading failed documents
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primaryblue,
+                    side: const BorderSide(color: AppTheme.primaryblue),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Retry Failed'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Proceed with application submission
+                    _proceedWithApplication();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryblue,
+                    foregroundColor: AppTheme.whiteColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Proceed'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _proceedWithApplication() async {
+    setState(() {
+      _isSubmittingApplication = true;
+    });
+
+    try {
+      _showProgressSnackBar('Submitting application...');
+      
+      final fullAddress = '${_selectedDistrict ?? ''}, ${_selectedParish ?? ''}';
+      
+      final applicationResult = await LandlordService.submitLandlordApplication(
+        businessName: _businessNameController.text.trim(),
+        regNo: _registrationNumberController.text.trim(),
+        district: fullAddress,
+        parish: _selectedParish ?? '',
+        propertySpecialization: _selectedSpecializations,
+        about: _descriptionController.text.trim(),
+      );
+
+      setState(() {
+        _isSubmittingApplication = false;
+      });
+
+      if (applicationResult['success']) {
+        _showSuccessDialog();
+      } else {
+        _showErrorSnackBar(applicationResult['message'] ?? 'Application submission failed');
+      }
+
+    } catch (e) {
+      setState(() {
+        _isSubmittingApplication = false;
+      });
+      _showErrorSnackBar('An error occurred. Please try again.');
+      print('Application submission error: $e');
+    }
+  }
+
+  // Helper method to shorten document names for snackbar display
+  String _shortenDocumentName(String documentType) {
+    switch (documentType) {
+      case 'Business Registration Certificate':
+        return 'Business Registration';
+      case 'Valid ID/Passport':
+        return 'ID/Passport';
+      case 'Proof of Address':
+        return 'Proof of Address';
+      case 'Tax Registration':
+        return 'Tax Registration';
+      default:
+        return documentType.length > 20 
+            ? '${documentType.substring(0, 20)}...' 
+            : documentType;
+    }
+  }
+
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Icon(Icons.error_outline, color: AppTheme.whiteColor),
             const SizedBox(width: 12),
@@ -861,7 +1058,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
               child: Text(
                 message, 
                 style: const TextStyle(color: AppTheme.whiteColor),
-                maxLines: 3,
+                maxLines: 5,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -869,7 +1066,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(milliseconds: 4000),
+        duration: const Duration(milliseconds: 6000), // Longer duration for detailed messages
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
@@ -897,7 +1094,49 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         ),
         backgroundColor: AppTheme.primaryblue,
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(milliseconds: 1500),
+        duration: const Duration(milliseconds: 1200), // Shorter for progress updates
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: AppTheme.whiteColor),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message, style: const TextStyle(color: AppTheme.whiteColor))),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(milliseconds: 3000), // Longer for success to celebrate
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  void _showWarningSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.warning, color: AppTheme.whiteColor),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message, style: const TextStyle(color: AppTheme.whiteColor))),
+          ],
+        ),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(milliseconds: 4000), // Longer for warnings so user can read
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),

@@ -135,14 +135,29 @@ class LandlordService {
       // Extract more specific error messages
       String errorMessage = 'Failed to upload document. Please try again.';
       
-      if (e.toString().contains('Only pdf,doc or docx files are allowed')) {
+      final errorString = e.toString().toLowerCase();
+      
+      if (errorString.contains('only pdf,doc or docx files are allowed') || 
+          errorString.contains('invalid file type') ||
+          errorString.contains('file format')) {
         errorMessage = 'Invalid file type. Only PDF, DOC, and DOCX files are allowed.';
-      } else if (e.toString().contains('File size')) {
+      } else if (errorString.contains('file size') || errorString.contains('too large')) {
         errorMessage = 'File size too large. Maximum 10MB allowed.';
-      } else if (e.toString().contains('Connection timeout')) {
-        errorMessage = 'Upload timeout. Please check your connection and try again.';
-      } else if (e.toString().contains('Network error')) {
-        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (errorString.contains('receivetimeout') || 
+                 errorString.contains('receive timeout') ||
+                 errorString.contains('took longer than')) {
+        errorMessage = 'Upload timeout. The file is taking too long to upload. Please check your internet connection and try again.';
+      } else if (errorString.contains('connecttimeout') ||
+                 errorString.contains('connection timeout') ||
+                 errorString.contains('failed to connect')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+      } else if (errorString.contains('network error') ||
+                 errorString.contains('no internet') ||
+                 errorString.contains('socketexception')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (errorString.contains('server error') || 
+                 errorString.contains('internal server error')) {
+        errorMessage = 'Server error. Please try again later.';
       }
       
       return {
@@ -157,6 +172,7 @@ class LandlordService {
   static Future<Map<String, dynamic>> uploadMultipleDocuments({
     required Map<String, String> documents,
     Function(String documentType, bool success)? onDocumentUploaded,
+    Function(String documentType, int current, int total)? onDocumentStartUpload,
   }) async {
     try {
       if (kDebugMode) {
@@ -165,10 +181,15 @@ class LandlordService {
 
       final List<String> uploadedDocuments = [];
       final List<String> failedDocuments = [];
-
-      for (final entry in documents.entries) {
+      final entries = documents.entries.toList();
+      
+      for (int i = 0; i < entries.length; i++) {
+        final entry = entries[i];
         final documentType = entry.key;
         final filePath = entry.value;
+
+        // Notify start of upload for this document
+        onDocumentStartUpload?.call(documentType, i + 1, entries.length);
 
         final result = await uploadDocument(
           filePath: filePath,
