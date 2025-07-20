@@ -1,68 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/models/notification.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
-
-enum NotificationType {
-  propertyUpdate,
-  booking,
-  message,
-  favorite,
-  system,
-  payment,
-  review,
-}
-
-class NotificationItem {
-  final String id;
-  final String title;
-  final String message;
-  final NotificationType type;
-  final DateTime timestamp;
-  final bool isRead;
-  final String? propertyId;
-  final String? propertyTitle;
-  final String? propertyImage;
-  final String? actionData;
-
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.message,
-    required this.type,
-    required this.timestamp,
-    this.isRead = false,
-    this.propertyId,
-    this.propertyTitle,
-    this.propertyImage,
-    this.actionData,
-  });
-
-  NotificationItem copyWith({
-    String? id,
-    String? title,
-    String? message,
-    NotificationType? type,
-    DateTime? timestamp,
-    bool? isRead,
-    String? propertyId,
-    String? propertyTitle,
-    String? propertyImage,
-    String? actionData,
-  }) {
-    return NotificationItem(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      message: message ?? this.message,
-      type: type ?? this.type,
-      timestamp: timestamp ?? this.timestamp,
-      isRead: isRead ?? this.isRead,
-      propertyId: propertyId ?? this.propertyId,
-      propertyTitle: propertyTitle ?? this.propertyTitle,
-      propertyImage: propertyImage ?? this.propertyImage,
-      actionData: actionData ?? this.actionData,
-    );
-  }
-}
+import 'package:pearlnest/apis/notification_api_service.dart';
 
 class NotificationScreen extends StatefulWidget {
   final User user;
@@ -79,7 +19,14 @@ class _NotificationScreenState extends State<NotificationScreen>
   late TabController _tabController;
   List<NotificationItem> _notifications = [];
   bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = '';
   String _selectedFilter = 'All';
+  int _currentPage = 1;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  int _totalCount = 0;
+  int _unreadCount = 0;
 
   final List<String> _filterOptions = [
     'All',
@@ -103,89 +50,169 @@ class _NotificationScreenState extends State<NotificationScreen>
     super.dispose();
   }
 
-  void _loadNotifications() {
-    Future.delayed(Duration(seconds: 1), () {
+  void _loadNotifications({bool isRefresh = false}) async {
+    if (isRefresh) {
       setState(() {
-        _notifications = _getDummyNotifications();
-        _isLoading = false;
+        _currentPage = 1;
+        _hasMore = true;
+        _notifications.clear();
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = '';
       });
-    });
+    }
+
+    try {
+      // Map filter to API parameter
+      String? filterParam;
+      switch (_selectedFilter) {
+        case 'Unread':
+          filterParam = 'unread';
+          break;
+        case 'All':
+        default:
+          filterParam = null;
+          break;
+      }
+
+      final result = await NotificationApiService.fetchNotifications(
+        page: _currentPage,
+        limit: 20,
+        filter: filterParam,
+      );
+
+      if (result['success'] == true) {
+        final notificationsData = result['notifications'] as List<dynamic>;
+        final notifications = notificationsData
+            .map((data) => NotificationItem.fromJson(data as Map<String, dynamic>))
+            .toList();
+
+        setState(() {
+          if (isRefresh) {
+            _notifications = notifications;
+          } else {
+            _notifications.addAll(notifications);
+          }
+          _totalCount = result['total'] ?? 0;
+          _hasMore = result['hasMore'] ?? false;
+          _isLoading = false;
+          _hasError = false;
+          _errorMessage = '';
+        });
+
+        // Also get unread count
+        _getUnreadCount();
+      } else {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = result['message'] ?? 'Failed to load notifications';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+        _errorMessage = 'An unexpected error occurred. Please try again.';
+      });
+    }
   }
 
-  List<NotificationItem> _getDummyNotifications() {
-    return [
-      NotificationItem(
-        id: '1',
-        title: 'New Property Match!',
-        message: 'We found a perfect apartment that matches your preferences in Downtown.',
-        type: NotificationType.propertyUpdate,
-        timestamp: DateTime.now().subtract(Duration(minutes: 15)),
-        isRead: false,
-        propertyId: '1',
-        propertyTitle: 'Modern Apartment in City Center',
-        propertyImage: 'assets/images/img3.jpg',
-      ),
-      NotificationItem(
-        id: '2',
-        title: 'Booking Confirmed',
-        message: 'Your booking for Cozy Airbnb Studio has been confirmed for next week.',
-        type: NotificationType.booking,
-        timestamp: DateTime.now().subtract(Duration(hours: 2)),
-        isRead: false,
-        propertyId: '2',
-        propertyTitle: 'Cozy Airbnb Studio',
-        propertyImage: 'assets/images/img2.jpg',
-      ),
-      NotificationItem(
-        id: '3',
-        title: 'New Message',
-        message: 'PearlNest sent you a message about the Airbnb Studio.',
-        type: NotificationType.message,
-        timestamp: DateTime.now().subtract(Duration(hours: 4)),
-        isRead: true,
-      ),
-      NotificationItem(
-        id: '4',
-        title: 'Price Drop Alert!',
-        message: 'The price for Spacious Family House has dropped by 15%.',
-        type: NotificationType.favorite,
-        timestamp: DateTime.now().subtract(Duration(days: 1)),
-        isRead: false,
-        propertyId: '3',
-        propertyTitle: 'Spacious Family House',
-        propertyImage: 'assets/images/img1.jpg',
-      ),
-      NotificationItem(
-        id: '5',
-        title: 'Payment Successful',
-        message: 'Your payment of UGX 500,000 has been processed successfully.',
-        type: NotificationType.payment,
-        timestamp: DateTime.now().subtract(Duration(days: 2)),
-        isRead: true,
-      ),
-      NotificationItem(
-        id: '6',
-        title: 'New Review Received',
-        message: 'You received a 5-star review for your Modern Apartment.',
-        type: NotificationType.review,
-        timestamp: DateTime.now().subtract(Duration(days: 3)),
-        isRead: true,
-      ),
-      NotificationItem(
-        id: '7',
-        title: 'App Update Available',
-        message: 'A new version of PearlNest is available with exciting features.',
-        type: NotificationType.system,
-        timestamp: DateTime.now().subtract(Duration(days: 5)),
-        isRead: false,
-      ),
-    ];
+  void _loadMoreNotifications() async {
+    if (_isLoadingMore || !_hasMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    _currentPage++;
+    
+    try {
+      String? filterParam;
+      switch (_selectedFilter) {
+        case 'Unread':
+          filterParam = 'unread';
+          break;
+        case 'All':
+        default:
+          filterParam = null;
+          break;
+      }
+
+      final result = await NotificationApiService.fetchNotifications(
+        page: _currentPage,
+        limit: 20,
+        filter: filterParam,
+      );
+
+      if (result['success'] == true) {
+        final notificationsData = result['notifications'] as List<dynamic>;
+        final notifications = notificationsData
+            .map((data) => NotificationItem.fromJson(data as Map<String, dynamic>))
+            .toList();
+
+        setState(() {
+          _notifications.addAll(notifications);
+          _hasMore = result['hasMore'] ?? false;
+          _isLoadingMore = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingMore = false;
+        });
+        _showErrorSnackBar(result['message'] ?? 'Failed to load more notifications');
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingMore = false;
+      });
+      _showErrorSnackBar('An unexpected error occurred while loading more notifications');
+    }
+  }
+
+  void _getUnreadCount() async {
+    try {
+      final result = await NotificationApiService.getNotificationCount();
+      if (result['success'] == true) {
+        setState(() {
+          _unreadCount = result['unreadCount'] ?? 0;
+        });
+      }
+    } catch (e) {
+      // Silently fail for count - not critical
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppTheme.primaryblue,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   List<NotificationItem> get _filteredNotifications {
+    if (_notifications.isEmpty) return [];
+    
+    // For API-based filtering, we already get filtered results from the server
+    // Only need to apply client-side filtering for types that aren't handled by the API
     switch (_selectedFilter) {
-      case 'Unread':
-        return _notifications.where((n) => !n.isRead).toList();
       case 'Properties':
         return _notifications
             .where((n) => n.type == NotificationType.propertyUpdate ||
@@ -204,12 +231,67 @@ class _NotificationScreenState extends State<NotificationScreen>
         return _notifications
             .where((n) => n.type == NotificationType.system)
             .toList();
+      case 'All':
+      case 'Unread':
       default:
+        // For 'All' and 'Unread', the API already handles the filtering
         return _notifications;
     }
   }
 
-  int get _unreadCount => _notifications.where((n) => !n.isRead).length;
+  void _onFilterChanged(String newFilter) {
+    if (newFilter != _selectedFilter) {
+      setState(() {
+        _selectedFilter = newFilter;
+        _notifications.clear();
+        _currentPage = 1;
+        _hasMore = true;
+        _isLoading = true;
+      });
+      _loadNotifications();
+    }
+  }
+
+  void _markAsRead(NotificationItem notification) async {
+    if (notification.isRead) return;
+
+    try {
+      final result = await NotificationApiService.markAsRead(notification.id);
+      if (result['success'] == true) {
+        setState(() {
+          final index = _notifications.indexWhere((n) => n.id == notification.id);
+          if (index != -1) {
+            _notifications[index] = notification.copyWith(isRead: true);
+          }
+          if (_unreadCount > 0) {
+            _unreadCount--;
+          }
+        });
+        _showSuccessSnackBar('Notification marked as read');
+      } else {
+        _showErrorSnackBar(result['message'] ?? 'Failed to mark as read');
+      }
+    } catch (e) {
+      _showErrorSnackBar('An error occurred while marking as read');
+    }
+  }
+
+  void _markAllAsRead() async {
+    try {
+      final result = await NotificationApiService.markAllAsRead();
+      if (result['success'] == true) {
+        setState(() {
+          _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+          _unreadCount = 0;
+        });
+        _showSuccessSnackBar('All notifications marked as read');
+      } else {
+        _showErrorSnackBar(result['message'] ?? 'Failed to mark all as read');
+      }
+    } catch (e) {
+      _showErrorSnackBar('An error occurred while marking all as read');
+    }
+  }
 
   String _getTimeAgo(DateTime timestamp) {
     final now = DateTime.now();
@@ -266,27 +348,64 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 
-  void _markAsRead(String notificationId) {
-    setState(() {
-      final index = _notifications.indexWhere((n) => n.id == notificationId);
-      if (index != -1) {
-        _notifications[index] = _notifications[index].copyWith(isRead: true);
+  void _deleteNotification(String notificationId) async {
+    try {
+      final result = await NotificationApiService.deleteNotification(notificationId);
+      if (result['success'] == true) {
+        setState(() {
+          _notifications.removeWhere((n) => n.id == notificationId);
+          _totalCount = _totalCount > 0 ? _totalCount - 1 : 0;
+        });
+        _showSuccessSnackBar('Notification deleted');
+      } else {
+        _showErrorSnackBar(result['message'] ?? 'Failed to delete notification');
       }
-    });
+    } catch (e) {
+      _showErrorSnackBar('An error occurred while deleting notification');
+    }
   }
 
-  void _markAllAsRead() {
-    setState(() {
-      _notifications = _notifications
-          .map((notification) => notification.copyWith(isRead: true))
-          .toList();
-    });
-  }
-
-  void _deleteNotification(String notificationId) {
-    setState(() {
-      _notifications.removeWhere((n) => n.id == notificationId);
-    });
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: AppTheme.getSecondaryTextColor(context),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Failed to load notifications',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.getTextColor(context),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            _errorMessage,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+          ),
+          SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => _loadNotifications(isRefresh: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryblue,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: Text('Try Again'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -294,7 +413,11 @@ class _NotificationScreenState extends State<NotificationScreen>
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: _buildAppBar(),
-      body: _isLoading ? _buildLoadingState() : _buildNotificationContent(),
+      body: _isLoading 
+          ? _buildLoadingState() 
+          : _hasError 
+              ? _buildErrorState() 
+              : _buildNotificationContent(),
     );
   }
 
@@ -359,9 +482,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           
           return GestureDetector(
             onTap: () {
-              setState(() {
-                _selectedFilter = filter;
-              });
+              _onFilterChanged(filter);
             },
             child: Container(
               margin: EdgeInsets.only(right: 12, bottom: 10),
@@ -418,17 +539,43 @@ class _NotificationScreenState extends State<NotificationScreen>
   Widget _buildNotificationContent() {
     final filteredNotifications = _filteredNotifications;
 
-    if (filteredNotifications.isEmpty) {
+    if (filteredNotifications.isEmpty && !_isLoading) {
       return _buildEmptyState();
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.all(20),
-      itemCount: filteredNotifications.length,
-      itemBuilder: (context, index) {
-        final notification = filteredNotifications[index];
-        return _buildNotificationCard(notification);
+    return RefreshIndicator(
+      onRefresh: () async {
+        _loadNotifications(isRefresh: true);
       },
+      child: ListView.builder(
+        padding: EdgeInsets.all(20),
+        itemCount: filteredNotifications.length + (_hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == filteredNotifications.length) {
+            // Load more indicator at the bottom
+            if (_isLoadingMore) {
+              return Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(
+                    color: AppTheme.primaryblue,
+                  ),
+                ),
+              );
+            } else if (_hasMore) {
+              // Trigger load more when reaching the end
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _loadMoreNotifications();
+              });
+              return SizedBox(height: 16);
+            }
+            return SizedBox.shrink();
+          }
+          
+          final notification = filteredNotifications[index];
+          return _buildNotificationCard(notification);
+        },
+      ),
     );
   }
 
@@ -510,7 +657,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       child: GestureDetector(
         onTap: () {
           if (!notification.isRead) {
-            _markAsRead(notification.id);
+            _markAsRead(notification);
           }
           _handleNotificationTap(notification);
         },
@@ -651,7 +798,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                 onSelected: (value) {
                   switch (value) {
                     case 'mark_read':
-                      _markAsRead(notification.id);
+                      _markAsRead(notification);
                       break;
                     case 'delete':
                       _deleteNotification(notification.id);

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:async';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
+import 'package:pearlnest/apis/notification_api_service.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
@@ -51,6 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _errorMessage;
   final ScrollController _scrollController = ScrollController();
   bool _showBackToTop = false;
+  int _unreadNotificationCount = 0; // Count of unread notifications
+  Timer? _notificationTimer; // Timer for periodic notification refresh
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'All', 'icon': Icons.apps},
@@ -82,6 +86,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
     _loadProperties();
+    _loadNotificationCount(); // Load notification count on startup
+    _setupNotificationRefresh(); // Setup periodic refresh for notifications
     _scrollController.addListener(() {
       if (_scrollController.offset >= 400) {
         if (!_showBackToTop) {
@@ -115,6 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _notificationTimer?.cancel(); // Cancel notification timer
     super.dispose();
   }
 
@@ -296,6 +303,32 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     }
+  }
+
+  /// Load notification count to show badge on notification bell
+  Future<void> _loadNotificationCount() async {
+    try {
+      final result = await NotificationApiService.getNotificationCount();
+      if (result['success'] == true && mounted) {
+        setState(() {
+          _unreadNotificationCount = result['unreadCount'] ?? 0;
+        });
+        debugPrint('🔔 Notification count loaded: $_unreadNotificationCount unread');
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading notification count: $e');
+      // Silently fail - not critical for app functionality
+    }
+  }
+
+  /// Setup periodic refresh for notification count
+  void _setupNotificationRefresh() {
+    // Refresh notification count every 2 minutes
+    _notificationTimer = Timer.periodic(Duration(minutes: 2), (timer) {
+      if (mounted) {
+        _loadNotificationCount();
+      }
+    });
   }
 
   Landlord _createDummyLandlord() {
@@ -656,13 +689,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Stack(
                   children: [
                     IconButton(
-                      onPressed: () {
-                        Navigator.push(
+                      onPressed: () async {
+                        // Navigate to notification screen and refresh count when returning
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => NotificationScreen(user: widget.user),
                           ),
                         );
+                        // Refresh notification count when returning from notification screen
+                        _loadNotificationCount();
                       },
                       icon: Icon(
                         Icons.notifications_outlined,
@@ -670,18 +706,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         size: 24,
                       ),
                     ),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
+                    // Only show red dot if there are unread notifications
+                    if (_unreadNotificationCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
