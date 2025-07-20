@@ -51,7 +51,7 @@ class NotificationService {
   static Future<void> _initializeLocalNotifications() async {
     // Android initialization settings
     const AndroidInitializationSettings initializationSettingsAndroid = 
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_notification');
     
     // iOS initialization settings
     const DarwinInitializationSettings initializationSettingsIOS = 
@@ -255,7 +255,7 @@ class NotificationService {
         showWhen: true,
         enableVibration: true,
         playSound: true,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
       );
       
       // iOS notification details
@@ -416,7 +416,7 @@ class NotificationService {
         showWhen: true,
         enableVibration: true,
         playSound: true,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
       );
       
       // iOS notification details

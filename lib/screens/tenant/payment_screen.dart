@@ -38,6 +38,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
   void _initializeWebView() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel(
+        'FlutterPayment',
+        onMessageReceived: (JavaScriptMessage message) {
+          debugPrint('💳 JavaScript message received: ${message.message}');
+          _handleJavaScriptMessage(message.message);
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
@@ -59,6 +66,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
             setState(() {
               _isLoading = false;
             });
+            
+            // Inject JavaScript to detect button clicks
+            _injectJavaScript();
             
             // Check if we're on success or failure page
             _checkPaymentCompletion(url);
@@ -95,6 +105,68 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _showPaymentCompletionDialog(true);
     } else if (url.contains('cancel') || url.contains('failed') || url.contains('error')) {
       _showPaymentCompletionDialog(false);
+    }
+  }
+
+  void _injectJavaScript() {
+    // Inject JavaScript to detect "Go to App" button clicks and other success indicators
+    _controller.runJavaScript('''
+      (function() {
+        // Function to send message to Flutter
+        function sendToFlutter(message) {
+          if (window.FlutterPayment && window.FlutterPayment.postMessage) {
+            window.FlutterPayment.postMessage(message);
+          }
+        }
+        
+        // Look for common success page indicators
+        setTimeout(function() {
+          // Check for success text
+          var successTexts = ['payment has been successfully received', 'payment successful', 'transaction successful', 'payment completed'];
+          var pageText = document.body.innerText.toLowerCase();
+          
+          for (var i = 0; i < successTexts.length; i++) {
+            if (pageText.includes(successTexts[i])) {
+              sendToFlutter('payment_success_detected');
+              break;
+            }
+          }
+          
+          // Look for "Go to App" or similar buttons
+          var buttons = document.querySelectorAll('button, a, .btn, [onclick], [href]');
+          for (var i = 0; i < buttons.length; i++) {
+            var button = buttons[i];
+            var buttonText = button.innerText.toLowerCase();
+            
+            if (buttonText.includes('go to app') || 
+                buttonText.includes('return to app') || 
+                buttonText.includes('back to app') ||
+                buttonText.includes('continue')) {
+              
+              button.addEventListener('click', function(e) {
+                e.preventDefault();
+                sendToFlutter('go_to_app_clicked');
+              });
+            }
+          }
+        }, 1000);
+      })();
+    ''');
+  }
+
+  void _handleJavaScriptMessage(String message) {
+    debugPrint('💳 Handling JavaScript message: $message');
+    
+    switch (message) {
+      case 'payment_success_detected':
+        _showPaymentCompletionDialog(true);
+        break;
+      case 'go_to_app_clicked':
+        // Navigate back to home screen with success result
+        Navigator.of(context).pop(true); // Return success to previous screen
+        break;
+      default:
+        debugPrint('💳 Unknown JavaScript message: $message');
     }
   }
 

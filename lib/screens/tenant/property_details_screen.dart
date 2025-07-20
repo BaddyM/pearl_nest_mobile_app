@@ -7,6 +7,7 @@ import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_interactions_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
+import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/booking.dart';
@@ -721,6 +722,125 @@ String _getFullImageUrl(String url) {
 
       debugPrint('💳 Initiating payment for booking: ${_pendingBookingForProperty!.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
       
+      // Debug user ID to identify the issue
+      debugPrint('🔍 User ID validation:');
+      debugPrint('   - widget.user.id: "${widget.user.id}"');
+      debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
+      debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
+      debugPrint('   - widget.user.name: "${widget.user.name}"');
+      debugPrint('   - widget.user.email: "${widget.user.email}"');
+      
+      // Validate user ID before making payment request
+      if (widget.user.id.isEmpty) {
+        // Close loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        
+        debugPrint('❌ User ID is empty - attempting to get from AuthService');
+        
+        // Try to get user ID from AuthService as fallback
+        final currentUserId = await AuthService.getUserId();
+        debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
+        
+        if (currentUserId == null || currentUserId.isEmpty) {
+          _showPaymentError('User session invalid. Please logout and login again.');
+          return;
+        }
+        
+        debugPrint('✅ Using fallback user ID: $currentUserId');
+        
+        // Show loading dialog again
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              backgroundColor: AppTheme.getCardColor(context),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: AppTheme.primaryblue),
+                  SizedBox(height: 20),
+                  Text(
+                    'Setting up payment...',
+                    style: TextStyle(
+                      color: AppTheme.getTextColor(context),
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+        
+        // Create payment with the fallback user ID
+        final paymentResult = await PaymentService.createPayment(
+          userId: currentUserId,
+          bookingId: _pendingBookingForProperty!.id,
+          propertyId: widget.property.id,
+          amount: paymentAmount,
+        );
+        
+        // Close loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        
+        if (paymentResult['success'] == true) {
+          final String? redirectUrl = paymentResult['redirectUrl'];
+          final String? orderTrackingId = paymentResult['orderTrackingId'];
+          final String? merchantReference = paymentResult['merchantReference'];
+
+          if (redirectUrl != null && orderTrackingId != null && merchantReference != null) {
+            // Navigate to payment screen
+            final bool? paymentSuccess = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PaymentScreen(
+                  redirectUrl: redirectUrl,
+                  orderTrackingId: orderTrackingId,
+                  merchantReference: merchantReference,
+                  propertyTitle: widget.property.title,
+                  amount: paymentAmount,
+                ),
+              ),
+            );
+
+            if (paymentSuccess == true) {
+              // Payment completed successfully, reload pending bookings
+              _loadPendingBookings();
+              
+              // Show success message and navigate to home screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Payment completed successfully!', style: TextStyle(color: AppTheme.whiteColor)),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+              
+              // Navigate back to home screen after a brief delay
+              Future.delayed(Duration(seconds: 2), () {
+                if (mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              });
+            }
+          } else {
+            _showPaymentError('Payment setup incomplete. Please try again.');
+          }
+        } else {
+          _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
+        }
+        
+        return; // Return early since we handled the payment with fallback ID
+      }
+      
       // Create payment with the user-specified amount
       final paymentResult = await PaymentService.createPayment(
         userId: widget.user.id,
@@ -758,6 +878,7 @@ String _getFullImageUrl(String url) {
             // Payment completed successfully, reload pending bookings
             _loadPendingBookings();
             
+            // Show success message and navigate to home screen
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Payment completed successfully!', style: TextStyle(color: AppTheme.whiteColor)),
@@ -767,6 +888,13 @@ String _getFullImageUrl(String url) {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             );
+            
+            // Navigate back to home screen after a brief delay
+            Future.delayed(Duration(seconds: 2), () {
+              if (mounted) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+            });
           }
         } else {
           _showPaymentError('Payment setup incomplete. Please try again.');

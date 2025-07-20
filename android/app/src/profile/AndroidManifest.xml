@@ -5,6 +5,6 @@
     <application
         android:label="pearlnest"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
     </application>
 </manifest>
