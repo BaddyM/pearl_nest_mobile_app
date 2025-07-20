@@ -559,6 +559,181 @@ class PropertyService {
     }
   }
 
+  /// Get properties by landlord/user ID
+  static Future<Map<String, dynamic>> getPropertiesByLandlord(String userId, {String? token}) async {
+    try {
+      debugPrint('');
+      debugPrint('🏠 === FETCH LANDLORD PROPERTIES START ===');
+      debugPrint('   - User ID: $userId');
+      debugPrint('   - Endpoint: /property/landlord/$userId');
+
+      // Validate inputs
+      if (userId.isEmpty) {
+        debugPrint('❌ User ID is empty');
+        throw ValidationException('User ID is required');
+      }
+
+      // Set auth token if provided
+      if (token != null && token.isNotEmpty) {
+        ApiClient.setAuthToken(token);
+        debugPrint('🔑 Auth token set for request');
+      }
+
+      _logRequest('/property/landlord/$userId', null, token: token);
+
+      final response = await ApiClient.get('/property/landlord/$userId');
+      _logResponse('/property/landlord/$userId', response);
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ HTTP Success - Properties request successful');
+        
+        final responseData = _validateResponse(response);
+        debugPrint('📊 Response structure validated');
+
+        List<Property> properties = [];
+        
+        if (responseData['data'] != null) {
+          final data = responseData['data'];
+          debugPrint('📝 Processing properties data...');
+          
+          if (data is List) {
+            debugPrint('   - Data is List with ${data.length} items');
+            
+            for (var propertyData in data) {
+              try {
+                if (propertyData is Map<String, dynamic>) {
+                  // Convert API response format to Property model format
+                  final property = Property(
+                    id: propertyData['id'] ?? '',
+                    title: propertyData['propertyName'] ?? '',
+                    description: propertyData['description'] ?? '',
+                    price: (propertyData['price'] ?? 0).toDouble(),
+                    priceType: propertyData['period'] ?? 'per month',
+                    location: propertyData['location'] ?? '',
+                    address: propertyData['fullAddress'] ?? '',
+                    type: _parsePropertyType(propertyData['propertyType'] ?? ''),
+                    bedrooms: propertyData['numberOfBeds'] ?? 0,
+                    bathrooms: propertyData['numberOfBathrooms'] ?? 0,
+                    area: _parseArea(propertyData['areaMeasurement'] ?? ''),
+                    amenities: _parseAmenities(propertyData['amenities'] ?? ''),
+                    images: _parseImages(propertyData['media'] ?? ''),
+                    landlordId: propertyData['userId'] ?? '',
+                    landlordName: '', // Not provided in API response
+                    landlordPhone: '', // Not provided in API response
+                    landlordEmail: '', // Not provided in API response
+                    rating: 0.0, // Not provided in API response
+                    reviewCount: 0, // Not provided in API response
+                    status: propertyData['availability'] == true ? PropertyStatus.available : PropertyStatus.unavailable,
+                    availabilityStatus: propertyData['availability'] == true ? AvailabilityStatus.availableNow : AvailabilityStatus.availableLater,
+                    createdAt: DateTime.tryParse(propertyData['createdAt'] ?? '') ?? DateTime.now(),
+                    updatedAt: DateTime.tryParse(propertyData['updatedAt'] ?? '') ?? DateTime.now(),
+                    latitude: 0.0, // Not provided in API response
+                    longitude: 0.0, // Not provided in API response
+                    isFeatured: propertyData['featured'] ?? false,
+                    isVerified: propertyData['isVerified'] ?? false,
+                    views: [], // Not provided in API response
+                    shares: [], // Not provided in API response
+                    favourites: [], // Not provided in API response
+                  );
+                  properties.add(property);
+                  debugPrint('   ✓ Processed property: ${property.title}');
+                }
+              } catch (e) {
+                debugPrint('   ⚠️ Error processing property item: $e');
+                // Continue processing other properties
+              }
+            }
+            debugPrint('✅ Successfully processed ${properties.length} properties');
+          } else {
+            debugPrint('⚠️ Properties data is not a List, treating as no properties');
+          }
+        } else {
+          debugPrint('ℹ️ No properties available (data is null)');
+        }
+
+        final result = {
+          'success': true,
+          'properties': properties,
+          'total': properties.length,
+          'hasData': responseData['data'] != null,
+          'message': properties.isEmpty 
+              ? 'No properties found for this landlord'
+              : 'Properties loaded successfully',
+          'statusCode': response.statusCode,
+        };
+
+        debugPrint('✅ === LANDLORD PROPERTIES RESULT ===');
+        debugPrint('   - Success: ${result['success']}');
+        debugPrint('   - Properties count: ${properties.length}');
+        debugPrint('   - Has data: ${result['hasData']}');
+        debugPrint('   - Message: ${result['message']}');
+
+        return result;
+      } else {
+        debugPrint('❌ HTTP Error - Properties request failed:');
+        debugPrint('   - Status code: ${response.statusCode}');
+        debugPrint('   - Response data: ${response.data}');
+        
+        final errorData = response.data;
+        throw PropertyException(
+          errorData['message'] ?? 'Failed to fetch landlord properties',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('');
+      debugPrint('❌ === LANDLORD PROPERTIES ERROR ===');
+      debugPrint('   - Error: $e');
+      debugPrint('   - Error type: ${e.runtimeType}');
+      debugPrint('   - Stack trace: $stackTrace');
+      
+      return _handleError(e, 'get landlord properties');
+    } finally {
+      debugPrint('🏁 === FETCH LANDLORD PROPERTIES END ===');
+      debugPrint('');
+    }
+  }
+
+  // Helper methods for parsing API response data
+  static PropertyType _parsePropertyType(String type) {
+    switch (type.toLowerCase()) {
+      case 'apartment':
+        return PropertyType.apartment;
+      case 'house':
+        return PropertyType.house;
+      case 'studio':
+        return PropertyType.studio;
+      case 'condo':
+        return PropertyType.condo;
+      case 'hostel':
+        return PropertyType.hostel;
+      default:
+        return PropertyType.apartment;
+    }
+  }
+
+  static double _parseArea(String areaMeasurement) {
+    // Extract number from strings like "85 sq meters"
+    final match = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(areaMeasurement);
+    if (match != null) {
+      return double.tryParse(match.group(1) ?? '0') ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  static List<String> _parseAmenities(String amenities) {
+    if (amenities.isEmpty) return [];
+    return amenities.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+  }
+
+  static List<String> _parseImages(String media) {
+    if (media.isEmpty) return [];
+    return media.split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty && e != 'undefined' && !e.contains('undefined'))
+        .toList();
+  }
+
   /// Upload a new property
   static Future<Map<String, dynamic>> uploadProperty({
     required String propertyName,

@@ -4,6 +4,8 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/screens/landlord/landlord_property_upload_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/apis/property_service.dart';
+import 'package:pearlnest/apis/auth_service.dart';
 
 class LandlordPropertyManagementScreen extends StatefulWidget {
   final User user;
@@ -26,6 +28,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   String _searchQuery = '';
   bool _isGridView = false;
   List<Property> _properties = [];
+  bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = '';
   final List<String> _filterOptions = ['All', 'Available', 'Booked', 'Under Review', 'Featured', 'Verified'];
 
   @override
@@ -36,156 +41,91 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
 
   void _loadProperties() async {
     setState(() {
+      _isLoading = true;
+      _hasError = false;
+      _errorMessage = '';
     });
-    _properties = [
-      Property(
-        id: '1',
-        title: 'Modern Downtown Apartment',
-        description: 'Beautiful modern apartment in the heart of downtown with stunning city views.',
-        price: 1200,
-        priceType: 'per month',
-        location: 'Downtown',
-        address: '123 Main St, Downtown',
-        type: PropertyType.apartment,
-        bedrooms: 2,
-        bathrooms: 2,
-        area: 85.5,
-        amenities: ['WiFi', 'Parking', 'Gym', 'AC'],
-        images: ['assets/images/img1.jpg', 'assets/images/img2.jpg'],
-        landlordId: widget.landlord.id,
-        landlordName: widget.user.name,
-        landlordPhone: widget.user.phone,
-        landlordEmail: widget.user.email,
-        rating: 4.5,
-        reviewCount: 12,
-        status: PropertyStatus.available,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        createdAt: DateTime.now().subtract(Duration(days: 30)),
-        updatedAt: DateTime.now().subtract(Duration(days: 5)),
-        latitude: 0.0,
-        longitude: 0.0,
-        isFeatured: true,
-        isVerified: true,
-      ),
-      Property(
-        id: '2',
-        title: 'Cozy Studio Near University',
-        description: 'Perfect for students, this cozy studio is just minutes from the university campus.',
-        price: 800,
-        priceType: 'per month',
-        location: 'University District',
-        address: '456 College Ave, University District',
-        type: PropertyType.studio,
-        bedrooms: 0,
-        bathrooms: 1,
-        area: 45.0,
-        amenities: ['WiFi', 'Kitchen', 'Laundry'],
-        images: ['assets/images/img3.jpg', 'assets/images/img4.jpg'],
-        landlordId: widget.landlord.id,
-        landlordName: widget.user.name,
-        landlordPhone: widget.user.phone,
-        landlordEmail: widget.user.email,
-        rating: 4.2,
-        reviewCount: 8,
-        status: PropertyStatus.booked,
-        availabilityStatus: AvailabilityStatus.availableLater,
-        availableFrom: DateTime.now().add(Duration(days: 45)),
-        createdAt: DateTime.now().subtract(Duration(days: 60)),
-        updatedAt: DateTime.now().subtract(Duration(days: 10)),
-        latitude: 0.0,
-        longitude: 0.0,
-        isFeatured: false,
-        isVerified: true,
-      ),
-      Property(
-        id: '3',
-        title: 'Luxury Family House',
-        description: 'Spacious family house with garden, perfect for families with children.',
-        price: 2500,
-        priceType: 'per month',
-        location: 'Suburbs',
-        address: '789 Oak Street, Suburbs',
-        type: PropertyType.house,
-        bedrooms: 4,
-        bathrooms: 3,
-        area: 180.0,
-        amenities: ['WiFi', 'Parking', 'Garden', 'Garage', 'Pet Friendly'],
-        images: ['assets/images/img5.jpg', 'assets/images/img6.jpg'],
-        landlordId: widget.landlord.id,
-        landlordName: widget.user.name,
-        landlordPhone: widget.user.phone,
-        landlordEmail: widget.user.email,
-        rating: 4.8,
-        reviewCount: 15,
-        status: PropertyStatus.available,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        createdAt: DateTime.now().subtract(Duration(days: 15)),
-        updatedAt: DateTime.now().subtract(Duration(days: 2)),
-        latitude: 0.0,
-        longitude: 0.0,
-        isFeatured: true,
-        isVerified: true,
-      ),
-      Property(
-        id: '4',
-        title: 'Beachfront Condo',
-        description: 'Amazing oceanview condo with private balcony and beach access.',
-        price: 150,
-        priceType: 'per night',
-        location: 'Beachfront',
-        address: '321 Ocean Drive, Beachfront',
-        type: PropertyType.condo,
-        bedrooms: 1,
-        bathrooms: 1,
-        area: 65.0,
-        amenities: ['WiFi', 'Beach Access', 'Pool', 'Balcony'],
-        images: ['assets/images/img7.jpg'],
-        landlordId: widget.landlord.id,
-        landlordName: widget.user.name,
-        landlordPhone: widget.user.phone,
-        landlordEmail: widget.user.email,
-        rating: 4.7,
-        reviewCount: 23,
-        status: PropertyStatus.available,
-        availabilityStatus: AvailabilityStatus.availableNow,
-        createdAt: DateTime.now().subtract(Duration(days: 7)),
-        updatedAt: DateTime.now().subtract(Duration(days: 1)),
-        latitude: 0.0,
-        longitude: 0.0,
-        isFeatured: true,
-        isVerified: true,
-      ),
-      Property(
-        id: '5',
-        title: 'Budget Hostel Room',
-        description: 'Clean and affordable hostel room perfect for backpackers and budget travelers.',
-        price: 25,
-        priceType: 'per night',
-        location: 'City Center',
-        address: '555 Budget St, City Center',
-        type: PropertyType.hostel,
-        bedrooms: 1,
-        bathrooms: 1,
-        area: 20.0,
-        amenities: ['WiFi', 'Shared Kitchen', 'Lockers'],
-        images: ['assets/images/img8.jpg'],
-        landlordId: widget.landlord.id,
-        landlordName: widget.user.name,
-        landlordPhone: widget.user.phone,
-        landlordEmail: widget.user.email,
-        rating: 3.9,
-        reviewCount: 45,
-        status: PropertyStatus.booked,
-        availabilityStatus: AvailabilityStatus.availableLater,
-        availableFrom: DateTime.now().add(Duration(days: 14)),
-        createdAt: DateTime.now().subtract(Duration(days: 90)),
-        updatedAt: DateTime.now().subtract(Duration(days: 3)),
-        latitude: 0.0,
-        longitude: 0.0,
-        isFeatured: true,
-        isVerified: true,
-      ),
-    ];
+
+    try {
+      debugPrint('🏠 Loading properties for landlord: ${widget.user.id}');
+      
+      // Get auth token
+      final token = await AuthService.getCurrentToken();
+      if (token == null || token.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = 'Authentication required. Please log in again.';
+        });
+        return;
+      }
+
+      // Fetch properties from API
+      final result = await PropertyService.getPropertiesByLandlord(widget.user.id, token: token);
+      
+      if (result['success'] == true) {
+        final List<Property> properties = result['properties'] ?? [];
+        
+        // Update landlord information in properties since API doesn't provide it
+        final updatedProperties = properties.map((property) {
+          return Property(
+            id: property.id,
+            title: property.title,
+            description: property.description,
+            price: property.price,
+            priceType: property.priceType,
+            location: property.location,
+            address: property.address,
+            type: property.type,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms,
+            area: property.area,
+            amenities: property.amenities,
+            images: property.images,
+            landlordId: property.landlordId,
+            landlordName: widget.user.name, // Fill from widget.user
+            landlordPhone: widget.user.phone, // Fill from widget.user  
+            landlordEmail: widget.user.email, // Fill from widget.user
+            rating: property.rating,
+            reviewCount: property.reviewCount,
+            status: property.status,
+            availabilityStatus: property.availabilityStatus,
+            availableFrom: property.availableFrom,
+            createdAt: property.createdAt,
+            updatedAt: property.updatedAt,
+            latitude: property.latitude,
+            longitude: property.longitude,
+            isFeatured: property.isFeatured,
+            isVerified: property.isVerified,
+            views: property.views,
+            shares: property.shares,
+            favourites: property.favourites,
+          );
+        }).toList();
+
+        setState(() {
+          _properties = updatedProperties;
+          _isLoading = false;
+          _hasError = false;
+        });
+        
+        debugPrint('✅ Successfully loaded ${properties.length} properties');
+      } else {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = result['message'] ?? 'Failed to load properties';
+        });
+        debugPrint('❌ Failed to load properties: ${result['message']}');
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+        _errorMessage = 'An error occurred while loading properties. Please try again.';
+      });
+      debugPrint('❌ Error loading properties: $e');
+    }
   }
 
   List<Property> get _filteredProperties {
@@ -232,14 +172,85 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             children: [
               _buildHeader(),
               _buildStatsRow(),
-              _filteredProperties.isEmpty
-                  ? _buildEmptyState()
-                  : _buildPropertiesList(),
+              _isLoading
+                  ? _buildLoadingState()
+                  : _hasError
+                      ? _buildErrorState()
+                      : _filteredProperties.isEmpty
+                          ? _buildEmptyState()
+                          : _buildPropertiesList(),
             ],
           ),
         ),
       ),
       floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      child: Column(
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Loading your properties...',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      child: Column(
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Colors.red.withValues(alpha: 0.6),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Error Loading Properties',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.getTextColor(context),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            _errorMessage.isNotEmpty ? _errorMessage : 'Failed to load properties. Please try again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _loadProperties,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryblue,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text('Retry'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -542,17 +553,11 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                           topLeft: Radius.circular(16),
                           bottomLeft: Radius.circular(16),
                         ),
-                        child: Image.asset(
+                        child: _buildPropertyImage(
                           property.images.first,
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: AppTheme.lightGreyColor,
-                              child: Icon(Icons.image_not_supported, color: AppTheme.getSecondaryTextColor(context)),
-                            );
-                          },
                         ),
                       )
                     else
@@ -667,7 +672,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       Row(
                         children: [
                           Text(
-                            '\$${property.price.toStringAsFixed(0)}',
+                            "UGX ${property.price.toStringAsFixed(0)}",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -848,17 +853,11 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         topLeft: Radius.circular(16),
                         topRight: Radius.circular(16),
                       ),
-                      child: Image.asset(
+                      child: _buildPropertyImage(
                         property.images.first,
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: AppTheme.lightGreyColor,
-                            child: Icon(Icons.image_not_supported, color: AppTheme.getSecondaryTextColor(context)),
-                          );
-                        },
                       ),
                     )
                   else
@@ -1241,8 +1240,55 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  void _navigateToAddProperty() {
-    Navigator.push(
+  Widget _buildPropertyImage(String imagePath, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+    // Check if the image path is a URL (starts with http/https) or a local asset
+    final isNetworkImage = imagePath.startsWith('http://') || imagePath.startsWith('https://');
+    
+    if (isNetworkImage) {
+      return Image.network(
+        imagePath,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: AppTheme.lightGreyColor,
+            child: Icon(Icons.image_not_supported, color: AppTheme.getSecondaryTextColor(context)),
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: AppTheme.lightGreyColor,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                    : null,
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      return Image.asset(
+        imagePath,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: AppTheme.lightGreyColor,
+            child: Icon(Icons.image_not_supported, color: AppTheme.getSecondaryTextColor(context)),
+          );
+        },
+      );
+    }
+  }
+
+  void _navigateToAddProperty() async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => LandlordPropertyUploadScreen(
@@ -1252,6 +1298,11 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         ),
       ),
     );
+    
+    // Refresh properties if upload was successful
+    if (result == true) {
+      _loadProperties();
+    }
   }
 
   void _handlePropertyAction(String action, Property property) {
@@ -1341,15 +1392,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
+                        child: _buildPropertyImage(
                           property.images.first,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: AppTheme.lightGreyColor,
-                              child: Icon(Icons.image_not_supported, color: AppTheme.getSecondaryTextColor(context)),
-                            );
-                          },
                         ),
                       ),
                     ),
@@ -1630,8 +1675,8 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
     );
   }
 
-  void _editProperty(Property property) {
-    Navigator.push(
+  void _editProperty(Property property) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => LandlordPropertyUploadScreen(
@@ -1641,6 +1686,11 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         ),
       ),
     );
+    
+    // Refresh properties if upload was successful
+    if (result == true) {
+      _loadProperties();
+    }
   }
 
   void _duplicateProperty(Property property) {

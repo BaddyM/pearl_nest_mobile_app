@@ -69,7 +69,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             _buildHeader(),
             _buildStatsCards(),
             _buildQuickActions(),
-            _buildRecentActivity(),
+            
           ],
         ),
       ),
@@ -258,27 +258,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             ],
           ),
           SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Revenue',
-                  'UGX12M',
-                  Icons.attach_money,
-                  Colors.green,
-                ),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'Occupancy',
-                  '85%',
-                  Icons.people,
-                  Colors.orange,
-                ),
-              ),
-            ],
-          ),
+        
         ],
       ),
     );
@@ -408,46 +388,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
     );
   }
 
-  Widget _buildRecentActivity() {
-    return Padding(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Recent Activity',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.getTextColor(context),
-            ),
-          ),
-          SizedBox(height: 16),
-          _buildActivityItem(
-            'New booking request',
-            'Modern Apartment in City Center',
-            '2 hours ago',
-            Icons.calendar_today,
-            Colors.blue,
-          ),
-          _buildActivityItem(
-            'Property viewed',
-            'Cozy Airbnb Studio',
-            '5 hours ago',
-            Icons.visibility,
-            Colors.green,
-          ),
-          _buildActivityItem(
-            'Review received',
-            'Spacious Family House - 5 stars',
-            '1 day ago',
-            Icons.star,
-            Colors.amber,
-          ),
-        ],
-      ),
-    );
-  }
+  
 
   Widget _buildActivityItem(String title, String subtitle, String time, IconData icon, Color color) {
     return Container(
