@@ -779,21 +779,21 @@ class _SearchScreenState extends State<SearchScreen> {
     return Column(
       children: [
         _buildResultsCount(),
-        Expanded(
-          child: _filteredProperties.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: EdgeInsets.only(left: 20, right: 20, bottom: 100,),
-                  itemCount: _filteredProperties.length,
-                  itemBuilder: (context, index) {
-                    final property = _filteredProperties[index];
-                    return Container(
+        _filteredProperties.isEmpty
+            ? _buildEmptyState()
+            : ListView.builder(
+                shrinkWrap: true, // Important: allows ListView to size itself
+                physics: NeverScrollableScrollPhysics(), // Disable ListView scrolling since parent ScrollView handles it
+                padding: EdgeInsets.only(left: 20, right: 20, bottom: 100,),
+                itemCount: _filteredProperties.length,
+                itemBuilder: (context, index) {
+                  final property = _filteredProperties[index];
+                  return Container(
                       margin: EdgeInsets.only(bottom: 16),
                       child: _buildPropertyCard(property),
                     );
                   },
                 ),
-        ),
       ],
     );
   }

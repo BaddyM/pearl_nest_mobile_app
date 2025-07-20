@@ -2,8 +2,11 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pearlnest/apis/auth_service.dart';
+import 'package:pearlnest/blocs/auth/auth_bloc.dart';
+import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/utils/image_helper.dart';
@@ -720,14 +723,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
 
       if (result['success'] == true) {
-        // Don't trigger AuthBloc events to avoid navigation issues
-        // The AuthService already updates the stored user data
+        // Trigger AuthBloc to refresh the user state with updated data
+        if (mounted) {
+          context.read<AuthBloc>().add(AuthCheckSessionRequested());
+        }
         
         _showSuccessSnackBar(result['message'] ?? 'Profile updated successfully!');
         
         setState(() {
           _hasChanges = false;
           _isLoading = false;
+          _selectedImage = null; // Clear selected image after successful update
         });
       } else {
         setState(() {
