@@ -2,9 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
-class ContactDeveloperScreen extends StatelessWidget {
+class ContactDeveloperScreen extends StatefulWidget {
   const ContactDeveloperScreen({super.key});
+
+  @override
+  State<ContactDeveloperScreen> createState() => _ContactDeveloperScreenState();
+}
+
+class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
+  PackageInfo? _packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPackageInfo();
+  }
+
+  Future<void> _initPackageInfo() async {
+    final info = await PackageInfo.fromPlatform();
+    setState(() {
+      _packageInfo = info;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,25 +135,25 @@ class ContactDeveloperScreen extends StatelessWidget {
             'Feature Request',
             'info@developwitheffect.com',
             'Suggest new features or improvements',
-            () => _launchEmail('vawzenmaya@gmail.com'),
+            () => _launchEmail('info@developwitheffect.com'),
           ),
           SizedBox(height: 12),
           _buildContactItem(
             context,
             Icons.chat_outlined,
             'WhatsApp Support',
-            '+256 757 919472',
+            '+256 778 632 307',
             'Message us during working days',
-            () => _launchUrl('https://wa.me/256757919472'),
+            () => _launchUrl('https://wa.me/256778632307'),
           ),
           SizedBox(height: 12),
           _buildContactItem(
             context,
             Icons.phone,
             'Phone Support',
-            '+256 757 919472',
+            '+256 700 140 826',
             'Call us during business hours',
-            () => _launchPhone('+256757919472'),
+            () => _launchPhone('+256700140826'),
           ),
         ],
       ),
@@ -231,9 +252,10 @@ class ContactDeveloperScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 12),
-                _buildInfoRow('Version', '1.0.0'),
-                _buildInfoRow('Build', '100'),
-                _buildInfoRow('Last Updated', 'December 2024'),
+                _buildInfoRow('Version', _packageInfo?.version ?? 'Loading...'),
+                _buildInfoRow('Build', _packageInfo?.buildNumber ?? 'Loading...'),
+                _buildInfoRow('App Name', _packageInfo?.appName ?? 'Loading...'),
+                _buildInfoRow('Package Name', _packageInfo?.packageName ?? 'Loading...'),
               ],
             ),
           ),

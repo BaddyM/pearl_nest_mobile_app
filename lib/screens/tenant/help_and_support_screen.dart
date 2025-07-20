@@ -457,13 +457,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           _buildContactInfoItem(
             Icons.phone,
             'Phone Support',
-            '+256787018472',
+            '+256700140826',
             'Available 24/7',
           ),
           _buildContactInfoItem(
             Icons.email,
             'Email Support',
-            'pearlestates@support.com',
+            'pearlnestestates@gmail.com',
             'Response within 24 hours',
           ),
           _buildContactInfoItem(
@@ -562,7 +562,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   }
 
   void _makePhoneCall() async {
-    const phoneNumber = 'tel:+256787018472';
+    const phoneNumber = 'tel:+256700140826';
     try {
       if (await canLaunch(phoneNumber)) {
         await launch(phoneNumber);
@@ -579,7 +579,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   void _sendEmail() async {
     final emailUri = Uri(
       scheme: 'mailto',
-      path: 'pearlestates@support.com',
+      path: 'pearlnestestates@gmail.com',
       query: 'subject=Support Request from ${widget.user.name}&body=Hello PearlNest Support Team,\n\n',
     );
     
@@ -587,7 +587,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       if (await canLaunchUrl(emailUri)) {
         await launchUrl(emailUri);
       } else {
-        await Clipboard.setData(ClipboardData(text: 'pearlestates@support.com'));
+        await Clipboard.setData(ClipboardData(text: 'pearlnestestates@gmail.com'));
         _showSuccessDialog('Email address copied to clipboard');
       }
     } catch (e, stackTrace) {
