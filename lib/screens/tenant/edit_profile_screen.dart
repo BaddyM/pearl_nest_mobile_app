@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -140,18 +141,48 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 child: CircleAvatar(
                   radius: 60,
                   backgroundColor: AppTheme.getCardColor(context),
-                  backgroundImage: _selectedImage != null
-                      ? FileImage(_selectedImage!)
-                      : (widget.user.profileImage != null
-                          ? NetworkImage(widget.user.profileImage!)
-                          : null) as ImageProvider?,
-                  child: _selectedImage == null && widget.user.profileImage == null
-                      ? Icon(
-                          Icons.person,
-                          size: 60,
-                          color: AppTheme.primaryblue,
+                  child: _selectedImage != null
+                      ? ClipOval(
+                          child: Image.file(
+                            _selectedImage!,
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                          ),
                         )
-                      : null,
+                      : (widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                ImageHelper.getFullImageUrl(widget.user.profileImage!),
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                          : null,
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: AppTheme.primaryblue,
+                                  );
+                                },
+                              ),
+                            )
+                          : Icon(
+                              Icons.person,
+                              size: 60,
+                              color: AppTheme.primaryblue,
+                            )),
                 ),
               ),
               Positioned(

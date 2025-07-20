@@ -7,6 +7,7 @@ import 'package:pearlnest/blocs/booking/booking_state.dart';
 import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class LandlordBookingRequestsScreen extends StatefulWidget {
@@ -1095,12 +1096,31 @@ class LandlordProfileScreen extends StatelessWidget {
                     child: CircleAvatar(
                       radius: 40,
                       backgroundColor: AppTheme.lightGreyColor,
-                      backgroundImage: user.profileImage != null
-                          ? NetworkImage(user.profileImage!)
-                          : null,
-                      child: user.profileImage == null
-                          ? Icon(Icons.person, color: AppTheme.primaryblue, size: 40)
-                          : null,
+                      child: user.profileImage != null && user.profileImage!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                ImageHelper.getFullImageUrl(user.profileImage!),
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                          : null,
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(Icons.person, color: AppTheme.primaryblue, size: 40);
+                                },
+                              ),
+                            )
+                          : Icon(Icons.person, color: AppTheme.primaryblue, size: 40),
                     ),
                   ),
                   SizedBox(width: 16),

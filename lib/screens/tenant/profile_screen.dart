@@ -18,6 +18,7 @@ import 'package:pearlnest/screens/tenant/edit_profile_screen.dart';
 import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
 import 'package:pearlnest/screens/tenant/settings_screen.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -118,16 +119,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: CircleAvatar(
               radius: 50,
               backgroundColor: AppTheme.getCardColor(context),
-              backgroundImage: widget.user.profileImage != null
-                  ? NetworkImage(widget.user.profileImage!)
-                  : null,
-              child: widget.user.profileImage == null
-                  ? Icon(
+              child: widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        ImageHelper.getFullImageUrl(widget.user.profileImage!),
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  : null,
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.person,
+                            size: 50,
+                            color: AppTheme.primaryblue,
+                          );
+                        },
+                      ),
+                    )
+                  : Icon(
                       Icons.person,
                       size: 50,
                       color: AppTheme.primaryblue,
-                    )
-                  : null,
+                    ),
             ),
           ),
           SizedBox(height: 16),

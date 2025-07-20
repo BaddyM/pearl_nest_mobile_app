@@ -5,6 +5,7 @@ import 'package:pearlnest/screens/landlord/landlord_property_management_screen.d
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
 import 'package:pearlnest/screens/chat/chat_screen.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class LandlordDashboardScreen extends StatefulWidget {
@@ -142,12 +143,31 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                 child: CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.transparent,
-                  backgroundImage: widget.user.profileImage != null
-                      ? NetworkImage(widget.user.profileImage!)
-                      : null,
-                  child: widget.user.profileImage == null
-                      ? Icon(Icons.business, color: AppTheme.primaryblue, size: 30)
-                      : null,
+                  child: widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            ImageHelper.getFullImageUrl(widget.user.profileImage!),
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(Icons.business, color: AppTheme.primaryblue, size: 30);
+                            },
+                          ),
+                        )
+                      : Icon(Icons.business, color: AppTheme.primaryblue, size: 30),
                 ),
               ),
             ],
