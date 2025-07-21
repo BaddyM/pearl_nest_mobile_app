@@ -102,6 +102,11 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             views: property.views,
             shares: property.shares,
             favourites: property.favourites,
+            neighborhood: property.neighborhood,
+            user: property.user,
+            propertyMap: property.propertyMap,
+            safetyAndSecurity: property.safetyAndSecurity,
+            nearbyPlaces: property.nearbyPlaces,
           );
         }).toList();
 

@@ -56,6 +56,15 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showBackToTop = false;
   int _unreadNotificationCount = 0; // Count of unread notifications
   Timer? _notificationTimer; // Timer for periodic notification refresh
+  
+  // Pagination state
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalProperties = 0;
+  bool _hasNextPage = false;
+  bool _hasPrevPage = false;
+  bool _isLoadingMore = false;
+  final int _pageLimit = 20;
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'All', 'icon': Icons.apps},
@@ -83,6 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  @override
   void initState() {
     super.initState();
     debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
@@ -90,6 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadNotificationCount(); // Load notification count on startup
     _setupNotificationRefresh(); // Setup periodic refresh for notifications
     _scrollController.addListener(() {
+      // Back to top button logic
       if (_scrollController.offset >= 400) {
         if (!_showBackToTop) {
           setState(() {
@@ -101,6 +112,13 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _showBackToTop = false;
           });
+        }
+      }
+      
+      // Infinite scroll logic for pagination
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+        if (_hasNextPage && !_isLoadingMore) {
+          _loadProperties(loadMore: true);
         }
       }
     });
@@ -240,21 +258,40 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadProperties() async {
+  Future<void> _loadProperties({bool loadMore = false}) async {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    
+    if (loadMore) {
+      if (!_hasNextPage || _isLoadingMore) return;
+      setState(() {
+        _isLoadingMore = true;
+      });
+    } else {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+        _currentPage = 1;
+      });
+    }
+    
     try {
+      final page = loadMore ? _currentPage + 1 : 1;
+      
       // Load general properties, featured properties, and pending bookings in parallel
       final [propertiesResult, featuredResult] = await Future.wait([
-        PropertyService.getProperties(),
-        PropertyService.getFeaturedProperties(),
+        PropertyService.getProperties(page: page, limit: _pageLimit),
+        PropertyService.getFeaturedProperties(page: 1, limit: _pageLimit), // Featured always from page 1
       ]);
       
       if (propertiesResult['success'] == true) {
-        final generalProperties = List<Property>.from(propertiesResult['properties'] ?? []);
+        final newProperties = List<Property>.from(propertiesResult['properties'] ?? []);
+        
+        // Update pagination metadata
+        _currentPage = propertiesResult['page'] ?? page;
+        _totalPages = propertiesResult['totalPages'] ?? 1;
+        _totalProperties = propertiesResult['total'] ?? newProperties.length;
+        _hasNextPage = propertiesResult['hasNextPage'] ?? false;
+        _hasPrevPage = propertiesResult['hasPrevPage'] ?? false;
         
         List<Property> featuredProperties = [];
         if (featuredResult['success'] == true) {
@@ -263,20 +300,26 @@ class _HomeScreenState extends State<HomeScreen> {
           debugPrint('🏠 Loaded ${featuredProperties.length} featured properties from dedicated API');
         } else {
           // Fallback to filtering general properties if featured API fails
-          featuredProperties = generalProperties.where((p) => p.isFeatured).toList();
+          featuredProperties = newProperties.where((p) => p.isFeatured).toList();
           debugPrint('🏠 Using ${featuredProperties.length} featured properties from general properties (fallback)');
         }
         
         if (mounted) {
           setState(() {
-            _properties = generalProperties;
-            _featuredProperties = featuredProperties;
-            _categoryProperties = List.from(generalProperties); // Initialize with all properties
+            if (loadMore) {
+              _properties.addAll(newProperties);
+              _categoryProperties.addAll(newProperties);
+            } else {
+              _properties = newProperties;
+              _featuredProperties = featuredProperties;
+              _categoryProperties = List.from(newProperties); // Initialize with all properties
+            }
             _isLoading = false;
+            _isLoadingMore = false;
           });
         }
         
-        debugPrint('🏠 Properties loaded - General: ${generalProperties.length}, Featured: ${featuredProperties.length}');
+        debugPrint('🏠 Properties loaded - General: ${_properties.length}, Featured: ${featuredProperties.length}, Page: $_currentPage/$_totalPages');
         
         // Load pending bookings after properties are loaded
         await _loadPendingBookings();
@@ -1306,8 +1349,32 @@ class _HomeScreenState extends State<HomeScreen> {
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
             padding: EdgeInsets.symmetric(horizontal: 20),
-            itemCount: filteredProperties.length,
+            itemCount: filteredProperties.length + (_isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
+              // Show loading indicator at the end when loading more
+              if (index == filteredProperties.length) {
+                return Container(
+                  padding: EdgeInsets.all(20),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Loading more properties...',
+                          style: TextStyle(
+                            color: AppTheme.getSecondaryTextColor(context),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
               final property = filteredProperties[index];
               return Container(
                 margin: EdgeInsets.only(bottom: 16),
@@ -1315,6 +1382,32 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
+        
+        // Pagination info
+        if (filteredProperties.isNotEmpty && _totalPages > 1) ...[
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Page $_currentPage of $_totalPages',
+                  style: TextStyle(
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  '${filteredProperties.length} of $_totalProperties properties',
+                  style: TextStyle(
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         
         SizedBox(height: 20),
       ],

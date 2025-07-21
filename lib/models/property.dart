@@ -240,7 +240,11 @@ class Property {
       landlordName: json['landlordName'] ?? json['ownerName'] ?? user?['name'] ?? '',
       landlordPhone: json['landlordPhone'] ?? json['ownerPhone'] ?? user?['contact'] ?? '',
       landlordEmail: json['landlordEmail'] ?? json['ownerEmail'] ?? user?['email'] ?? '',
-      status: _parsePropertyStatus(json['status'] ?? 'available'),
+      status: json['status'] != null 
+          ? _parsePropertyStatus(json['status'])
+          : json['availability'] == false 
+              ? PropertyStatus.unavailable
+              : PropertyStatus.available,
       rating: (json['rating'] ?? 0.0).toDouble(),
       reviewCount: json['reviewCount'] ?? 0,
       createdAt: json['createdAt'] != null 
