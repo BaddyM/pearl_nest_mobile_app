@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/screens/common/verify_code_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/apis/auth_service.dart';
+import 'package:pearlnest/network/exceptions/network_exceptions.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -148,18 +150,77 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       setState(() {
         _isLoading = true;
       });
-      await Future.delayed(Duration(seconds: 2));
 
-      setState(() {
-        _isLoading = false;
-      });
-      Navigator.push(
-        // ignore: use_build_context_synchronously
-        context,
-        MaterialPageRoute(
-          builder: (context) => VerifyCodeScreen(email: _emailController.text),
-        ),
-      );
+      try {
+        final response = await AuthService.sendResetPasswordOTP(_emailController.text);
+        
+        if (response['success'] == true) {
+          final otp = response['otp'] as String;
+          
+          // Show success message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(response['message'] ?? 'OTP sent successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            
+            // Navigate to verification screen with the OTP
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VerifyCodeScreen(
+                  email: _emailController.text,
+                  serverOtp: otp,
+                ),
+              ),
+            );
+          }
+        }
+      } on ValidationException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } on TimeoutException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.message),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } on AuthException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('An unexpected error occurred. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 

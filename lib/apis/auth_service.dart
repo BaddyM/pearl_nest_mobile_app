@@ -5,26 +5,7 @@ import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pearlnest/services/notification_service.dart';
-
-// Custom exceptions for better error handling
-class AuthException implements Exception {
-  final String message;
-  final String? code;
-  final int? statusCode;
-
-  AuthException(this.message, {this.code, this.statusCode});
-
-  @override
-  String toString() => 'AuthException: $message';
-}
-
-class NetworkException extends AuthException {
-  NetworkException(super.message) : super(code: 'NETWORK_ERROR');
-}
-
-class ValidationException extends AuthException {
-  ValidationException(super.message) : super(code: 'VALIDATION_ERROR');
-}
+import 'package:pearlnest/network/exceptions/network_exceptions.dart';
 
 class AuthService {
   static const String _userDataKey = 'user_data';
@@ -1282,6 +1263,138 @@ class AuthService {
       debugPrint('FCM token fetch error: $e');
       debugPrint('Stack trace: $stack');
       return null;
+    }
+  }
+
+  /// Send OTP for password reset
+  static Future<Map<String, dynamic>> sendResetPasswordOTP(String email) async {
+    try {
+      // Validate email
+      if (email.trim().isEmpty) {
+        throw ValidationException('Email is required');
+      }
+      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim())) {
+        throw ValidationException('Please enter a valid email address');
+      }
+
+      final requestData = {
+        'email': email.trim(),
+      };
+
+      _logRequest('/user/sendResetPasswordOTP', requestData);
+
+      final response = await ApiClient.patch('/user/sendResetPasswordOTP', requestData);
+      _logResponse('/user/sendResetPasswordOTP', response);
+
+      if (response.statusCode == 200 && response.data != null) {
+        final responseData = response.data;
+        
+        if (responseData['success'] == true) {
+          return {
+            'success': true,
+            'message': responseData['message'] ?? 'OTP sent successfully',
+            'otp': responseData['otp']?['otp']?.toString() ?? '',
+          };
+        } else {
+          throw AuthException(
+            responseData['message'] ?? 'Failed to send OTP',
+            statusCode: response.statusCode,
+          );
+        }
+      } else {
+        throw AuthException(
+          'Failed to send OTP: ${response.statusMessage}',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      _logError('send reset password OTP', e);
+      
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw TimeoutException('Connection timeout. Please check your internet connection.');
+      }
+      
+      if (e.response?.statusCode == 404) {
+        throw AuthException(
+          'Email not found. Please check your email address.',
+          statusCode: 404,
+        );
+      }
+      
+      throw AuthException(
+        e.response?.data?['message'] ?? 'Failed to send OTP',
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      _logError('send reset password OTP', e);
+      if (e is AuthException) {
+        rethrow;
+      }
+      throw AuthException('Unexpected error: $e');
+    }
+  }
+
+  /// Reset password with new password
+  static Future<Map<String, dynamic>> resetPassword(String newPassword) async {
+    try {
+      // Validate password
+      if (newPassword.trim().isEmpty) {
+        throw ValidationException('Password is required');
+      }
+      if (newPassword.length < _passwordMinLength) {
+        throw ValidationException('Password must be at least $_passwordMinLength characters long');
+      }
+
+      final requestData = {
+        'password': newPassword.trim(),
+      };
+
+      _logRequest('/user/resetPassword', requestData);
+
+      final response = await ApiClient.post('/user/resetPassword', requestData);
+      _logResponse('/user/resetPassword', response);
+
+      if (response.statusCode == 200 && response.data != null) {
+        final responseData = response.data;
+        
+        if (responseData['success'] == true) {
+          return {
+            'success': true,
+            'message': responseData['message'] ?? 'Password reset successfully',
+          };
+        } else {
+          throw AuthException(
+            responseData['message'] ?? 'Failed to reset password',
+            statusCode: response.statusCode,
+          );
+        }
+      } else {
+        throw AuthException(
+          'Failed to reset password: ${response.statusMessage}',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      _logError('reset password', e);
+      
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw TimeoutException('Connection timeout. Please check your internet connection.');
+      }
+      
+      throw AuthException(
+        e.response?.data?['message'] ?? 'Failed to reset password',
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      _logError('reset password', e);
+      if (e is AuthException) {
+        rethrow;
+      }
+      throw AuthException('Unexpected error: $e');
     }
   }
 }

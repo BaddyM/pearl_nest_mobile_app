@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pearlnest/screens/common/reset_password_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/apis/auth_service.dart';
 
 class VerifyCodeScreen extends StatefulWidget {
   final String email;
+  final String? serverOtp;
 
-  const VerifyCodeScreen({super.key, required this.email});
+  const VerifyCodeScreen({super.key, required this.email, this.serverOtp});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -19,10 +21,12 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
   bool _isLoading = false;
   int _resendTimer = 60;
   bool _canResend = false;
+  String? _currentServerOtp;
 
   @override
   void initState() {
     super.initState();
+    _currentServerOtp = widget.serverOtp;
     _startResendTimer();
   }
 
@@ -214,38 +218,94 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
       _isLoading = true;
     });
 
-    await Future.delayed(Duration(seconds: 2));
+    try {
+      // Validate OTP against server response
+      if (_currentServerOtp != null && _currentServerOtp!.isNotEmpty) {
+        if (code != _currentServerOtp) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Invalid OTP. Please check and try again.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.all(16),
+              ),
+            );
+          }
+          return;
+        }
+      }
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    Navigator.push(
-      // ignore: use_build_context_synchronously
-      context,
-      MaterialPageRoute(
-        builder: (context) => ResetPasswordScreen(email: widget.email),
-      ),
-    );
+      // OTP is valid, navigate to reset password screen
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResetPasswordScreen(email: widget.email),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _handleResendCode() async {
-    setState(() {
-      _canResend = false;
-      _resendTimer = 60;
-    });
-    
-    _startResendTimer();
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Verification code sent successfully!', style: TextStyle(color: AppTheme.lightGreyColor),),
-        backgroundColor: AppTheme.primaryblue,
-        duration: Duration(milliseconds: 500),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(16),
-      ),
-    );
+    try {
+      setState(() {
+        _canResend = false;
+        _resendTimer = 60;
+      });
+      
+      final response = await AuthService.sendResetPasswordOTP(widget.email);
+      
+      if (response['success'] == true) {
+        _currentServerOtp = response['otp'] as String;
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response['message'] ?? 'OTP sent successfully'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+            ),
+          );
+        }
+      }
+      
+      _startResendTimer();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to resend OTP. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+          ),
+        );
+        
+        setState(() {
+          _canResend = true;
+        });
+      }
+    }
   }
 
   @override
