@@ -6,6 +6,7 @@ import 'package:pearlnest/screens/landlord/landlord_property_upload_screen.dart'
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/auth_service.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 
 class LandlordPropertyManagementScreen extends StatefulWidget {
   final User user;
@@ -1241,50 +1242,35 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   }
 
   Widget _buildPropertyImage(String imagePath, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
-    // Check if the image path is a URL (starts with http/https) or a local asset
-    final isNetworkImage = imagePath.startsWith('http://') || imagePath.startsWith('https://');
+    // Use ImageHelper to get the full URL for both network and relative paths
+    final fullImageUrl = ImageHelper.getFullImageUrl(imagePath);
     
-    if (isNetworkImage) {
-      return Image.network(
-        imagePath,
-        fit: fit,
-        width: width,
-        height: height,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: AppTheme.lightGreyColor,
-            child: Icon(Icons.image_not_supported, color: AppTheme.getSecondaryTextColor(context)),
-          );
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            color: AppTheme.lightGreyColor,
-            child: Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                    : null,
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
-              ),
+    return Image.network(
+      fullImageUrl,
+      fit: fit,
+      width: width,
+      height: height,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: AppTheme.lightGreyColor,
+          child: Icon(Icons.image_not_supported, color: AppTheme.getSecondaryTextColor(context)),
+        );
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          color: AppTheme.lightGreyColor,
+          child: Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  : null,
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
             ),
-          );
-        },
-      );
-    } else {
-      return Image.asset(
-        imagePath,
-        fit: fit,
-        width: width,
-        height: height,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: AppTheme.lightGreyColor,
-            child: Icon(Icons.image_not_supported, color: AppTheme.getSecondaryTextColor(context)),
-          );
-        },
-      );
-    }
+          ),
+        );
+      },
+    );
   }
 
   void _navigateToAddProperty() async {
