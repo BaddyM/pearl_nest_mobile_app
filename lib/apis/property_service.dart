@@ -925,4 +925,254 @@ class PropertyService {
       return _handleError(e, 'property search for "$searchString"');
     }
   }
+
+  // Update property using PATCH API
+  static Future<Map<String, dynamic>> updateProperty({
+    required String propertyId,
+    required String token,
+    String? propertyName,
+    String? propertyType,
+    String? location,
+    double? price,
+    String? amenities,
+    String? safetyAndSecurity,
+    String? description,
+    String? nearbyPlaces,
+    int? numberOfBeds,
+    int? numberOfBathrooms,
+    String? areaMeasurement,
+    String? neighborhood,
+    String? fullAddress,
+    String? propertyMap,
+    String? period,
+    bool? featured,
+    bool? isVerified,
+    String? availability,
+  }) async {
+    try {
+      // Build the request body with only provided fields
+      Map<String, dynamic> requestBody = {};
+      
+      if (propertyName != null) requestBody['propertyName'] = propertyName;
+      if (propertyType != null) requestBody['propertyType'] = propertyType;
+      if (location != null) requestBody['location'] = location;
+      if (price != null) requestBody['price'] = price;
+      if (amenities != null) requestBody['amenities'] = amenities;
+      if (safetyAndSecurity != null) requestBody['safetyAndSecurity'] = safetyAndSecurity;
+      if (description != null) requestBody['description'] = description;
+      if (nearbyPlaces != null) requestBody['nearbyPlaces'] = nearbyPlaces;
+      if (numberOfBeds != null) requestBody['numberOfBeds'] = numberOfBeds;
+      if (numberOfBathrooms != null) requestBody['numberOfBathrooms'] = numberOfBathrooms;
+      if (areaMeasurement != null) requestBody['areaMeasurement'] = areaMeasurement;
+      if (neighborhood != null) requestBody['neighborhood'] = neighborhood;
+      if (fullAddress != null) requestBody['fullAddress'] = fullAddress;
+      if (propertyMap != null) requestBody['propertyMap'] = propertyMap;
+      if (period != null) requestBody['period'] = period;
+      if (featured != null) requestBody['featured'] = featured;
+      if (isVerified != null) requestBody['isVerified'] = isVerified;
+      if (availability != null) requestBody['availability'] = availability;
+
+      _logRequest('/property/update/$propertyId', requestBody, token: token);
+
+      // Set auth token
+      final originalToken = ApiClient.currentAuthToken;
+      if (token.isNotEmpty) {
+        ApiClient.setAuthToken(token);
+      }
+
+      final response = await ApiClient.patch(
+        '/property/update/$propertyId',
+        requestBody,
+      );
+
+      // Restore original token
+      if (token.isNotEmpty) {
+        ApiClient.setAuthToken(originalToken);
+      }
+
+      _logResponse('/property/update/$propertyId', response);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Property updated successfully',
+          'property': response.data['property'],
+        };
+      } else {
+        throw PropertyException(
+          'Update request failed with status: ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      return _handleError(e, 'property update for property ID: $propertyId');
+    }
+  }
+
+  // Delete property using DELETE API
+  static Future<Map<String, dynamic>> deleteProperty({
+    required String propertyId,
+    required String token,
+  }) async {
+    try {
+      _logRequest('/property/delete/$propertyId', null, token: token);
+
+      // Set auth token
+      final originalToken = ApiClient.currentAuthToken;
+      if (token.isNotEmpty) {
+        ApiClient.setAuthToken(token);
+      }
+
+      final response = await ApiClient.delete('/property/delete/$propertyId');
+
+      // Restore original token
+      if (token.isNotEmpty) {
+        ApiClient.setAuthToken(originalToken);
+      }
+
+      _logResponse('/property/delete/$propertyId', response);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Property deleted successfully',
+        };
+      } else {
+        throw PropertyException(
+          'Delete request failed with status: ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      return _handleError(e, 'property deletion for property ID: $propertyId');
+    }
+  }
+
+  // Upload property image using POST API
+  static Future<Map<String, dynamic>> uploadPropertyImage({
+    required String propertyId,
+    required String token,
+    required File imageFile,
+  }) async {
+    try {
+      _logRequest('/property/upload/image/$propertyId', {'image': 'File upload'}, token: token);
+
+      // Create form data for image upload
+      FormData formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split('/').last,
+        ),
+      });
+
+      // Set auth token
+      final originalToken = ApiClient.currentAuthToken;
+      if (token.isNotEmpty) {
+        ApiClient.setAuthToken(token);
+      }
+
+      final response = await ApiClient.postMultipart(
+        '/property/upload/image/$propertyId',
+        formData,
+      );
+
+      // Restore original token
+      if (token.isNotEmpty) {
+        ApiClient.setAuthToken(originalToken);
+      }
+
+      _logResponse('/property/upload/image/$propertyId', response);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Image uploaded successfully',
+          'imageUrl': response.data['imageUrl'],
+        };
+      } else {
+        throw PropertyException(
+          'Image upload failed with status: ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      return _handleError(e, 'image upload for property ID: $propertyId');
+    }
+  }
+
+  // Get property details by ID for editing
+  static Future<Map<String, dynamic>> getPropertyForEdit(String propertyId, {String? token}) async {
+    try {
+      _logRequest('/property/$propertyId', null, token: token);
+
+      // Set auth token
+      final originalToken = ApiClient.currentAuthToken;
+      if (token != null && token.isNotEmpty) {
+        ApiClient.setAuthToken(token);
+      }
+
+      final response = await ApiClient.get('/property/$propertyId');
+
+      // Restore original token
+      if (token != null && token.isNotEmpty) {
+        ApiClient.setAuthToken(originalToken);
+      }
+
+      _logResponse('/property/$propertyId', response);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'property': response.data['property'],
+        };
+      } else {
+        throw PropertyException(
+          'Property fetch failed with status: ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      return _handleError(e, 'property fetch for property ID: $propertyId');
+    }
+  }
+
+  // Delete property image
+  static Future<Map<String, dynamic>> deletePropertyImage(
+    String propertyId,
+    String imageString, {
+    String? token,
+  }) async {
+    try {
+      _logRequest('/property/delete/image/$propertyId/$imageString', null, token: token);
+
+      // Set auth token
+      final originalToken = ApiClient.currentAuthToken;
+      if (token != null && token.isNotEmpty) {
+        ApiClient.setAuthToken(token);
+      }
+
+      final response = await ApiClient.delete('/property/delete/image/$propertyId/$imageString');
+
+      // Restore original token
+      if (token != null && token.isNotEmpty) {
+        ApiClient.setAuthToken(originalToken);
+      }
+
+      _logResponse('/property/delete/image/$propertyId/$imageString', response);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Image deleted successfully',
+        };
+      } else {
+        throw PropertyException(
+          'Image delete failed with status: ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      return _handleError(e, 'image deletion for property ID: $propertyId');
+    }
+  }
 }

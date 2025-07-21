@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:intl/intl.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -9,6 +11,7 @@ class PaymentScreen extends StatefulWidget {
   final String merchantReference;
   final double amount;
   final String propertyTitle;
+  final User user;
 
   const PaymentScreen({
     super.key,
@@ -17,6 +20,7 @@ class PaymentScreen extends StatefulWidget {
     required this.merchantReference,
     required this.amount,
     required this.propertyTitle,
+    required this.user,
   });
 
   @override
@@ -162,12 +166,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _showPaymentCompletionDialog(true);
         break;
       case 'go_to_app_clicked':
-        // Navigate back to home screen with success result
-        Navigator.of(context).pop(true); // Return success to previous screen
+        // Navigate to home screen instead of popping
+        _navigateToHomeScreen(true);
         break;
       default:
         debugPrint('💳 Unknown JavaScript message: $message');
     }
+  }
+
+  void _navigateToHomeScreen(bool paymentSuccess) {
+    // Navigate to home screen and clear the navigation stack
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(user: widget.user),
+      ),
+      (route) => false, // Remove all previous routes
+    );
   }
 
   void _handleDeepLink(String url) {
@@ -295,7 +309,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(isSuccess); // Return to previous screen with result
+                if (isSuccess) {
+                  _navigateToHomeScreen(true); // Navigate to home screen
+                } else {
+                  Navigator.of(context).pop(false); // Return to previous screen with failure result
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isSuccess ? Colors.green : AppTheme.primaryblue,

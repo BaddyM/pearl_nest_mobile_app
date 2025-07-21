@@ -1957,26 +1957,106 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
+              
+              // Show loading indicator
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Row(
                     children: [
-                      Icon(Icons.delete, color: AppTheme.whiteColor),
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
                       SizedBox(width: 8),
-                      Text('Property deleted successfully!', style: TextStyle(color: AppTheme.lightGreyColor),),
+                      Text('Deleting property...', style: TextStyle(color: Colors.white)),
                     ],
                   ),
-                  duration: Duration(milliseconds: 500),
-                  margin: EdgeInsets.all(16),
-                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 30), // Long duration for loading
+                  backgroundColor: AppTheme.primaryblue,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  margin: EdgeInsets.all(16),
                 ),
               );
+
+              try {
+                // Get auth token
+                final token = await AuthService.getCurrentToken();
+                if (token == null || token.isEmpty) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Authentication required. Please log in again.', style: TextStyle(color: Colors.white)),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      margin: EdgeInsets.all(16),
+                    ),
+                  );
+                  return;
+                }
+
+                // Call delete API
+                final result = await PropertyService.deleteProperty(
+                  propertyId: property.id,
+                  token: token,
+                );
+
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                if (result['success'] == true) {
+                  // Refresh the properties list
+                  _loadProperties();
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text('Property deleted successfully!', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                      duration: Duration(milliseconds: 2000),
+                      margin: EdgeInsets.all(16),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result['message'] ?? 'Failed to delete property', style: TextStyle(color: Colors.white)),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      margin: EdgeInsets.all(16),
+                    ),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error deleting property: $e', style: TextStyle(color: Colors.white)),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    margin: EdgeInsets.all(16),
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

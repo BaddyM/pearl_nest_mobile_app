@@ -12,6 +12,8 @@ import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/blocs/property_upload/property_upload_bloc.dart';
 import 'package:pearlnest/blocs/property_upload/property_upload_event.dart';
 import 'package:pearlnest/blocs/property_upload/property_upload_state.dart';
+import 'package:pearlnest/apis/auth_service.dart';
+import 'package:pearlnest/apis/property_service.dart';
 
 class LandlordPropertyUploadScreen extends StatefulWidget {
   final User user;
@@ -50,6 +52,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   DateTime? _availableFrom;
   final List<String> _selectedAmenities = [];
   final List<File> _selectedImages = [];
+  final List<String> _existingImageUrls = []; // For storing existing property images
 
   final List<String> _priceTypes = [
     'per month',
@@ -105,6 +108,140 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     _nearbyPlacesController.dispose();
     _propertyMapController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // If editing an existing property, fetch and populate the form fields
+    if (widget.property != null) {
+      _loadPropertyForEditing();
+    }
+  }
+
+  Future<void> _loadPropertyForEditing() async {
+    try {
+      // Get auth token
+      final token = await AuthService.getCurrentToken();
+      if (token == null || token.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Authentication required. Please log in again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Fetch property details from API
+      final result = await PropertyService.getPropertyForEdit(widget.property!.id, token: token);
+      
+      if (result['success'] == true && result['property'] != null) {
+        _populateFormWithApiData(result['property']);
+      } else {
+        // Fallback to existing property data
+        _populateFormForEditing();
+      }
+    } catch (e) {
+      debugPrint('Error loading property for editing: $e');
+      // Fallback to existing property data
+      _populateFormForEditing();
+    }
+  }
+
+  PropertyType _getPropertyTypeFromString(String typeString) {
+    switch (typeString.toLowerCase()) {
+      case 'house':
+        return PropertyType.house;
+      case 'fullhouse':
+      case 'full house':
+        return PropertyType.fullHouse;
+      case 'studio':
+        return PropertyType.studio;
+      case 'condo':
+        return PropertyType.condo;
+      case 'townhouse':
+        return PropertyType.townhouse;
+      case 'land':
+        return PropertyType.land;
+      case 'room':
+        return PropertyType.room;
+      case 'airbnb':
+        return PropertyType.airbnb;
+      case 'hostel':
+        return PropertyType.hostel;
+      case 'incomplete house':
+      case 'incompletehouse':
+        return PropertyType.incompleteHouse;
+      case 'apartment':
+      default:
+        return PropertyType.apartment;
+    }
+  }
+
+  void _populateFormWithApiData(Map<String, dynamic> propertyData) {
+    setState(() {
+      _titleController.text = propertyData['propertyName'] ?? '';
+      _descriptionController.text = propertyData['description'] ?? '';
+      _priceController.text = propertyData['price']?.toString() ?? '';
+      _locationController.text = propertyData['location'] ?? '';
+      _addressController.text = propertyData['fullAddress'] ?? '';
+      _neighborhoodController.text = propertyData['neighborhood'] ?? '';
+      _areaController.text = propertyData['areaMeasurement']?.toString().replaceAll(' sq meters', '') ?? '';
+      _bedroomsController.text = propertyData['numberOfBeds']?.toString() ?? '';
+      _bathroomsController.text = propertyData['numberOfBathrooms']?.toString() ?? '';
+      _safetySecurityController.text = propertyData['safetyAndSecurity'] ?? '';
+      _nearbyPlacesController.text = propertyData['nearbyPlaces'] ?? '';
+      _propertyMapController.text = propertyData['propertyMap'] ?? '';
+      _selectedPriceType = propertyData['period'] ?? 'per month';
+      
+      // Parse amenities string to list
+      if (propertyData['amenities'] != null && propertyData['amenities'].toString().isNotEmpty) {
+        _selectedAmenities.clear();
+        _selectedAmenities.addAll(propertyData['amenities'].toString().split(', '));
+      }
+      
+      // Set property type
+      String propertyTypeString = propertyData['propertyType'] ?? 'Apartment';
+      _selectedType = _getPropertyTypeFromString(propertyTypeString);
+      
+      // Handle existing images - store URLs for display and deletion
+      if (propertyData['images'] != null) {
+        _existingImageUrls.clear();
+        _existingImageUrls.addAll(List<String>.from(propertyData['images']));
+      }
+    });
+  }
+
+  void _populateFormForEditing() {
+    final property = widget.property!;
+    
+    _titleController.text = property.title;
+    _descriptionController.text = property.description;
+    _priceController.text = property.price.toString();
+    _locationController.text = property.location;
+    _addressController.text = property.address;
+    _areaController.text = property.area.toString();
+    _bedroomsController.text = property.bedrooms.toString();
+    _bathroomsController.text = property.bathrooms.toString();
+    _neighborhoodController.text = property.address; // Assuming neighborhood is part of address
+    _selectedPriceType = property.priceType;
+    
+    // Parse amenities list
+    if (property.amenities.isNotEmpty) {
+      _selectedAmenities.addAll(property.amenities);
+    }
+    
+    // Set property type
+    _selectedType = property.type;
+    
+    // Set availability status based on property status
+    _availabilityStatus = property.availabilityStatus;
+    _availableFrom = property.availableFrom;
+    
+    // Note: Images would need special handling since they're URLs, not local files
+    // For now, we'll leave images empty in edit mode
   }
 
   @override
@@ -215,7 +352,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Add New Property',
+                      widget.property != null ? 'Edit Property' : 'Add New Property',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -224,7 +361,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Fill in the details below',
+                      widget.property != null ? 'Update the details below' : 'Fill in the details below',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.getSecondaryTextColor(context),
@@ -266,7 +403,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     if (_locationController.text.isNotEmpty) completedSections++;
     if (_bedroomsController.text.isNotEmpty) completedSections++;
     if (_selectedAmenities.isNotEmpty) completedSections++;
-    if (_selectedImages.isNotEmpty) completedSections++;
+    if (_selectedImages.isNotEmpty || _existingImageUrls.isNotEmpty) completedSections++;
     if (_descriptionController.text.isNotEmpty) completedSections++;
     if (_neighborhoodController.text.isNotEmpty) completedSections++;
     if (_safetySecurityController.text.isNotEmpty) completedSections++;
@@ -914,11 +1051,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             scrollDirection: Axis.horizontal,
             children: [
               _buildAddPhotoCard(),
+              ..._existingImageUrls.map((imageUrl) => _buildExistingImageCard(imageUrl)),
               ..._selectedImages.map((image) => _buildPhotoCard(image)),
             ],
           ),
         ),
-        if (_selectedImages.isNotEmpty) ...[
+        if (_selectedImages.isNotEmpty || _existingImageUrls.isNotEmpty) ...[
           SizedBox(height: 12),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -931,7 +1069,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                 Icon(Icons.photo_library, color: AppTheme.primaryblue, size: 16),
                 SizedBox(width: 8),
                 Text(
-                  '${_selectedImages.length} photo(s) selected',
+                  '${_selectedImages.length + _existingImageUrls.length} photo(s) selected',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.primaryblue,
@@ -1152,6 +1290,208 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     );
   }
 
+  Widget _buildExistingImageCard(String imageUrl) {
+    return Container(
+      width: 120,
+      height: 120,
+      margin: EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getTextColor(context).withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.network(
+              imageUrl,
+              width: 120,
+              height: 120,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    Icons.broken_image,
+                    color: Colors.grey[600],
+                    size: 40,
+                  ),
+                );
+              },
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () => _deleteExistingImage(imageUrl),
+              child: Container(
+                padding: EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.9),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+          // Badge to indicate this is an existing image
+          Positioned(
+            bottom: 8,
+            left: 8,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Existing',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteExistingImage(String imageUrl) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Image'),
+        content: Text('Are you sure you want to delete this image? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && widget.property != null) {
+      try {
+        // Get auth token
+        final token = await AuthService.getCurrentToken();
+        if (token == null || token.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Authentication required. Please log in again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        // Show loading indicator
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 16),
+                Text('Deleting image...'),
+              ],
+            ),
+            duration: Duration(seconds: 30),
+          ),
+        );
+
+        // Extract image string from URL
+        String imageString = imageUrl.split('/').last.split('?').first;
+        
+        // Call delete API
+        final result = await PropertyService.deletePropertyImage(
+          widget.property!.id,
+          imageString,
+          token: token,
+        );
+
+        // Hide loading indicator
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+        if (result['success'] == true) {
+          setState(() {
+            _existingImageUrls.remove(imageUrl);
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Image deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete image: ${result['message'] ?? 'Unknown error'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        debugPrint('Error deleting image: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting image. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildPhotoCard(File image) {
     return Container(
       width: 120,
@@ -1251,13 +1591,13 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.upload,
+                        widget.property != null ? Icons.save : Icons.upload,
                         color: Colors.white,
                         size: 20,
                       ),
                       SizedBox(width: 8),
                       Text(
-                        'Upload Property',
+                        widget.property != null ? 'Update Property' : 'Upload Property',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -1273,7 +1613,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   }
 
   void _showImageSelectionDialog() {
-    if (_selectedImages.length >= 10) {
+    int totalImages = _selectedImages.length + _existingImageUrls.length;
+    if (totalImages >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Maximum 10 photos allowed', style: TextStyle(color: AppTheme.lightGreyColor),),
@@ -1389,6 +1730,21 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      int totalImages = _selectedImages.length + _existingImageUrls.length;
+      if (totalImages >= 10) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Maximum 10 photos allowed', style: TextStyle(color: Colors.white)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            duration: Duration(milliseconds: 1500),
+            margin: EdgeInsets.all(16),
+          ),
+        );
+        return;
+      }
+
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: 1920,
@@ -1487,7 +1843,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       return;
     }
 
-    if (_selectedImages.isEmpty) {
+    if (_selectedImages.isEmpty && _existingImageUrls.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Please add at least one photo', style: TextStyle(color: Colors.white)),
@@ -1501,10 +1857,11 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       return;
     }
 
-    if (_selectedImages.length > 10) {
+    int totalImages = _selectedImages.length + _existingImageUrls.length;
+    if (totalImages > 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Maximum 10 photos allowed. Please remove ${_selectedImages.length - 10} photo(s)', style: TextStyle(color: Colors.white)),
+          content: Text('Maximum 10 photos allowed. Please remove ${totalImages - 10} photo(s)', style: TextStyle(color: Colors.white)),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           duration: Duration(milliseconds: 2000),
@@ -1538,27 +1895,52 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     // Convert area to string
     String areaMeasurementString = '${_areaController.text} sq meters';
 
-    // Dispatch the upload event to the BLoC
-    context.read<PropertyUploadBloc>().add(
-      PropertyUploadRequested(
-        propertyName: _titleController.text.trim(),
-        propertyType: propertyTypeString,
-        location: _locationController.text.trim(),
-        price: double.parse(_priceController.text),
-        amenities: amenitiesString,
-        safetyAndSecurity: _safetySecurityController.text.trim(),
-        description: _descriptionController.text.trim(),
-        nearbyPlaces: _nearbyPlacesController.text.trim(),
-        numberOfBeds: int.parse(_bedroomsController.text),
-        numberOfBathrooms: int.parse(_bathroomsController.text),
-        areaMeasurement: areaMeasurementString,
-        neighborhood: _neighborhoodController.text.trim(),
-        fullAddress: _addressController.text.trim(),
-        propertyMap: _propertyMapController.text.trim(),
-        period: _selectedPriceType,
-        images: _selectedImages,
-      ),
-    );
+    // Dispatch the appropriate event to the BLoC based on whether we're editing or creating
+    if (widget.property != null) {
+      // Editing existing property
+      context.read<PropertyUploadBloc>().add(
+        PropertyUpdateRequested(
+          propertyId: widget.property!.id,
+          propertyName: _titleController.text.trim(),
+          propertyType: propertyTypeString,
+          location: _locationController.text.trim(),
+          price: double.parse(_priceController.text),
+          amenities: amenitiesString,
+          safetyAndSecurity: _safetySecurityController.text.trim(),
+          description: _descriptionController.text.trim(),
+          nearbyPlaces: _nearbyPlacesController.text.trim(),
+          numberOfBeds: int.parse(_bedroomsController.text),
+          numberOfBathrooms: int.parse(_bathroomsController.text),
+          areaMeasurement: areaMeasurementString,
+          neighborhood: _neighborhoodController.text.trim(),
+          fullAddress: _addressController.text.trim(),
+          propertyMap: _propertyMapController.text.trim(),
+          period: _selectedPriceType,
+        ),
+      );
+    } else {
+      // Creating new property
+      context.read<PropertyUploadBloc>().add(
+        PropertyUploadRequested(
+          propertyName: _titleController.text.trim(),
+          propertyType: propertyTypeString,
+          location: _locationController.text.trim(),
+          price: double.parse(_priceController.text),
+          amenities: amenitiesString,
+          safetyAndSecurity: _safetySecurityController.text.trim(),
+          description: _descriptionController.text.trim(),
+          nearbyPlaces: _nearbyPlacesController.text.trim(),
+          numberOfBeds: int.parse(_bedroomsController.text),
+          numberOfBathrooms: int.parse(_bathroomsController.text),
+          areaMeasurement: areaMeasurementString,
+          neighborhood: _neighborhoodController.text.trim(),
+          fullAddress: _addressController.text.trim(),
+          propertyMap: _propertyMapController.text.trim(),
+          period: _selectedPriceType,
+          images: _selectedImages,
+        ),
+      );
+    }
   }
 
   Widget _buildPropertyMapSection() {

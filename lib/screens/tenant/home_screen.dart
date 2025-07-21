@@ -1829,7 +1829,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Text(
-                      '${_pendingBookings.length} property${_pendingBookings.length > 1 ? 'ies' : ''} waiting for payment',
+                      '${_pendingBookings.length} ${_pendingBookings.length == 1 ? 'property' : 'properties'} waiting for payment',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.getSecondaryTextColor(context),
@@ -2319,6 +2319,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   merchantReference: merchantReference,
                   amount: paymentAmount,
                   propertyTitle: property.title,
+                  user: widget.user,
                 ),
               ),
             );
@@ -2379,6 +2380,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 merchantReference: merchantReference,
                 amount: paymentAmount, // Use the user-specified amount
                 propertyTitle: property.title,
+                user: widget.user,
               ),
             ),
           );

@@ -805,6 +805,7 @@ String _getFullImageUrl(String url) {
                   merchantReference: merchantReference,
                   propertyTitle: widget.property.title,
                   amount: paymentAmount,
+                  user: widget.user,
                 ),
               ),
             );
@@ -870,6 +871,7 @@ String _getFullImageUrl(String url) {
                 merchantReference: merchantReference,
                 propertyTitle: widget.property.title,
                 amount: paymentAmount, // Use the user-specified amount
+                user: widget.user,
               ),
             ),
           );
