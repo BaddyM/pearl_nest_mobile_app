@@ -318,12 +318,15 @@ class NotificationApiService {
         };
       }
     } catch (e) {
+      // Handle 404 and other errors gracefully since this endpoint doesn't exist yet
+      debugPrint('Notification count API not available: $e');
       _logError('getNotificationCount', e);
       return {
         'success': false,
-        'message': 'An unexpected error occurred. Please try again.',
+        'message': 'Notification service temporarily unavailable',
         'unreadCount': 0,
         'totalCount': 0,
+        'statusCode': 404,
       };
     }
   }

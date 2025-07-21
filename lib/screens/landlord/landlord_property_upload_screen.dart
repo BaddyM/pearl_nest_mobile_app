@@ -14,6 +14,7 @@ import 'package:pearlnest/blocs/property_upload/property_upload_event.dart';
 import 'package:pearlnest/blocs/property_upload/property_upload_state.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/apis/property_service.dart';
+import 'package:pearlnest/apis/app_config.dart';
 
 class LandlordPropertyUploadScreen extends StatefulWidget {
   final User user;
@@ -122,9 +123,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
   Future<void> _loadPropertyForEditing() async {
     try {
+      debugPrint('🔄 Loading property for editing: ${widget.property?.id}');
+      
       // Get auth token
       final token = await AuthService.getCurrentToken();
       if (token == null || token.isEmpty) {
+        debugPrint('❌ No auth token available');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Authentication required. Please log in again.'),
@@ -134,17 +138,27 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         return;
       }
 
+      debugPrint('✅ Auth token available, fetching property details...');
+      
       // Fetch property details from API
       final result = await PropertyService.getPropertyForEdit(widget.property!.id, token: token);
       
+      debugPrint('📋 API Result keys: ${result.keys}');
+      debugPrint('📋 API Result success: ${result['success']}');
+      debugPrint('📋 API Result property type: ${result['property']?.runtimeType}');
+      debugPrint('📋 API Result property is null: ${result['property'] == null}');
+      
       if (result['success'] == true && result['property'] != null) {
+        debugPrint('✅ API call successful, populating form with API data...');
         _populateFormWithApiData(result['property']);
       } else {
+        debugPrint('⚠️ API call failed or no data, falling back to existing property data...');
+        debugPrint('⚠️ Success: ${result['success']}, Property: ${result['property']}');
         // Fallback to existing property data
         _populateFormForEditing();
       }
     } catch (e) {
-      debugPrint('Error loading property for editing: $e');
+      debugPrint('❌ Error loading property for editing: $e');
       // Fallback to existing property data
       _populateFormForEditing();
     }
@@ -181,6 +195,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   }
 
   void _populateFormWithApiData(Map<String, dynamic> propertyData) {
+    debugPrint('🏠 Populating form with API data: ${propertyData.keys}');
+    
     setState(() {
       _titleController.text = propertyData['propertyName'] ?? '';
       _descriptionController.text = propertyData['description'] ?? '';
@@ -196,6 +212,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _propertyMapController.text = propertyData['propertyMap'] ?? '';
       _selectedPriceType = propertyData['period'] ?? 'per month';
       
+      debugPrint('📝 Populated propertyMap: ${_propertyMapController.text}');
+      debugPrint('📝 Populated safetyAndSecurity: ${_safetySecurityController.text}');
+      debugPrint('📝 Populated nearbyPlaces: ${_nearbyPlacesController.text}');
+      
       // Parse amenities string to list
       if (propertyData['amenities'] != null && propertyData['amenities'].toString().isNotEmpty) {
         _selectedAmenities.clear();
@@ -207,9 +227,25 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _selectedType = _getPropertyTypeFromString(propertyTypeString);
       
       // Handle existing images - store URLs for display and deletion
-      if (propertyData['images'] != null) {
+      if (propertyData['media'] != null && propertyData['media'].toString().isNotEmpty) {
         _existingImageUrls.clear();
-        _existingImageUrls.addAll(List<String>.from(propertyData['images']));
+        // Split the media string by comma and clean up each path
+        List<String> imagePaths = propertyData['media'].toString()
+            .split(',')
+            .map((path) => path.trim())
+            .where((path) => path.isNotEmpty && path != 'uploads/property/undefined')
+            .map((path) {
+              // Convert relative paths to full URLs using AppConfig
+              if (path.startsWith('./')) {
+                return '${AppConfig.baseUrl}/${path.substring(2)}';
+              } else if (!path.startsWith('http')) {
+                return '${AppConfig.baseUrl}/$path';
+              }
+              return path;
+            })
+            .toList();
+        _existingImageUrls.addAll(imagePaths);
+        debugPrint('📸 Loaded ${imagePaths.length} existing images: $imagePaths');
       }
     });
   }
@@ -217,31 +253,41 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   void _populateFormForEditing() {
     final property = widget.property!;
     
-    _titleController.text = property.title;
-    _descriptionController.text = property.description;
-    _priceController.text = property.price.toString();
-    _locationController.text = property.location;
-    _addressController.text = property.address;
-    _areaController.text = property.area.toString();
-    _bedroomsController.text = property.bedrooms.toString();
-    _bathroomsController.text = property.bathrooms.toString();
-    _neighborhoodController.text = property.address; // Assuming neighborhood is part of address
-    _selectedPriceType = property.priceType;
-    
-    // Parse amenities list
-    if (property.amenities.isNotEmpty) {
-      _selectedAmenities.addAll(property.amenities);
-    }
-    
-    // Set property type
-    _selectedType = property.type;
-    
-    // Set availability status based on property status
-    _availabilityStatus = property.availabilityStatus;
-    _availableFrom = property.availableFrom;
-    
-    // Note: Images would need special handling since they're URLs, not local files
-    // For now, we'll leave images empty in edit mode
+    setState(() {
+      // Basic property information
+      _titleController.text = property.title;
+      _descriptionController.text = property.description;
+      _priceController.text = property.price.toString();
+      _locationController.text = property.location;
+      _addressController.text = property.address;
+      _areaController.text = property.area.toString();
+      _bedroomsController.text = property.bedrooms.toString();
+      _bathroomsController.text = property.bathrooms.toString();
+      
+      // Use the new fields from the Property model
+      _neighborhoodController.text = property.neighborhood ?? property.address; // Fallback to address if neighborhood is null
+      _safetySecurityController.text = property.safetyAndSecurity ?? ''; // Use the field from model
+      _nearbyPlacesController.text = property.nearbyPlaces ?? ''; // Use the field from model
+      _propertyMapController.text = property.propertyMap ?? ''; // Use existing map if available
+      
+      // Property settings
+      _selectedPriceType = property.priceType;
+      _selectedType = property.type;
+      _availabilityStatus = property.availabilityStatus;
+      _availableFrom = property.availableFrom;
+      
+      // Parse amenities list
+      _selectedAmenities.clear();
+      if (property.amenities.isNotEmpty) {
+        _selectedAmenities.addAll(property.amenities);
+      }
+      
+      // Handle existing images - store URLs for display and deletion
+      _existingImageUrls.clear();
+      if (property.images.isNotEmpty) {
+        _existingImageUrls.addAll(property.images);
+      }
+    });
   }
 
   @override
@@ -1291,6 +1337,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   }
 
   Widget _buildExistingImageCard(String imageUrl) {
+    debugPrint('🖼️ Building image card for URL: $imageUrl');
     return Container(
       width: 120,
       height: 120,
@@ -1315,6 +1362,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               height: 120,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
+                debugPrint('❌ Image load error for $imageUrl: $error');
                 return Container(
                   width: 120,
                   height: 120,
@@ -1330,7 +1378,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                 );
               },
               loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
+                if (loadingProgress == null) {
+                  debugPrint('✅ Image loaded successfully: $imageUrl');
+                  return child;
+                }
                 return Container(
                   width: 120,
                   height: 120,

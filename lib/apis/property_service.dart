@@ -1123,7 +1123,7 @@ class PropertyService {
       if (response.statusCode == 200) {
         return {
           'success': true,
-          'property': response.data['property'],
+          'property': response.data['data'], // Changed from 'property' to 'data' to match API response
         };
       } else {
         throw PropertyException(

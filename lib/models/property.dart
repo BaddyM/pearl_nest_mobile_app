@@ -30,6 +30,7 @@ class Property {
   final String priceType;
   final String location;
   final String address;
+  final String? neighborhood; // Optional neighborhood field
   final double latitude;
   final double longitude;
   final List<String> images;
@@ -55,6 +56,8 @@ class Property {
   final List<Map<String, dynamic>> favourites;
   final Map<String, dynamic>? user; // Landlord information
   final String? propertyMap; // Iframe HTML for embedded map
+  final String? safetyAndSecurity; // Optional safety features
+  final String? nearbyPlaces; // Optional nearby places
 
   Property({
     required this.id,
@@ -65,6 +68,7 @@ class Property {
     required this.priceType,
     required this.location,
     required this.address,
+    this.neighborhood,
     required this.latitude,
     required this.longitude,
     required this.images,
@@ -90,6 +94,8 @@ class Property {
     this.favourites = const [],
     this.user,
     this.propertyMap,
+    this.safetyAndSecurity,
+    this.nearbyPlaces,
   });
 
   Property copyWith({
@@ -101,6 +107,7 @@ class Property {
     String? priceType,
     String? location,
     String? address,
+    String? neighborhood,
     double? latitude,
     double? longitude,
     List<String>? images,
@@ -126,6 +133,8 @@ class Property {
     List<Map<String, dynamic>>? favourites,
     Map<String, dynamic>? user,
     String? propertyMap,
+    String? safetyAndSecurity,
+    String? nearbyPlaces,
   }) {
     return Property(
       id: id ?? this.id,
@@ -136,6 +145,7 @@ class Property {
       priceType: priceType ?? this.priceType,
       location: location ?? this.location,
       address: address ?? this.address,
+      neighborhood: neighborhood ?? this.neighborhood,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       images: images ?? this.images,
@@ -161,6 +171,8 @@ class Property {
       favourites: favourites ?? this.favourites,
       user: user ?? this.user,
       propertyMap: propertyMap ?? this.propertyMap,
+      safetyAndSecurity: safetyAndSecurity ?? this.safetyAndSecurity,
+      nearbyPlaces: nearbyPlaces ?? this.nearbyPlaces,
     );
   }
 
@@ -216,6 +228,7 @@ class Property {
       priceType: json['priceType'] ?? json['period'] ?? 'monthly',
       location: json['location'] ?? '',
       address: json['address'] ?? json['fullAddress'] ?? '',
+      neighborhood: json['neighborhood'] as String?,
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
       images: parseStringOrList(images),
@@ -251,6 +264,8 @@ class Property {
       favourites: (json['favourites'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
       user: user,
       propertyMap: json['propertyMap'] as String?,
+      safetyAndSecurity: json['safetyAndSecurity'] as String?,
+      nearbyPlaces: json['nearbyPlaces'] as String?,
     );
   }
 
@@ -320,37 +335,38 @@ class Property {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'title': title,
+      'propertyName': title,
       'description': description,
-      'type': type.toString().split('.').last,
+      'propertyType': propertyTypeString,
       'price': price,
-      'priceType': priceType,
+      'period': priceType,
       'location': location,
-      'address': address,
+      'fullAddress': address,
+      'neighborhood': neighborhood,
       'latitude': latitude,
       'longitude': longitude,
-      'images': images,
-      'amenities': amenities,
-      'bedrooms': bedrooms,
-      'bathrooms': bathrooms,
-      'area': area,
-      'landlordId': landlordId,
-      'landlordName': landlordName,
-      'landlordPhone': landlordPhone,
-      'landlordEmail': landlordEmail,
+      'media': images.join(','),
+      'amenities': amenities.join(', '),
+      'numberOfBeds': bedrooms,
+      'numberOfBathrooms': bathrooms,
+      'areaMeasurement': '$area sq meters',
+      'userId': landlordId,
       'status': status.toString().split('.').last,
       'rating': rating,
       'reviewCount': reviewCount,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'isFeatured': isFeatured,
+      'featured': isFeatured,
       'isVerified': isVerified,
-      'availabilityStatus': availabilityStatus.toString().split('.').last,
+      'availability': availabilityStatus == AvailabilityStatus.availableNow,
       'availableFrom': availableFrom?.toIso8601String(),
       'views': views,
       'shares': shares,
       'favourites': favourites,
       'user': user,
+      'propertyMap': propertyMap,
+      'safetyAndSecurity': safetyAndSecurity,
+      'nearbyPlaces': nearbyPlaces,
     };
   }
 }
