@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/landlord.dart';
@@ -673,7 +674,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       Row(
                         children: [
                           Text(
-                            "UGX ${property.price.toStringAsFixed(0)}",
+                            "UGX ${NumberFormat('#,###').format(property.price.toInt())}",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -1074,7 +1075,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '\$${property.price.toStringAsFixed(0)}',
+                              'UGX ${NumberFormat('#,###').format(property.price.toInt())}',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -1496,7 +1497,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '\$${property.price.toStringAsFixed(0)}',
+                              'UGX ${NumberFormat('#,###').format(property.price.toInt())}',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
