@@ -31,6 +31,7 @@ class Booking {
   final String tenantEmail;
   final String tenantPhone;
   final String propertyTitle;
+  final List<Map<String, dynamic>> payments; // Add payments field
 
   Booking({
     required this.id,
@@ -49,6 +50,7 @@ class Booking {
     required this.tenantEmail,
     required this.tenantPhone,
     required this.propertyTitle,
+    this.payments = const [], // Default empty list
   });
 
   factory Booking.fromApiJson(Map<String, dynamic> json) {
@@ -80,6 +82,7 @@ class Booking {
         case 'PENDING':
           return BookingStatus.pending;
         case 'CONFIRMED':
+        case 'APPROVED':  // Map APPROVED to confirmed status
           return BookingStatus.confirmed;
         case 'CANCELLED':
         case 'REJECTED':  // Map both CANCELLED and REJECTED to cancelled status
@@ -108,6 +111,9 @@ class Booking {
       tenantEmail: user['email']?.toString() ?? 'No email provided',
       tenantPhone: user['contact']?.toString() ?? 'No phone provided',
       propertyTitle: property['propertyName']?.toString() ?? 'Unknown Property',
+      payments: (json['Payments'] as List<dynamic>?)
+          ?.map((p) => p as Map<String, dynamic>)
+          .toList() ?? [],
     );
   }
 
@@ -129,6 +135,7 @@ class Booking {
       tenantEmail: '',
       tenantPhone: '',
       propertyTitle: '',
+      payments: [],
     );
   }
 
@@ -136,4 +143,18 @@ class Booking {
   double? get totalAmount => amount;
   DateTime? get checkInDate => startDate;
   DateTime? get checkOutDate => endDate;
+  
+  // Calculate total payments received
+  double get totalPayments {
+    return payments.fold(0.0, (sum, payment) {
+      final amount = payment['amount'];
+      if (amount is num) {
+        return sum + amount.toDouble();
+      }
+      return sum;
+    });
+  }
+  
+  // Get payment count
+  int get paymentCount => payments.length;
 }

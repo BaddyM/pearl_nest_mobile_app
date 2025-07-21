@@ -11,6 +11,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     on<BookingCreateRequested>(_onBookingCreateRequested);
     on<BookingReset>(_onBookingReset);
     on<FetchBookings>(_onFetchBookings);
+    on<FetchLandlordBookings>(_onFetchLandlordBookings);
     on<BookingStatusUpdateRequested>(_onBookingStatusUpdateRequested);
   }
 
@@ -189,5 +190,28 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     }
 
     return errors;
+  }
+
+  Future<void> _onFetchLandlordBookings(
+    FetchLandlordBookings event,
+    Emitter<BookingState> emit,
+  ) async {
+    emit(const BookingLoading());
+    _logState('FETCH_LANDLORD_BOOKINGS', state);
+
+    try {
+      final bookings = await BookingService.fetchLandlordBookings();
+      
+      emit(BookingLoaded(bookings: bookings));
+      _logState('FETCH_LANDLORD_BOOKINGS_SUCCESS', state);
+      
+      debugPrint('✅ Successfully loaded ${bookings.length} landlord bookings');
+      
+    } catch (e) {
+      emit(BookingError(message: e.toString()));
+      _logState('FETCH_LANDLORD_BOOKINGS_ERROR', state);
+      
+      debugPrint('❌ Failed to fetch landlord bookings: $e');
+    }
   }
 }

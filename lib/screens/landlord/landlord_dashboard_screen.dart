@@ -3,10 +3,13 @@ import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/landlord/landlord_property_management_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
+import 'package:pearlnest/screens/landlord/landlord_property_upload_screen.dart';
 import 'package:pearlnest/screens/chat/chat_screen.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
 import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/apis/property_service.dart';
+import 'package:pearlnest/apis/booking_service.dart';
 
 class LandlordDashboardScreen extends StatefulWidget {
   final User user;
@@ -25,12 +28,113 @@ class LandlordDashboardScreen extends StatefulWidget {
 
 class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
   int _currentIndex = 0;
+  bool _isLoading = true;
+  int _totalProperties = 0;
+  int _totalBookings = 0;
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+
+    try {
+      // Fetch properties and bookings concurrently
+      final results = await Future.wait([
+        PropertyService.getPropertiesByLandlord(widget.user.id),
+        BookingService.fetchLandlordBookings(),
+      ]);
+
+      final properties = results[0];
+      final bookings = results[1];
+
+      // Debug logging
+      debugPrint('🏠 Dashboard - Properties result type: ${properties.runtimeType}');
+      debugPrint('🏠 Dashboard - Properties content: $properties');
+      
+      int propertyCount = 0;
+      if (properties is Map<String, dynamic>) {
+        // The getPropertiesByLandlord method returns {properties: [...]} not {data: [...]}
+        final propertiesList = properties['properties'];
+        debugPrint('🏠 Dashboard - Properties list type: ${propertiesList.runtimeType}');
+        debugPrint('🏠 Dashboard - Properties list: $propertiesList');
+        
+        if (propertiesList is List) {
+          propertyCount = propertiesList.length;
+          debugPrint('🏠 Dashboard - Property count: $propertyCount');
+        }
+      }
+
+      debugPrint('🏠 Dashboard - Bookings result type: ${bookings.runtimeType}');
+      debugPrint('🏠 Dashboard - Bookings count: ${bookings is List ? bookings.length : 0}');
+
+      if (mounted) {
+        setState(() {
+          _totalProperties = propertyCount;
+          _totalBookings = bookings is List ? bookings.length : 0;
+          _isLoading = false;
+        });
+        
+        debugPrint('🏠 Dashboard - Final property count set to: $_totalProperties');
+        debugPrint('🏠 Dashboard - Final booking count set to: $_totalBookings');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load dashboard data: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: _buildBody(),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        selectedItemColor: AppTheme.primaryblue,
+        unselectedItemColor: AppTheme.getSecondaryTextColor(context),
+        backgroundColor: AppTheme.getCardColor(context),
+        elevation: 8,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_work),
+            label: 'Properties',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'Bookings',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat),
+            label: 'Chat',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 
@@ -62,15 +166,19 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
 
   Widget _buildDashboardContent() {
     return SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            _buildStatsCards(),
-            _buildQuickActions(),
-            
-          ],
+      child: RefreshIndicator(
+        onRefresh: _loadDashboardData,
+        child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              _buildStatsCards(),
+              _buildQuickActions(),
+              SizedBox(height: 20), // Add some bottom padding
+            ],
+          ),
         ),
       ),
     );
@@ -236,24 +344,60 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             ),
           ),
           SizedBox(height: 16),
+          
+          // Show error if any
+          if (_error.isNotEmpty)
+            Container(
+              padding: EdgeInsets.all(12),
+              margin: EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _error,
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _loadDashboardData,
+                    child: Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
-                  'Properties',
-                  '${widget.landlord.totalProperties}',
-                  Icons.home_work,
-                  AppTheme.primaryblue,
-                ),
+                child: _isLoading 
+                  ? _buildLoadingStatCard('Properties', Icons.home_work, AppTheme.primaryblue)
+                  : _buildStatCard(
+                      'Properties',
+                      '$_totalProperties',
+                      Icons.home_work,
+                      AppTheme.primaryblue,
+                    ),
               ),
               SizedBox(width: 16),
               Expanded(
-                child: _buildStatCard(
-                  'Bookings',
-                  '${widget.landlord.totalBookings}',
-                  Icons.calendar_today,
-                  Colors.blue,
-                ),
+                child: _isLoading 
+                  ? _buildLoadingStatCard('Bookings', Icons.calendar_today, Colors.blue)
+                  : _buildStatCard(
+                      'Bookings',
+                      '$_totalBookings',
+                      Icons.calendar_today,
+                      Colors.blue,
+                    ),
               ),
             ],
           ),
@@ -310,6 +454,63 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
     );
   }
 
+  Widget _buildLoadingStatCard(String title, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 20,
+            decoration: BoxDecoration(
+              color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuickActions() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -332,10 +533,22 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                   'Add Property',
                   Icons.add_home,
                   AppTheme.primaryblue,
-                  () {
-                    setState(() {
-                      _currentIndex = 1;
-                    });
+                  () async {
+                    // Navigate to property upload screen
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LandlordPropertyUploadScreen(
+                          user: widget.user,
+                          landlord: widget.landlord,
+                        ),
+                      ),
+                    );
+                    
+                    // Refresh dashboard data if property was added
+                    if (result == true) {
+                      _loadDashboardData();
+                    }
                   },
                 ),
               ),
@@ -390,65 +603,6 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
 
   
 
-  Widget _buildActivityItem(String title, String subtitle, String time, IconData icon, Color color) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.blackColor.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.getTextColor(context),
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.getSecondaryTextColor(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            time,
-            style: TextStyle(
-              fontSize: 11,
-              color: AppTheme.getSecondaryTextColor(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class LandlordProfileScreen extends StatelessWidget {

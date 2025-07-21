@@ -44,7 +44,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     super.didChangeDependencies();
     // Only fetch once
     if (_allBookings.isEmpty) {
-      context.read<BookingBloc>().add(FetchBookings());
+      context.read<BookingBloc>().add(const FetchLandlordBookings());
     }
   }
   void _onTabChanged() {

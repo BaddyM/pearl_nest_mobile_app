@@ -30,6 +30,10 @@ class FetchBookings extends BookingEvent {
   const FetchBookings();
 }
 
+class FetchLandlordBookings extends BookingEvent {
+  const FetchLandlordBookings();
+}
+
 class BookingStatusUpdateRequested extends BookingEvent {
   final String bookingId;
   final String status;

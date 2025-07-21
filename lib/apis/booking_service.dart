@@ -260,4 +260,57 @@ class BookingService {
       throw BookingException('Unexpected error: $e');
     }
   }
+
+  /// Fetch booking requests for landlord
+  static Future<List<Booking>> fetchLandlordBookings() async {
+    try {
+      const endpoint = '/booking/landlord/list';
+      _logRequest(endpoint, null);
+
+      final response = await ApiClient.get(endpoint);
+      _logDioResponse(endpoint, response);
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        
+        if (data['success'] == true && data['data'] != null) {
+          final bookingsJson = data['data'] as List;
+          final bookings = bookingsJson
+              .map((json) => Booking.fromApiJson(json as Map<String, dynamic>))
+              .toList();
+          
+          debugPrint('📋 Fetched ${bookings.length} landlord bookings');
+          return bookings;
+        } else {
+          debugPrint('⚠️ No booking data found in response');
+          return [];
+        }
+      } else {
+        throw BookingException(
+          'Failed to fetch landlord bookings: ${response.statusMessage}',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      _logError('fetch landlord bookings', e);
+      
+      if (e.response?.statusCode == 401) {
+        throw BookingException(
+          'Authentication failed. Please login again.',
+          statusCode: 401,
+        );
+      }
+      
+      throw BookingException(
+        e.response?.data?['message'] ?? 'Failed to fetch landlord bookings',
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      _logError('fetch landlord bookings', e);
+      if (e is BookingException) {
+        rethrow;
+      }
+      throw BookingException('Unexpected error: $e');
+    }
+  }
 }
