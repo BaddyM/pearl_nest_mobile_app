@@ -211,7 +211,11 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _safetySecurityController.text = propertyData['safetyAndSecurity'] ?? '';
       _nearbyPlacesController.text = propertyData['nearbyPlaces'] ?? '';
       _propertyMapController.text = propertyData['propertyMap'] ?? '';
-      _selectedPriceType = propertyData['period'] ?? 'per month';
+      debugPrint('🔍 API period: "${propertyData['period']}"');
+      _selectedPriceType = _priceTypes.contains(propertyData['period']) 
+          ? propertyData['period'] 
+          : 'per month';
+      debugPrint('🔍 Selected priceType from API: "$_selectedPriceType"');
       
       debugPrint('📝 Populated propertyMap: ${_propertyMapController.text}');
       debugPrint('📝 Populated safetyAndSecurity: ${_safetySecurityController.text}');
@@ -272,7 +276,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _propertyMapController.text = property.propertyMap ?? ''; // Use existing map if available
       
       // Property settings
-      _selectedPriceType = property.priceType;
+      debugPrint('🔍 API priceType: "${property.priceType}"');
+      debugPrint('🔍 Available priceTypes: $_priceTypes');
+      _selectedPriceType = _priceTypes.contains(property.priceType) 
+          ? property.priceType 
+          : 'per month';
+      debugPrint('🔍 Selected priceType: "$_selectedPriceType"');
       _selectedType = property.type;
       _availabilityStatus = property.availabilityStatus;
       _availableFrom = property.availableFrom;

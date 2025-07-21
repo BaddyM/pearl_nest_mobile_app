@@ -414,7 +414,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   Widget _buildStatsRow() {
     final availableCount = _properties.where((p) => p.status == PropertyStatus.available).length;
     final bookedCount = _properties.where((p) => p.status == PropertyStatus.booked).length;
-    final underReviewCount = _properties.where((p) => !p.isVerified).length;
+    final underReviewCount = _properties.where((p) => p.status == PropertyStatus.pending).length;
     final featuredCount = _properties.where((p) => p.isFeatured).length;
 
     return Container(
@@ -1109,6 +1109,13 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                                 fontSize: 10,
                                 color: AppTheme.getSecondaryTextColor(context),
                                 fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              ' (${property.reviewCount})',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: AppTheme.getSecondaryTextColor(context),
                               ),
                             ),
                           ],
