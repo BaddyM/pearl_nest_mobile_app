@@ -283,7 +283,21 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           : 'per month';
       debugPrint('🔍 Selected priceType: "$_selectedPriceType"');
       _selectedType = property.type;
-      _availabilityStatus = property.availabilityStatus;
+      
+      // Set availability status based on property status and availability data
+      debugPrint('🔍 Property status: ${property.status}');
+      debugPrint('🔍 API availabilityStatus: ${property.availabilityStatus}');
+      
+      if (property.status == PropertyStatus.unavailable) {
+        // If property is unavailable, default to "Available Later"
+        _availabilityStatus = AvailabilityStatus.availableLater;
+        debugPrint('🔍 Property is unavailable, setting to Available Later');
+      } else {
+        // Use the availability status from API
+        _availabilityStatus = property.availabilityStatus;
+        debugPrint('🔍 Using API availability status: $_availabilityStatus');
+      }
+      
       _availableFrom = property.availableFrom;
       
       // Parse amenities list
