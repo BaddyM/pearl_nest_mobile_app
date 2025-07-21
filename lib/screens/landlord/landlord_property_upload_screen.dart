@@ -60,6 +60,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     'per night',
     'per week',
     'per year',
+    'one time',
   ];
 
   final List<String> _availableAmenities = [
