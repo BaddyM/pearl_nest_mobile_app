@@ -45,6 +45,8 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
         fullAddress: event.fullAddress,
         propertyMap: event.propertyMap,
         period: event.period,
+        availability: event.availability,
+        availableFrom: event.availableFrom,
         images: event.images,
       );
 
@@ -131,6 +133,8 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
         fullAddress: event.fullAddress,
         propertyMap: event.propertyMap,
         period: event.period,
+        availability: event.availability,
+        availableFrom: event.availableFrom,
       );
 
       if (result['success'] == true) {

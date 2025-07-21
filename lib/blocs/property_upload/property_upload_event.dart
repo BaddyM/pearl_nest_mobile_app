@@ -25,6 +25,8 @@ class PropertyUploadRequested extends PropertyUploadEvent {
   final String propertyMap;
   final String period;
   final List<File> images;
+  final bool availability; // true for "Available Now", false for "Available Later"
+  final DateTime? availableFrom; // Only needed when availability is false
 
   const PropertyUploadRequested({
     required this.propertyName,
@@ -43,6 +45,8 @@ class PropertyUploadRequested extends PropertyUploadEvent {
     required this.propertyMap,
     required this.period,
     required this.images,
+    required this.availability,
+    this.availableFrom,
   });
 
   @override
@@ -63,6 +67,8 @@ class PropertyUploadRequested extends PropertyUploadEvent {
         propertyMap,
         period,
         images,
+        availability,
+        availableFrom,
       ];
 }
 
@@ -83,6 +89,8 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
   final String fullAddress;
   final String propertyMap;
   final String period;
+  final bool availability; // true for "Available Now", false for "Available Later"
+  final DateTime? availableFrom; // Only needed when availability is false
 
   const PropertyUpdateRequested({
     required this.propertyId,
@@ -101,6 +109,8 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
     required this.fullAddress,
     required this.propertyMap,
     required this.period,
+    required this.availability,
+    this.availableFrom,
   });
 
   @override
@@ -121,6 +131,8 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
         fullAddress,
         propertyMap,
         period,
+        availability,
+        availableFrom,
       ];
 }
 

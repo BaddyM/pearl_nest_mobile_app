@@ -1956,6 +1956,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     // Convert area to string
     String areaMeasurementString = '${_areaController.text} sq meters';
 
+    // Debug availability information
+    bool availabilityBoolean = _availabilityStatus == AvailabilityStatus.availableNow;
+    debugPrint('🏠 Availability Status: $_availabilityStatus');
+    debugPrint('🏠 Availability Boolean: $availabilityBoolean');
+    debugPrint('🏠 Available From: $_availableFrom');
+
     // Dispatch the appropriate event to the BLoC based on whether we're editing or creating
     if (widget.property != null) {
       // Editing existing property
@@ -1977,6 +1983,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           fullAddress: _addressController.text.trim(),
           propertyMap: _propertyMapController.text.trim(),
           period: _selectedPriceType,
+          availability: _availabilityStatus == AvailabilityStatus.availableNow,
+          availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
         ),
       );
     } else {
@@ -1998,6 +2006,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           fullAddress: _addressController.text.trim(),
           propertyMap: _propertyMapController.text.trim(),
           period: _selectedPriceType,
+          availability: _availabilityStatus == AvailabilityStatus.availableNow,
+          availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
           images: _selectedImages,
         ),
       );
