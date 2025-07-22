@@ -134,95 +134,109 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.security,
-                size: 80,
-                color: AppTheme.primaryblue,
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'App Permissions',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextColor(context),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                _permissionMessage,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppTheme.getSecondaryTextColor(context),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              _buildPermissionList(),
-              const SizedBox(height: 32),
-              Row(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - 
+                         MediaQuery.of(context).padding.top - 
+                         MediaQuery.of(context).padding.bottom - 40,
+            ),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _requestPermissions,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryblue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  // Add some top spacing for very small screens
+                  const SizedBox(height: 20),
+                  Icon(
+                    Icons.security,
+                    size: MediaQuery.of(context).size.height < 600 ? 60 : 80,
+                    color: AppTheme.primaryblue,
+                  ),
+                  SizedBox(height: MediaQuery.of(context).size.height < 600 ? 24 : 32),
+                  Text(
+                    'App Permissions',
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.height < 600 ? 20 : 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: MediaQuery.of(context).size.height < 600 ? 12 : 16),
+                  Text(
+                    _permissionMessage,
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.height < 600 ? 14 : 16,
+                      color: AppTheme.getSecondaryTextColor(context),
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: MediaQuery.of(context).size.height < 600 ? 24 : 32),
+                  _buildPermissionList(),
+                  SizedBox(height: MediaQuery.of(context).size.height < 600 ? 24 : 32),
+                  Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _requestPermissions,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryblue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Grant Permissions',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
-                      child: const Text(
-                        'Grant Permissions',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _showPermissionDialog = false;
+                                  _isCheckingPermissions = false;
+                                });
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppTheme.getSecondaryTextColor(context),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text('Skip for Now'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextButton(
+                              onPressed: _openSettings,
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppTheme.primaryblue,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text('Open Settings'),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                    ],
                   ),
+                  // Add some bottom spacing for very small screens
+                  const SizedBox(height: 20),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _showPermissionDialog = false;
-                          _isCheckingPermissions = false;
-                        });
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.getSecondaryTextColor(context),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text('Skip for Now'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextButton(
-                      onPressed: _openSettings,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.primaryblue,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text('Open Settings'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -258,8 +272,10 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
       },
     ];
 
+    final isSmallScreen = MediaQuery.of(context).size.height < 600;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
@@ -270,15 +286,15 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
       child: Column(
         children: permissions.map((permission) {
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 6 : 8),
             child: Row(
               children: [
                 Icon(
                   permission['icon'] as IconData,
                   color: AppTheme.primaryblue,
-                  size: 24,
+                  size: isSmallScreen ? 20 : 24,
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: isSmallScreen ? 12 : 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,18 +302,20 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
                       Text(
                         permission['title'] as String,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: isSmallScreen ? 14 : 16,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.getTextColor(context),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: isSmallScreen ? 2 : 4),
                       Text(
                         permission['description'] as String,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: isSmallScreen ? 12 : 14,
                           color: AppTheme.getSecondaryTextColor(context),
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
