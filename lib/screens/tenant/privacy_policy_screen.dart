@@ -199,7 +199,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader('Privacy Policy'),
-          _buildLastUpdated('Last updated: December 2024'),
+          // _buildLastUpdated('Last updated: December 2024'),
           SizedBox(height: 20),
           
           _buildSection(
@@ -760,10 +760,10 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
             ),
           ),
           SizedBox(height: 16),
-          _buildContactItem(Icons.email_outlined, 'Email', 'pearlestates@support.com'),
-          _buildContactItem(Icons.phone_outlined, 'Phone', '+256787018472'),
+          _buildContactItem(Icons.email_outlined, 'Email', 'pearlestates@gmail.com'),
+          _buildContactItem(Icons.phone_outlined, 'Phone', '+256778632307'),
           _buildContactItem(Icons.location_on_outlined, 'Address', 
-            'DreamWorld Hostel\nNalika Lane\nKikoni, Makerere\nKampala'),
+            'Kampala Uganda'),
           _buildContactItem(Icons.access_time_outlined, 'Support Hours', 
             'Monday - Friday: 9:00 AM - 5:00 PM PST\nWeekends: 10:00 AM - 4:00 PM PST'),
         ],

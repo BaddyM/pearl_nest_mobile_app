@@ -272,12 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _buildSection(
       'About',
       [
-        _buildSettingsItem(
-          Icons.info_outline,
-          'App Version',
-          '1.0.0',
-          null,
-        ),
+        
         _buildSettingsItem(
           Icons.description_outlined,
           'Terms of Service',
@@ -675,7 +670,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       applicationName: 'PearlNest Estates',
       applicationVersion: '1.0.0',
       applicationIcon: Icon(Icons.home, size: 48),
-      applicationLegalese: '© 2024 PearlNest Estates. All rights reserved.',
+      applicationLegalese: '© 2025 PearlNest Estates. All rights reserved.',
     );
   }
 
