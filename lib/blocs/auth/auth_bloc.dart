@@ -280,54 +280,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthInitializing());
     
     try {
-      debugPrint('AuthBloc: Checking session validity');
+      debugPrint('AuthBloc: Checking session validity with fast fallback');
       
-      if (await AuthService.isSessionValid()) {
+      // Use the new fast fallback strategy
+      final sessionResult = await AuthService.validateSessionWithFallback();
+      
+      if (sessionResult['success'] == true) {
+        final user = sessionResult['user'] as User;
+        final source = sessionResult['source'] as String;
         final token = await AuthService.getCurrentToken();
         
         if (token != null) {
-          // First try to get fresh user data from server
-          debugPrint('AuthBloc: Session valid, refreshing user profile...');
-          final freshUser = await AuthService.refreshUserProfile();
+          _currentUser = user;
+          _currentToken = token;
+          ApiClient.setAuthToken(_currentToken);
           
-          if (freshUser != null) {
-            // Use fresh data from server
-            _currentUser = freshUser;
-            _currentToken = token;
-            ApiClient.setAuthToken(_currentToken);
-            
-            debugPrint('AuthBloc: Session valid with fresh data, user: ${_currentUser?.name}');
-            debugPrint('AuthBloc: Fresh profile image: ${_currentUser?.profileImage}');
-            debugPrint(_currentUser!.toString());
-            emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
-          } else {
-            // Fallback to cached user data if server refresh fails
-            debugPrint('AuthBloc: Failed to refresh profile, using cached data...');
-            final cachedUser = await AuthService.getCurrentUser();
-            
-            if (cachedUser != null) {
-              _currentUser = cachedUser;
-              _currentToken = token;
-              ApiClient.setAuthToken(_currentToken);
-              
-              debugPrint('AuthBloc: Session valid with cached data, user: ${_currentUser?.name}');
-              debugPrint(_currentUser!.toString());
-              emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
-            } else {
-              debugPrint('AuthBloc: Session invalid, no user data available');
-              emit(AuthUnauthenticated());
-            }
-          }
+          debugPrint('✅ Session validated from $source, user: ${user.name}');
+          debugPrint('🔄 Profile image: ${user.profileImage}');
+          debugPrint(user.toString());
+          
+          emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
         } else {
-          debugPrint('AuthBloc: Session invalid, missing token');
+          debugPrint('❌ Session validation failed - no token available');
           emit(AuthUnauthenticated());
         }
       } else {
-        debugPrint('AuthBloc: Session invalid');
+        debugPrint('❌ Session validation failed: ${sessionResult['message']}');
         emit(AuthUnauthenticated());
       }
     } catch (e) {
-      debugPrint('AuthBloc: Session check error - $e');
+      debugPrint('❌ Session check error: $e');
       emit(AuthUnauthenticated());
     }
   }
