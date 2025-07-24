@@ -1869,11 +1869,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   SizedBox(height: 10), // Reduced from 12
                   
-                  // Conditional booking/payment button
-                  SizedBox(
-                    width: double.infinity,
-                    child: _buildActionButton(property),
-                  ),
+                 
                 ],
               ),
             ),
@@ -2179,91 +2175,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Build action button based on property booking status
-  Widget _buildActionButton(Property property) {
-    final pendingBooking = _getPendingBookingForProperty(property.id);
-    
-    if (pendingBooking != null) {
-      // Property has pending booking - show payment button
-      return ElevatedButton(
-        onPressed: () => _initiatePayment(property, pendingBooking),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: EdgeInsets.symmetric(vertical: 12),
-          elevation: 0,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.payment,
-              color: AppTheme.whiteColor,
-              size: 16,
-            ),
-            SizedBox(width: 8),
-            Text(
-              'Complete Payment',
-              style: TextStyle(
-                color: AppTheme.whiteColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      // Property has no pending booking - show quick book button
-      return ElevatedButton(
-        onPressed: () async {
-          final bool? bookingCreated = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BookingScreen(
-                property: property,
-                user: widget.user,
-              ),
-            ),
-          );
-          
-          // If booking was created successfully, refresh the data
-          if (bookingCreated == true) {
-            _loadProperties(); // This will also trigger _loadPendingBookings()
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryblue,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: EdgeInsets.symmetric(vertical: 12),
-          elevation: 0,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.calendar_today,
-              color: AppTheme.whiteColor,
-              size: 16,
-            ),
-            SizedBox(width: 8),
-            Text(
-              'Quick Book',
-              style: TextStyle(
-                color: AppTheme.whiteColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
+ 
   // Initiate payment for a pending booking
   Future<void> _initiatePayment(Property property, Booking booking) async {
     // First show dialog to get payment amount
