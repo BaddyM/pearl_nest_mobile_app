@@ -4,19 +4,16 @@
     <!-- Network and Internet permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    
-    <!-- Phone and SMS permissions -->
+
+    <!-- Phone permissions -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    
+
     <!-- Camera and Gallery permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" tools:replace="android:maxSdkVersion" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    
+
     <!-- Location permissions -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -25,48 +22,13 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    
+
     <!-- Firebase Cloud Messaging permissions -->
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    
+
     <!-- Audio permissions for voice messages -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    
-    <!-- Device info permissions -->
-    <uses-permission android:name="android.permission.ACCESS_DEVICE_PROTECTED_STORAGE" />
-    
-    <!-- Camera features -->
-    <uses-feature 
-        android:name="android.hardware.camera"
-        android:required="false" />
-    <uses-feature 
-        android:name="android.hardware.camera.autofocus"
-        android:required="false" />
-    <uses-feature 
-        android:name="android.hardware.camera.front"
-        android:required="false" />
-    
-    <!-- Location features -->
-    <uses-feature 
-        android:name="android.hardware.location"
-        android:required="false" />
-    <uses-feature 
-        android:name="android.hardware.location.gps"
-        android:required="false" />
-    
-    <!-- Audio features -->
-    <uses-feature 
-        android:name="android.hardware.microphone"
-        android:required="false" />
-    
-    <!-- Telephony features -->
-    <uses-feature 
-        android:name="android.hardware.telephony"
-        android:required="false" />
-    
+
     <application
         android:label="PearlNest"
         android:name="${applicationName}"

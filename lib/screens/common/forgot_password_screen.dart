@@ -5,6 +5,7 @@ import 'package:pearlnest/screens/common/verify_code_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/network/exceptions/network_exceptions.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -159,11 +160,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           
           // Show success message
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(response['message'] ?? 'OTP sent successfully'),
-                backgroundColor: Colors.green,
-              ),
+            CustomSnackBar.showSuccess(
+              context,
+              response['message'] ?? 'Verification code sent successfully!',
             );
             
             // Navigate to verification screen with the OTP
@@ -180,38 +179,34 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         }
       } on ValidationException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.message),
-              backgroundColor: Colors.red,
-            ),
+          CustomSnackBar.showError(
+            context,
+            e.message,
+            onRetry: () => _handleSendCode(),
           );
         }
       } on TimeoutException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.message),
-              backgroundColor: Colors.orange,
-            ),
+          CustomSnackBar.showWarning(
+            context,
+            e.message,
+
           );
         }
       } on AuthException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.message),
-              backgroundColor: Colors.red,
-            ),
+          CustomSnackBar.showError(
+            context,
+            e.message,
+
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('An unexpected error occurred. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
+          CustomSnackBar.showError(
+            context,
+            'An unexpected error occurred. Please try again.',
+            onRetry: () => _handleSendCode(),
           );
         }
       } finally {

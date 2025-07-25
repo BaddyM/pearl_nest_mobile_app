@@ -13,6 +13,7 @@ import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/screens/chat/message_bubble.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 
 class IndividualChatScreen extends StatefulWidget {
   final ChatConversation conversation;
@@ -89,11 +90,12 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state is ChatError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.error),
-                backgroundColor: Colors.red,
-              ),
+            CustomSnackBar.showError(
+              context,
+              state.error,
+              onRetry: () {
+
+              },
             );
           }
           // Auto-scroll when new messages arrive
@@ -235,8 +237,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
           ),
         ),
       ),
-    );
-  }
+    );}
 
   Widget _buildPropertyInfo() {
     return Container(
@@ -465,31 +466,15 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                   if (await canLaunchUrl(phoneUri)) {
                     await launchUrl(phoneUri);
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Phone calls are not supported on this device',
-                          style: TextStyle(color: AppTheme.lightGreyColor),
-                        ),
-                        backgroundColor: Colors.red,
-                        duration: Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.all(16),
-                      ),
+                    CustomSnackBar.showError(
+                      context,
+                      'Phone calls are not supported on this device',
                     );
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Failed to make call: ${e.toString()}',
-                        style: TextStyle(color: AppTheme.lightGreyColor),
-                      ),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.all(16),
-                    ),
+                  CustomSnackBar.showError(
+                    context,
+                    'Failed to make call. Please try again.',
                   );
                 }
               },
@@ -728,14 +713,9 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${widget.conversation.landlordName} has been blocked', style: TextStyle(color: AppTheme.lightGreyColor),),
-                    backgroundColor: Colors.red,
-                    duration: Duration(milliseconds: 500),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.all(16),
-                  ),
+                CustomSnackBar.showWarning(
+                  context,
+                  '${widget.conversation.landlordName} has been blocked',
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -788,14 +768,9 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Report submitted. Thank you for your feedback.', style: TextStyle(color: AppTheme.lightGreyColor),),
-                    backgroundColor: AppTheme.primaryblue,
-                    duration: Duration(milliseconds: 500),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.all(16),
-                  ),
+                CustomSnackBar.showSuccess(
+                  context,
+                  'Report submitted. Thank you for your feedback.',
                 );
               },
               style: ElevatedButton.styleFrom(

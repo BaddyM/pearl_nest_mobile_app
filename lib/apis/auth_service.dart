@@ -285,10 +285,11 @@ class AuthService {
       if (password.isEmpty) throw ValidationException('Password is required');
 
       // Get real FCM token
-      final fcmToken = await _getFcmToken();
+      var fcmToken = await _getFcmToken();
       if (fcmToken == null || fcmToken.isEmpty) {
-        throw AuthException('Unable to retrieve device notification token. Please check your network and try again.');
-      }
+      //   throw AuthException('Unable to retrieve device notification token. Please check your network and try again.');
+      //
+        fcmToken = "default";}
 
       // Create request data for login
       final requestData = {
