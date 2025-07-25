@@ -58,7 +58,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             email: result['email'] ?? event.email,
             tempToken: result['tempToken'] ?? '',
             message: result['message'] ?? 'Please verify your login with the OTP code',
-            serverOtp: result['otp']?.toString() ?? '', // Pass the OTP from response
+            serverOtp: result['otp']?.toString() ?? '',
+
           ));
           return;
         }
@@ -393,7 +394,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           email: event.email,
           tempToken: event.tempToken,
           message: result['message'] ?? 'A new OTP has been generated',
-          serverOtp: result['otp']?.toString() ?? '', // Include new OTP if provided
+          serverOtp: result['otp']?.toString() ?? '',
+
         ));
       } else {
         debugPrint('AuthBloc: OTP resend error message - ${result['message']}');

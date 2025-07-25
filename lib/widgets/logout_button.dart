@@ -4,6 +4,7 @@ import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
 
 class LogoutButton extends StatelessWidget {
   final String? customText;
@@ -125,17 +126,10 @@ class LogoutButton extends StatelessWidget {
       
       // Show success message
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Logged out successfully',
-              style: TextStyle(color: AppTheme.whiteColor),
-            ),
-            backgroundColor: AppTheme.primaryblue,
-            duration: Duration(milliseconds: 1500),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
+        CustomSnackBar.showSuccess(
+          context,
+          'Logged out successfully',
+          duration: Duration(milliseconds: 1500),
         );
       }
       
@@ -147,17 +141,11 @@ class LogoutButton extends StatelessWidget {
       debugPrint('Stack trace: $stackTrace');
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Logout failed. Please try again.',
-              style: TextStyle(color: AppTheme.whiteColor),
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(milliseconds: 2000),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
+        CustomSnackBar.showError(
+          context,
+          'Logout failed. Please try again.',
+          duration: Duration(milliseconds: 2000),
+          // Add retry functionality
         );
       }
     }

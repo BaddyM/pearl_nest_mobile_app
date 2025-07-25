@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -286,7 +287,7 @@ String _getFullImageUrl(String url) {
 
   @override
   void dispose() {
-    _bookingBloc.close();
+
     _animationController.dispose();
     _tabController.dispose();
     _pageController.dispose();
@@ -673,15 +674,9 @@ String _getFullImageUrl(String url) {
   // Initiate payment for a pending booking
   Future<void> _initiatePayment() async {
     if (_pendingBookingForProperty == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No pending booking found for this property', style: TextStyle(color: AppTheme.whiteColor)),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+
+       CustomSnackBar.showWarning(context, "No pending booking found for this property.");
+
       return;
     }
 
@@ -3784,170 +3779,172 @@ String _getFullImageUrl(String url) {
   void _showBookingSuccessBottomSheet(Map<String, dynamic> bookingData, String message) {
     showModalBottomSheet(
       context: context,
-      isDismissible: false,
-      enableDrag: false,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+      builder: (context) => SingleChildScrollView(
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppTheme.getCardColor(context),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
           ),
-        ),
-        padding: EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.orange, // Changed from green to orange to indicate pending
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.pending_actions, // Changed from check to pending icon
-                color: AppTheme.whiteColor,
-                size: 30,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Booking Created!', // Changed from "Booking Successful"
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.getTextColor(context),
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Your booking has been created and is pending payment. Complete the payment to secure your reservation.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.getSecondaryTextColor(context),
-              ),
-            ),
-            SizedBox(height: 16),
-            
-            // Add payment reminder container
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.orange.withValues(alpha: 0.3),
-                  width: 1,
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.orange, // Changed from green to orange to indicate pending
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.pending_actions, // Changed from check to pending icon
+                  color: AppTheme.whiteColor,
+                  size: 30,
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.payment,
-                    color: Colors.orange,
-                    size: 20,
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Payment required to complete your booking',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+              SizedBox(height: 16),
+              Text(
+                'Booking Created!', // Changed from "Booking Successful"
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextColor(context),
+                ),
               ),
-            ),
-            SizedBox(height: 16),
-            
-            if (_checkInDate != null && _checkOutDate != null) ...[
+              SizedBox(height: 8),
+              Text(
+                'Your booking has been created and is pending payment. Complete the payment to secure your reservation.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.getSecondaryTextColor(context),
+                ),
+              ),
+              SizedBox(height: 16),
+              
+              // Add payment reminder container
               Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
                 ),
-                child: Column(
+                child: Row(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Check-in',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.getTextColor(context),
-                          ),
-                        ),
-                        Text(
-                          DateFormat('MMM dd, yyyy').format(_checkInDate!),
-                          style: TextStyle(
-                            color: AppTheme.primaryblue,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      Icons.payment,
+                      color: Colors.orange,
+                      size: 20,
                     ),
-                    SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Check-out',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.getTextColor(context),
-                          ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Payment required to complete your booking',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.orange,
+                          fontWeight: FontWeight.w500,
                         ),
-                        Text(
-                          DateFormat('MMM dd, yyyy').format(_checkOutDate!),
-                          style: TextStyle(
-                            color: AppTheme.primaryblue,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
               SizedBox(height: 16),
+              
+              if (_checkInDate != null && _checkOutDate != null) ...[
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Check-in',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.getTextColor(context),
+                            ),
+                          ),
+                          Text(
+                            DateFormat('MMM dd, yyyy').format(_checkInDate!),
+                            style: TextStyle(
+                              color: AppTheme.primaryblue,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Check-out',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.getTextColor(context),
+                            ),
+                          ),
+                          Text(
+                            DateFormat('MMM dd, yyyy').format(_checkOutDate!),
+                            style: TextStyle(
+                              color: AppTheme.primaryblue,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16),
+              ],
+              
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close bottom sheet
+                  setState(() {
+                    _checkInDate = null;
+                    _checkOutDate = null;
+                  });
+                  _bookingBloc.add(BookingReset());
+                  
+                  // Refresh pending bookings to update the UI
+                  _loadPendingBookings();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange, // Changed to orange to indicate next action is payment
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+                child: Text(
+                  'Proceed to Payment', // Changed button text to be more actionable
+                  style: TextStyle(
+                    color: AppTheme.whiteColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
-            
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close bottom sheet
-                setState(() {
-                  _checkInDate = null;
-                  _checkOutDate = null;
-                });
-                _bookingBloc.add(BookingReset());
-                
-                // Refresh pending bookings to update the UI
-                _loadPendingBookings();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange, // Changed to orange to indicate next action is payment
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              ),
-              child: Text(
-                'Proceed to Payment', // Changed button text to be more actionable
-                style: TextStyle(
-                  color: AppTheme.whiteColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ));
   }

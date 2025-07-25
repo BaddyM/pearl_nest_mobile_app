@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // Add this import
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
 import 'package:pearlnest/blocs/auth/auth_bloc.dart';
@@ -22,9 +23,11 @@ import 'package:pearlnest/services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp();
-  
+  // Initialize Firebase with platform-specific options
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   // Initialize notification service
   await NotificationService.initialize();
   

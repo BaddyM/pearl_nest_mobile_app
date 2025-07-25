@@ -3,6 +3,7 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/notification.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/notification_api_service.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
 
 class NotificationScreen extends StatefulWidget {
   final User user;
@@ -185,25 +186,13 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   void _showErrorSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CustomSnackBar.showError(context, message);
     }
   }
 
   void _showSuccessSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppTheme.primaryblue,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CustomSnackBar.showSuccess(context, message);
     }
   }
 
@@ -911,3 +900,4 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 }
+
