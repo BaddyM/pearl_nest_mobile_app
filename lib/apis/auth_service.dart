@@ -827,7 +827,8 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(_tokenKey);
       final lastLogin = prefs.getInt(_lastLoginKey);
-      
+      debugPrint('🔍 Checking session validity...: last login: $lastLogin');
+
       if (token == null || lastLogin == null) return false;
       
       // Check if token is expired
@@ -836,15 +837,173 @@ class AuthService {
       // Check if session is older than configured max days
       final sessionAge = DateTime.now().millisecondsSinceEpoch - lastLogin;
       final maxSessionAge = _maxSessionDays * 24 * 60 * 60 * 1000; // days in milliseconds
-      
+      debugPrint('🔍 Session age: $sessionAge ms, Max session age: $maxSessionAge ms');
       return sessionAge < maxSessionAge;
     } catch (e) {
       return false;
     }
   }
 
-  // Refresh user profile data from server
-  static Future<User?> refreshUserProfile() async {
+  // Fast session validation that checks cached data first
+  static Future<bool> isSessionValidQuick() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(_tokenKey);
+      final lastLogin = prefs.getInt(_lastLoginKey);
+      final userDataJson = prefs.getString(_userDataKey);
+      
+      debugPrint('🚀 Quick session check - Token exists: ${token != null}, User data exists: ${userDataJson != null}');
+
+      // Must have token, last login, and cached user data for quick validation
+      if (token == null || lastLogin == null || userDataJson == null) {
+        debugPrint('❌ Quick session check failed - missing required data');
+        return false;
+      }
+      
+      // Check if token is expired locally
+      if (await isTokenExpired()) {
+        debugPrint('❌ Quick session check failed - token expired');
+        return false;
+      }
+      
+      // Check if session is older than configured max days
+      final sessionAge = DateTime.now().millisecondsSinceEpoch - lastLogin;
+      final maxSessionAge = _maxSessionDays * 24 * 60 * 60 * 1000;
+      
+      if (sessionAge >= maxSessionAge) {
+        debugPrint('❌ Quick session check failed - session too old');
+        return false;
+      }
+      
+      debugPrint('✅ Quick session check passed - using cached data');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Quick session check error: $e');
+      return false;
+    }
+  }
+
+  // Enhanced method that tries quick validation first, then fallback
+  static Future<Map<String, dynamic>> validateSessionWithFallback() async {
+    try {
+      // Step 1: Quick validation using cached data
+      final quickValidation = await isSessionValidQuick();
+      
+      if (quickValidation) {
+        // Use cached user data immediately
+        final cachedUser = await getCurrentUser();
+        if (cachedUser != null) {
+          debugPrint('✅ Using cached user data for fast login');
+          
+          // Start background refresh (fire and forget)
+          _backgroundRefreshProfile();
+          
+          return {
+            'success': true,
+            'user': cachedUser,
+            'source': 'cached',
+            'message': 'Session valid with cached data',
+          };
+        }
+      }
+      
+      // Step 2: Full validation with server refresh (short timeout)
+      debugPrint('🔄 Attempting server validation with short timeout...');
+      final serverUser = await refreshUserProfile(timeoutSeconds: 30);
+      
+      if (serverUser != null) {
+        return {
+          'success': true,
+          'user': serverUser,
+          'source': 'server',
+          'message': 'Session valid with fresh server data',
+        };
+      }
+      
+      // Step 3: Final fallback to cached data if server fails
+      if (await isSessionValid()) {
+        final fallbackUser = await getCurrentUser();
+        if (fallbackUser != null) {
+          debugPrint('⚠️ Server refresh failed, using cached data as fallback');
+          
+          return {
+            'success': true,
+            'user': fallbackUser,
+            'source': 'fallback',
+            'message': 'Session valid with cached data (server unavailable)',
+          };
+        }
+      }
+      
+      // Step 4: Session is invalid
+      debugPrint('❌ Session validation failed completely');
+      return {
+        'success': false,
+        'message': 'Session expired or invalid',
+      };
+      
+    } catch (e) {
+      debugPrint('❌ Session validation error: $e');
+      
+      // Last resort: try cached data
+      if (await isSessionValid()) {
+        final emergencyUser = await getCurrentUser();
+        if (emergencyUser != null) {
+          return {
+            'success': true,
+            'user': emergencyUser,
+            'source': 'emergency',
+            'message': 'Session valid with cached data (error recovery)',
+          };
+        }
+      }
+      
+      return {
+        'success': false,
+        'message': 'Session validation failed: $e',
+      };
+    }
+  }
+
+  // Background profile refresh that doesn't block UI
+  static void _backgroundRefreshProfile() {
+    Future.delayed(Duration.zero, () async {
+      try {
+        debugPrint('🔄 Starting background profile refresh...');
+        final refreshedUser = await refreshUserProfile(timeoutSeconds: 10);
+        if (refreshedUser != null) {
+          debugPrint('✅ Background profile refresh completed');
+        } else {
+          debugPrint('⚠️ Background profile refresh failed');
+        }
+      } catch (e) {
+        debugPrint('❌ Background profile refresh error: $e');
+      }
+    });
+  }
+
+  // Check if cached data is fresh (less than 1 hour old)
+  static Future<bool> isCachedDataFresh({int maxAgeMinutes = 60}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastLogin = prefs.getInt(_lastLoginKey);
+      
+      if (lastLogin == null) return false;
+      
+      final dataAge = DateTime.now().millisecondsSinceEpoch - lastLogin;
+      final maxAge = maxAgeMinutes * 60 * 1000; // minutes in milliseconds
+      
+      final isFresh = dataAge < maxAge;
+      debugPrint('🕐 Cached data age: ${dataAge}ms, Max age: ${maxAge}ms, Fresh: $isFresh');
+      
+      return isFresh;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Refresh user profile data from server with timeout and fallback
+  static Future<User?> refreshUserProfile({int timeoutSeconds = 5}) async {
     try {
       final token = await getCurrentToken();
       if (token == null) {
@@ -852,12 +1011,15 @@ class AuthService {
         return null;
       }
 
-      debugPrint('🔄 Refreshing user profile from server...');
+      debugPrint('🔄 Refreshing user profile from server with ${timeoutSeconds}s timeout...');
       
       // Set the token for the request
       ApiClient.setAuthToken(token);
       
-      final response = await ApiClient.get('/user/userProfile/fetch');
+      // Create a timeout completer for fast fallback
+      final response = await ApiClient.get('/user/userProfile/fetch')
+          .timeout(Duration(seconds: timeoutSeconds));
+      
       _logResponse('/user/userProfile/fetch', response);
       
       if (response.statusCode == 200) {
