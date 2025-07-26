@@ -7,6 +7,7 @@ import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
+import 'package:pearlnest/apis/notification_api_service.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
@@ -96,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
     _loadProperties();
+    // _loadNotificationCount(); // Load notification count on startup
     _setupNotificationRefresh(); // Setup periodic refresh for notifications
     _scrollController.addListener(() {
       // Back to top button logic
@@ -222,8 +224,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       
     } catch (e) {
-      debugPrint('❌ Error toggling favorite: $e');
-      
+      //debugPrint('❌ Error toggling favorite: $e');
+
       // Revert the optimistic update on error
       final wasLiked = _isPropertyFavorited(property);
       if (mounted) {
@@ -347,11 +349,29 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Load notification count to show badge on notification bell
+  // Future<void> _loadNotificationCount() async {
+  //   try {
+  //     final result = await NotificationApiService.getNotificationCount();
+  //     if (result['success'] == true && mounted) {
+  //       setState(() {
+  //         _unreadNotificationCount = result['unreadCount'] ?? 0;
+  //       });
+  //       //debugPrint('🔔 Notification count loaded: $_unreadNotificationCount unread');
+  //     }
+  //   } catch (e) {
+  //     //debugPrint('❌ Error loading notification count: $e');
+  //     // Silently fail - not critical for app functionality
+  //   }
+  // }
 
   /// Setup periodic refresh for notification count
   void _setupNotificationRefresh() {
     // Refresh notification count every 2 minutes
     _notificationTimer = Timer.periodic(Duration(minutes: 2), (timer) {
+      if (mounted) {
+        // _loadNotificationCount();
+      }
     });
   }
 
@@ -721,6 +741,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             builder: (context) => NotificationScreen(user: widget.user),
                           ),
                         );
+                        // Refresh notification count when returning from notification screen
+                        // _loadNotificationCount();
 
                       },
                       icon: Icon(
@@ -1643,7 +1665,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-
                 if (property.isVerified)
                   Positioned(
                     bottom: 16,
@@ -1670,7 +1691,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
               ],
             ),
-
             Padding(
               padding: EdgeInsets.all(16), // Reduced from 20 to prevent overflow
               child: Column(
@@ -1849,10 +1869,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(height: 10), // Reduced from 12
                   
                   // Conditional booking/payment button
-                  SizedBox(
-                    width: double.infinity,
-                    child: _buildActionButton(property),
-                  ),
+
                 ],
               ),
             ),
@@ -2157,91 +2174,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Build action button based on property booking status
-  Widget _buildActionButton(Property property) {
-    final pendingBooking = _getPendingBookingForProperty(property.id);
-    
-    if (pendingBooking != null) {
-      // Property has pending booking - show payment button
-      return ElevatedButton(
-        onPressed: () => _initiatePayment(property, pendingBooking),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: EdgeInsets.symmetric(vertical: 12),
-          elevation: 0,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.payment,
-              color: AppTheme.whiteColor,
-              size: 16,
-            ),
-            SizedBox(width: 8),
-            Text(
-              'Complete Payment',
-              style: TextStyle(
-                color: AppTheme.whiteColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      // Property has no pending booking - show quick book button
-      return ElevatedButton(
-        onPressed: () async {
-          final bool? bookingCreated = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BookingScreen(
-                property: property,
-                user: widget.user,
-              ),
-            ),
-          );
-          
-          // If booking was created successfully, refresh the data
-          if (bookingCreated == true) {
-            _loadProperties(); // This will also trigger _loadPendingBookings()
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryblue,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: EdgeInsets.symmetric(vertical: 12),
-          elevation: 0,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.calendar_today,
-              color: AppTheme.whiteColor,
-              size: 16,
-            ),
-            SizedBox(width: 8),
-            Text(
-              'Quick Book',
-              style: TextStyle(
-                color: AppTheme.whiteColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-  }
 
   // Initiate payment for a pending booking
   Future<void> _initiatePayment(Property property, Booking booking) async {
@@ -2293,16 +2225,16 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
 
-      debugPrint('💳 Initiating payment for booking: ${booking.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
-      
+      //debugPrint('💳 Initiating payment for booking: ${booking.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
+
       // Debug user ID to identify the issue
-      debugPrint('🔍 User ID validation:');
-      debugPrint('   - widget.user.id: "${widget.user.id}"');
-      debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
-      debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
-      debugPrint('   - widget.user.name: "${widget.user.name}"');
-      debugPrint('   - widget.user.email: "${widget.user.email}"');
-      
+      //debugPrint('🔍 User ID validation:');
+      //debugPrint('   - widget.user.id: "${widget.user.id}"');
+      //debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
+      //debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
+      //debugPrint('   - widget.user.name: "${widget.user.name}"');
+      //debugPrint('   - widget.user.email: "${widget.user.email}"');
+
       // Validate user ID before making payment request
       if (widget.user.id.isEmpty) {
         // Close loading dialog

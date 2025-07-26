@@ -7,6 +7,7 @@ import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/screens/common/register_screen.dart';
 import 'package:pearlnest/screens/common/otp_verification_screen.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -28,21 +29,18 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Welcome, ${state.user.name}!',
-                style: TextStyle(color: AppTheme.whiteColor),
-              ),
-              backgroundColor: AppTheme.primaryblue,
-              duration: Duration(milliseconds: 1500),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+          CustomSnackBar.showSuccess(
+            context,
+            'Welcome back, ${state.user.name}!',
+            duration: Duration(milliseconds: 1500),
           );
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen(user: state.user,)),
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(
+                user: state.user,
+              ),
+            ),
           );
         } else if (state is AuthOtpRequired) {
           Navigator.push(
@@ -53,28 +51,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 tempToken: state.tempToken,
                 serverOtp: state.serverOtp,
                 message: state.message,
+                role: state.role,
               ),
             ),
           );
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: TextStyle(color: AppTheme.whiteColor),
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(milliseconds: 2000),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+          CustomSnackBar.showError(
+            context,
+            state.message,
+            duration: Duration(milliseconds: 2000),
+            onRetry: () => _handleLogin(), // Add retry functionality
           );
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           final isLoading = state is AuthLoading;
-          
+
           return Scaffold(
             backgroundColor: AppTheme.getBackgroundColor(context),
             body: SafeArea(
@@ -83,29 +76,28 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Image.asset(
-                        "assets/icon.png",
-                        height: 150,
-                        width: 150,
-                      )
-                    ),
+                        padding: EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Image.asset(
+                          "assets/icon.png",
+                          height: 150,
+                          width: 150,
+                        )),
                     Text(
                       'Welcome Back',
                       style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        color: AppTheme.getTextColor(context),
-                      ),
+                            color: AppTheme.getTextColor(context),
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 8),
                     Text(
                       'Sign in to find your dream property',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
+                            color: AppTheme.getSecondaryTextColor(context),
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 20),
@@ -309,11 +301,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
-        AuthLoginRequested(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        ),
-      );
+            AuthLoginRequested(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            ),
+          );
     }
   }
 

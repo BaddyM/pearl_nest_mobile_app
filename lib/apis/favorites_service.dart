@@ -19,26 +19,26 @@ class FavoritesService {
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data) {
     if (kDebugMode) {
-      debugPrint('⭐ FAVORITES REQUEST: $endpoint');
+      ///debugPrint('⭐ FAVORITES REQUEST: $endpoint');
       if (data != null) {
-        debugPrint('⭐ Request data: $data');
+        ///debugPrint('⭐ Request data: $data');
       }
     }
   }
 
   static void _logDioResponse(String endpoint, Response response) {
     if (kDebugMode) {
-      debugPrint('📝 FAVORITES RESPONSE [$endpoint]: Status ${response.statusCode}');
-      debugPrint('📝 Response Body: ${response.data}');
+      ///debugPrint('📝 FAVORITES RESPONSE [$endpoint]: Status ${response.statusCode}');
+      ///debugPrint('📝 Response Body: ${response.data}');
     }
   }
 
   static void _logError(String operation, dynamic error) {
     if (kDebugMode) {
-      debugPrint('❌ FAVORITES ERROR [$operation]: $error');
+      ///debugPrint('❌ FAVORITES ERROR [$operation]: $error');
       if (error is DioException) {
-        debugPrint('❌ Response status: ${error.response?.statusCode}');
-        debugPrint('❌ Response data: ${error.response?.data}');
+        ///debugPrint('❌ Response status: ${error.response?.statusCode}');
+        ///debugPrint('❌ Response data: ${error.response?.data}');
       }
     }
   }
@@ -47,26 +47,24 @@ class FavoritesService {
   static Future<List<Property>> fetchFavorites() async {
     try {
       _logRequest('/favourite/list', null);
-      
+
       final response = await ApiClient.get('/favourite/list');
-      
+
       _logDioResponse('/favourite/list', response);
-      
+
       if (response.statusCode == 200) {
         final data = response.data;
         if (data['success'] == true && data['data'] != null) {
-          final favorites = (data['data'] as List)
-              .map((favoriteItem) {
-                // Extract the property object from each favorite item
-                final propertyData = favoriteItem['property'];
-                return Property.fromJson(propertyData);
-              })
-              .toList();
-          
-          debugPrint('⭐ Successfully fetched ${favorites.length} favorite properties');
+          final favorites = (data['data'] as List).map((favoriteItem) {
+            // Extract the property object from each favorite item
+            final propertyData = favoriteItem['property'];
+            return Property.fromJson(propertyData);
+          }).toList();
+
+          ///debugPrint('⭐ Successfully fetched ${favorites.length} favorite properties');
           return favorites;
         } else {
-          debugPrint('⭐ API returned success: false or no data');
+          ///debugPrint('⭐ API returned success: false or no data');
           return [];
         }
       } else if (response.statusCode == 401) {
@@ -81,16 +79,16 @@ class FavoritesService {
       }
     } on DioException catch (e) {
       _logError('fetch favorites', e);
-      
+
       if (e.response?.statusCode == 400) {
         final errorMessage = e.response?.data?['message'] ?? 'Bad request';
         throw FavoritesException(errorMessage, statusCode: 400);
       }
-      
+
       if (e.response?.statusCode == 401) {
         throw FavoritesException('Authentication required', statusCode: 401);
       }
-      
+
       if (e.response?.statusCode == 403) {
         throw FavoritesException('Not authorized to fetch favorites', statusCode: 403);
       }
@@ -98,7 +96,7 @@ class FavoritesService {
       if (e.response?.statusCode == 404) {
         throw FavoritesException('Favorites not found', statusCode: 404);
       }
-      
+
       throw FavoritesException(
         e.response?.data?['message'] ?? 'Failed to fetch favorites',
         statusCode: e.response?.statusCode,
@@ -122,7 +120,7 @@ class FavoritesService {
       _logRequest('/favourite/add', requestData);
 
       final response = await ApiClient.post('/favourite/add', requestData);
-      
+
       _logDioResponse('/favourite/add', response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -139,20 +137,20 @@ class FavoritesService {
       }
     } on DioException catch (e) {
       _logError('add to favorites', e);
-      
+
       if (e.response?.statusCode == 400) {
         final errorMessage = e.response?.data?['message'] ?? 'Property already in favorites or invalid request';
         throw FavoritesException(errorMessage, statusCode: 400);
       }
-      
+
       if (e.response?.statusCode == 401) {
         throw FavoritesException('Authentication required', statusCode: 401);
       }
-      
+
       if (e.response?.statusCode == 404) {
         throw FavoritesException('Property not found', statusCode: 404);
       }
-      
+
       throw FavoritesException(
         e.response?.data?['message'] ?? 'Failed to add to favorites',
         statusCode: e.response?.statusCode,
@@ -172,7 +170,7 @@ class FavoritesService {
       _logRequest('/favourite/remove/$propertyId', null);
 
       final response = await ApiClient.delete('/favourite/remove/$propertyId');
-      
+
       _logDioResponse('/favourite/remove/$propertyId', response);
 
       if (response.statusCode == 200) {
@@ -189,20 +187,20 @@ class FavoritesService {
       }
     } on DioException catch (e) {
       _logError('remove from favorites', e);
-      
+
       if (e.response?.statusCode == 400) {
         final errorMessage = e.response?.data?['message'] ?? 'Property not in favorites or invalid request';
         throw FavoritesException(errorMessage, statusCode: 400);
       }
-      
+
       if (e.response?.statusCode == 401) {
         throw FavoritesException('Authentication required', statusCode: 401);
       }
-      
+
       if (e.response?.statusCode == 404) {
         throw FavoritesException('Property not found in favorites', statusCode: 404);
       }
-      
+
       throw FavoritesException(
         e.response?.data?['message'] ?? 'Failed to remove from favorites',
         statusCode: e.response?.statusCode,
@@ -222,7 +220,7 @@ class FavoritesService {
       _logRequest('/favourite/toggle/$propertyId', null);
 
       final response = await ApiClient.patch('/favourite/toggle/$propertyId', {});
-      
+
       _logDioResponse('/favourite/toggle/$propertyId', response);
 
       if (response.statusCode == 200) {
@@ -241,20 +239,20 @@ class FavoritesService {
       }
     } on DioException catch (e) {
       _logError('toggle favorite', e);
-      
+
       if (e.response?.statusCode == 400) {
         final errorMessage = e.response?.data?['message'] ?? 'Invalid request';
         throw FavoritesException(errorMessage, statusCode: 400);
       }
-      
+
       if (e.response?.statusCode == 401) {
         throw FavoritesException('Authentication required', statusCode: 401);
       }
-      
+
       if (e.response?.statusCode == 404) {
         throw FavoritesException('Property not found', statusCode: 404);
       }
-      
+
       throw FavoritesException(
         e.response?.data?['message'] ?? 'Failed to toggle favorite',
         statusCode: e.response?.statusCode,

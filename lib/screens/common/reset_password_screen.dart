@@ -34,40 +34,40 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           child: Column(
             children: [
               Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Image.asset(
-                  "assets/icon.png",
-                  height: 150,
-                  width: 150,
-                )
-              ),
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Image.asset(
+                    "assets/icon.png",
+                    height: 150,
+                    width: 150,
+                  )),
               Text(
                 'Create New Password',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppTheme.getTextColor(context),
-                ),
+                      color: AppTheme.getTextColor(context),
+                    ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 12),
               Text(
                 'Your new password must be different from your previous password.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.getSecondaryTextColor(context),
-                ),
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 32),
-
               Form(
                 key: _formKey,
                 child: Column(
                   children: [
                     TextFormField(
                       controller: _passwordController,
-                      style: TextStyle(color: AppTheme.getTextColor(context),),
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(context),
+                      ),
                       decoration: InputDecoration(
                         labelText: 'New Password',
                         labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
@@ -109,12 +109,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       },
                     ),
                     SizedBox(height: 16),
-
                     TextFormField(
-                      controller: _confirmPasswordController,                      
-                      style: TextStyle(color: AppTheme.getTextColor(context),),
+                      controller: _confirmPasswordController,
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(context),
+                      ),
                       decoration: InputDecoration(
-                        labelText: 'Confirm New Password',                        
+                        labelText: 'Confirm New Password',
                         labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                         prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primaryblue),
                         suffixIcon: IconButton(
@@ -151,7 +152,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       },
                     ),
                     SizedBox(height: 20),
-
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.all(16),
@@ -179,7 +179,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       ),
                     ),
                     SizedBox(height: 32),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -250,8 +249,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       });
 
       try {
-        final response = await AuthService.resetPassword(_passwordController.text);
-        
+        final response = await AuthService.resetPassword(_passwordController.text,);
+
         if (response['success'] == true) {
           if (mounted) {
             showDialog(

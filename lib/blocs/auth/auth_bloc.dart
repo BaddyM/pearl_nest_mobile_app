@@ -7,10 +7,12 @@ import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/user.dart';
 
+import '../../apis/auth_service.dart';
+
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   User? _currentUser;
   String? _currentToken;
-  
+
   User? get currentUser => _currentUser;
   String? get currentToken => _currentToken;
   bool get isAuthenticated => _currentUser != null && _currentToken != null;
@@ -24,10 +26,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthCheckSessionRequested>(_onCheckSessionRequested);
     on<AuthOtpVerificationRequested>(_onOtpVerificationRequested);
     on<AuthOtpResendRequested>(_onOtpResendRequested);
-    
+
     // Initialize session check
     add(AuthCheckSessionRequested());
-    
+
     // Set up automatic logout callback
     ApiClient.onTokenExpired = () {
       add(AuthTokenExpired());
@@ -39,17 +41,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     try {
-      debugPrint('AuthBloc: Processing login request for ${event.email}');
-      
+      ///debugPrint('AuthBloc: Processing login request for ${event.email}');
+
       final result = await AuthService.login(event.email, event.password);
-      
-      debugPrint('AuthBloc: Login result received: ${result.keys}');
-      debugPrint('AuthBloc: Success flag: ${result['success']}');
-      debugPrint('AuthBloc: User present: ${result['user'] != null}');
-      debugPrint('AuthBloc: Token present: ${result['token'] != null}');
-      
+
+      ///debugPrint("Response = ${result}");
+      ///debugPrint('AuthBloc: Login result received: ${result.keys}');
+      ///debugPrint('AuthBloc: Success flag: ${result['success']}');
+      ///debugPrint('AuthBloc: User present: ${result['user'] != null}');
+      ///debugPrint('AuthBloc: Token present: ${result['token'] != null}');
+
       if (result['success'] == true) {
 
         //for app review process. remove afterwards
@@ -66,7 +69,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             email: result['email'] ?? event.email,
             tempToken: result['tempToken'] ?? '',
             message: result['message'] ?? 'Please verify your login with the OTP code',
-            serverOtp: result['otp']?.toString() ?? '', // Pass the OTP from response
+            serverOtp: result['otp']?.toString() ?? '',
+
+            role: result["role"],
+
           ));
           return;
         }}
@@ -85,18 +91,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
         
         debugPrint('AuthBloc: AuthSuccess state emitted');
-      } else {
-        debugPrint('AuthBloc: Login error message - ${result['message']}');
-        debugPrint('Error result: $result');
+        }
+       else {
+        ///debugPrint('AuthBloc: Login error message - ${result['message']}');
+        ///debugPrint('Error result: $result');
         // Use the actual error message from the service instead of generic message
         final errorMessage = result['message'] ?? 'Login failed. Please try again.';
-        debugPrint('AuthBloc: Login failed - $errorMessage');
+
+        ///debugPrint('AuthBloc: Login failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
-      debugPrint('AuthBloc: Login error - $e');
-      debugPrint('AuthBloc: Stack trace - $stackTrace');
-      
+      ///debugPrint('AuthBloc: Login error - $e');
+      ///debugPrint('AuthBloc: Stack trace - $stackTrace');
+
       // Provide more specific error messages based on error type
       String errorMessage;
       if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
@@ -108,7 +116,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         errorMessage = 'Login failed. Please try again.';
       }
-      
+
       emit(AuthFailure(message: errorMessage));
     }
   }
@@ -118,25 +126,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     try {
-      debugPrint('AuthBloc: Processing logout request');
-      
+      ///debugPrint('AuthBloc: Processing logout request');
+
       // Clear local session data
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('auth_token');
       await prefs.remove('user_data');
       await prefs.remove('last_login');
       await prefs.remove('token_expiry');
-      
+      await prefs.remove('user_id');
       _currentUser = null;
       _currentToken = null;
       ApiClient.setAuthToken(null);
-      
-      debugPrint('AuthBloc: Logout successful');
+
+      ///debugPrint('AuthBloc: Logout successful');
       emit(AuthUnauthenticated());
     } catch (e) {
-      debugPrint('AuthBloc: Logout error - $e');
+      ///debugPrint('AuthBloc: Logout error - $e');
       // Even if logout fails, clear local state
       _currentUser = null;
       _currentToken = null;

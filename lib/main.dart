@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // Add this import
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
 import 'package:pearlnest/blocs/auth/auth_bloc.dart';
@@ -21,18 +22,17 @@ import 'package:pearlnest/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
- try {
-   // Initialize Firebase
-   await Firebase.initializeApp();
 
-   // Initialize notification service
-   await NotificationService.initialize();
 
- } catch (e) {
-    debugPrint('Error initializing Firebase: $e');
-    // Handle Firebase initialization error
-  }
+  // Initialize Firebase with platform-specific options
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+
+  // Initialize notification service
+  await NotificationService.initialize();
+
   // Load environment variables with error handling
   try {
     await dotenv.load(fileName: ".env");

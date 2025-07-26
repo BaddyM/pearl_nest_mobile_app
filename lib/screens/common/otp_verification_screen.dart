@@ -6,12 +6,14 @@ import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
   final String tempToken;
   final String message;
-  final String serverOtp; // The OTP code from server for client-side verification
+  final String serverOtp;
+  final String? role;
 
   const OtpVerificationScreen({
     super.key,
@@ -19,6 +21,7 @@ class OtpVerificationScreen extends StatefulWidget {
     required this.tempToken,
     required this.message,
     required this.serverOtp,
+    this.role,
   });
 
   @override
@@ -26,8 +29,11 @@ class OtpVerificationScreen extends StatefulWidget {
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  final List<TextEditingController> _controllers = List.generate(6, (index) => TextEditingController());
-  final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
+  late List<TextEditingController> _controllers;
+
+  late List<FocusNode> _focusNodes;
+
+
   bool _canResend = true;
   int _resendCountdown = 0;
 
@@ -35,6 +41,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void initState() {
     super.initState();
     _startResendTimer();
+  _focusNodes = List.generate(widget.serverOtp.length, (index) => FocusNode());
+    _controllers = List.generate(widget.serverOtp.length, (index) => TextEditingController());
   }
 
   @override
@@ -71,7 +79,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   void _onOtpChanged(String value, int index) {
-    if (value.isNotEmpty && index < 5) {
+    if (value.isNotEmpty && index < widget.serverOtp.length-1) {
       _focusNodes[index + 1].requestFocus();
     } else if (value.isEmpty && index > 0) {
       _focusNodes[index - 1].requestFocus();
@@ -95,24 +103,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (_isOtpComplete()) {
       final userInputOtp = _getOtpCode();
       context.read<AuthBloc>().add(
-        AuthOtpVerificationRequested(
-          email: widget.email,
-          userInputOtp: userInputOtp,
-          serverOtp: widget.serverOtp,
-          tempToken: widget.tempToken,
-        ),
-      );
+            AuthOtpVerificationRequested(
+              email: widget.email,
+              userInputOtp: userInputOtp,
+              serverOtp: widget.serverOtp,
+              tempToken: widget.tempToken,
+              role: widget.role,
+            ),
+          );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Please enter the complete OTP',
-            style: TextStyle(color: AppTheme.whiteColor),
-          ),
-          backgroundColor: Colors.orange,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-        ),
+      CustomSnackBar.showWarning(
+        context,
+        'Please enter the complete OTP',
       );
     }
   }
@@ -120,17 +122,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void _resendOtp() {
     if (_canResend) {
       // For client-side verification, we just show a message that the code hasn't changed
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'The OTP code is still valid. Please check your email again.',
-            style: TextStyle(color: AppTheme.whiteColor),
-          ),
-          backgroundColor: Colors.green,
-          duration: Duration(milliseconds: 2000),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-        ),
+      CustomSnackBar.showInfo(
+        context,
+        'The OTP code is still valid. Please check your email again.',
+        duration: Duration(milliseconds: 2000),
       );
       _startResendTimer();
     }
@@ -145,13 +140,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   String _maskEmail(String email) {
     if (email.isEmpty) return '';
-    
+
     final parts = email.split('@');
     if (parts.length != 2) return email;
-    
+
     final username = parts[0];
     final domain = parts[1];
-    
+
     if (username.length <= 2) {
       return '${username}***@$domain';
     } else {
@@ -165,16 +160,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void _autofillOtp(String otp) {
     // Clear existing values first
     _clearOtp();
-    
+
     // Fill each digit into the corresponding controller
     for (int i = 0; i < otp.length && i < _controllers.length; i++) {
       _controllers[i].text = otp[i];
     }
-    
+
     // Focus on the last filled field
     int lastIndex = (otp.length - 1).clamp(0, _focusNodes.length - 1);
     _focusNodes[lastIndex].requestFocus();
-    
+
     // Auto-submit if OTP is complete
     if (_isOtpComplete()) {
       _verifyOtp();
@@ -186,17 +181,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Email verified successfully! Welcome, ${state.user.name}!',
-                style: TextStyle(color: AppTheme.whiteColor),
-              ),
-              backgroundColor: AppTheme.primaryblue,
-              duration: Duration(milliseconds: 1500),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+          CustomSnackBar.showSuccess(
+            context,
+            'Email verified successfully! Welcome, ${state.user.name}!',
+            duration: Duration(milliseconds: 1500),
           );
           Navigator.pushAndRemoveUntil(
             context,
@@ -204,34 +192,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             (route) => false,
           );
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: TextStyle(color: AppTheme.whiteColor),
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(milliseconds: 2000),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+          CustomSnackBar.showError(
+            context,
+            state.message,
+            duration: Duration(milliseconds: 2000),
+            onRetry: () => _verifyOtp(),
           );
           // Clear OTP fields on error
           _clearOtp();
         } else if (state is AuthOtpRequired) {
           // Show success message for resend
           if (state.message.toLowerCase().contains('resent') || state.message.toLowerCase().contains('new otp')) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: TextStyle(color: AppTheme.whiteColor),
-                ),
-                backgroundColor: Colors.green,
-                duration: Duration(milliseconds: 2000),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.all(16),
-              ),
+            CustomSnackBar.showSuccess(
+              context,
+              state.message,
+              duration: Duration(milliseconds: 2000),
             );
           }
           _clearOtp();
@@ -263,9 +238,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           child: Text(
                             'Email Verification',
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: AppTheme.getTextColor(context),
-                              fontWeight: FontWeight.bold,
-                            ),
+                                  color: AppTheme.getTextColor(context),
+                                  fontWeight: FontWeight.bold,
+                                ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -291,50 +266,48 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     Text(
                       'Verify Your Email',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppTheme.getTextColor(context),
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: AppTheme.getTextColor(context),
+                            fontWeight: FontWeight.bold,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 16),
                     Text(
                       'We\'ve sent a verification code to',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
+                            color: AppTheme.getSecondaryTextColor(context),
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 8),
                     Text(
                       _maskEmail(widget.email),
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.primaryblue,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: AppTheme.primaryblue,
+                            fontWeight: FontWeight.w600,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Enter the 6-digit code from your email',
+                      'Enter the ${widget.serverOtp.length}-digit code from your email',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
+                            color: AppTheme.getSecondaryTextColor(context),
+                          ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     SizedBox(height: 40),
                     // OTP input fields
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: List.generate(6, (index) {
+                      children: List.generate(widget.serverOtp.length, (index) {
                         return Container(
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: _controllers[index].text.isNotEmpty
-                                  ? AppTheme.primaryblue
-                                  : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                              color: _controllers[index].text.isNotEmpty ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(12),
@@ -416,9 +389,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           child: Text(
                             _canResend ? 'Resend OTP' : 'Resend in ${_resendCountdown}s',
                             style: TextStyle(
-                              color: _canResend && !isLoading
-                                  ? AppTheme.primaryblue
-                                  : AppTheme.getSecondaryTextColor(context),
+                              color: _canResend && !isLoading ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
                               fontWeight: FontWeight.bold,
                             ),
                           ),

@@ -18,7 +18,7 @@ class LandlordService {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('📤 Submitting landlord application for: $businessName');
+        ///debugPrint('📤 Submitting landlord application for: $businessName');
       }
 
       final requestBody = {
@@ -34,9 +34,9 @@ class LandlordService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          debugPrint('✅ Landlord application submitted successfully');
+          ///debugPrint('✅ Landlord application submitted successfully');
         }
-        
+
         return {
           'success': true,
           'message': 'Application submitted successfully',
@@ -44,9 +44,9 @@ class LandlordService {
         };
       } else {
         if (kDebugMode) {
-          debugPrint('❌ Landlord application failed with status: ${response.statusCode}');
+          ///debugPrint('❌ Landlord application failed with status: ${response.statusCode}');
         }
-        
+
         return {
           'success': false,
           'message': response.data['message'] ?? 'Application submission failed',
@@ -55,9 +55,9 @@ class LandlordService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('💥 Landlord application error: $e');
+        ///debugPrint('💥 Landlord application error: $e');
       }
-      
+
       return {
         'success': false,
         'message': 'Network error occurred. Please try again.',
@@ -73,8 +73,8 @@ class LandlordService {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('📤 Uploading document: $title');
-        debugPrint('📁 File path: $filePath');
+        ///debugPrint('📤 Uploading document: $title');
+        ///debugPrint('📁 File path: $filePath');
       }
 
       // Validate file exists
@@ -95,10 +95,10 @@ class LandlordService {
         filePath,
         filename: fileName,
       );
-      
+
       // Create form data with correct field names
       FormData formData = FormData.fromMap({
-        'document': multipartFile,  // Changed from 'file' to 'document'
+        'document': multipartFile, // Changed from 'file' to 'document'
         'title': title,
       });
 
@@ -106,9 +106,9 @@ class LandlordService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          debugPrint('✅ Document uploaded successfully: $title');
+          ///debugPrint('✅ Document uploaded successfully: $title');
         }
-        
+
         return {
           'success': true,
           'message': 'Document uploaded successfully',
@@ -116,10 +116,10 @@ class LandlordService {
         };
       } else {
         if (kDebugMode) {
-          debugPrint('❌ Document upload failed with status: ${response.statusCode}');
-          debugPrint('📋 Response data: ${response.data}');
+          ///debugPrint('❌ Document upload failed with status: ${response.statusCode}');
+          ///debugPrint('📋 Response data: ${response.data}');
         }
-        
+
         return {
           'success': false,
           'message': response.data['message'] ?? 'Document upload failed',
@@ -129,37 +129,28 @@ class LandlordService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('💥 Document upload error: $e');
+        ///debugPrint('💥 Document upload error: $e');
       }
-      
+
       // Extract more specific error messages
       String errorMessage = 'Failed to upload document. Please try again.';
-      
+
       final errorString = e.toString().toLowerCase();
-      
-      if (errorString.contains('only pdf,doc or docx files are allowed') || 
-          errorString.contains('invalid file type') ||
-          errorString.contains('file format')) {
+
+      if (errorString.contains('only pdf,doc or docx files are allowed') || errorString.contains('invalid file type') || errorString.contains('file format')) {
         errorMessage = 'Invalid file type. Only PDF, DOC, and DOCX files are allowed.';
       } else if (errorString.contains('file size') || errorString.contains('too large')) {
         errorMessage = 'File size too large. Maximum 10MB allowed.';
-      } else if (errorString.contains('receivetimeout') || 
-                 errorString.contains('receive timeout') ||
-                 errorString.contains('took longer than')) {
+      } else if (errorString.contains('receivetimeout') || errorString.contains('receive timeout') || errorString.contains('took longer than')) {
         errorMessage = 'Upload timeout. The file is taking too long to upload. Please check your internet connection and try again.';
-      } else if (errorString.contains('connecttimeout') ||
-                 errorString.contains('connection timeout') ||
-                 errorString.contains('failed to connect')) {
+      } else if (errorString.contains('connecttimeout') || errorString.contains('connection timeout') || errorString.contains('failed to connect')) {
         errorMessage = 'Connection timeout. Please check your internet connection and try again.';
-      } else if (errorString.contains('network error') ||
-                 errorString.contains('no internet') ||
-                 errorString.contains('socketexception')) {
+      } else if (errorString.contains('network error') || errorString.contains('no internet') || errorString.contains('socketexception')) {
         errorMessage = 'Network error. Please check your internet connection and try again.';
-      } else if (errorString.contains('server error') || 
-                 errorString.contains('internal server error')) {
+      } else if (errorString.contains('server error') || errorString.contains('internal server error')) {
         errorMessage = 'Server error. Please try again later.';
       }
-      
+
       return {
         'success': false,
         'message': errorMessage,
@@ -176,13 +167,13 @@ class LandlordService {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('📤 Uploading ${documents.length} documents');
+        ///debugPrint('📤 Uploading ${documents.length} documents');
       }
 
       final List<String> uploadedDocuments = [];
       final List<String> failedDocuments = [];
       final entries = documents.entries.toList();
-      
+
       for (int i = 0; i < entries.length; i++) {
         final entry = entries[i];
         final documentType = entry.key;
@@ -221,9 +212,9 @@ class LandlordService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('💥 Multiple documents upload error: $e');
+        ///debugPrint('💥 Multiple documents upload error: $e');
       }
-      
+
       return {
         'success': false,
         'message': 'Failed to upload documents. Please try again.',

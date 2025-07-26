@@ -23,10 +23,10 @@ class ChatMessage {
       fromUserId: json['fromUserId']?.toString() ?? json['from_user_id']?.toString() ?? '',
       toUserId: json['toUserId']?.toString() ?? json['to_user_id']?.toString() ?? '',
       text: json['text']?.toString() ?? json['message']?.toString() ?? '',
-      timestamp: json['timestamp'] != null 
-          ? DateTime.parse(json['timestamp'].toString())
-          : json['created_at'] != null
-              ? DateTime.parse(json['created_at'].toString())
+      timestamp: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'].toString())
+          : json['createdAt'] != null
+              ? DateTime.parse(json['createdAt'].toString())
               : DateTime.now(),
       isRead: json['isRead'] ?? json['is_read'] ?? false,
       messageType: json['messageType'] ?? json['message_type'] ?? 'text',

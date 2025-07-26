@@ -457,7 +457,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           _buildContactInfoItem(
             Icons.phone,
             'Phone Support',
-            '+256700140826',
+            '+256791597476',
             'Available 24/7',
           ),
           _buildContactInfoItem(
@@ -466,12 +466,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             'pearlnestestates@gmail.com',
             'Response within 24 hours',
           ),
-          _buildContactInfoItem(
-            Icons.location_on,
-            'Office Address',
-            '123 Business Street, Suite 100',
-            'City, State 12345',
-          ),
+         
           _buildContactInfoItem(
             Icons.access_time,
             'Business Hours',
@@ -562,7 +557,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   }
 
   void _makePhoneCall() async {
-    const phoneNumber = 'tel:+256700140826';
+    const phoneNumber = 'tel:+256791597476';
     try {
       if (await canLaunch(phoneNumber)) {
         await launch(phoneNumber);
@@ -570,8 +565,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         _showErrorDialog('Could not launch phone dialer');
       }
     } catch (e, stackTrace) {
-      debugPrint('Phone call error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Phone call error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error making phone call: $e');
     }
   }
@@ -582,7 +577,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       path: 'pearlnestestates@gmail.com',
       query: 'subject=Support Request from ${widget.user.name}&body=Hello PearlNest Support Team,\n\n',
     );
-    
+
     try {
       if (await canLaunchUrl(emailUri)) {
         await launchUrl(emailUri);
@@ -591,8 +586,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         _showSuccessDialog('Email address copied to clipboard');
       }
     } catch (e, stackTrace) {
-      debugPrint('Email launch error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Email launch error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error opening email client: $e');
     }
   }
@@ -607,8 +602,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         _showErrorDialog('Could not launch website');
       }
     } catch (e, stackTrace) {
-      debugPrint('Website launch error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Website launch error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error opening website: $e');
     }
   }
@@ -635,8 +630,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         'Your message has been sent successfully! We\'ll get back to you within 24 hours.',
       );
     } catch (e, stackTrace) {
-      debugPrint('Message submission error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Message submission error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Failed to send message. Please try again.');
     } finally {
       setState(() {

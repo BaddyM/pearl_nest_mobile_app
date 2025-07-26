@@ -13,6 +13,7 @@ import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/screens/chat/message_bubble.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 
 class IndividualChatScreen extends StatefulWidget {
   final ChatConversation conversation;
@@ -89,11 +90,12 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state is ChatError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.error),
-                backgroundColor: Colors.red,
-              ),
+            CustomSnackBar.showError(
+              context,
+              state.error,
+              onRetry: () {
+
+              },
             );
           }
           // Auto-scroll when new messages arrive
@@ -225,9 +227,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       ),
       child: Center(
         child: Text(
-          widget.conversation.landlordName.isNotEmpty 
-              ? widget.conversation.landlordName[0].toUpperCase() 
-              : '?',
+          widget.conversation.landlordName.isNotEmpty ? widget.conversation.landlordName[0].toUpperCase() : '?',
           style: TextStyle(
             color: AppTheme.whiteColor,
             fontSize: 18,
@@ -235,8 +235,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
           ),
         ),
       ),
-    );
-  }
+    );}
 
   Widget _buildPropertyInfo() {
     return Container(
@@ -295,11 +294,11 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   Widget _buildMessagesList(ChatState state) {
     List<ChatMessage> messages = [];
-    
+
     if (state is ChatConnected) {
       messages = state.messages;
     }
-    
+
     if (messages.isEmpty) {
       return Center(
         child: Column(
@@ -358,10 +357,10 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   bool _shouldShowTimestamp(int index, List<ChatMessage> messages) {
     if (index == 0) return true;
-    
+
     final currentMessage = messages[index];
     final previousMessage = messages[index - 1];
-    
+
     final timeDifference = currentMessage.timestamp.difference(previousMessage.timestamp);
     return timeDifference.inMinutes > 30;
   }
@@ -391,11 +390,11 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       ),
     );
   }
-  
+
   Widget _buildMessageInput(ChatState state) {
     final isConnected = state is ChatConnected ? state.isConnected : false;
     final isLoading = state is ChatLoading || state is ChatMessageSending;
-    
+
     return ChatInput(
       controller: _messageController,
       onSend: _sendMessage,
@@ -408,7 +407,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
-    
+
     if (messageDate == today) {
       return 'Today';
     } else if (messageDate == today.subtract(Duration(days: 1))) {
@@ -451,45 +450,29 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context);
-                
+
                 String phoneNumber = "+256787018472";
                 // Edit this to pick the landlord number from the backend
                 // String phoneNumber = widget.conversation.landlordPhone;
-                
+
                 String cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-                
+
                 // Create the tel URL
                 final Uri phoneUri = Uri(scheme: 'tel', path: cleanedNumber);
-                
+
                 try {
                   if (await canLaunchUrl(phoneUri)) {
                     await launchUrl(phoneUri);
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Phone calls are not supported on this device',
-                          style: TextStyle(color: AppTheme.lightGreyColor),
-                        ),
-                        backgroundColor: Colors.red,
-                        duration: Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.all(16),
-                      ),
+                    CustomSnackBar.showError(
+                      context,
+                      'Phone calls are not supported on this device',
                     );
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Failed to make call: ${e.toString()}',
-                        style: TextStyle(color: AppTheme.lightGreyColor),
-                      ),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.all(16),
-                    ),
+                  CustomSnackBar.showError(
+                    context,
+                    'Failed to make call. Please try again.',
                   );
                 }
               },
@@ -728,14 +711,11 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${widget.conversation.landlordName} has been blocked', style: TextStyle(color: AppTheme.lightGreyColor),),
-                    backgroundColor: Colors.red,
-                    duration: Duration(milliseconds: 500),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.all(16),
-                  ),
+
+                CustomSnackBar.showWarning(
+                  context,
+                  '${widget.conversation.landlordName} has been blocked',
+
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -788,14 +768,11 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Report submitted. Thank you for your feedback.', style: TextStyle(color: AppTheme.lightGreyColor),),
-                    backgroundColor: AppTheme.primaryblue,
-                    duration: Duration(milliseconds: 500),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.all(16),
-                  ),
+
+                CustomSnackBar.showSuccess(
+                  context,
+                  'Report submitted. Thank you for your feedback.',
+
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -817,9 +794,9 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   Widget _buildConnectionStatus(ChatState state) {
     final isConnected = state is ChatConnected ? state.isConnected : false;
-    
+
     if (isConnected) return const SizedBox.shrink();
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8),

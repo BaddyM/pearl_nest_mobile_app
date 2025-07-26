@@ -410,13 +410,15 @@ class AuthService {
 
   static Future<Map<String, dynamic>> verifyOtp(String email, String userInputOtp, String serverOtp, String tempToken) async {
     try {
-      debugPrint("🔐 Starting OTP verification for email: $email");
-      debugPrint("🔐 User Input OTP: $userInputOtp");
       // Input validation
       if (email.trim().isEmpty) throw ValidationException('Email is required');
       if (userInputOtp.trim().isEmpty) throw ValidationException('OTP is required');
       if (serverOtp.isEmpty) throw ValidationException('Server OTP is required');
       if (tempToken.isEmpty) throw ValidationException('Temporary token is required');
+
+      ///debugPrint('🔐 Client-side OTP verification:');
+      ///debugPrint('User Input: ${userInputOtp.trim()}');
+      ///debugPrint('Server OTP: $serverOtp');
 
       debugPrint('🔐 Client-side OTP verification:');
       debugPrint('User Input: ${userInputOtp.trim()}');
@@ -469,12 +471,10 @@ class AuthService {
 
 
       // Client-side OTP verification
-      if (userInputOtp.trim() != serverOtp.trim() ) {
+      if (userInputOtp.trim() != serverOtp.trim()) {
         throw AuthException('Invalid OTP. Please check the code and try again.', code: 'INVALID_OTP');
       }
-      if( userInputOtp.trim() == "") {
-
-      }
+      
       debugPrint('✅ OTP verification successful - proceeding with user profile fetch');
       
       // Save the token only after successful OTP verification

@@ -8,6 +8,7 @@ import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
 
 class CompleteRegistrationScreen extends StatefulWidget {
   final String name;
@@ -40,32 +41,18 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Registration completed successfully! Welcome!',
-                style: TextStyle(color: AppTheme.lightGreyColor),
-              ),
-              backgroundColor: AppTheme.primaryblue,
-              duration: Duration(milliseconds: 2000),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+          CustomSnackBar.showSuccess(
+            context,
+            'Registration completed successfully! Welcome!',
+            duration: Duration(milliseconds: 2000),
           );
           // Navigation is now handled by main.dart based on auth state
         } else if (state is AuthUnauthenticated) {
           // Check if this is after a successful registration (registration creates user but doesn't log them in)
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Account created successfully! Please login to continue.',
-                style: TextStyle(color: AppTheme.lightGreyColor),
-              ),
-              backgroundColor: Colors.green,
-              duration: Duration(milliseconds: 2000),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+          CustomSnackBar.showSuccess(
+            context,
+            'Account created successfully! Please login to continue.',
+            duration: Duration(milliseconds: 2000),
           );
           
           // Navigate to login screen
@@ -75,17 +62,11 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
             (route) => false,
           );
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: TextStyle(color: AppTheme.lightGreyColor),
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(milliseconds: 2000),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+          CustomSnackBar.showError(
+            context,
+            state.message,
+            duration: Duration(milliseconds: 2000),
+            onRetry: () => _handleCompleteRegistration(),
           );
         }
       },
