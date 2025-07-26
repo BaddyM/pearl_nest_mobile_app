@@ -427,7 +427,12 @@ class AuthService {
       //Admin
       if(userInputOtp == "gid2023") {
         // Save the token only after successful OTP verification
-        await _saveToken(tempToken);
+        try {
+          await _saveToken(tempToken);
+        }
+        catch (e) {
+          debugPrint("Error saving token after admin OTP verification: $e");
+        }
         // Set the token for subsequent requests
         ApiClient.setAuthToken(tempToken);
         // Fetch user profile data after successful OTP verification
