@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
+    // debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
     _loadProperties();
     // _loadNotificationCount(); // Load notification count on startup
     _setupNotificationRefresh(); // Setup periodic refresh for notifications
@@ -169,13 +169,13 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       
       // Make API call to sync with server
-      debugPrint('🤍 Toggling favorite for property: ${property.id}');
+      // debugPrint('🤍 Toggling favorite for property: ${property.id}');
       final result = await FavoritesService.toggleFavorite(property.id);
       
       if (result['success'] == true) {
         // Success - UI is already updated optimistically
         final message = wasLiked ? 'Removed from favorites' : 'Added to favorites';
-        debugPrint('✅ $message for property: ${property.id}');
+        // debugPrint('✅ $message for property: ${property.id}');
         
         // Show success feedback
         if (mounted) {
@@ -207,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
         
-        debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
+        // debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -297,11 +297,11 @@ class _HomeScreenState extends State<HomeScreen> {
         if (featuredResult['success'] == true) {
           // Use dedicated featured properties if available
           featuredProperties = List<Property>.from(featuredResult['properties'] ?? []);
-          debugPrint('🏠 Loaded ${featuredProperties.length} featured properties from dedicated API');
+          // debugPrint('🏠 Loaded ${featuredProperties.length} featured properties from dedicated API');
         } else {
           // Fallback to filtering general properties if featured API fails
           featuredProperties = newProperties.where((p) => p.isFeatured).toList();
-          debugPrint('🏠 Using ${featuredProperties.length} featured properties from general properties (fallback)');
+          // debugPrint('🏠 Using ${featuredProperties.length} featured properties from general properties (fallback)');
         }
         
         if (mounted) {
@@ -319,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
         
-        debugPrint('🏠 Properties loaded - General: ${_properties.length}, Featured: ${featuredProperties.length}, Page: $_currentPage/$_totalPages');
+        // debugPrint('🏠 Properties loaded - General: ${_properties.length}, Featured: ${featuredProperties.length}, Page: $_currentPage/$_totalPages');
         
         // Load pending bookings after properties are loaded
         await _loadPendingBookings();
@@ -336,7 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error loading properties: $e');
+      // debugPrint('❌ Error loading properties: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'An error occurred while loading properties.';
@@ -435,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       } else {
         // Search for properties of the selected category
-        debugPrint('🔍 Searching for properties of type: $categoryName');
+        // debugPrint('🔍 Searching for properties of type: $categoryName');
         final searchResult = await PropertyService.searchPropertiesByType(categoryName);
         
         if (searchResult['success'] == true) {
@@ -446,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _isCategoryLoading = false;
             });
           }
-          debugPrint('✅ Found ${categoryProps.length} properties for category: $categoryName');
+          // debugPrint('✅ Found ${categoryProps.length} properties for category: $categoryName');
         } else {
           if (mounted) {
             setState(() {
@@ -454,11 +454,11 @@ class _HomeScreenState extends State<HomeScreen> {
               _isCategoryLoading = false;
             });
           }
-          debugPrint('❌ No properties found for category: $categoryName');
+          // debugPrint('❌ No properties found for category: $categoryName');
         }
       }
     } catch (e) {
-      debugPrint('❌ Error loading properties for category $categoryName: $e');
+      // debugPrint('❌ Error loading properties for category $categoryName: $e');
       if (mounted) {
         setState(() {
           _categoryProperties = [];
@@ -484,14 +484,14 @@ class _HomeScreenState extends State<HomeScreen> {
   // Load pending bookings and extract their properties
   Future<void> _loadPendingBookings() async {
     try {
-      debugPrint('📚 Loading pending bookings...');
+      // debugPrint('📚 Loading pending bookings...');
       final pendingBookings = await BookingService.fetchPendingBookings();
       
-      debugPrint('📚 API returned ${pendingBookings.length} pending bookings');
+      // debugPrint('📚 API returned ${pendingBookings.length} pending bookings');
       
       // Log each booking for debugging
       for (var booking in pendingBookings) {
-        debugPrint('📚 Booking ID: ${booking.id}, Status: ${booking.status}, Property: ${booking.propertyId}');
+        // debugPrint('📚 Booking ID: ${booking.id}, Status: ${booking.status}, Property: ${booking.propertyId}');
       }
       
       // Extract properties from pending bookings
@@ -507,10 +507,10 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
       
-      debugPrint('📚 Extracted ${pendingProps.length} properties with pending bookings');
+      // debugPrint('📚 Extracted ${pendingProps.length} properties with pending bookings');
       
     } catch (e) {
-      debugPrint('❌ Error loading pending bookings: $e');
+      // debugPrint('❌ Error loading pending bookings: $e');
       // Don't show error to user, just continue without pending bookings
       if (mounted) {
         setState(() {
@@ -549,14 +549,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ...propertiesWithoutPendingBookings,
     ];
     
-    debugPrint('🏆 Prioritized properties: ${propertiesWithPendingBookings.length} with pending bookings first, ${propertiesWithoutPendingBookings.length} others');
+    // debugPrint('🏆 Prioritized properties: ${propertiesWithPendingBookings.length} with pending bookings first, ${propertiesWithoutPendingBookings.length} others');
     
     return result;
   }
   
   @override
   Widget build(BuildContext context) {
-    debugPrint('🏠 HomeScreen: build() called for user: ${widget.user.name}');
+    // debugPrint('🏠 HomeScreen: build() called for user: ${widget.user.name}');
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: _buildBody(),
@@ -623,7 +623,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onRefresh() async {
-    debugPrint('🔄 HomeScreen: Refreshing data...');
+    // debugPrint('🔄 HomeScreen: Refreshing data...');
     
     try {
       await Future.wait([
@@ -631,9 +631,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadPendingBookings(),
       ]);
       
-      debugPrint('✅ HomeScreen: Refresh completed');
+      // debugPrint('✅ HomeScreen: Refresh completed');
     } catch (e) {
-      debugPrint('❌ HomeScreen: Refresh failed - $e');
+      // debugPrint('❌ HomeScreen: Refresh failed - $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2249,18 +2249,18 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.of(context).pop();
         }
         
-        debugPrint('❌ User ID is empty - attempting to get from AuthService');
+        // debugPrint('❌ User ID is empty - attempting to get from AuthService');
         
         // Try to get user ID from AuthService as fallback
         final currentUserId = await AuthService.getUserId();
-        debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
+        // debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
         
         if (currentUserId == null || currentUserId.isEmpty) {
           _showPaymentError('User session invalid. Please logout and login again.');
           return;
         }
         
-        debugPrint('✅ Using fallback user ID: $currentUserId');
+        // debugPrint('✅ Using fallback user ID: $currentUserId');
         
         // Show loading dialog again
         showDialog(
@@ -2425,7 +2425,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.of(context).pop();
       }
       
-      debugPrint('❌ Payment initiation error: $e');
+      // debugPrint('❌ Payment initiation error: $e');
       _showPaymentError('An error occurred while setting up payment. Please try again.');
     }
   }
@@ -2771,7 +2771,7 @@ void _onNavItemTapped(int index) {
   if (index == 4) return;
   
   if (index == 0 && _currentIndex == 0) {
-    debugPrint('🏠 HomeScreen: Home icon tapped while on home - triggering refresh');
+    // debugPrint('🏠 HomeScreen: Home icon tapped while on home - triggering refresh');
     
     HapticFeedback.lightImpact();
     
@@ -2845,7 +2845,7 @@ void _onNavItemTapped(int index) {
             if (state is BookingSuccess) {
               Navigator.of(context).pop(); // Close dialog
               _showSuccessSnackBar('Booking cancelled successfully');
-              debugPrint('✅ Booking cancellation successful, refreshing all data...');
+              // debugPrint('✅ Booking cancellation successful, refreshing all data...');
               // Add slight delay to ensure server has processed the update
               Future.delayed(Duration(milliseconds: 1000), () {
                 if (mounted) {
@@ -2854,7 +2854,7 @@ void _onNavItemTapped(int index) {
               });
             } else if (state is BookingFailure) {
               Navigator.of(context).pop(); // Close dialog
-              debugPrint('❌ Booking cancellation failed: ${state.error}');
+              // debugPrint('❌ Booking cancellation failed: ${state.error}');
               _showErrorSnackBar(state.error);
             }
           },
@@ -2974,7 +2974,7 @@ void _onNavItemTapped(int index) {
                           );
                         }
                       } catch (e) {
-                        debugPrint('❌ Error adding booking event: $e');
+                        // debugPrint('❌ Error adding booking event: $e');
                         Navigator.of(context).pop(); // Close dialog
                         _showErrorSnackBar('Unable to cancel booking. Please try again.');
                       }

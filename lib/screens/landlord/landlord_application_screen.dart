@@ -780,9 +780,9 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           return;
         }
 
-        print('📁 Documents to upload: ${documentsToUpload.keys.toList()}');
+        // print('📁 Documents to upload: ${documentsToUpload.keys.toList()}');
         for (var entry in documentsToUpload.entries) {
-          print('📄 ${entry.key}: ${entry.value}');
+          // print('📄 ${entry.key}: ${entry.value}');
         }
 
         _showProgressSnackBar('Starting document upload...');
@@ -796,10 +796,10 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           onDocumentUploaded: (documentType, success) {
             final shortName = _shortenDocumentName(documentType);
             if (success) {
-              print('✅ $documentType uploaded successfully');
+              // print('✅ $documentType uploaded successfully');
               // Don't show individual success snackbars to avoid spam - show final summary instead
             } else {
-              print('❌ $documentType upload failed');
+              // print('❌ $documentType upload failed');
               _showWarningSnackBar('❌ Failed to upload: $shortName');
             }
           },
@@ -855,7 +855,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           _isSubmittingApplication = false;
         });
         _showErrorSnackBar('An error occurred. Please try again.');
-        print('Application submission error: $e');
+        // print('Application submission error: $e');
       }
     }
   }
@@ -1024,7 +1024,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         _isSubmittingApplication = false;
       });
       _showErrorSnackBar('An error occurred. Please try again.');
-      print('Application submission error: $e');
+      // print('Application submission error: $e');
     }
   }
 

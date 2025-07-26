@@ -8,29 +8,29 @@ class NotificationApiService {
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data, {String? token}) {
     if (kDebugMode) {
-      debugPrint('🚀 NOTIFICATION REQUEST: $endpoint');
+      // debugPrint('🚀 NOTIFICATION REQUEST: $endpoint');
       if (data != null) {
-        debugPrint('📤 Request Data: ${jsonEncode(data)}');
+        // debugPrint('📤 Request Data: ${jsonEncode(data)}');
       }
       if (token != null) {
-        debugPrint('🔑 Token: ${token.substring(0, 10)}...');
+        // debugPrint('🔑 Token: ${token.substring(0, 10)}...');
       }
     }
   }
 
   static void _logResponse(String endpoint, Response response) {
     if (kDebugMode) {
-      debugPrint('📥 NOTIFICATION RESPONSE: $endpoint');
-      debugPrint('📊 Status Code: ${response.statusCode}');
-      debugPrint('📝 Response Body: ${jsonEncode(response.data)}');
+      // debugPrint('📥 NOTIFICATION RESPONSE: $endpoint');
+      // debugPrint('📊 Status Code: ${response.statusCode}');
+      // debugPrint('📝 Response Body: ${jsonEncode(response.data)}');
     }
   }
 
   static void _logError(String operation, dynamic error) {
     if (kDebugMode) {
-      debugPrint('❌ NOTIFICATION ERROR [$operation]: $error');
+      // debugPrint('❌ NOTIFICATION ERROR [$operation]: $error');
       if (error is Error) {
-        debugPrint('🔍 Stack Trace: ${error.stackTrace}');
+        // debugPrint('🔍 Stack Trace: ${error.stackTrace}');
       }
     }
   }

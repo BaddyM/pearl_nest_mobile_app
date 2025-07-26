@@ -48,7 +48,7 @@ class ApiClient {
   static void setAuthToken(String? token) async {
     _authToken = token;
     if (token != null) {
-      debugPrint('ApiClient: Auth token set - Full Token: $token');
+      // debugPrint('ApiClient: Auth token set - Full Token: $token');
     } else {
       final prefs = await SharedPreferences.getInstance();
       final keys = prefs.getKeys();
