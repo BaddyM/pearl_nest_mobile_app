@@ -35,7 +35,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadConversations();
     _searchController.addListener(_onSearchChanged);
-    
+
     // Initialize chat service
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChatBloc>().add(const ChatInitialize());
@@ -53,21 +53,21 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       // Fetch conversations from API first
       final apiConversations = await ChatService.fetchChatList();
-      
+
       // Also fetch available admin conversations
       final adminConversations = await ChatService.getAdminConversations();
-      
+
       final allConversations = <ChatConversation>[];
-      
+
       // Add API conversations if available
       if (apiConversations.isNotEmpty) {
         allConversations.addAll(apiConversations);
       }
-      
+
       // Always include admin conversations for support
       if (adminConversations.isNotEmpty) {
         // Avoid duplicates by checking if admin conversations are already in API conversations
@@ -78,7 +78,7 @@ class _ChatScreenState extends State<ChatScreen> {
           }
         }
       }
-      
+
       // If no conversations at all, show a fallback
       if (allConversations.isEmpty) {
         // Try to get a single admin conversation for fallback
@@ -87,7 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
           allConversations.add(fallbackConv);
         }
       }
-      
+
       setState(() {
         _allConversations = allConversations;
         _filteredConversations = List.from(_allConversations);
@@ -98,7 +98,7 @@ class _ChatScreenState extends State<ChatScreen> {
       try {
         final fallbackConv = await ChatService.getAdminConversation();
         final fallbackConversations = fallbackConv != null ? [fallbackConv] : <ChatConversation>[];
-        
+
         setState(() {
           _allConversations = fallbackConversations;
           _filteredConversations = List.from(_allConversations);
@@ -111,7 +111,7 @@ class _ChatScreenState extends State<ChatScreen> {
           _isLoading = false;
         });
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -133,9 +133,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _filteredConversations = List.from(_allConversations);
       } else {
         _filteredConversations = _allConversations.where((conversation) {
-          return conversation.landlordName.toLowerCase().contains(query) ||
-                 conversation.propertyTitle.toLowerCase().contains(query) ||
-                 conversation.lastMessage.toLowerCase().contains(query);
+          return conversation.landlordName.toLowerCase().contains(query) || conversation.propertyTitle.toLowerCase().contains(query) || conversation.lastMessage.toLowerCase().contains(query);
         }).toList();
       }
     });
@@ -361,9 +359,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           SizedBox(height: 8),
           Text(
-            _isSearching
-                ? 'Try searching with different keywords'
-                : 'Start browsing properties to connect\nwith landlords',
+            _isSearching ? 'Try searching with different keywords' : 'Start browsing properties to connect\nwith landlords',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -476,12 +472,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     conversation.lastMessage,
                     style: TextStyle(
                       fontSize: 14,
-                      color: conversation.unreadCount > 0
-                          ? AppTheme.blackColor
-                          : AppTheme.greyColor,
-                      fontWeight: conversation.unreadCount > 0
-                          ? FontWeight.w500
-                          : FontWeight.normal,
+                      color: conversation.unreadCount > 0 ? AppTheme.blackColor : AppTheme.greyColor,
+                      fontWeight: conversation.unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -559,73 +551,36 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-    void _openChatDetail(ChatConversation conversation) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => IndividualChatScreen(
-            conversation: conversation,
-            currentUser: widget.user,
-          ),
+  void _openChatDetail(ChatConversation conversation) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => IndividualChatScreen(
+          conversation: conversation,
+          currentUser: widget.user,
         ),
-      ).then((_) {
-        _loadConversations();
-      });
-    }
+      ),
+    ).then((_) {
+      _loadConversations();
+    });
+  }
 
   // Debug methods for development - output to terminal only
   void _showDebugInfo() async {
-    debugPrint('🔧 === USER REQUESTED COMPREHENSIVE DEBUG ===');
-    debugPrint('🔧 Running comprehensive chat service debug...');
-    
-    // Run the comprehensive debug
-    await ChatService.debugChatServiceState();
-    
-    debugPrint('🔧 === COMPREHENSIVE DEBUG COMPLETE ===');
-    debugPrint('🔧 Check the debug output above for detailed information.');
+    //debugPrint('🔧 === USER REQUESTED COMPREHENSIVE DEBUG ===');
+    //debugPrint('🔧 Running comprehensive chat service debug...');
+
+    //debugPrint('🔧 === COMPREHENSIVE DEBUG COMPLETE ===');
+    //debugPrint('🔧 Check the debug output above for detailed information.');
   }
 
   void _testApiConnectivity() async {
-    debugPrint('🧪 === USER REQUESTED API CONNECTIVITY TEST ===');
-    debugPrint('🧪 Testing API connectivity...');
-    
-    final isHealthy = await ChatService.isApiHealthy();
-    
-    debugPrint('🧪 === API TEST RESULT ===');
-    debugPrint('🧪 API Status: ${isHealthy ? 'HEALTHY ✅' : 'UNHEALTHY ❌'}');
-    debugPrint('🧪 Endpoint: /chat/chatList');
-    debugPrint('🧪 Result: ${isHealthy ? 'API is responding correctly' : 'API is not responding or returned error'}');
-    debugPrint('🧪 === API TEST COMPLETE ===');
+    //debugPrint('🧪 === USER REQUESTED API CONNECTIVITY TEST ===');
+    //debugPrint('🧪 Testing API connectivity...');
   }
 
   void _testSocketConnectivity() async {
-    debugPrint('🔌 === USER REQUESTED SOCKET CONNECTIVITY TEST ===');
-    debugPrint('🔌 Testing socket connectivity...');
-    
-    // Test socket health
-    final isHealthy = ChatService.isSocketHealthy();
-    debugPrint('🔌 Initial socket health: ${isHealthy ? 'HEALTHY ✅' : 'UNHEALTHY ❌'}');
-    
-    // If socket is not healthy, try to connect
-    if (!isHealthy) {
-      debugPrint('🔌 Socket is unhealthy, attempting to connect...');
-      await ChatService.connect();
-    }
-    
-    final finalHealthy = ChatService.isSocketHealthy();
-    
-    debugPrint('🔌 === SOCKET TEST RESULT ===');
-    debugPrint('🔌 Socket Status: ${finalHealthy ? 'HEALTHY ✅' : 'UNHEALTHY ❌'}');
-    
-    if (!isHealthy && finalHealthy) {
-      debugPrint('🔌 Result: Socket was successfully reconnected');
-    } else if (!finalHealthy) {
-      debugPrint('🔌 Result: Unable to establish socket connection');
-      debugPrint('🔌 Possible issues: Authentication, network, server availability');
-    } else {
-      debugPrint('🔌 Result: Socket was already healthy');
-    }
-    
-    debugPrint('🔌 === SOCKET TEST COMPLETE ===');
+    //debugPrint('🔌 === USER REQUESTED SOCKET CONNECTIVITY TEST ===');
+    //debugPrint('🔌 Testing socket connectivity...');
   }
 }

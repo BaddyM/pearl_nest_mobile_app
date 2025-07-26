@@ -31,7 +31,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
   void initState() {
     super.initState();
     _loadAdmins();
-    
+
     // Initialize chat service
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChatBloc>().add(const ChatInitialize());
@@ -45,18 +45,18 @@ class _AdminListScreenState extends State<AdminListScreen> {
     });
 
     try {
-      debugPrint('🔄 AdminListScreen: Loading admin list...');
+      //debugPrint('🔄 AdminListScreen: Loading admin list...');
       final admins = await ChatService.fetchAvailableAdmins();
-      
+
       if (mounted) {
         setState(() {
           _admins = admins;
           _isLoading = false;
         });
-        debugPrint('✅ AdminListScreen: Loaded ${admins.length} admins');
+        //debugPrint('✅ AdminListScreen: Loaded ${admins.length} admins');
       }
     } catch (e) {
-      debugPrint('❌ AdminListScreen: Error loading admins - $e');
+      //debugPrint('❌ AdminListScreen: Error loading admins - $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load admin list. Please try again.';
@@ -72,8 +72,8 @@ class _AdminListScreenState extends State<AdminListScreen> {
 
   void _startChatWithAdmin(Admin admin) async {
     try {
-      debugPrint('💬 Starting chat with admin: ${admin.name}');
-      
+      //debugPrint('💬 Starting chat with admin: ${admin.name}');
+
       // Create or get conversation with this admin
       final conversation = await ChatService.getOrCreateConversation(
         adminId: admin.id,
@@ -96,7 +96,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
         _showErrorSnackBar('Unable to start chat. Please try again.');
       }
     } catch (e) {
-      debugPrint('❌ Error starting chat with admin: $e');
+      //debugPrint('❌ Error starting chat with admin: $e');
       _showErrorSnackBar('Failed to start chat. Please try again.');
     }
   }
@@ -123,7 +123,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
         title: Text(
-          'Chat with Support',
+          'Chat',
           style: TextStyle(
             color: AppTheme.getTextColor(context),
             fontWeight: FontWeight.bold,
@@ -291,13 +291,13 @@ class _AdminListScreenState extends State<AdminListScreen> {
   Widget _buildAdminList() {
     return ListView.builder(
       padding: EdgeInsets.all(16),
-      itemCount: _admins.length + 1, // +1 for header
+      itemCount: _admins.length, // +1 for header
       itemBuilder: (context, index) {
-        if (index == 0) {
-          return _buildHeader();
-        }
-        
-        final admin = _admins[index - 1];
+        // if (index == 0) {
+        //   return _buildHeader();
+        // }
+
+        final admin = _admins[index];
         return _buildAdminCard(admin);
       },
     );
@@ -407,7 +407,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
                       : _buildDefaultAvatar(admin),
                 ),
                 SizedBox(width: 16),
-                
+
                 // Admin Info
                 Expanded(
                   child: Column(
@@ -477,7 +477,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Chat arrow
                 Icon(
                   Icons.chat_bubble_outline,

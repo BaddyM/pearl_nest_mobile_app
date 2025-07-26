@@ -227,9 +227,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       ),
       child: Center(
         child: Text(
-          widget.conversation.landlordName.isNotEmpty 
-              ? widget.conversation.landlordName[0].toUpperCase() 
-              : '?',
+          widget.conversation.landlordName.isNotEmpty ? widget.conversation.landlordName[0].toUpperCase() : '?',
           style: TextStyle(
             color: AppTheme.whiteColor,
             fontSize: 18,
@@ -296,11 +294,11 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   Widget _buildMessagesList(ChatState state) {
     List<ChatMessage> messages = [];
-    
+
     if (state is ChatConnected) {
       messages = state.messages;
     }
-    
+
     if (messages.isEmpty) {
       return Center(
         child: Column(
@@ -359,10 +357,10 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   bool _shouldShowTimestamp(int index, List<ChatMessage> messages) {
     if (index == 0) return true;
-    
+
     final currentMessage = messages[index];
     final previousMessage = messages[index - 1];
-    
+
     final timeDifference = currentMessage.timestamp.difference(previousMessage.timestamp);
     return timeDifference.inMinutes > 30;
   }
@@ -392,11 +390,11 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       ),
     );
   }
-  
+
   Widget _buildMessageInput(ChatState state) {
     final isConnected = state is ChatConnected ? state.isConnected : false;
     final isLoading = state is ChatLoading || state is ChatMessageSending;
-    
+
     return ChatInput(
       controller: _messageController,
       onSend: _sendMessage,
@@ -409,7 +407,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
-    
+
     if (messageDate == today) {
       return 'Today';
     } else if (messageDate == today.subtract(Duration(days: 1))) {
@@ -452,16 +450,16 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context);
-                
+
                 String phoneNumber = "+256787018472";
                 // Edit this to pick the landlord number from the backend
                 // String phoneNumber = widget.conversation.landlordPhone;
-                
+
                 String cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-                
+
                 // Create the tel URL
                 final Uri phoneUri = Uri(scheme: 'tel', path: cleanedNumber);
-                
+
                 try {
                   if (await canLaunchUrl(phoneUri)) {
                     await launchUrl(phoneUri);
@@ -713,9 +711,11 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
+
                 CustomSnackBar.showWarning(
                   context,
                   '${widget.conversation.landlordName} has been blocked',
+
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -768,9 +768,11 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
+
                 CustomSnackBar.showSuccess(
                   context,
                   'Report submitted. Thank you for your feedback.',
+
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -792,9 +794,9 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   Widget _buildConnectionStatus(ChatState state) {
     final isConnected = state is ChatConnected ? state.isConnected : false;
-    
+
     if (isConnected) return const SizedBox.shrink();
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8),
