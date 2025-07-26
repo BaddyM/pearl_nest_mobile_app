@@ -28,7 +28,6 @@ class LandlordPropertyManagementScreen extends StatefulWidget {
 class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManagementScreen> {
   String _selectedFilter = 'All';
   String _searchQuery = '';
-  bool _isGridView = false;
   List<Property> _properties = [];
   bool _isLoading = true;
   bool _hasError = false;
@@ -309,30 +308,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                   ],
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => setState(() => _isGridView = false),
-                      icon: Icon(
-                        Icons.view_list,
-                        color: !_isGridView ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => setState(() => _isGridView = true),
-                      icon: Icon(
-                        Icons.grid_view,
-                        color: _isGridView ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
           SizedBox(height: 16),
@@ -484,7 +459,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   Widget _buildPropertiesList() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
-      child: _isGridView ? _buildGridView() : _buildListView(),
+      child: _buildListView(),
     );
   }
 
@@ -499,25 +474,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           margin: EdgeInsets.only(bottom: 16),
           child: _buildPropertyListCard(property),
         );
-      },
-    );
-  }
-
-  Widget _buildGridView() {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: ClampingScrollPhysics(),
-      padding: EdgeInsets.only(bottom: 20),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.6,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: _filteredProperties.length,
-      itemBuilder: (context, index) {
-        final property = _filteredProperties[index];
-        return _buildPropertyGridCard(property);
       },
     );
   }
@@ -674,20 +630,24 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       SizedBox(height: 8),
                       Row(
                         children: [
-                          Text(
-                            "UGX ${NumberFormat('#,###').format(property.price.toInt())}",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryblue,
-                            ),
-                          ),
-                          Text(
-                            ' ${property.priceType}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.getSecondaryTextColor(context),
-                            ),
+                          Column(
+                            children: [
+                              Text(
+                                "UGX ${NumberFormat('#,###').format(property.price.toInt())}",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryblue,
+                                ),
+                              ),
+                              Text(
+                                ' ${property.priceType}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.getSecondaryTextColor(context),
+                                ),
+                              ),
+                            ],
                           ),
                           Spacer(),
                           if (property.rating > 0) ...[
@@ -771,19 +731,19 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         ],
                       ),
                     ),
-                    PopupMenuItem(
-                      value: 'duplicate',
-                      child: Row(
-                        children: [
-                          Icon(Icons.copy, size: 16, color: AppTheme.getTextColor(context)),
-                          SizedBox(width: 8),
-                          Text(
-                            'Duplicate',
-                            style: TextStyle(color: AppTheme.getTextColor(context)),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // PopupMenuItem(
+                    //   value: 'duplicate',
+                    //   child: Row(
+                    //     children: [
+                    //       Icon(Icons.copy, size: 16, color: AppTheme.getTextColor(context)),
+                    //       SizedBox(width: 8),
+                    //       Text(
+                    //         'Duplicate',
+                    //         style: TextStyle(color: AppTheme.getTextColor(context)),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                     PopupMenuItem(
                       value: 'feature',
                       child: Row(
@@ -954,19 +914,19 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                             ],
                           ),
                         ),
-                        PopupMenuItem(
-                          value: 'duplicate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.copy, size: 16, color: AppTheme.getTextColor(context)),
-                              SizedBox(width: 8),
-                              Text(
-                                'Duplicate',
-                                style: TextStyle(color: AppTheme.getTextColor(context)),
-                              ),
-                            ],
-                          ),
-                        ),
+                        // PopupMenuItem(
+                        //   value: 'duplicate',
+                        //   child: Row(
+                        //     children: [
+                        //       Icon(Icons.copy, size: 16, color: AppTheme.getTextColor(context)),
+                        //       SizedBox(width: 8),
+                        //       Text(
+                        //         'Duplicate',
+                        //         style: TextStyle(color: AppTheme.getTextColor(context)),
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ),
                         PopupMenuItem(
                           value: 'feature',
                           child: Row(
@@ -1306,9 +1266,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
       case 'edit':
         _editProperty(property);
         break;
-      case 'duplicate':
-        _duplicateProperty(property);
-        break;
       case 'feature':
         _toggleFeatureProperty(property);
         break;
@@ -1617,7 +1574,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         _buildDetailRow('Created', _formatDate(property.createdAt), Icons.calendar_today),
                         _buildDetailRow('Last Updated', _formatDate(property.updatedAt), Icons.update),
                         if (property.availableFrom != null) _buildDetailRow('Available From', _formatDate(property.availableFrom!), Icons.event_available),
-                        _buildDetailRow('Property ID', property.id, Icons.tag),
+                        // _buildDetailRow('Property ID', property.id, Icons.tag),
                       ],
                     ),
                   ),

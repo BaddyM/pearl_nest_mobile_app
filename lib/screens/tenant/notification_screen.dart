@@ -683,32 +683,32 @@ class _NotificationScreenState extends State<NotificationScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            notification.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: notification.isRead 
-                                  ? FontWeight.w600 
-                                  : FontWeight.bold,
-                              color: AppTheme.getTextColor(context),
-                            ),
-                          ),
-                        ),
-                        if (!notification.isRead)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryblue,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: 6),
+                    // Row(
+                    //   children: [
+                    //     Expanded(
+                    //       child: Text(
+                    //         notification.title,
+                    //         style: TextStyle(
+                    //           fontSize: 16,
+                    //           fontWeight: notification.isRead 
+                    //               ? FontWeight.w600 
+                    //               : FontWeight.bold,
+                    //           color: AppTheme.getTextColor(context),
+                    //         ),
+                    //       ),
+                    //     ),
+                    //     if (!notification.isRead)
+                    //       Container(
+                    //         width: 8,
+                    //         height: 8,
+                    //         decoration: BoxDecoration(
+                    //           color: AppTheme.primaryblue,
+                    //           shape: BoxShape.circle,
+                    //         ),
+                    //       ),
+                    //   ],
+                    // ),
+                    // SizedBox(height: 6),
                     Text(
                       notification.message,
                       style: TextStyle(
@@ -751,7 +751,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                           ],
                         ),
                       ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 4),
                     Text(
                       _getTimeAgo(notification.timestamp),
                       style: TextStyle(
