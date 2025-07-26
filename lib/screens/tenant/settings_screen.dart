@@ -45,7 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
@@ -139,9 +139,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Account Verification',
           widget.user.isVerified ? 'Verified' : 'Verify your account',
           () => _navigateToVerification(),
-          trailing: widget.user.isVerified
-              ? Icon(Icons.check_circle, color: Colors.green)
-              : null,
+          trailing: widget.user.isVerified ? Icon(Icons.check_circle, color: Colors.green) : null,
         ),
       ],
     );
@@ -224,7 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _locationEnabled,
           (value) => setState(() => _locationEnabled = value),
         ),
-       
+
         // _buildSettingsItem(
         //   Icons.download_outlined,
         //   'Download My Data',
@@ -272,7 +270,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _buildSection(
       'About',
       [
-        
         _buildSettingsItem(
           Icons.description_outlined,
           'Terms of Service',
@@ -337,9 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: Container(
         padding: EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isDestructive
-              ? Colors.red.withOpacity(0.1)
-              : AppTheme.primaryblue.withOpacity(0.1),
+          color: isDestructive ? Colors.red.withOpacity(0.1) : AppTheme.primaryblue.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -556,7 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             break;
         }
         setState(() {});
-        
+
         _showSnackBar(
           'Failed to update notification preference: ${result['message'] ?? 'Unknown error'}',
           Colors.red,
@@ -576,7 +571,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           break;
       }
       setState(() {});
-      
+
       _showSnackBar(
         'Network error. Please try again.',
         Colors.red,
@@ -604,7 +599,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _navigateToEmailPreferences() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Email Preferences - Coming Soon', style: TextStyle(color: AppTheme.lightGreyColor),),
+        content: Text(
+          'Email Preferences - Coming Soon',
+          style: TextStyle(color: AppTheme.lightGreyColor),
+        ),
         duration: Duration(milliseconds: 500),
         backgroundColor: AppTheme.primaryblue,
         behavior: SnackBarBehavior.floating,
@@ -616,7 +614,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _navigateToVerification() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Account Verification - Coming Soon', style: TextStyle(color: AppTheme.lightGreyColor),),
+        content: Text(
+          'Account Verification - Coming Soon',
+          style: TextStyle(color: AppTheme.lightGreyColor),
+        ),
         duration: Duration(milliseconds: 500),
         backgroundColor: AppTheme.primaryblue,
         behavior: SnackBarBehavior.floating,
@@ -629,7 +630,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => HelpSupportScreen(user: widget.user,),
+        builder: (context) => HelpSupportScreen(
+          user: widget.user,
+        ),
       ),
     );
   }
@@ -646,7 +649,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _navigateToRateApp() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Rate App - Coming Soon', style: TextStyle(color: AppTheme.lightGreyColor),),
+        content: Text(
+          'Rate App - Coming Soon',
+          style: TextStyle(color: AppTheme.lightGreyColor),
+        ),
         duration: Duration(milliseconds: 500),
         backgroundColor: AppTheme.primaryblue,
         behavior: SnackBarBehavior.floating,
@@ -833,23 +839,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     Navigator.of(context).pop();
-    
+
     // Show loading
     _showSnackBar('Changing password...', AppTheme.primaryblue);
-    
+
     try {
       final result = await AuthService.changePassword(
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
-      
+
       if (result['success'] == true) {
         _showSnackBar('Password changed successfully', AppTheme.primaryblue);
       } else {
         // Handle specific error codes
         final code = result['code'];
         final message = result['message'] ?? 'Password change failed';
-        
+
         if (code == 'TOKEN_EXPIRED') {
           _showSnackBar('Session expired. Please login again.', Colors.red);
           // TODO: Navigate to login screen or trigger re-authentication
@@ -861,8 +867,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       }
     } catch (e, stackTrace) {
-      debugPrint('Password change error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Password change error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       _showSnackBar('Network error. Please try again.', Colors.red);
     }
   }
@@ -1157,9 +1163,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       }
                                     : null,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: isDeleteEnabled
-                                      ? Colors.red
-                                      : Colors.grey.withOpacity(0.3),
+                                  backgroundColor: isDeleteEnabled ? Colors.red : Colors.grey.withOpacity(0.3),
                                   foregroundColor: AppTheme.whiteColor,
                                   padding: EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(

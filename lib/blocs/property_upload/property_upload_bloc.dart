@@ -19,7 +19,7 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
     try {
       emit(const PropertyUploadLoading());
 
-      debugPrint('PropertyUploadBloc: Starting property upload...');
+      //debugPrint('PropertyUploadBloc: Starting property upload...');
 
       // Validate required fields
       final validationErrors = _validateFields(event);
@@ -51,21 +51,21 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
       );
 
       if (result['success'] == true) {
-        debugPrint('PropertyUploadBloc: Upload successful');
+        //debugPrint('PropertyUploadBloc: Upload successful');
         emit(PropertyUploadSuccess(
           message: result['message'] ?? 'Property uploaded successfully!',
           propertyData: result['data'],
         ));
       } else {
-        debugPrint('PropertyUploadBloc: Upload failed - ${result['message']}');
+        //debugPrint('PropertyUploadBloc: Upload failed - ${result['message']}');
         emit(PropertyUploadError(
           message: result['message'] ?? 'Failed to upload property',
           errorCode: result['code'],
         ));
       }
     } catch (e, stackTrace) {
-      debugPrint('PropertyUploadBloc: Upload error - $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('PropertyUploadBloc: Upload error - $e');
+      //debugPrint('Stack trace: $stackTrace');
 
       String errorMessage = 'An unexpected error occurred';
       String? errorCode;
@@ -105,7 +105,7 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
     try {
       emit(const PropertyUploadLoading());
 
-      debugPrint('PropertyUploadBloc: Starting property update...');
+      //debugPrint('PropertyUploadBloc: Starting property update...');
 
       // Validate required fields
       final validationErrors = _validateUpdateFields(event);
@@ -138,21 +138,21 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
       );
 
       if (result['success'] == true) {
-        debugPrint('PropertyUploadBloc: Update successful');
+        //debugPrint('PropertyUploadBloc: Update successful');
         emit(PropertyUploadSuccess(
           message: result['message'] ?? 'Property updated successfully!',
           propertyData: result['property'],
         ));
       } else {
-        debugPrint('PropertyUploadBloc: Update failed - ${result['message']}');
+        //debugPrint('PropertyUploadBloc: Update failed - ${result['message']}');
         emit(PropertyUploadError(
           message: result['message'] ?? 'Failed to update property',
           errorCode: result['code'],
         ));
       }
     } catch (e, stackTrace) {
-      debugPrint('PropertyUploadBloc: Update error - $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('PropertyUploadBloc: Update error - $e');
+      //debugPrint('Stack trace: $stackTrace');
 
       String errorMessage = 'An unexpected error occurred';
       String? errorCode;

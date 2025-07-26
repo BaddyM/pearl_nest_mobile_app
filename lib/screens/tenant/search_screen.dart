@@ -52,11 +52,7 @@ class SearchFilters {
   }
 
   bool get hasActiveFilters {
-    return propertyType != 'All' ||
-        priceRange.start != 0 ||
-        priceRange.end != 5000 ||
-        bedrooms != null ||
-        selectedAmenities.isNotEmpty;
+    return propertyType != 'All' || priceRange.start != 0 || priceRange.end != 5000 || bedrooms != null || selectedAmenities.isNotEmpty;
   }
 
   void clear() {
@@ -103,7 +99,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _performSearch() async {
     final searchQuery = _searchController.text.trim();
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -111,7 +107,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
     try {
       Map<String, dynamic> result;
-      
+
       if (searchQuery.isEmpty) {
         // If no search text, check if we have price filters
         if (_filters.priceRange.start != 0 || _filters.priceRange.end != 5000) {
@@ -140,29 +136,29 @@ class _SearchScreenState extends State<SearchScreen> {
           filters: _buildApiFilters(),
         );
       }
-      
+
       if (result['success'] == true) {
         List<Property> properties = List<Property>.from(result['properties'] ?? []);
-        
+
         // Apply local filters for features not supported by API
         properties = _applyLocalFilters(properties);
-        
+
         setState(() {
           _filteredProperties = properties;
           _isLoading = false;
         });
-        
-        debugPrint('🔍 Search completed: ${properties.length} properties found');
+
+        //debugPrint('🔍 Search completed: ${properties.length} properties found');
       } else {
         setState(() {
           _filteredProperties = [];
           _errorMessage = result['message'] ?? 'Failed to load properties.';
           _isLoading = false;
         });
-        debugPrint('❌ Search failed: ${result['message']}');
+        //debugPrint('❌ Search failed: ${result['message']}');
       }
     } catch (e) {
-      debugPrint('❌ Error performing search: $e');
+      //debugPrint('❌ Error performing search: $e');
       setState(() {
         _filteredProperties = [];
         _errorMessage = 'An error occurred while searching. Please try again.';
@@ -211,66 +207,57 @@ class _SearchScreenState extends State<SearchScreen> {
   // Helper to build API filters from UI filters
   Map<String, dynamic> _buildApiFilters() {
     final filters = <String, dynamic>{};
-    
+
     // Only add filters that the API supports
     // Property type filter - let's handle this locally for now
     // if (_filters.propertyType != 'All') {
     //   filters['propertyType'] = _filters.propertyType;
     // }
-    
+
     // Bedrooms filter - let's handle this locally for now
     // if (_filters.bedrooms != null) {
     //   filters['bedrooms'] = _filters.bedrooms;
     // }
-    
+
     // Price range is handled by the price search API, not as a filter
     // For text search, we'll apply price filtering locally
-    
+
     // Amenities filter - let's handle this locally for now
     // if (_filters.selectedAmenities.isNotEmpty) {
     //   filters['amenities'] = _filters.selectedAmenities;
     // }
-    
+
     return filters;
   }
 
   // Helper to apply local filters that aren't supported by API
   List<Property> _applyLocalFilters(List<Property> properties) {
     List<Property> filtered = List.from(properties);
-    
+
     // Apply property type filter locally if needed
     if (_filters.propertyType != 'All') {
-      filtered = filtered.where((property) => 
-        property.type.toString().split('.').last.toLowerCase() == _filters.propertyType.toLowerCase()
-      ).toList();
+      filtered = filtered.where((property) => property.type.toString().split('.').last.toLowerCase() == _filters.propertyType.toLowerCase()).toList();
     }
-    
+
     // Apply bedrooms filter locally if needed
     if (_filters.bedrooms != null) {
-      filtered = filtered.where((property) => 
-        property.bedrooms == _filters.bedrooms
-      ).toList();
+      filtered = filtered.where((property) => property.bedrooms == _filters.bedrooms).toList();
     }
-    
+
     // Apply amenities filter locally if needed
     if (_filters.selectedAmenities.isNotEmpty) {
       filtered = filtered.where((property) {
         final propertyAmenities = property.amenities.map((a) => a.toLowerCase()).toList();
-        return _filters.selectedAmenities.every((amenity) => 
-          propertyAmenities.contains(amenity.toLowerCase())
-        );
+        return _filters.selectedAmenities.every((amenity) => propertyAmenities.contains(amenity.toLowerCase()));
       }).toList();
     }
-    
+
     // Apply price range filter locally if we're doing text search
     // (price search API handles this, but text search might need local filtering)
     if (_filters.priceRange.start != 0 || _filters.priceRange.end != 5000) {
-      filtered = filtered.where((property) => 
-        property.price >= _filters.priceRange.start && 
-        property.price <= _filters.priceRange.end
-      ).toList();
+      filtered = filtered.where((property) => property.price >= _filters.priceRange.start && property.price <= _filters.priceRange.end).toList();
     }
-    
+
     return filtered;
   }
 
@@ -278,7 +265,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _toggleFavorite(Property property) async {
     try {
       final wasLiked = _isPropertyFavorited(property);
-      
+
       // Optimistically update the UI for better UX
       setState(() {
         if (wasLiked) {
@@ -292,16 +279,16 @@ class _SearchScreenState extends State<SearchScreen> {
           });
         }
       });
-      
+
       // Make API call to sync with server
-      debugPrint('🤍 Toggling favorite for property: ${property.id}');
+      //debugPrint('🤍 Toggling favorite for property: ${property.id}');
       final result = await FavoritesService.toggleFavorite(property.id);
-      
+
       if (result['success'] == true) {
         // Success - UI is already updated optimistically
         final message = wasLiked ? 'Removed from favorites' : 'Added to favorites';
-        debugPrint('✅ $message for property: ${property.id}');
-        
+        //debugPrint('✅ $message for property: ${property.id}');
+
         // Show success feedback
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -329,9 +316,9 @@ class _SearchScreenState extends State<SearchScreen> {
             property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
           }
         });
-        
-        debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
-        
+
+        //debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -345,10 +332,9 @@ class _SearchScreenState extends State<SearchScreen> {
           );
         }
       }
-      
     } catch (e) {
-      debugPrint('❌ Error toggling favorite: $e');
-      
+      //debugPrint('❌ Error toggling favorite: $e');
+
       // Revert the optimistic update on error
       final wasLiked = _isPropertyFavorited(property);
       setState(() {
@@ -363,7 +349,7 @@ class _SearchScreenState extends State<SearchScreen> {
           property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
         }
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -384,7 +370,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final hasSearchText = _searchController.text.trim().isNotEmpty;
     final hasActiveFilters = _filters.hasActiveFilters;
     final isNotDefaultSort = _sortBy != 'Recent';
-    
+
     if (!hasSearchText && !hasActiveFilters && !isNotDefaultSort) {
       // No filters to clear, show a message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -399,14 +385,14 @@ class _SearchScreenState extends State<SearchScreen> {
       );
       return;
     }
-    
+
     setState(() {
       _searchController.clear();
       _filters.clear();
       _sortBy = 'Recent';
       _performSearch();
     });
-    
+
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -550,7 +536,9 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       child: TextField(
         controller: _searchController,
-        style: TextStyle(color: AppTheme.getTextColor(context),),
+        style: TextStyle(
+          color: AppTheme.getTextColor(context),
+        ),
         decoration: InputDecoration(
           hintText: 'Search by location, property name...',
           hintStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
@@ -582,14 +570,10 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: _filters.hasActiveFilters 
-                    ? AppTheme.primaryblue 
-                    : AppTheme.getCardColor(context),
+                color: _filters.hasActiveFilters ? AppTheme.primaryblue : AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _filters.hasActiveFilters 
-                      ? AppTheme.primaryblue 
-                      : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
+                  color: _filters.hasActiveFilters ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                 ),
               ),
               child: Row(
@@ -598,18 +582,14 @@ class _SearchScreenState extends State<SearchScreen> {
                   Icon(
                     Icons.filter_list,
                     size: 18,
-                    color: _filters.hasActiveFilters 
-                        ? AppTheme.whiteColor 
-                        : AppTheme.getSecondaryTextColor(context),
+                    color: _filters.hasActiveFilters ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
                   ),
                   SizedBox(width: 8),
                   Text(
                     _filters.hasActiveFilters ? 'Filters Applied' : 'Filters',
                     style: TextStyle(
                       fontSize: 14,
-                      color: _filters.hasActiveFilters 
-                          ? AppTheme.whiteColor 
-                          : AppTheme.getSecondaryTextColor(context),
+                      color: _filters.hasActiveFilters ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -816,16 +796,20 @@ class _SearchScreenState extends State<SearchScreen> {
             : ListView.builder(
                 shrinkWrap: true, // Important: allows ListView to size itself
                 physics: NeverScrollableScrollPhysics(), // Disable ListView scrolling since parent ScrollView handles it
-                padding: EdgeInsets.only(left: 20, right: 20, bottom: 100,),
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  bottom: 100,
+                ),
                 itemCount: _filteredProperties.length,
                 itemBuilder: (context, index) {
                   final property = _filteredProperties[index];
                   return Container(
-                      margin: EdgeInsets.only(bottom: 16),
-                      child: _buildPropertyCard(property),
-                    );
-                  },
-                ),
+                    margin: EdgeInsets.only(bottom: 16),
+                    child: _buildPropertyCard(property),
+                  );
+                },
+              ),
       ],
     );
   }
@@ -981,7 +965,6 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                         ),
                 ),
-
                 Positioned(
                   top: 12,
                   left: 12,
@@ -1042,12 +1025,8 @@ class _SearchScreenState extends State<SearchScreen> {
                             ],
                           ),
                           child: Icon(
-                            _isPropertyFavorited(property)
-                                ? Icons.favorite
-                                : Icons.favorite_outline,
-                            color: _isPropertyFavorited(property)
-                                ? Colors.red
-                                : AppTheme.getSecondaryTextColor(context),
+                            _isPropertyFavorited(property) ? Icons.favorite : Icons.favorite_outline,
+                            color: _isPropertyFavorited(property) ? Colors.red : AppTheme.getSecondaryTextColor(context),
                             size: 18,
                           ),
                         ),
@@ -1055,33 +1034,26 @@ class _SearchScreenState extends State<SearchScreen> {
                     ],
                   ),
                 ),
-
                 Positioned(
                   bottom: 12,
                   left: 12,
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: property.availabilityStatus == AvailabilityStatus.availableNow
-                          ? Colors.green
-                          : Colors.orange,
+                      color: property.availabilityStatus == AvailabilityStatus.availableNow ? Colors.green : Colors.orange,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          property.availabilityStatus == AvailabilityStatus.availableNow
-                              ? Icons.check_circle
-                              : Icons.schedule,
+                          property.availabilityStatus == AvailabilityStatus.availableNow ? Icons.check_circle : Icons.schedule,
                           color: AppTheme.whiteColor,
                           size: 12,
                         ),
                         SizedBox(width: 4),
                         Text(
-                          property.availabilityStatus == AvailabilityStatus.availableNow
-                              ? 'Available Now'
-                              : 'Available Later',
+                          property.availabilityStatus == AvailabilityStatus.availableNow ? 'Available Now' : 'Available Later',
                           style: TextStyle(
                             color: AppTheme.whiteColor,
                             fontSize: 10,
@@ -1094,7 +1066,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ],
             ),
-
             Padding(
               padding: EdgeInsets.all(16),
               child: Column(
@@ -1144,9 +1115,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ],
                   ),
-
                   SizedBox(height: 8),
-
                   Row(
                     children: [
                       Icon(
@@ -1168,9 +1137,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ],
                   ),
-
                   SizedBox(height: 8),
-
                   Row(
                     children: [
                       if (property.bedrooms > 0) ...[
@@ -1228,9 +1195,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ],
                   ),
-
                   SizedBox(height: 12),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1258,8 +1223,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                             ],
                           ),
-                          if (property.availabilityStatus == AvailabilityStatus.availableLater &&
-                               property.availableFrom != null)
+                          if (property.availabilityStatus == AvailabilityStatus.availableLater && property.availableFrom != null)
                             Text(
                               'Available from ${_formatDate(property.availableFrom!)}',
                               style: TextStyle(

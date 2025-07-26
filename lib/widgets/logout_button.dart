@@ -24,7 +24,7 @@ class LogoutButton extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
-        
+
         return ElevatedButton.icon(
           onPressed: isLoading ? null : () => _showLogoutDialog(context),
           style: ElevatedButton.styleFrom(
@@ -122,7 +122,7 @@ class LogoutButton extends StatelessWidget {
   Future<void> _handleLogout(BuildContext context) async {
     try {
       context.read<AuthBloc>().add(AuthLogoutRequested());
-      
+
       // Show success message
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -138,14 +138,13 @@ class LogoutButton extends StatelessWidget {
           ),
         );
       }
-      
+
       // Call custom callback if provided
       onLogoutSuccess?.call();
-      
     } catch (e, stackTrace) {
-      debugPrint('Logout error: $e');
-      debugPrint('Stack trace: $stackTrace');
-      
+      //debugPrint('Logout error: $e');
+      //debugPrint('Stack trace: $stackTrace');
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -178,7 +177,7 @@ class LogoutMenuItem extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
-        
+
         return ListTile(
           leading: Icon(Icons.logout, color: Colors.red),
           title: Text(
@@ -188,9 +187,7 @@ class LogoutMenuItem extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          onTap: isLoading 
-              ? null 
-              : () => LogoutButton()._showLogoutDialog(context),
+          onTap: isLoading ? null : () => LogoutButton()._showLogoutDialog(context),
         );
       },
     );

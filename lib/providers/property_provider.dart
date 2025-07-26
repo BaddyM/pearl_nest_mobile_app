@@ -17,25 +17,25 @@ class PropertyProvider extends ChangeNotifier {
   List<Property> _properties = [];
   List<Property> _searchResults = [];
   List<Property> _featuredProperties = [];
-  
+
   // Loading states
   PropertyLoadingState _state = PropertyLoadingState.idle;
   bool _isLoadingMore = false;
   bool _hasNextPage = false;
-  
+
   // Pagination
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalProperties = 0;
   final int _pageSize = 20;
-  
+
   // Search state
   String _currentSearchQuery = '';
   bool _isSearchMode = false;
-  
+
   // Error handling
   String? _error;
-  
+
   // Filters
   Map<String, dynamic> _filters = {};
   String? _sortBy;
@@ -46,7 +46,7 @@ class PropertyProvider extends ChangeNotifier {
   List<Property> get searchResults => _searchResults;
   List<Property> get featuredProperties => _featuredProperties;
   List<Property> get displayProperties => _isSearchMode ? _searchResults : _properties;
-  
+
   PropertyLoadingState get state => _state;
   bool get isLoading => _state == PropertyLoadingState.loading || _state == PropertyLoadingState.searchLoading;
   bool get isLoadingMore => _isLoadingMore;
@@ -54,7 +54,7 @@ class PropertyProvider extends ChangeNotifier {
   bool get hasData => _properties.isNotEmpty || _searchResults.isNotEmpty;
   bool get hasNextPage => _hasNextPage;
   bool get isSearchMode => _isSearchMode;
-  
+
   int get currentPage => _currentPage;
   int get totalPages => _totalPages;
   int get totalProperties => _totalProperties;
@@ -89,17 +89,17 @@ class PropertyProvider extends ChangeNotifier {
 
       if (result['success']) {
         final List<Property> newProperties = result['properties'] ?? [];
-        
+
         if (_currentPage == 1) {
           _properties = newProperties;
         } else {
           _properties.addAll(newProperties);
         }
-        
+
         _totalPages = result['totalPages'] ?? 1;
         _totalProperties = result['total'] ?? 0;
         _hasNextPage = result['hasNextPage'] ?? false;
-        
+
         _setState(PropertyLoadingState.loaded);
       } else {
         _setError(result['message'] ?? 'Failed to load properties');
@@ -175,17 +175,17 @@ class PropertyProvider extends ChangeNotifier {
 
       if (result['success']) {
         final List<Property> searchProperties = result['properties'] ?? [];
-        
+
         if (_currentPage == 1) {
           _searchResults = searchProperties;
         } else {
           _searchResults.addAll(searchProperties);
         }
-        
+
         _totalPages = result['totalPages'] ?? 1;
         _totalProperties = result['total'] ?? 0;
         _hasNextPage = result['hasNextPage'] ?? false;
-        
+
         _setState(PropertyLoadingState.searchLoaded);
       } else {
         _setError(result['message'] ?? 'Search failed');
@@ -243,7 +243,7 @@ class PropertyProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Error loading featured properties: $e');
+      //debugPrint('Error loading featured properties: $e');
       // Don't show error for featured properties as it's not critical
     }
   }

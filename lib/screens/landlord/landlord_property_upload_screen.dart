@@ -46,7 +46,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   final _safetySecurityController = TextEditingController();
   final _nearbyPlacesController = TextEditingController();
   final _propertyMapController = TextEditingController();
-  
+
   PropertyType _selectedType = PropertyType.apartment;
   String _selectedPriceType = 'per month';
   AvailabilityStatus _availabilityStatus = AvailabilityStatus.availableNow;
@@ -115,7 +115,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   @override
   void initState() {
     super.initState();
-    
+
     // If editing an existing property, fetch and populate the form fields
     if (widget.property != null) {
       _loadPropertyForEditing();
@@ -124,12 +124,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
   Future<void> _loadPropertyForEditing() async {
     try {
-      debugPrint('🔄 Loading property for editing: ${widget.property?.id}');
-      
+      //debugPrint('🔄 Loading property for editing: ${widget.property?.id}');
+
       // Get auth token
       final token = await AuthService.getCurrentToken();
       if (token == null || token.isEmpty) {
-        debugPrint('❌ No auth token available');
+        //debugPrint('❌ No auth token available');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Authentication required. Please log in again.'),
@@ -139,27 +139,27 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         return;
       }
 
-      debugPrint('✅ Auth token available, fetching property details...');
-      
+      //debugPrint('✅ Auth token available, fetching property details...');
+
       // Fetch property details from API
       final result = await PropertyService.getPropertyForEdit(widget.property!.id, token: token);
-      
-      debugPrint('📋 API Result keys: ${result.keys}');
-      debugPrint('📋 API Result success: ${result['success']}');
-      debugPrint('📋 API Result property type: ${result['property']?.runtimeType}');
-      debugPrint('📋 API Result property is null: ${result['property'] == null}');
-      
+
+      //debugPrint('📋 API Result keys: ${result.keys}');
+      //debugPrint('📋 API Result success: ${result['success']}');
+      //debugPrint('📋 API Result property type: ${result['property']?.runtimeType}');
+      //debugPrint('📋 API Result property is null: ${result['property'] == null}');
+
       if (result['success'] == true && result['property'] != null) {
-        debugPrint('✅ API call successful, populating form with API data...');
+        //debugPrint('✅ API call successful, populating form with API data...');
         _populateFormWithApiData(result['property']);
       } else {
-        debugPrint('⚠️ API call failed or no data, falling back to existing property data...');
-        debugPrint('⚠️ Success: ${result['success']}, Property: ${result['property']}');
+        //debugPrint('⚠️ API call failed or no data, falling back to existing property data...');
+        //debugPrint('⚠️ Success: ${result['success']}, Property: ${result['property']}');
         // Fallback to existing property data
         _populateFormForEditing();
       }
     } catch (e) {
-      debugPrint('❌ Error loading property for editing: $e');
+      //debugPrint('❌ Error loading property for editing: $e');
       // Fallback to existing property data
       _populateFormForEditing();
     }
@@ -196,8 +196,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   }
 
   void _populateFormWithApiData(Map<String, dynamic> propertyData) {
-    debugPrint('🏠 Populating form with API data: ${propertyData.keys}');
-    
+    //debugPrint('🏠 Populating form with API data: ${propertyData.keys}');
+
     setState(() {
       _titleController.text = propertyData['propertyName'] ?? '';
       _descriptionController.text = propertyData['description'] ?? '';
@@ -211,53 +211,46 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _safetySecurityController.text = propertyData['safetyAndSecurity'] ?? '';
       _nearbyPlacesController.text = propertyData['nearbyPlaces'] ?? '';
       _propertyMapController.text = propertyData['propertyMap'] ?? '';
-      debugPrint('🔍 API period: "${propertyData['period']}"');
-      _selectedPriceType = _priceTypes.contains(propertyData['period']) 
-          ? propertyData['period'] 
-          : 'per month';
-      debugPrint('🔍 Selected priceType from API: "$_selectedPriceType"');
-      
-      debugPrint('📝 Populated propertyMap: ${_propertyMapController.text}');
-      debugPrint('📝 Populated safetyAndSecurity: ${_safetySecurityController.text}');
-      debugPrint('📝 Populated nearbyPlaces: ${_nearbyPlacesController.text}');
-      
+      //debugPrint('🔍 API period: "${propertyData['period']}"');
+      _selectedPriceType = _priceTypes.contains(propertyData['period']) ? propertyData['period'] : 'per month';
+      //debugPrint('🔍 Selected priceType from API: "$_selectedPriceType"');
+
+      //debugPrint('📝 Populated propertyMap: ${_propertyMapController.text}');
+      //debugPrint('📝 Populated safetyAndSecurity: ${_safetySecurityController.text}');
+      //debugPrint('📝 Populated nearbyPlaces: ${_nearbyPlacesController.text}');
+
       // Parse amenities string to list
       if (propertyData['amenities'] != null && propertyData['amenities'].toString().isNotEmpty) {
         _selectedAmenities.clear();
         _selectedAmenities.addAll(propertyData['amenities'].toString().split(', '));
       }
-      
+
       // Set property type
       String propertyTypeString = propertyData['propertyType'] ?? 'Apartment';
       _selectedType = _getPropertyTypeFromString(propertyTypeString);
-      
+
       // Handle existing images - store URLs for display and deletion
       if (propertyData['media'] != null && propertyData['media'].toString().isNotEmpty) {
         _existingImageUrls.clear();
         // Split the media string by comma and clean up each path
-        List<String> imagePaths = propertyData['media'].toString()
-            .split(',')
-            .map((path) => path.trim())
-            .where((path) => path.isNotEmpty && path != 'uploads/property/undefined')
-            .map((path) {
-              // Convert relative paths to full URLs using AppConfig
-              if (path.startsWith('./')) {
-                return '${AppConfig.baseUrl}/${path.substring(2)}';
-              } else if (!path.startsWith('http')) {
-                return '${AppConfig.baseUrl}/$path';
-              }
-              return path;
-            })
-            .toList();
+        List<String> imagePaths = propertyData['media'].toString().split(',').map((path) => path.trim()).where((path) => path.isNotEmpty && path != 'uploads/property/undefined').map((path) {
+          // Convert relative paths to full URLs using AppConfig
+          if (path.startsWith('./')) {
+            return '${AppConfig.baseUrl}/${path.substring(2)}';
+          } else if (!path.startsWith('http')) {
+            return '${AppConfig.baseUrl}/$path';
+          }
+          return path;
+        }).toList();
         _existingImageUrls.addAll(imagePaths);
-        debugPrint('📸 Loaded ${imagePaths.length} existing images: $imagePaths');
+        //debugPrint('📸 Loaded ${imagePaths.length} existing images: $imagePaths');
       }
     });
   }
 
   void _populateFormForEditing() {
     final property = widget.property!;
-    
+
     setState(() {
       // Basic property information
       _titleController.text = property.title;
@@ -268,44 +261,42 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _areaController.text = property.area.toString();
       _bedroomsController.text = property.bedrooms.toString();
       _bathroomsController.text = property.bathrooms.toString();
-      
+
       // Use the new fields from the Property model
       _neighborhoodController.text = property.neighborhood ?? property.address; // Fallback to address if neighborhood is null
       _safetySecurityController.text = property.safetyAndSecurity ?? ''; // Use the field from model
       _nearbyPlacesController.text = property.nearbyPlaces ?? ''; // Use the field from model
       _propertyMapController.text = property.propertyMap ?? ''; // Use existing map if available
-      
+
       // Property settings
-      debugPrint('🔍 API priceType: "${property.priceType}"');
-      debugPrint('🔍 Available priceTypes: $_priceTypes');
-      _selectedPriceType = _priceTypes.contains(property.priceType) 
-          ? property.priceType 
-          : 'per month';
-      debugPrint('🔍 Selected priceType: "$_selectedPriceType"');
+      //debugPrint('🔍 API priceType: "${property.priceType}"');
+      //debugPrint('🔍 Available priceTypes: $_priceTypes');
+      _selectedPriceType = _priceTypes.contains(property.priceType) ? property.priceType : 'per month';
+      //debugPrint('🔍 Selected priceType: "$_selectedPriceType"');
       _selectedType = property.type;
-      
+
       // Set availability status based on property status and availability data
-      debugPrint('🔍 Property status: ${property.status}');
-      debugPrint('🔍 API availabilityStatus: ${property.availabilityStatus}');
-      
+      //debugPrint('🔍 Property status: ${property.status}');
+      //debugPrint('🔍 API availabilityStatus: ${property.availabilityStatus}');
+
       if (property.status == PropertyStatus.unavailable) {
         // If property is unavailable, default to "Available Later"
         _availabilityStatus = AvailabilityStatus.availableLater;
-        debugPrint('🔍 Property is unavailable, setting to Available Later');
+        //debugPrint('🔍 Property is unavailable, setting to Available Later');
       } else {
         // Use the availability status from API
         _availabilityStatus = property.availabilityStatus;
-        debugPrint('🔍 Using API availability status: $_availabilityStatus');
+        //debugPrint('🔍 Using API availability status: $_availabilityStatus');
       }
-      
+
       _availableFrom = property.availableFrom;
-      
+
       // Parse amenities list
       _selectedAmenities.clear();
       if (property.amenities.isNotEmpty) {
         _selectedAmenities.addAll(property.amenities);
       }
-      
+
       // Handle existing images - store URLs for display and deletion
       _existingImageUrls.clear();
       if (property.images.isNotEmpty) {
@@ -467,7 +458,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   Widget _buildProgressIndicator() {
     int completedSections = 0;
     int totalSections = 10; // Updated to include new sections
-    
+
     if (_titleController.text.isNotEmpty) completedSections++;
     if (_priceController.text.isNotEmpty) completedSections++;
     if (_locationController.text.isNotEmpty) completedSections++;
@@ -478,9 +469,9 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     if (_neighborhoodController.text.isNotEmpty) completedSections++;
     if (_safetySecurityController.text.isNotEmpty) completedSections++;
     if (_propertyMapController.text.isNotEmpty) completedSections++;
-    
+
     double progress = completedSections / totalSections;
-    
+
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -908,13 +899,9 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _availableFrom != null
-                          ? 'Available from: ${_availableFrom!.day}/${_availableFrom!.month}/${_availableFrom!.year}'
-                          : 'Select available date',
+                      _availableFrom != null ? 'Available from: ${_availableFrom!.day}/${_availableFrom!.month}/${_availableFrom!.year}' : 'Select available date',
                       style: TextStyle(
-                        color: _availableFrom != null
-                            ? AppTheme.getTextColor(context)
-                            : AppTheme.getSecondaryTextColor(context),
+                        color: _availableFrom != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1361,7 +1348,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   }
 
   Widget _buildExistingImageCard(String imageUrl) {
-    debugPrint('🖼️ Building image card for URL: $imageUrl');
+    //debugPrint('🖼️ Building image card for URL: $imageUrl');
     return Container(
       width: 120,
       height: 120,
@@ -1386,7 +1373,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               height: 120,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
-                debugPrint('❌ Image load error for $imageUrl: $error');
+                //debugPrint('❌ Image load error for $imageUrl: $error');
                 return Container(
                   width: 120,
                   height: 120,
@@ -1403,7 +1390,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               },
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) {
-                  debugPrint('✅ Image loaded successfully: $imageUrl');
+                  //debugPrint('✅ Image loaded successfully: $imageUrl');
                   return child;
                 }
                 return Container(
@@ -1524,7 +1511,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
         // Extract image string from URL
         String imageString = imageUrl.split('/').last.split('?').first;
-        
+
         // Call delete API
         final result = await PropertyService.deletePropertyImage(
           widget.property!.id,
@@ -1539,7 +1526,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           setState(() {
             _existingImageUrls.remove(imageUrl);
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Image deleted successfully'),
@@ -1556,7 +1543,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         }
       } catch (e) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        debugPrint('Error deleting image: $e');
+        //debugPrint('Error deleting image: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting image. Please try again.'),
@@ -1625,7 +1612,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     return BlocBuilder<PropertyUploadBloc, PropertyUploadState>(
       builder: (context, state) {
         final isLoading = state is PropertyUploadLoading;
-        
+
         return Container(
           width: double.infinity,
           height: 56,
@@ -1692,7 +1679,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     if (totalImages >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Maximum 10 photos allowed', style: TextStyle(color: AppTheme.lightGreyColor),),
+          content: Text(
+            'Maximum 10 photos allowed',
+            style: TextStyle(color: AppTheme.lightGreyColor),
+          ),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           duration: Duration(milliseconds: 500),
@@ -1832,12 +1822,15 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         });
       }
     } catch (e, stackTrace) {
-      debugPrint('Image picker error: $e');
-      debugPrint('Stack trace: $stackTrace');
-      
+      //debugPrint('Image picker error: $e');
+      //debugPrint('Stack trace: $stackTrace');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error picking image: $e', style: TextStyle(color: AppTheme.lightGreyColor),),
+          content: Text(
+            'Error picking image: $e',
+            style: TextStyle(color: AppTheme.lightGreyColor),
+          ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1972,59 +1965,59 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
     // Debug availability information
     bool availabilityBoolean = _availabilityStatus == AvailabilityStatus.availableNow;
-    debugPrint('🏠 Availability Status: $_availabilityStatus');
-    debugPrint('🏠 Availability Boolean: $availabilityBoolean');
-    debugPrint('🏠 Available From: $_availableFrom');
+    //debugPrint('🏠 Availability Status: $_availabilityStatus');
+    //debugPrint('🏠 Availability Boolean: $availabilityBoolean');
+    //debugPrint('🏠 Available From: $_availableFrom');
 
     // Dispatch the appropriate event to the BLoC based on whether we're editing or creating
     if (widget.property != null) {
       // Editing existing property
       context.read<PropertyUploadBloc>().add(
-        PropertyUpdateRequested(
-          propertyId: widget.property!.id,
-          propertyName: _titleController.text.trim(),
-          propertyType: propertyTypeString,
-          location: _locationController.text.trim(),
-          price: double.parse(_priceController.text),
-          amenities: amenitiesString,
-          safetyAndSecurity: _safetySecurityController.text.trim(),
-          description: _descriptionController.text.trim(),
-          nearbyPlaces: _nearbyPlacesController.text.trim(),
-          numberOfBeds: int.parse(_bedroomsController.text),
-          numberOfBathrooms: int.parse(_bathroomsController.text),
-          areaMeasurement: areaMeasurementString,
-          neighborhood: _neighborhoodController.text.trim(),
-          fullAddress: _addressController.text.trim(),
-          propertyMap: _propertyMapController.text.trim(),
-          period: _selectedPriceType,
-          availability: _availabilityStatus == AvailabilityStatus.availableNow,
-          availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
-        ),
-      );
+            PropertyUpdateRequested(
+              propertyId: widget.property!.id,
+              propertyName: _titleController.text.trim(),
+              propertyType: propertyTypeString,
+              location: _locationController.text.trim(),
+              price: double.parse(_priceController.text),
+              amenities: amenitiesString,
+              safetyAndSecurity: _safetySecurityController.text.trim(),
+              description: _descriptionController.text.trim(),
+              nearbyPlaces: _nearbyPlacesController.text.trim(),
+              numberOfBeds: int.parse(_bedroomsController.text),
+              numberOfBathrooms: int.parse(_bathroomsController.text),
+              areaMeasurement: areaMeasurementString,
+              neighborhood: _neighborhoodController.text.trim(),
+              fullAddress: _addressController.text.trim(),
+              propertyMap: _propertyMapController.text.trim(),
+              period: _selectedPriceType,
+              availability: _availabilityStatus == AvailabilityStatus.availableNow,
+              availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
+            ),
+          );
     } else {
       // Creating new property
       context.read<PropertyUploadBloc>().add(
-        PropertyUploadRequested(
-          propertyName: _titleController.text.trim(),
-          propertyType: propertyTypeString,
-          location: _locationController.text.trim(),
-          price: double.parse(_priceController.text),
-          amenities: amenitiesString,
-          safetyAndSecurity: _safetySecurityController.text.trim(),
-          description: _descriptionController.text.trim(),
-          nearbyPlaces: _nearbyPlacesController.text.trim(),
-          numberOfBeds: int.parse(_bedroomsController.text),
-          numberOfBathrooms: int.parse(_bathroomsController.text),
-          areaMeasurement: areaMeasurementString,
-          neighborhood: _neighborhoodController.text.trim(),
-          fullAddress: _addressController.text.trim(),
-          propertyMap: _propertyMapController.text.trim(),
-          period: _selectedPriceType,
-          availability: _availabilityStatus == AvailabilityStatus.availableNow,
-          availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
-          images: _selectedImages,
-        ),
-      );
+            PropertyUploadRequested(
+              propertyName: _titleController.text.trim(),
+              propertyType: propertyTypeString,
+              location: _locationController.text.trim(),
+              price: double.parse(_priceController.text),
+              amenities: amenitiesString,
+              safetyAndSecurity: _safetySecurityController.text.trim(),
+              description: _descriptionController.text.trim(),
+              nearbyPlaces: _nearbyPlacesController.text.trim(),
+              numberOfBeds: int.parse(_bedroomsController.text),
+              numberOfBathrooms: int.parse(_bathroomsController.text),
+              areaMeasurement: areaMeasurementString,
+              neighborhood: _neighborhoodController.text.trim(),
+              fullAddress: _addressController.text.trim(),
+              propertyMap: _propertyMapController.text.trim(),
+              period: _selectedPriceType,
+              availability: _availabilityStatus == AvailabilityStatus.availableNow,
+              availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
+              images: _selectedImages,
+            ),
+          );
     }
   }
 

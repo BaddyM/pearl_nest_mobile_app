@@ -19,26 +19,26 @@ class BookingService {
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data) {
     if (kDebugMode) {
-      debugPrint('🏨 BOOKING REQUEST: $endpoint');
+      ///debugPrint('🏨 BOOKING REQUEST: $endpoint');
       if (data != null) {
-        debugPrint('🏨 Request data: $data');
+        ///debugPrint('🏨 Request data: $data');
       }
     }
   }
 
   static void _logDioResponse(String endpoint, Response response) {
     if (kDebugMode) {
-      debugPrint('📝 BOOKING RESPONSE [$endpoint]: Status ${response.statusCode}');
-      debugPrint('📝 Response Body: ${response.data}');
+      ///debugPrint('📝 BOOKING RESPONSE [$endpoint]: Status ${response.statusCode}');
+      ///debugPrint('📝 Response Body: ${response.data}');
     }
   }
 
   static void _logError(String operation, dynamic error) {
     if (kDebugMode) {
-      debugPrint('❌ BOOKING ERROR [$operation]: $error');
+      ///debugPrint('❌ BOOKING ERROR [$operation]: $error');
       if (error is DioException) {
-        debugPrint('❌ Response status: ${error.response?.statusCode}');
-        debugPrint('❌ Response data: ${error.response?.data}');
+        ///debugPrint('❌ Response status: ${error.response?.statusCode}');
+        ///debugPrint('❌ Response data: ${error.response?.data}');
       }
     }
   }
@@ -59,7 +59,7 @@ class BookingService {
       _logRequest('/booking/create', requestData);
 
       final response = await ApiClient.post('/booking/create', requestData);
-      
+
       _logDioResponse('/booking/create', response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -76,17 +76,15 @@ class BookingService {
       }
     } on DioException catch (e) {
       _logError('create booking', e);
-      
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout) {
+
+      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.sendTimeout) {
         throw BookingException('Connection timeout. Please check your internet connection.');
       }
-      
+
       if (e.response?.statusCode == 400) {
         final errorData = e.response?.data;
         String errorMessage = 'Invalid booking data provided';
-        
+
         if (errorData != null && errorData['message'] != null) {
           if (errorData['message'] is List) {
             // Handle list of error messages
@@ -96,14 +94,14 @@ class BookingService {
             errorMessage = errorData['message'].toString();
           }
         }
-        
+
         throw BookingException(errorMessage, statusCode: 400);
       }
-      
+
       if (e.response?.statusCode == 401) {
         throw BookingException('Authentication required', statusCode: 401);
       }
-      
+
       if (e.response?.statusCode == 403) {
         throw BookingException('Not authorized to create bookings', statusCode: 403);
       }
@@ -115,7 +113,7 @@ class BookingService {
       if (e.response?.statusCode == 409) {
         throw BookingException('Property is not available for the selected dates', statusCode: 409);
       }
-      
+
       throw BookingException(
         e.response?.data?['message'] ?? 'Failed to create booking',
         statusCode: e.response?.statusCode,
@@ -133,22 +131,20 @@ class BookingService {
     try {
       final endpoint = status != null ? '/booking/list?status=$status' : '/booking/list';
       _logRequest(endpoint, null);
-      
+
       final response = await ApiClient.get(endpoint);
-      
+
       _logDioResponse(endpoint, response);
-      
+
       if (response.statusCode == 200) {
         final data = response.data;
         if (data['success'] == true && data['data'] != null) {
-          final bookings = (data['data'] as List)
-              .map((json) => Booking.fromApiJson(json))
-              .toList();
-          
-          debugPrint('🏨 Successfully fetched ${bookings.length} bookings');
+          final bookings = (data['data'] as List).map((json) => Booking.fromApiJson(json)).toList();
+
+          ///debugPrint('🏨 Successfully fetched ${bookings.length} bookings');
           return bookings;
         } else {
-          debugPrint('🏨 API returned success: false or no data');
+          ///debugPrint('🏨 API returned success: false or no data');
           return [];
         }
       } else if (response.statusCode == 401) {
@@ -175,7 +171,8 @@ class BookingService {
     final bookings = await fetchBookings(status: 'PENDING');
     // Additional client-side filter to ensure only pending bookings are returned
     final pendingOnly = bookings.where((booking) => booking.status == BookingStatus.pending).toList();
-    debugPrint('🏨 Server returned ${bookings.length} bookings, filtered to ${pendingOnly.length} pending bookings');
+
+    ///debugPrint('🏨 Server returned ${bookings.length} bookings, filtered to ${pendingOnly.length} pending bookings');
     return pendingOnly;
   }
 
@@ -187,15 +184,15 @@ class BookingService {
     try {
       final endpoint = '/booking/status/update/$bookingId/$status';
       _logRequest(endpoint, {'bookingId': bookingId, 'status': status});
-      
+
       final response = await ApiClient.patch(endpoint, {});
-      
+
       _logDioResponse(endpoint, response);
-      
+
       if (response.statusCode == 200) {
         final data = response.data;
         if (data['success'] == true) {
-          debugPrint('🏨 Successfully updated booking status to $status');
+          ///debugPrint('🏨 Successfully updated booking status to $status');
           return {
             'success': true,
             'message': data['message'] ?? 'Booking status updated successfully',
@@ -227,7 +224,7 @@ class BookingService {
       }
     } on DioException catch (e) {
       _logError('update booking status', e);
-      
+
       if (e.response?.statusCode == 400) {
         final errorData = e.response?.data;
         throw BookingException(
@@ -235,19 +232,19 @@ class BookingService {
           statusCode: 400,
         );
       }
-      
+
       if (e.response?.statusCode == 401) {
         throw BookingException('Authentication required', statusCode: 401);
       }
-      
+
       if (e.response?.statusCode == 403) {
         throw BookingException('Not authorized to update booking status', statusCode: 403);
       }
-      
+
       if (e.response?.statusCode == 404) {
         throw BookingException('Booking not found', statusCode: 404);
       }
-      
+
       throw BookingException(
         e.response?.data?['message'] ?? 'Failed to update booking status',
         statusCode: e.response?.statusCode,
@@ -272,17 +269,15 @@ class BookingService {
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
-        
+
         if (data['success'] == true && data['data'] != null) {
           final bookingsJson = data['data'] as List;
-          final bookings = bookingsJson
-              .map((json) => Booking.fromApiJson(json as Map<String, dynamic>))
-              .toList();
-          
-          debugPrint('📋 Fetched ${bookings.length} landlord bookings');
+          final bookings = bookingsJson.map((json) => Booking.fromApiJson(json as Map<String, dynamic>)).toList();
+
+          ///debugPrint('📋 Fetched ${bookings.length} landlord bookings');
           return bookings;
         } else {
-          debugPrint('⚠️ No booking data found in response');
+          ///debugPrint('⚠️ No booking data found in response');
           return [];
         }
       } else {
@@ -293,14 +288,14 @@ class BookingService {
       }
     } on DioException catch (e) {
       _logError('fetch landlord bookings', e);
-      
+
       if (e.response?.statusCode == 401) {
         throw BookingException(
           'Authentication failed. Please login again.',
           statusCode: 401,
         );
       }
-      
+
       throw BookingException(
         e.response?.data?['message'] ?? 'Failed to fetch landlord bookings',
         statusCode: e.response?.statusCode,

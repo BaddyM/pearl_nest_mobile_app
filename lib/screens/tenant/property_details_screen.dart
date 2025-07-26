@@ -68,14 +68,13 @@ class PropertyDetailsScreen extends StatefulWidget {
   _PropertyDetailsScreenState createState() => _PropertyDetailsScreenState();
 }
 
-class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
-    with TickerProviderStateMixin {
+class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with TickerProviderStateMixin {
   late PageController _pageController;
   bool _isFavorite = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late TabController _tabController;
-  
+
   List<Review> _reviews = [];
   double _userRating = 0;
   final TextEditingController _reviewController = TextEditingController();
@@ -85,7 +84,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
   DateTime? _checkInDate;
   DateTime? _checkOutDate;
   late BookingBloc _bookingBloc;
-  
+
   // Pending booking state
   List<Booking> _pendingBookings = [];
   Booking? _pendingBookingForProperty;
@@ -103,12 +102,12 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     _pageController = PageController();
     _tabController = TabController(length: 3, vsync: this);
     _isFavorite = _isPropertyFavorited();
-    
+
     _animationController = AnimationController(
       duration: Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -116,71 +115,55 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     _animationController.forward();
-    
+
     // Initialize booking bloc
     _bookingBloc = context.read<BookingBloc>();
-    
+
     // Initialize stats from embedded data
     _initializeStatsFromEmbeddedData();
-    
+
     // Load data from APIs
     _loadPropertyData();
   }
 
   // Helper to get full image URL
-String _getFullImageUrl(String url) {
-  if (url.isEmpty || 
-      url == 'undefined' || 
-      url == 'null' || 
-      url.contains('undefined') ||
-      url.contains('null')) {
-    return '';
-  }
-  
-  if (url.contains(',')) {
-    final urls = url.split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty && 
-                     e != 'undefined' && 
-                     e != 'null' &&
-                     !e.contains('undefined') &&
-                     !e.contains('null'))
-        .toList();
-    if (urls.isNotEmpty) {
-      url = urls.first;
-    } else {
+  String _getFullImageUrl(String url) {
+    if (url.isEmpty || url == 'undefined' || url == 'null' || url.contains('undefined') || url.contains('null')) {
       return '';
     }
-  }
-  
-  if (url.isEmpty || 
-      url == 'undefined' || 
-      url == 'null' || 
-      url.contains('undefined') ||
-      url.contains('null')) {
-    return '';
-  }
-  
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-  
-  final String baseUrl = AppConfig.getCurrentBaseUrl();
-  String cleanUrl = url.replaceFirst(RegExp(r'^(\/|\./)'), '');
-  return '$baseUrl/$cleanUrl';
-}
 
+    if (url.contains(',')) {
+      final urls = url.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty && e != 'undefined' && e != 'null' && !e.contains('undefined') && !e.contains('null')).toList();
+      if (urls.isNotEmpty) {
+        url = urls.first;
+      } else {
+        return '';
+      }
+    }
+
+    if (url.isEmpty || url == 'undefined' || url == 'null' || url.contains('undefined') || url.contains('null')) {
+      return '';
+    }
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    final String baseUrl = AppConfig.getCurrentBaseUrl();
+    String cleanUrl = url.replaceFirst(RegExp(r'^(\/|\./)'), '');
+    return '$baseUrl/$cleanUrl';
+  }
 
   // Load all property data from APIs
   void _loadPropertyData() async {
     // Increment view counter when property is viewed
     PropertyInteractionsService.incrementViewCounter(widget.property.id);
-    
+
     // Load reviews
     _loadPropertyReviews();
-    
+
     // Load pending bookings
     _loadPendingBookings();
   }
@@ -249,21 +232,21 @@ String _getFullImageUrl(String url) {
   // Load pending bookings for current user and check if this property has pending booking
   void _loadPendingBookings() async {
     try {
-      debugPrint('📚 Loading pending bookings for property: ${widget.property.id}');
+      //debugPrint('📚 Loading pending bookings for property: ${widget.property.id}');
       final pendingBookings = await BookingService.fetchPendingBookings();
-      
+
       // Check if this specific property has a pending booking
       Booking? pendingBookingForThisProperty;
       try {
         pendingBookingForThisProperty = pendingBookings.firstWhere(
           (booking) => booking.propertyId == widget.property.id,
         );
-        debugPrint('📚 Found pending booking for this property: ${pendingBookingForThisProperty.id}');
+        //debugPrint('📚 Found pending booking for this property: ${pendingBookingForThisProperty.id}');
       } catch (e) {
         // No pending booking for this property
-        debugPrint('📚 No pending booking found for this property');
+        //debugPrint('📚 No pending booking found for this property');
       }
-      
+
       if (mounted) {
         setState(() {
           _pendingBookings = pendingBookings;
@@ -271,9 +254,8 @@ String _getFullImageUrl(String url) {
           _isLoadingPendingBookings = false;
         });
       }
-      
     } catch (e) {
-      debugPrint('❌ Error loading pending bookings: $e');
+      //debugPrint('❌ Error loading pending bookings: $e');
       if (mounted) {
         setState(() {
           _pendingBookings = [];
@@ -319,7 +301,7 @@ String _getFullImageUrl(String url) {
         duration: Duration(milliseconds: 500),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );
@@ -451,7 +433,7 @@ String _getFullImageUrl(String url) {
   void _showAddReviewDialog() {
     _userRating = 0;
     _reviewController.clear();
-    
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.3),
@@ -687,7 +669,7 @@ String _getFullImageUrl(String url) {
 
     // First show dialog to get payment amount
     final double? paymentAmount = await _showPaymentAmountDialog();
-    
+
     if (paymentAmount == null) {
       // User cancelled the dialog
       return;
@@ -720,36 +702,36 @@ String _getFullImageUrl(String url) {
         },
       );
 
-      debugPrint('💳 Initiating payment for booking: ${_pendingBookingForProperty!.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
-      
+      //debugPrint('💳 Initiating payment for booking: ${_pendingBookingForProperty!.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
+
       // Debug user ID to identify the issue
-      debugPrint('🔍 User ID validation:');
-      debugPrint('   - widget.user.id: "${widget.user.id}"');
-      debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
-      debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
-      debugPrint('   - widget.user.name: "${widget.user.name}"');
-      debugPrint('   - widget.user.email: "${widget.user.email}"');
-      
+      //debugPrint('🔍 User ID validation:');
+      //debugPrint('   - widget.user.id: "${widget.user.id}"');
+      //debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
+      //debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
+      //debugPrint('   - widget.user.name: "${widget.user.name}"');
+      //debugPrint('   - widget.user.email: "${widget.user.email}"');
+
       // Validate user ID before making payment request
       if (widget.user.id.isEmpty) {
         // Close loading dialog
         if (mounted) {
           Navigator.of(context).pop();
         }
-        
-        debugPrint('❌ User ID is empty - attempting to get from AuthService');
-        
+
+        //debugPrint('❌ User ID is empty - attempting to get from AuthService');
+
         // Try to get user ID from AuthService as fallback
         final currentUserId = await AuthService.getUserId();
-        debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
-        
+        //debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
+
         if (currentUserId == null || currentUserId.isEmpty) {
           _showPaymentError('User session invalid. Please logout and login again.');
           return;
         }
-        
-        debugPrint('✅ Using fallback user ID: $currentUserId');
-        
+
+        //debugPrint('✅ Using fallback user ID: $currentUserId');
+
         // Show loading dialog again
         showDialog(
           context: context,
@@ -775,7 +757,7 @@ String _getFullImageUrl(String url) {
             );
           },
         );
-        
+
         // Create payment with the fallback user ID
         final paymentResult = await PaymentService.createPayment(
           userId: currentUserId,
@@ -783,12 +765,12 @@ String _getFullImageUrl(String url) {
           propertyId: widget.property.id,
           amount: paymentAmount,
         );
-        
+
         // Close loading dialog
         if (mounted) {
           Navigator.of(context).pop();
         }
-        
+
         if (paymentResult['success'] == true) {
           final String? redirectUrl = paymentResult['redirectUrl'];
           final String? orderTrackingId = paymentResult['orderTrackingId'];
@@ -813,7 +795,7 @@ String _getFullImageUrl(String url) {
             if (paymentSuccess == true) {
               // Payment completed successfully, reload pending bookings
               _loadPendingBookings();
-              
+
               // Show success message and navigate to home screen
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -824,7 +806,7 @@ String _getFullImageUrl(String url) {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               );
-              
+
               // Navigate back to home screen after a brief delay
               Future.delayed(Duration(seconds: 2), () {
                 if (mounted) {
@@ -838,10 +820,10 @@ String _getFullImageUrl(String url) {
         } else {
           _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
         }
-        
+
         return; // Return early since we handled the payment with fallback ID
       }
-      
+
       // Create payment with the user-specified amount
       final paymentResult = await PaymentService.createPayment(
         userId: widget.user.id,
@@ -879,7 +861,7 @@ String _getFullImageUrl(String url) {
           if (paymentSuccess == true) {
             // Payment completed successfully, reload pending bookings
             _loadPendingBookings();
-            
+
             // Show success message and navigate to home screen
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -890,7 +872,7 @@ String _getFullImageUrl(String url) {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             );
-            
+
             // Navigate back to home screen after a brief delay
             Future.delayed(Duration(seconds: 2), () {
               if (mounted) {
@@ -909,8 +891,8 @@ String _getFullImageUrl(String url) {
       if (mounted) {
         Navigator.of(context).pop();
       }
-      
-      debugPrint('❌ Payment initiation error: $e');
+
+      //debugPrint('❌ Payment initiation error: $e');
       _showPaymentError('An error occurred while setting up payment. Please try again.');
     }
   }
@@ -918,7 +900,7 @@ String _getFullImageUrl(String url) {
   // Show payment error dialog
   void _showPaymentError(String message) {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -973,7 +955,7 @@ String _getFullImageUrl(String url) {
     final TextEditingController amountController = TextEditingController();
     final formattedPropertyPrice = NumberFormat('#,##0').format(widget.property.price);
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    
+
     return await showDialog<double>(
       context: context,
       barrierDismissible: false,
@@ -1074,20 +1056,20 @@ String _getFullImageUrl(String url) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter an amount';
                     }
-                    
+
                     final double? amount = double.tryParse(value.trim().replaceAll(',', ''));
                     if (amount == null) {
                       return 'Please enter a valid number';
                     }
-                    
+
                     if (amount <= 0) {
                       return 'Amount must be greater than 0';
                     }
-                    
+
                     if (amount > widget.property.price) {
                       return 'Amount cannot exceed UGX $formattedPropertyPrice';
                     }
-                    
+
                     return null;
                   },
                 ),
@@ -1183,7 +1165,7 @@ String _getFullImageUrl(String url) {
     // Local state for the dialog
     DateTime? localCheckInDate = _checkInDate;
     DateTime? localCheckOutDate = _checkOutDate;
-    
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.3),
@@ -1288,7 +1270,7 @@ String _getFullImageUrl(String url) {
                           ),
                         ),
                         SizedBox(height: 16),
-                        
+
                         // Date selection
                         Text(
                           'Select Dates',
@@ -1299,7 +1281,7 @@ String _getFullImageUrl(String url) {
                           ),
                         ),
                         SizedBox(height: 12),
-                        
+
                         // Check-in date
                         GestureDetector(
                           onTap: () async {
@@ -1322,7 +1304,7 @@ String _getFullImageUrl(String url) {
                                 );
                               },
                             );
-                            
+
                             if (picked != null) {
                               setDialogState(() {
                                 localCheckInDate = picked;
@@ -1344,13 +1326,9 @@ String _getFullImageUrl(String url) {
                                 Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
                                 SizedBox(width: 8),
                                 Text(
-                                  localCheckInDate != null 
-                                    ? 'Check-in: ${DateFormat('MMM dd, yyyy').format(localCheckInDate!)}'
-                                    : 'Select check-in date',
+                                  localCheckInDate != null ? 'Check-in: ${DateFormat('MMM dd, yyyy').format(localCheckInDate!)}' : 'Select check-in date',
                                   style: TextStyle(
-                                    color: localCheckInDate != null 
-                                      ? AppTheme.getTextColor(context)
-                                      : AppTheme.getSecondaryTextColor(context),
+                                    color: localCheckInDate != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
                                   ),
                                 ),
                               ],
@@ -1358,13 +1336,12 @@ String _getFullImageUrl(String url) {
                           ),
                         ),
                         SizedBox(height: 8),
-                        
+
                         // Check-out date
                         GestureDetector(
                           onTap: () async {
-                            final DateTime minDate = localCheckInDate?.add(Duration(days: 1)) ?? 
-                                                    DateTime.now().add(Duration(days: 2));
-                            
+                            final DateTime minDate = localCheckInDate?.add(Duration(days: 1)) ?? DateTime.now().add(Duration(days: 2));
+
                             final DateTime? picked = await showDatePicker(
                               context: context,
                               initialDate: localCheckOutDate ?? minDate,
@@ -1384,7 +1361,7 @@ String _getFullImageUrl(String url) {
                                 );
                               },
                             );
-                            
+
                             if (picked != null) {
                               setDialogState(() {
                                 localCheckOutDate = picked;
@@ -1402,20 +1379,16 @@ String _getFullImageUrl(String url) {
                                 Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
                                 SizedBox(width: 8),
                                 Text(
-                                  localCheckOutDate != null 
-                                    ? 'Check-out: ${DateFormat('MMM dd, yyyy').format(localCheckOutDate!)}'
-                                    : 'Select check-out date',
+                                  localCheckOutDate != null ? 'Check-out: ${DateFormat('MMM dd, yyyy').format(localCheckOutDate!)}' : 'Select check-out date',
                                   style: TextStyle(
-                                    color: localCheckOutDate != null 
-                                      ? AppTheme.getTextColor(context)
-                                      : AppTheme.getSecondaryTextColor(context),
+                                    color: localCheckOutDate != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        
+
                         if (localCheckInDate != null && localCheckOutDate != null) ...[
                           SizedBox(height: 12),
                           Container(
@@ -1439,7 +1412,7 @@ String _getFullImageUrl(String url) {
                             ),
                           ),
                         ],
-                        
+
                         SizedBox(height: 16),
                         Text(
                           'Your booking request will be sent to the landlord for approval.',
@@ -1463,16 +1436,18 @@ String _getFullImageUrl(String url) {
                       builder: (context, state) {
                         final isLoading = state is BookingLoading;
                         final canSubmit = localCheckInDate != null && localCheckOutDate != null && !isLoading;
-                        
+
                         return ElevatedButton(
-                          onPressed: canSubmit ? () {
-                            // Update the main state before submitting
-                            setState(() {
-                              _checkInDate = localCheckInDate;
-                              _checkOutDate = localCheckOutDate;
-                            });
-                            _submitBooking();
-                          } : null,
+                          onPressed: canSubmit
+                              ? () {
+                                  // Update the main state before submitting
+                                  setState(() {
+                                    _checkInDate = localCheckInDate;
+                                    _checkOutDate = localCheckOutDate;
+                                  });
+                                  _submitBooking();
+                                }
+                              : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryblue,
                             shape: RoundedRectangleBorder(
@@ -1481,18 +1456,18 @@ String _getFullImageUrl(String url) {
                             elevation: 0,
                           ),
                           child: isLoading
-                            ? SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+                                  ),
+                                )
+                              : Text(
+                                  'Confirm Booking',
+                                  style: TextStyle(color: AppTheme.whiteColor),
                                 ),
-                              )
-                            : Text(
-                                'Confirm Booking',
-                                style: TextStyle(color: AppTheme.whiteColor),
-                              ),
                         );
                       },
                     ),
@@ -1515,11 +1490,11 @@ String _getFullImageUrl(String url) {
     final isVerySmallScreen = screenHeight < 600;
 
     // Increased the height multipliers to accommodate all content
-    final expandedHeight = isVerySmallScreen 
-        ? screenHeight * 0.65  // Increased from 0.55
-        : isSmallScreen 
-            ? screenHeight * 0.70  // Increased from 0.6
-            : 520.0;  // Increased from 470.0
+    final expandedHeight = isVerySmallScreen
+        ? screenHeight * 0.65 // Increased from 0.55
+        : isSmallScreen
+            ? screenHeight * 0.70 // Increased from 0.6
+            : 520.0; // Increased from 470.0
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
@@ -1540,7 +1515,8 @@ String _getFullImageUrl(String url) {
                   background: Column(
                     children: [
                       _buildFixedImageSection(),
-                      Expanded(  // Added Expanded to prevent overflow
+                      Expanded(
+                        // Added Expanded to prevent overflow
                         child: _buildPropertyHeader(),
                       ),
                     ],
@@ -1607,9 +1583,9 @@ String _getFullImageUrl(String url) {
     final isSmallScreen = screenHeight < 700;
     final isVerySmallScreen = screenHeight < 600;
 
-    final imageHeight = isVerySmallScreen 
+    final imageHeight = isVerySmallScreen
         ? screenHeight * 0.35
-        : isSmallScreen 
+        : isSmallScreen
             ? screenHeight * 0.4
             : 300.0;
 
@@ -1619,9 +1595,7 @@ String _getFullImageUrl(String url) {
     final iconSize = isSmallScreen ? 24.0 : 28.0;
     final borderRadius = isSmallScreen ? 16.0 : 20.0;
 
-    final images = widget.property.images.isNotEmpty 
-        ? widget.property.images 
-        : ['assets/images/img1.jpg'];
+    final images = widget.property.images.isNotEmpty ? widget.property.images : ['assets/images/img1.jpg'];
 
     return SizedBox(
       height: imageHeight,
@@ -1632,8 +1606,7 @@ String _getFullImageUrl(String url) {
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
-                setState(() {
-                });
+                setState(() {});
               },
               itemCount: images.length,
               itemBuilder: (context, index) {
@@ -1761,10 +1734,7 @@ String _getFullImageUrl(String url) {
                   ),
                   if (widget.property.isFeatured)
                     Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isSmallScreen ? 8 : 12, 
-                        vertical: isSmallScreen ? 4 : 6
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8 : 12, vertical: isSmallScreen ? 4 : 6),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryblue,
                         borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
@@ -1804,9 +1774,21 @@ String _getFullImageUrl(String url) {
     final horizontalPadding = screenWidth * 0.04;
     final verticalPadding = isSmallScreen ? 8.0 : 16.0;
     final spacing = isSmallScreen ? 6.0 : 12.0;
-    final titleFontSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 18.0 : 22.0;
-    final priceFontSize = isVerySmallScreen ? 20.0 : isSmallScreen ? 22.0 : 28.0;
-    final tagFontSize = isVerySmallScreen ? 8.0 : isSmallScreen ? 9.0 : 11.0;
+    final titleFontSize = isVerySmallScreen
+        ? 16.0
+        : isSmallScreen
+            ? 18.0
+            : 22.0;
+    final priceFontSize = isVerySmallScreen
+        ? 20.0
+        : isSmallScreen
+            ? 22.0
+            : 28.0;
+    final tagFontSize = isVerySmallScreen
+        ? 8.0
+        : isSmallScreen
+            ? 9.0
+            : 11.0;
     final addressFontSize = isSmallScreen ? 12.0 : 14.0;
     final priceTypeFontSize = isSmallScreen ? 11.0 : 14.0;
     final ratingFontSize = isSmallScreen ? 11.0 : 13.0;
@@ -1835,10 +1817,7 @@ String _getFullImageUrl(String url) {
             children: [
               Flexible(
                 child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isSmallScreen ? 6 : 10,
-                    vertical: isSmallScreen ? 2 : 4
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
                   decoration: BoxDecoration(
                     color: AppTheme.accentGreen.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
@@ -1857,10 +1836,7 @@ String _getFullImageUrl(String url) {
               ),
               Spacer(),
               Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSmallScreen ? 6 : 10,
-                  vertical: isSmallScreen ? 2 : 4
-                ),
+                padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
                 decoration: BoxDecoration(
                   color: Colors.amber.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
@@ -1890,9 +1866,7 @@ String _getFullImageUrl(String url) {
               ),
             ],
           ),
-
           SizedBox(height: spacing),
-
           Text(
             widget.property.title,
             style: TextStyle(
@@ -1901,19 +1875,17 @@ String _getFullImageUrl(String url) {
               color: AppTheme.getTextColor(context),
               height: 1.2,
             ),
-            maxLines: isVerySmallScreen ? 1 : isSmallScreen ? 2 : 3,
+            maxLines: isVerySmallScreen
+                ? 1
+                : isSmallScreen
+                    ? 2
+                    : 3,
             overflow: TextOverflow.ellipsis,
           ),
-
           SizedBox(height: spacing * 0.5),
-
           Row(
             children: [
-              Icon(
-                Icons.location_on,
-                color: AppTheme.primaryblue,
-                size: isSmallScreen ? 12 : 16
-              ),
+              Icon(Icons.location_on, color: AppTheme.primaryblue, size: isSmallScreen ? 12 : 16),
               SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -1928,9 +1900,7 @@ String _getFullImageUrl(String url) {
               ),
             ],
           ),
-
           SizedBox(height: spacing),
-
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -1960,14 +1930,10 @@ String _getFullImageUrl(String url) {
                   ],
                 ),
               ),
-
               if (widget.property.isVerified) ...[
                 SizedBox(width: 8),
                 Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isSmallScreen ? 6 : 10,
-                    vertical: isSmallScreen ? 2 : 4
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryblue,
                     borderRadius: BorderRadius.circular(isSmallScreen ? 6 : 10),
@@ -1982,11 +1948,7 @@ String _getFullImageUrl(String url) {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.verified,
-                        color: AppTheme.whiteColor,
-                        size: isSmallScreen ? 10 : 14
-                      ),
+                      Icon(Icons.verified, color: AppTheme.whiteColor, size: isSmallScreen ? 10 : 14),
                       SizedBox(width: 2),
                       Text(
                         'Verified',
@@ -2012,9 +1974,13 @@ String _getFullImageUrl(String url) {
     final screenHeight = screenSize.height;
     final isSmallScreen = screenHeight < 700;
     final isVerySmallScreen = screenHeight < 600;
-    
-    final bottomPadding = isVerySmallScreen ? 80.0 : isSmallScreen ? 90.0 : 100.0;
-    
+
+    final bottomPadding = isVerySmallScreen
+        ? 80.0
+        : isSmallScreen
+            ? 90.0
+            : 100.0;
+
     return SingleChildScrollView(
       padding: EdgeInsets.only(bottom: bottomPadding),
       child: Column(
@@ -2038,11 +2004,19 @@ String _getFullImageUrl(String url) {
     final screenWidth = screenSize.width;
     final isSmallScreen = screenHeight < 700;
     final isVerySmallScreen = screenHeight < 600;
-    
+
     // Responsive margins and spacing
-    final margin = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
-    final spacing = isVerySmallScreen ? 6.0 : isSmallScreen ? 8.0 : 12.0;
-    
+    final margin = isVerySmallScreen
+        ? 12.0
+        : isSmallScreen
+            ? 16.0
+            : 20.0;
+    final spacing = isVerySmallScreen
+        ? 6.0
+        : isSmallScreen
+            ? 8.0
+            : 12.0;
+
     return Container(
       margin: EdgeInsets.all(margin),
       child: Row(
@@ -2116,15 +2090,39 @@ String _getFullImageUrl(String url) {
     required bool isVerySmallScreen,
     VoidCallback? onTap,
   }) {
-    final cardPadding = isVerySmallScreen ? 8.0 : isSmallScreen ? 12.0 : 16.0;
-    final iconContainerPadding = isVerySmallScreen ? 4.0 : isSmallScreen ? 6.0 : 8.0;
-    final iconSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 18.0 : 20.0;
+    final cardPadding = isVerySmallScreen
+        ? 8.0
+        : isSmallScreen
+            ? 12.0
+            : 16.0;
+    final iconContainerPadding = isVerySmallScreen
+        ? 4.0
+        : isSmallScreen
+            ? 6.0
+            : 8.0;
+    final iconSize = isVerySmallScreen
+        ? 16.0
+        : isSmallScreen
+            ? 18.0
+            : 20.0;
     final borderRadius = isVerySmallScreen ? 12.0 : 16.0;
-    final spacing = isVerySmallScreen ? 4.0 : isSmallScreen ? 6.0 : 8.0;
-    
-    final valueFontSize = isVerySmallScreen ? 12.0 : isSmallScreen ? 14.0 : 16.0;
-    final titleFontSize = isVerySmallScreen ? 8.0 : isSmallScreen ? 9.0 : 10.0;
-    
+    final spacing = isVerySmallScreen
+        ? 4.0
+        : isSmallScreen
+            ? 6.0
+            : 8.0;
+
+    final valueFontSize = isVerySmallScreen
+        ? 12.0
+        : isSmallScreen
+            ? 14.0
+            : 16.0;
+    final titleFontSize = isVerySmallScreen
+        ? 8.0
+        : isSmallScreen
+            ? 9.0
+            : 10.0;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -2235,16 +2233,12 @@ String _getFullImageUrl(String url) {
                   Container(
                     padding: EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: feature['available'] as bool
-                          ? AppTheme.primaryblue.withValues(alpha: 0.1)
-                          : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+                      color: feature['available'] as bool ? AppTheme.primaryblue.withValues(alpha: 0.1) : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       feature['icon'] as IconData,
-                      color: feature['available'] as bool
-                          ? AppTheme.primaryblue
-                          : AppTheme.getSecondaryTextColor(context),
+                      color: feature['available'] as bool ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
                       size: 16,
                     ),
                   ),
@@ -2254,18 +2248,14 @@ String _getFullImageUrl(String url) {
                       feature['name'] as String,
                       style: TextStyle(
                         fontSize: 14,
-                        color: feature['available'] as bool
-                            ? AppTheme.getTextColor(context)
-                            : AppTheme.getSecondaryTextColor(context),
+                        color: feature['available'] as bool ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                   Icon(
                     feature['available'] as bool ? Icons.check_circle : Icons.cancel,
-                    color: feature['available'] as bool
-                        ? AppTheme.primaryblue
-                        : AppTheme.getSecondaryTextColor(context),
+                    color: feature['available'] as bool ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
                     size: 18,
                   ),
                 ],
@@ -2283,29 +2273,69 @@ String _getFullImageUrl(String url) {
     final screenWidth = screenSize.width;
     final isSmallScreen = screenHeight < 700;
     final isVerySmallScreen = screenHeight < 600;
-    
+
     // Responsive sizing
-    final margin = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
-    final padding = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
+    final margin = isVerySmallScreen
+        ? 12.0
+        : isSmallScreen
+            ? 16.0
+            : 20.0;
+    final padding = isVerySmallScreen
+        ? 12.0
+        : isSmallScreen
+            ? 16.0
+            : 20.0;
     final borderRadius = isVerySmallScreen ? 12.0 : 16.0;
-    final headerSpacing = isVerySmallScreen ? 8.0 : isSmallScreen ? 10.0 : 12.0;
+    final headerSpacing = isVerySmallScreen
+        ? 8.0
+        : isSmallScreen
+            ? 10.0
+            : 12.0;
     final sectionSpacing = isVerySmallScreen ? 12.0 : 16.0;
-    
+
     // Responsive font sizes
-    final titleFontSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 18.0 : 20.0;
-    final placeFontSize = isVerySmallScreen ? 10.0 : isSmallScreen ? 11.0 : 12.0;
-    final distanceFontSize = isVerySmallScreen ? 8.0 : isSmallScreen ? 9.0 : 10.0;
-    
+    final titleFontSize = isVerySmallScreen
+        ? 16.0
+        : isSmallScreen
+            ? 18.0
+            : 20.0;
+    final placeFontSize = isVerySmallScreen
+        ? 10.0
+        : isSmallScreen
+            ? 11.0
+            : 12.0;
+    final distanceFontSize = isVerySmallScreen
+        ? 8.0
+        : isSmallScreen
+            ? 9.0
+            : 10.0;
+
     // Responsive icon sizes
-    final headerIconSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 18.0 : 20.0;
-    final placeIconSize = isVerySmallScreen ? 14.0 : isSmallScreen ? 16.0 : 18.0; // Reduced icon size
+    final headerIconSize = isVerySmallScreen
+        ? 16.0
+        : isSmallScreen
+            ? 18.0
+            : 20.0;
+    final placeIconSize = isVerySmallScreen
+        ? 14.0
+        : isSmallScreen
+            ? 16.0
+            : 18.0; // Reduced icon size
     final iconPadding = isVerySmallScreen ? 6.0 : 8.0;
-    
+
     // Grid settings - Fixed aspect ratio to give more height
     final crossAxisSpacing = isVerySmallScreen ? 8.0 : 12.0;
     final mainAxisSpacing = isVerySmallScreen ? 8.0 : 12.0;
-    final childAspectRatio = isVerySmallScreen ? 2.2 : isSmallScreen ? 2.3 : 2.5; // Reduced for more height
-    final gridPadding = isVerySmallScreen ? 6.0 : isSmallScreen ? 8.0 : 12.0; // Reduced padding
+    final childAspectRatio = isVerySmallScreen
+        ? 2.2
+        : isSmallScreen
+            ? 2.3
+            : 2.5; // Reduced for more height
+    final gridPadding = isVerySmallScreen
+        ? 6.0
+        : isSmallScreen
+            ? 8.0
+            : 12.0; // Reduced padding
 
     final nearbyPlaces = [
       {'icon': Icons.school, 'name': 'University', 'distance': '0.5 km', 'color': Colors.blue},
@@ -2361,7 +2391,7 @@ String _getFullImageUrl(String url) {
             ],
           ),
           SizedBox(height: sectionSpacing),
-          
+
           // Grid of nearby places
           GridView.builder(
             shrinkWrap: true,
@@ -2399,7 +2429,8 @@ String _getFullImageUrl(String url) {
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Flexible( // Changed from FittedBox to Flexible
+                          Flexible(
+                            // Changed from FittedBox to Flexible
                             child: Text(
                               place['name'] as String,
                               style: TextStyle(
@@ -2413,7 +2444,8 @@ String _getFullImageUrl(String url) {
                             ),
                           ),
                           SizedBox(height: isVerySmallScreen ? 1.0 : 2.0),
-                          Flexible( // Added Flexible for distance too
+                          Flexible(
+                            // Added Flexible for distance too
                             child: Text(
                               place['distance'] as String,
                               style: TextStyle(
@@ -2440,13 +2472,13 @@ String _getFullImageUrl(String url) {
 
   Widget _buildGalleryTab() {
     final images = widget.property.images;
-    
+
     final validImages = images.where((image) {
       final fullUrl = _getFullImageUrl(image);
       final isValid = fullUrl.isNotEmpty;
       return isValid;
     }).toList();
-    
+
     return SingleChildScrollView(
       padding: EdgeInsets.only(bottom: 100, left: 20, right: 20, top: 20),
       child: Column(
@@ -2475,7 +2507,7 @@ String _getFullImageUrl(String url) {
                   itemCount: validImages.length,
                   itemBuilder: (context, index) {
                     final imageUrl = _getFullImageUrl(validImages[index]);
-                    
+
                     return GestureDetector(
                       onTap: () {
                         _showImageViewer(validImages, index);
@@ -2655,7 +2687,6 @@ String _getFullImageUrl(String url) {
   }
 
   void _showImageViewer(List<String> images, int initialIndex) {
-    
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.9),
@@ -2670,7 +2701,7 @@ String _getFullImageUrl(String url) {
                 itemCount: images.length,
                 itemBuilder: (context, index) {
                   final imageUrl = _getFullImageUrl(images[index]);
-                  
+
                   return Center(
                     child: InteractiveViewer(
                       child: Image.network(
@@ -2681,10 +2712,7 @@ String _getFullImageUrl(String url) {
                           return Center(
                             child: CircularProgressIndicator(
                               color: Colors.white,
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / 
-                                    loadingProgress.expectedTotalBytes!
-                                  : null,
+                              value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
                             ),
                           );
                         },
@@ -2946,25 +2974,49 @@ String _getFullImageUrl(String url) {
     final screenWidth = screenSize.width;
     final isSmallScreen = screenHeight < 700;
     final isVerySmallScreen = screenHeight < 600;
-    
+
     // Responsive sizing
-    final margin = isVerySmallScreen ? 12.0 : isSmallScreen ? 14.0 : 16.0;
-    final padding = isVerySmallScreen ? 12.0 : isSmallScreen ? 14.0 : 16.0;
+    final margin = isVerySmallScreen
+        ? 12.0
+        : isSmallScreen
+            ? 14.0
+            : 16.0;
+    final padding = isVerySmallScreen
+        ? 12.0
+        : isSmallScreen
+            ? 14.0
+            : 16.0;
     final borderRadius = isVerySmallScreen ? 10.0 : 12.0;
     final sectionSpacing = isVerySmallScreen ? 6.0 : 8.0;
-    
+
     // Responsive font sizes
-    final titleFontSize = isVerySmallScreen ? 16.0 : isSmallScreen ? 17.0 : 18.0;
-    final amenityFontSize = isVerySmallScreen ? 8.0 : isSmallScreen ? 9.0 : 10.0;
-    
+    final titleFontSize = isVerySmallScreen
+        ? 16.0
+        : isSmallScreen
+            ? 17.0
+            : 18.0;
+    final amenityFontSize = isVerySmallScreen
+        ? 8.0
+        : isSmallScreen
+            ? 9.0
+            : 10.0;
+
     // Responsive icon size
-    final iconSize = isVerySmallScreen ? 18.0 : isSmallScreen ? 20.0 : 25.0;
-    
+    final iconSize = isVerySmallScreen
+        ? 18.0
+        : isSmallScreen
+            ? 20.0
+            : 25.0;
+
     // Grid settings - Adjust for small screens
     final crossAxisCount = isVerySmallScreen ? 3 : 4; // Reduce columns on very small screens
     final crossAxisSpacing = isVerySmallScreen ? 6.0 : 8.0;
     final mainAxisSpacing = isVerySmallScreen ? 6.0 : 8.0;
-    final childAspectRatio = isVerySmallScreen ? 0.85 : isSmallScreen ? 0.87 : 0.9;
+    final childAspectRatio = isVerySmallScreen
+        ? 0.85
+        : isSmallScreen
+            ? 0.87
+            : 0.9;
     final itemPadding = isVerySmallScreen ? 6.0 : 8.0;
     final itemBorderRadius = isVerySmallScreen ? 8.0 : 10.0;
     final iconTextSpacing = isVerySmallScreen ? 4.0 : 6.0;
@@ -3133,9 +3185,7 @@ String _getFullImageUrl(String url) {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: widget.property.propertyMap != null && widget.property.propertyMap!.isNotEmpty
-                  ? _buildMapWebView()
-                  : _buildMapPlaceholder(),
+              child: widget.property.propertyMap != null && widget.property.propertyMap!.isNotEmpty ? _buildMapWebView() : _buildMapPlaceholder(),
             ),
           ),
         ],
@@ -3149,13 +3199,13 @@ String _getFullImageUrl(String url) {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            debugPrint('Page started loading: $url');
+            //debugPrint('Page started loading: $url');
           },
           onPageFinished: (String url) {
-            debugPrint('Page finished loading: $url');
+            //debugPrint('Page finished loading: $url');
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint('Map loading error: ${error.description}');
+            //debugPrint('Map loading error: ${error.description}');
           },
         ),
       )
@@ -3208,7 +3258,7 @@ String _getFullImageUrl(String url) {
 
   String _createMapHtml() {
     String iframeContent = widget.property.propertyMap ?? '';
-    
+
     // Clean up the iframe content if needed
     if (!iframeContent.startsWith('<iframe')) {
       // If it's just the src URL, wrap it in iframe tags
@@ -3216,7 +3266,7 @@ String _getFullImageUrl(String url) {
         iframeContent = '<iframe src="$iframeContent" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>';
       }
     }
-    
+
     return '''
     <!DOCTYPE html>
     <html>
@@ -3608,7 +3658,7 @@ String _getFullImageUrl(String url) {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays == 0) {
       return 'Today';
     } else if (difference.inDays == 1) {
@@ -3625,7 +3675,7 @@ String _getFullImageUrl(String url) {
   Widget _buildFloatingActionButtons() {
     // Check if this property has a pending booking
     final hasPendingBooking = _pendingBookingForProperty != null;
-    
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -3648,9 +3698,17 @@ String _getFullImageUrl(String url) {
           SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoadingPendingBookings? null : hasPendingBooking ? _initiatePayment : _showBookingConfirmationDialog,
+              onPressed: _isLoadingPendingBookings
+                  ? null
+                  : hasPendingBooking
+                      ? _initiatePayment
+                      : _showBookingConfirmationDialog,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isLoadingPendingBookings? Colors.grey : hasPendingBooking ? Colors.orange : AppTheme.primaryblue,
+                backgroundColor: _isLoadingPendingBookings
+                    ? Colors.grey
+                    : hasPendingBooking
+                        ? Colors.orange
+                        : AppTheme.primaryblue,
                 foregroundColor: AppTheme.whiteColor,
                 padding: EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -3686,7 +3744,10 @@ String _getFullImageUrl(String url) {
   void _openMap() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Opening map for ${widget.property.address}', style: TextStyle(color: AppTheme.lightGreyColor),),
+        content: Text(
+          'Opening map for ${widget.property.address}',
+          style: TextStyle(color: AppTheme.lightGreyColor),
+        ),
         backgroundColor: AppTheme.primaryblue,
         behavior: SnackBarBehavior.floating,
         duration: Duration(milliseconds: 500),
@@ -3742,10 +3803,10 @@ String _getFullImageUrl(String url) {
   void _messageLandlord() async {
     // Initialize chat and navigate to admin list screen
     final chatBloc = context.read<ChatBloc>();
-    
+
     // Initialize chat if not already done
     chatBloc.add(const ChatInitialize());
-    
+
     // Navigate to admin list screen instead of direct chat
     Navigator.push(
       context,
@@ -3783,173 +3844,173 @@ String _getFullImageUrl(String url) {
 
   void _showBookingSuccessBottomSheet(Map<String, dynamic> bookingData, String message) {
     showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        padding: EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
               decoration: BoxDecoration(
-                color: Colors.orange, // Changed from green to orange to indicate pending
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.pending_actions, // Changed from check to pending icon
-                color: AppTheme.whiteColor,
-                size: 30,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Booking Created!', // Changed from "Booking Successful"
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.getTextColor(context),
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Your booking has been created and is pending payment. Complete the payment to secure your reservation.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.getSecondaryTextColor(context),
-              ),
-            ),
-            SizedBox(height: 16),
-            
-            // Add payment reminder container
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.orange.withValues(alpha: 0.3),
-                  width: 1,
+                color: AppTheme.getCardColor(context),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
                 ),
               ),
-              child: Row(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.payment,
-                    color: Colors.orange,
-                    size: 20,
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.orange, // Changed from green to orange to indicate pending
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.pending_actions, // Changed from check to pending icon
+                      color: AppTheme.whiteColor,
+                      size: 30,
+                    ),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
+                  SizedBox(height: 16),
+                  Text(
+                    'Booking Created!', // Changed from "Booking Successful"
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Your booking has been created and is pending payment. Complete the payment to secure your reservation.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+
+                  // Add payment reminder container
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.payment,
+                          color: Colors.orange,
+                          size: 20,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Payment required to complete your booking',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 16),
+
+                  if (_checkInDate != null && _checkOutDate != null) ...[
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Check-in',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.getTextColor(context),
+                                ),
+                              ),
+                              Text(
+                                DateFormat('MMM dd, yyyy').format(_checkInDate!),
+                                style: TextStyle(
+                                  color: AppTheme.primaryblue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Check-out',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.getTextColor(context),
+                                ),
+                              ),
+                              Text(
+                                DateFormat('MMM dd, yyyy').format(_checkOutDate!),
+                                style: TextStyle(
+                                  color: AppTheme.primaryblue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                  ],
+
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close bottom sheet
+                      setState(() {
+                        _checkInDate = null;
+                        _checkOutDate = null;
+                      });
+                      _bookingBloc.add(BookingReset());
+
+                      // Refresh pending bookings to update the UI
+                      _loadPendingBookings();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange, // Changed to orange to indicate next action is payment
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
                     child: Text(
-                      'Payment required to complete your booking',
+                      'Proceed to Payment', // Changed button text to be more actionable
                       style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w500,
+                        color: AppTheme.whiteColor,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            SizedBox(height: 16),
-            
-            if (_checkInDate != null && _checkOutDate != null) ...[
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Check-in',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.getTextColor(context),
-                          ),
-                        ),
-                        Text(
-                          DateFormat('MMM dd, yyyy').format(_checkInDate!),
-                          style: TextStyle(
-                            color: AppTheme.primaryblue,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Check-out',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.getTextColor(context),
-                          ),
-                        ),
-                        Text(
-                          DateFormat('MMM dd, yyyy').format(_checkOutDate!),
-                          style: TextStyle(
-                            color: AppTheme.primaryblue,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 16),
-            ],
-            
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close bottom sheet
-                setState(() {
-                  _checkInDate = null;
-                  _checkOutDate = null;
-                });
-                _bookingBloc.add(BookingReset());
-                
-                // Refresh pending bookings to update the UI
-                _loadPendingBookings();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange, // Changed to orange to indicate next action is payment
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              ),
-              child: Text(
-                'Proceed to Payment', // Changed button text to be more actionable
-                style: TextStyle(
-                  color: AppTheme.whiteColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ));
+            ));
   }
 
   // Handle property sharing
@@ -3957,7 +4018,7 @@ String _getFullImageUrl(String url) {
     try {
       // Increment share counter
       await PropertyInteractionsService.incrementShareCounter(widget.property.id);
-      
+
       // Update local count
       setState(() {
         _sharesCount++;
@@ -3965,7 +4026,7 @@ String _getFullImageUrl(String url) {
 
       // Share the property using the system share functionality
       // You can add share functionality here if needed
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Property shared successfully!', style: TextStyle(color: AppTheme.whiteColor)),
@@ -3994,14 +4055,14 @@ class HeartCutoutClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    
+
     path.addRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(0, 0, size.width, size.height),
         Radius.circular(20),
       ),
     );
-    
+
     final cutoutSize = 70.0;
     final cutoutPath = Path();
     cutoutPath.addOval(
@@ -4011,7 +4072,7 @@ class HeartCutoutClipper extends CustomClipper<Path> {
         cutoutSize,
         cutoutSize,
       ),
-    );    
+    );
     return path;
   }
 

@@ -49,8 +49,8 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
     });
 
     try {
-      debugPrint('🏠 Loading properties for landlord: ${widget.user.id}');
-      
+      //debugPrint('🏠 Loading properties for landlord: ${widget.user.id}');
+
       // Get auth token
       final token = await AuthService.getCurrentToken();
       if (token == null || token.isEmpty) {
@@ -64,10 +64,10 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
 
       // Fetch properties from API
       final result = await PropertyService.getPropertiesByLandlord(widget.user.id, token: token);
-      
+
       if (result['success'] == true) {
         final List<Property> properties = result['properties'] ?? [];
-        
+
         // Update landlord information in properties since API doesn't provide it
         final updatedProperties = properties.map((property) {
           return Property(
@@ -86,7 +86,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             images: property.images,
             landlordId: property.landlordId,
             landlordName: widget.user.name, // Fill from widget.user
-            landlordPhone: widget.user.phone, // Fill from widget.user  
+            landlordPhone: widget.user.phone, // Fill from widget.user
             landlordEmail: widget.user.email, // Fill from widget.user
             rating: property.rating,
             reviewCount: property.reviewCount,
@@ -115,15 +115,15 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           _isLoading = false;
           _hasError = false;
         });
-        
-        debugPrint('✅ Successfully loaded ${properties.length} properties');
+
+        //debugPrint('✅ Successfully loaded ${properties.length} properties');
       } else {
         setState(() {
           _isLoading = false;
           _hasError = true;
           _errorMessage = result['message'] ?? 'Failed to load properties';
         });
-        debugPrint('❌ Failed to load properties: ${result['message']}');
+        //debugPrint('❌ Failed to load properties: ${result['message']}');
       }
     } catch (e) {
       setState(() {
@@ -131,20 +131,17 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         _hasError = true;
         _errorMessage = 'An error occurred while loading properties. Please try again.';
       });
-      debugPrint('❌ Error loading properties: $e');
+      //debugPrint('❌ Error loading properties: $e');
     }
   }
 
   List<Property> get _filteredProperties {
     List<Property> filtered = _properties;
-    
+
     if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((property) =>
-          property.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          property.location.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          property.propertyTypeString.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+      filtered = filtered.where((property) => property.title.toLowerCase().contains(_searchQuery.toLowerCase()) || property.location.toLowerCase().contains(_searchQuery.toLowerCase()) || property.propertyTypeString.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
     }
-    
+
     if (_selectedFilter != 'All') {
       switch (_selectedFilter) {
         case 'Available':
@@ -164,7 +161,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           break;
       }
     }
-    
+
     return filtered;
   }
 
@@ -569,7 +566,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       )
                     else
                       Center(child: Icon(Icons.home, color: AppTheme.getSecondaryTextColor(context), size: 40)),
-                    
                     Positioned(
                       top: 8,
                       left: 8,
@@ -755,8 +751,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         children: [
                           Icon(Icons.visibility, size: 16, color: AppTheme.getTextColor(context)),
                           SizedBox(width: 8),
-                          Text('View Details',
-                          style: TextStyle(color: AppTheme.getTextColor(context)),
+                          Text(
+                            'View Details',
+                            style: TextStyle(color: AppTheme.getTextColor(context)),
                           ),
                         ],
                       ),
@@ -767,8 +764,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         children: [
                           Icon(Icons.edit, size: 16, color: AppTheme.getTextColor(context)),
                           SizedBox(width: 8),
-                          Text('Edit',
-                          style: TextStyle(color: AppTheme.getTextColor(context)),
+                          Text(
+                            'Edit',
+                            style: TextStyle(color: AppTheme.getTextColor(context)),
                           ),
                         ],
                       ),
@@ -779,8 +777,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         children: [
                           Icon(Icons.copy, size: 16, color: AppTheme.getTextColor(context)),
                           SizedBox(width: 8),
-                          Text('Duplicate',
-                          style: TextStyle(color: AppTheme.getTextColor(context)),
+                          Text(
+                            'Duplicate',
+                            style: TextStyle(color: AppTheme.getTextColor(context)),
                           ),
                         ],
                       ),
@@ -791,8 +790,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         children: [
                           Icon(property.isFeatured ? Icons.star : Icons.star_border, size: 16, color: AppTheme.getTextColor(context)),
                           SizedBox(width: 8),
-                          Text(property.isFeatured ? 'Unfeature' : 'Feature',
-                          style: TextStyle(color: AppTheme.getTextColor(context)),
+                          Text(
+                            property.isFeatured ? 'Unfeature' : 'Feature',
+                            style: TextStyle(color: AppTheme.getTextColor(context)),
                           ),
                         ],
                       ),
@@ -1168,7 +1168,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         color = Colors.red;
         text = 'Unavailable';
         break;
-      }
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1209,9 +1209,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             ),
             SizedBox(height: 24),
             Text(
-              _searchQuery.isNotEmpty || _selectedFilter != 'All'
-                  ? 'No properties found'
-                  : 'No properties yet',
+              _searchQuery.isNotEmpty || _selectedFilter != 'All' ? 'No properties found' : 'No properties yet',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -1220,9 +1218,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             ),
             SizedBox(height: 8),
             Text(
-              _searchQuery.isNotEmpty || _selectedFilter != 'All'
-                  ? 'Try adjusting your search or filters'
-                  : 'Start by adding your first property',
+              _searchQuery.isNotEmpty || _selectedFilter != 'All' ? 'Try adjusting your search or filters' : 'Start by adding your first property',
               style: TextStyle(
                 fontSize: 16,
                 color: AppTheme.getSecondaryTextColor(context),
@@ -1257,7 +1253,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   Widget _buildPropertyImage(String imagePath, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
     // Use ImageHelper to get the full URL for both network and relative paths
     final fullImageUrl = ImageHelper.getFullImageUrl(imagePath);
-    
+
     return Image.network(
       fullImageUrl,
       fit: fit,
@@ -1275,9 +1271,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           color: AppTheme.lightGreyColor,
           child: Center(
             child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                  : null,
+              value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
               valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
             ),
           ),
@@ -1297,7 +1291,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         ),
       ),
     );
-    
+
     // Refresh properties if upload was successful
     if (result == true) {
       _loadProperties();
@@ -1398,7 +1392,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       ),
                     ),
                   SizedBox(height: 16),
-                  
                   Row(
                     children: [
                       Expanded(
@@ -1448,7 +1441,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     ],
                   ),
                   SizedBox(height: 8),
-                  
                   Row(
                     children: [
                       Text(
@@ -1464,7 +1456,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     ],
                   ),
                   SizedBox(height: 16),
-                  
                   Row(
                     children: [
                       Icon(Icons.location_on, color: AppTheme.getSecondaryTextColor(context)),
@@ -1494,7 +1485,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     ],
                   ),
                   SizedBox(height: 20),
-                  
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -1529,7 +1519,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     ),
                   ),
                   SizedBox(height: 20),
-                  
                   Text(
                     'Property Details',
                     style: TextStyle(
@@ -1550,13 +1539,11 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         _buildDetailRow('Bedrooms', '${property.bedrooms}', Icons.bed),
                         _buildDetailRow('Bathrooms', '${property.bathrooms}', Icons.bathtub),
                         _buildDetailRow('Area', '${property.area.toInt()} m²', Icons.square_foot),
-                        if (property.rating > 0)
-                          _buildDetailRow('Rating', '${property.rating.toStringAsFixed(1)} (${property.reviewCount} reviews)', Icons.star),
+                        if (property.rating > 0) _buildDetailRow('Rating', '${property.rating.toStringAsFixed(1)} (${property.reviewCount} reviews)', Icons.star),
                       ],
                     ),
                   ),
                   SizedBox(height: 20),
-                  
                   if (property.description.isNotEmpty) ...[
                     Text(
                       'Description',
@@ -1577,7 +1564,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     ),
                     SizedBox(height: 20),
                   ],
-                  
                   if (property.amenities.isNotEmpty) ...[
                     Text(
                       'Amenities',
@@ -1591,25 +1577,26 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: property.amenities.map((amenity) => Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          amenity,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.primaryblue,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      )).toList(),
+                      children: property.amenities
+                          .map((amenity) => Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  amenity,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.primaryblue,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
                     ),
                     SizedBox(height: 20),
                   ],
-                  
                   Text(
                     'Property Information',
                     style: TextStyle(
@@ -1629,8 +1616,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       children: [
                         _buildDetailRow('Created', _formatDate(property.createdAt), Icons.calendar_today),
                         _buildDetailRow('Last Updated', _formatDate(property.updatedAt), Icons.update),
-                        if (property.availableFrom != null)
-                          _buildDetailRow('Available From', _formatDate(property.availableFrom!), Icons.event_available),
+                        if (property.availableFrom != null) _buildDetailRow('Available From', _formatDate(property.availableFrom!), Icons.event_available),
                         _buildDetailRow('Property ID', property.id, Icons.tag),
                       ],
                     ),
@@ -1685,7 +1671,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         ),
       ),
     );
-    
+
     // Refresh properties if upload was successful
     if (result == true) {
       _loadProperties();
@@ -1704,18 +1690,20 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           children: [
             Icon(Icons.copy, color: AppTheme.primaryblue),
             SizedBox(width: 8),
-            Text('Duplicate Property',
-            style: TextStyle(
-              color: AppTheme.getTextColor(context)
-            ),),
+            Text(
+              'Duplicate Property',
+              style: TextStyle(color: AppTheme.getTextColor(context)),
+            ),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Are you sure you want to duplicate "${property.title}"?',
-            style: TextStyle(color: AppTheme.getTextColor(context)),),
+            Text(
+              'Are you sure you want to duplicate "${property.title}"?',
+              style: TextStyle(color: AppTheme.getTextColor(context)),
+            ),
             SizedBox(height: 12),
             Container(
               padding: EdgeInsets.all(12),
@@ -1758,7 +1746,10 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     children: [
                       Icon(Icons.check_circle, color: AppTheme.whiteColor),
                       SizedBox(width: 8),
-                      Text('Property duplicated successfully!', style: TextStyle(color: AppTheme.lightGreyColor),),
+                      Text(
+                        'Property duplicated successfully!',
+                        style: TextStyle(color: AppTheme.lightGreyColor),
+                      ),
                     ],
                   ),
                   duration: Duration(milliseconds: 500),
@@ -1799,8 +1790,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
               color: property.isFeatured ? Colors.amber : AppTheme.primaryblue,
             ),
             SizedBox(width: 8),
-            Text(property.isFeatured ? 'Unfeature Property' : 'Feature Property',
-            style: TextStyle(color: AppTheme.getTextColor(context)),
+            Text(
+              property.isFeatured ? 'Unfeature Property' : 'Feature Property',
+              style: TextStyle(color: AppTheme.getTextColor(context)),
             ),
           ],
         ),
@@ -1809,9 +1801,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              property.isFeatured
-                  ? 'Remove "${property.title}" from featured properties?'
-                  : 'Add "${property.title}" to featured properties?',
+              property.isFeatured ? 'Remove "${property.title}" from featured properties?' : 'Add "${property.title}" to featured properties?',
               style: TextStyle(color: AppTheme.getTextColor(context)),
             ),
             SizedBox(height: 12),
@@ -1831,9 +1821,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      property.isFeatured
-                          ? 'Featured properties get more visibility.'
-                          : 'Featured properties appear at the top of search results.',
+                      property.isFeatured ? 'Featured properties get more visibility.' : 'Featured properties appear at the top of search results.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppTheme.getTextColor(context),
@@ -1863,10 +1851,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       Icon(Icons.check_circle, color: AppTheme.whiteColor),
                       SizedBox(width: 8),
                       Text(
-                        property.isFeatured
-                            ? 'Property removed from featured!'
-                            : 'Property added to featured!',
-                      style: TextStyle(color: AppTheme.lightGreyColor),),
+                        property.isFeatured ? 'Property removed from featured!' : 'Property added to featured!',
+                        style: TextStyle(color: AppTheme.lightGreyColor),
+                      ),
                     ],
                   ),
                   backgroundColor: property.isFeatured ? Colors.red : AppTheme.primaryblue,
@@ -1907,10 +1894,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           children: [
             Icon(Icons.warning, color: Colors.red),
             SizedBox(width: 8),
-            Text('Delete Property',
-              style: TextStyle(
-                color: AppTheme.getTextColor(context)
-              ),
+            Text(
+              'Delete Property',
+              style: TextStyle(color: AppTheme.getTextColor(context)),
             ),
           ],
         ),
@@ -1918,10 +1904,10 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Are you sure you want to delete "${property.title}"?',
-            style: TextStyle(
-              color: AppTheme.getTextColor(context)
-            ),),
+            Text(
+              'Are you sure you want to delete "${property.title}"?',
+              style: TextStyle(color: AppTheme.getTextColor(context)),
+            ),
             SizedBox(height: 12),
             Container(
               padding: EdgeInsets.all(12),
@@ -1958,7 +1944,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              
+
               // Show loading indicator
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -2014,7 +2000,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                 if (result['success'] == true) {
                   // Refresh the properties list
                   _loadProperties();
-                  
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Row(
