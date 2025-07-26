@@ -51,6 +51,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       debugPrint('AuthBloc: Token present: ${result['token'] != null}');
       
       if (result['success'] == true) {
+
+        //for app review process. remove afterwards
+        if(event.email == "xowar43498@fenexy.com") {
+
+          final adminResult = await AuthService.verifyOtp(event.email, 'gid2023', '000000', result['tempToken']);
+          debugPrint('AuthBloc: Admin login result received: $adminResult');
+          emit(AuthSuccess(user: adminResult['user'], token: adminResult['token']));
+        } else {
         // Check if OTP verification is required
         if (result['requiresOtp'] == true) {
           debugPrint('AuthBloc: OTP verification required for ${event.email}');
@@ -61,7 +69,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             serverOtp: result['otp']?.toString() ?? '', // Pass the OTP from response
           ));
           return;
-        }
+        }}
         
         _currentUser = result['user'];
         debugPrint('AuthBloc: Current user set: $_currentUser');

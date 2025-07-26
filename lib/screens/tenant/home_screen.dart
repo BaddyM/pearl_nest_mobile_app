@@ -7,7 +7,6 @@ import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
-import 'package:pearlnest/apis/notification_api_service.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
@@ -97,7 +96,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
     _loadProperties();
-    _loadNotificationCount(); // Load notification count on startup
     _setupNotificationRefresh(); // Setup periodic refresh for notifications
     _scrollController.addListener(() {
       // Back to top button logic
@@ -349,29 +347,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Load notification count to show badge on notification bell
-  Future<void> _loadNotificationCount() async {
-    try {
-      final result = await NotificationApiService.getNotificationCount();
-      if (result['success'] == true && mounted) {
-        setState(() {
-          _unreadNotificationCount = result['unreadCount'] ?? 0;
-        });
-        debugPrint('🔔 Notification count loaded: $_unreadNotificationCount unread');
-      }
-    } catch (e) {
-      debugPrint('❌ Error loading notification count: $e');
-      // Silently fail - not critical for app functionality
-    }
-  }
 
   /// Setup periodic refresh for notification count
   void _setupNotificationRefresh() {
     // Refresh notification count every 2 minutes
     _notificationTimer = Timer.periodic(Duration(minutes: 2), (timer) {
-      if (mounted) {
-        _loadNotificationCount();
-      }
     });
   }
 
@@ -741,8 +721,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             builder: (context) => NotificationScreen(user: widget.user),
                           ),
                         );
-                        // Refresh notification count when returning from notification screen
-                        _loadNotificationCount();
+
                       },
                       icon: Icon(
                         Icons.notifications_outlined,

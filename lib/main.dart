@@ -22,12 +22,17 @@ import 'package:pearlnest/services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp();
-  
-  // Initialize notification service
-  await NotificationService.initialize();
-  
+ try {
+   // Initialize Firebase
+   await Firebase.initializeApp();
+
+   // Initialize notification service
+   await NotificationService.initialize();
+
+ } catch (e) {
+    debugPrint('Error initializing Firebase: $e');
+    // Handle Firebase initialization error
+  }
   // Load environment variables with error handling
   try {
     await dotenv.load(fileName: ".env");

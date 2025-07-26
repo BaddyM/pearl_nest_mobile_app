@@ -100,8 +100,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           _errorMessage = '';
         });
 
-        // Also get unread count
-        _getUnreadCount();
+
       } else {
         setState(() {
           _isLoading = false;
@@ -170,18 +169,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 
-  void _getUnreadCount() async {
-    try {
-      final result = await NotificationApiService.getNotificationCount();
-      if (result['success'] == true) {
-        setState(() {
-          _unreadCount = result['unreadCount'] ?? 0;
-        });
-      }
-    } catch (e) {
-      // Silently fail for count - not critical
-    }
-  }
+
 
   void _showErrorSnackBar(String message) {
     if (mounted) {

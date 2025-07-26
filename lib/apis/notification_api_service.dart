@@ -278,56 +278,5 @@ class NotificationApiService {
     }
   }
 
-  /// Get notification count (unread/total)
-  static Future<Map<String, dynamic>> getNotificationCount() async {
-    try {
-      final token = await AuthService.getCurrentToken();
-      if (token == null || token.isEmpty) {
-        return {
-          'success': false,
-          'message': 'Authentication required. Please login again.',
-          'code': 'NOT_AUTHENTICATED',
-          'unreadCount': 0,
-          'totalCount': 0,
-        };
-      }
 
-      _logRequest('/notifications/count', {}, token: token);
-
-      ApiClient.setAuthToken(token);
-      
-      final response = await ApiClient.get('/notifications/count');
-      _logResponse('/notifications/count', response);
-
-      if (response.statusCode == 200) {
-        final responseData = response.data as Map<String, dynamic>;
-        return {
-          'success': true,
-          'unreadCount': responseData['unread'] ?? 0,
-          'totalCount': responseData['total'] ?? 0,
-          'statusCode': response.statusCode,
-        };
-      } else {
-        final errorData = response.data as Map<String, dynamic>? ?? {};
-        return {
-          'success': false,
-          'message': errorData['message'] ?? 'Failed to fetch notification count',
-          'unreadCount': 0,
-          'totalCount': 0,
-          'statusCode': response.statusCode,
-        };
-      }
-    } catch (e) {
-      // Handle 404 and other errors gracefully since this endpoint doesn't exist yet
-      debugPrint('Notification count API not available: $e');
-      _logError('getNotificationCount', e);
-      return {
-        'success': false,
-        'message': 'Notification service temporarily unavailable',
-        'unreadCount': 0,
-        'totalCount': 0,
-        'statusCode': 404,
-      };
-    }
-  }
 }
