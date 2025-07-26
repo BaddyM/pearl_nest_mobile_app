@@ -272,7 +272,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
           _buildSection(
             'Third-Party Services',
             [
-              'Payment processing (Stripe, PayPal)',
+              'Payment processing (Pesapal)',
               'Maps and location services (Google Maps)',
               'Analytics and crash reporting',
               'Customer support tools',
@@ -311,7 +311,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader('Terms and Conditions'),
-          _buildLastUpdated('Last updated: December 2024'),
+          // _buildLastUpdated('Last updated: December 2024'),
           SizedBox(height: 20),
           
           _buildSection(
@@ -436,7 +436,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader('Cancellation Policy'),
-          _buildLastUpdated('Last updated: December 2024'),
+          // _buildLastUpdated('Last updated: December 2024'),
           SizedBox(height: 20),
           
           _buildSection(
@@ -574,27 +574,27 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
     );
   }
 
-  Widget _buildLastUpdated(String date) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryblue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.primaryblue.withOpacity(0.3)),
-      ),
-      child: Text(
-        date,
-        style: TextStyle(
-          fontSize: 14,
-          fontStyle: FontStyle.italic,
-          color: AppTheme.primaryblue,
-          fontWeight: FontWeight.w500,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
+  // Widget _buildLastUpdated(String date) {
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: EdgeInsets.all(12),
+  //     decoration: BoxDecoration(
+  //       color: AppTheme.primaryblue.withOpacity(0.1),
+  //       borderRadius: BorderRadius.circular(8),
+  //       border: Border.all(color: AppTheme.primaryblue.withOpacity(0.3)),
+  //     ),
+  //     child: Text(
+  //       date,
+  //       style: TextStyle(
+  //         fontSize: 14,
+  //         fontStyle: FontStyle.italic,
+  //         color: AppTheme.primaryblue,
+  //         fontWeight: FontWeight.w500,
+  //       ),
+  //       textAlign: TextAlign.center,
+  //     ),
+  //   );
+  // }
 
   Widget _buildSection(String title, List<String> items) {
     return Container(
@@ -761,7 +761,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
           ),
           SizedBox(height: 16),
           _buildContactItem(Icons.email_outlined, 'Email', 'pearlestates@gmail.com'),
-          _buildContactItem(Icons.phone_outlined, 'Phone', '+256778632307'),
+          _buildContactItem(Icons.phone_outlined, 'Phone', '+256791597476'),
           _buildContactItem(Icons.location_on_outlined, 'Address', 
             'Kampala Uganda'),
           _buildContactItem(Icons.access_time_outlined, 'Support Hours', 

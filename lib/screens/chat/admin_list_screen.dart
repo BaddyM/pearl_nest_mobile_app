@@ -485,11 +485,11 @@ class _AdminListScreenState extends State<AdminListScreen> {
                   size: 20,
                 ),
                 SizedBox(width: 8),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: AppTheme.getSecondaryTextColor(context),
-                  size: 16,
-                ),
+                // Icon(
+                //   Icons.arrow_forward_ios,
+                //   color: AppTheme.getSecondaryTextColor(context),
+                //   size: 16,
+                // ),
               ],
             ),
           ),

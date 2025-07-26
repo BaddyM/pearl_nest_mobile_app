@@ -460,7 +460,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.getTextColor(context).withOpacity(0.05),
+              color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
               blurRadius: 10,
               offset: Offset(0, 4),
             ),
@@ -475,7 +475,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: AppTheme.primaryblue.withOpacity(0.1),
+                    backgroundColor: AppTheme.primaryblue.withValues(alpha: 0.1),
                     child: Text(
                       tenantName.substring(0, 1).toUpperCase(),
                       style: TextStyle(
@@ -512,7 +512,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -605,21 +605,25 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                   Expanded(
                     child: Row(
                       children: [
-                        Text(
-                          'UGX$formattedAmount',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryblue,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          '• ${_getTimeAgo(booking.createdAt)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.getSecondaryTextColor(context),
-                          ),
+                        Column(
+                          children: [
+                            Text(
+                              'UGX$formattedAmount',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryblue,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              '• ${_getTimeAgo(booking.createdAt)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.getSecondaryTextColor(context),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

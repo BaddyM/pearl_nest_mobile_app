@@ -616,37 +616,37 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
         ),
-        SizedBox(width: 12),
-        GestureDetector(
-          onTap: _showSortOptions,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryblue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.primaryblue.withOpacity(0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.sort,
-                  size: 18,
-                  color: AppTheme.primaryblue,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  _sortBy,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.primaryblue,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        // SizedBox(width: 12),
+        // GestureDetector(
+        //   // onTap: _showSortOptions,
+        //   child: Container(
+        //     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        //     decoration: BoxDecoration(
+        //       color: AppTheme.primaryblue.withOpacity(0.1),
+        //       borderRadius: BorderRadius.circular(12),
+        //       border: Border.all(color: AppTheme.primaryblue.withOpacity(0.3)),
+        //     ),
+        //     child: Row(
+        //       mainAxisSize: MainAxisSize.min,
+        //       children: [
+        //         Icon(
+        //           Icons.sort,
+        //           size: 18,
+        //           color: AppTheme.primaryblue,
+        //         ),
+        //         SizedBox(width: 8),
+        //         Text(
+        //           _sortBy,
+        //           style: TextStyle(
+        //             fontSize: 14,
+        //             color: AppTheme.primaryblue,
+        //             fontWeight: FontWeight.w600,
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // ),
       ],
     );
   }
@@ -674,95 +674,97 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  void _showSortOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          margin: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.getCardColor(context),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Sort By',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.getTextColor(context),
-                      ),
-                    ),
-                    Spacer(),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Icon(
-                        Icons.close,
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ...(_sortOptions.map((option) {
-                final isSelected = _sortBy == option;
-                return ListTile(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                  title: Text(
-                    option,
-                    style: TextStyle(
-                      color: isSelected ? AppTheme.primaryblue : AppTheme.getTextColor(context),
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      fontSize: 16,
-                    ),
-                  ),
-                  trailing: isSelected
-                      ? Icon(
-                          Icons.check_circle,
-                          color: AppTheme.primaryblue,
-                          size: 20,
-                        )
-                      : Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                  onTap: () {
-                    setState(() {
-                      _sortBy = option;
-                    });
-                    _performSearch();
-                    Navigator.pop(context);
-                  },
-                );
-              }).toList()),
-              SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  // void _showSortOptions() {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     backgroundColor: Colors.transparent,
+  //     builder: (context) {
+  //       return SingleChildScrollView(
+  //         child: Container(
+  //           margin: EdgeInsets.all(16),
+  //           decoration: BoxDecoration(
+  //             color: AppTheme.getCardColor(context),
+  //             borderRadius: BorderRadius.circular(16),
+  //           ),
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Container(
+  //                 padding: EdgeInsets.all(20),
+  //                 decoration: BoxDecoration(
+  //                   border: Border(
+  //                     bottom: BorderSide(
+  //                       color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 child: Row(
+  //                   children: [
+  //                     Text(
+  //                       'Sort By',
+  //                       style: TextStyle(
+  //                         fontSize: 18,
+  //                         fontWeight: FontWeight.bold,
+  //                         color: AppTheme.getTextColor(context),
+  //                       ),
+  //                     ),
+  //                     Spacer(),
+  //                     GestureDetector(
+  //                       onTap: () => Navigator.pop(context),
+  //                       child: Icon(
+  //                         Icons.close,
+  //                         color: AppTheme.getSecondaryTextColor(context),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //               ...(_sortOptions.map((option) {
+  //                 final isSelected = _sortBy == option;
+  //                 return ListTile(
+  //                   contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+  //                   title: Text(
+  //                     option,
+  //                     style: TextStyle(
+  //                       color: isSelected ? AppTheme.primaryblue : AppTheme.getTextColor(context),
+  //                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+  //                       fontSize: 16,
+  //                     ),
+  //                   ),
+  //                   trailing: isSelected
+  //                       ? Icon(
+  //                           Icons.check_circle,
+  //                           color: AppTheme.primaryblue,
+  //                           size: 20,
+  //                         )
+  //                       : Container(
+  //                           width: 20,
+  //                           height: 20,
+  //                           decoration: BoxDecoration(
+  //                             shape: BoxShape.circle,
+  //                             border: Border.all(
+  //                               color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
+  //                               width: 2,
+  //                             ),
+  //                           ),
+  //                         ),
+  //                   onTap: () {
+  //                     setState(() {
+  //                       _sortBy = option;
+  //                     });
+  //                     _performSearch();
+  //                     Navigator.pop(context);
+  //                   },
+  //                 );
+  //               }).toList()),
+  //               SizedBox(height: 16),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildLoadingState() {
     return Center(

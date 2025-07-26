@@ -9,11 +9,11 @@ class PermissionInitializationWidget extends StatefulWidget {
   final VoidCallback? onPermissionsDenied;
 
   const PermissionInitializationWidget({
-    Key? key,
+    super.key,
     required this.child,
     this.onPermissionsGranted,
     this.onPermissionsDenied,
-  }) : super(key: key);
+  });
 
   @override
   State<PermissionInitializationWidget> createState() => _PermissionInitializationWidgetState();

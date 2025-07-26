@@ -718,41 +718,34 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
   Widget _buildPropertyDetailsSection() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextField(
-                controller: _bedroomsController,
-                label: 'Bedrooms',
-                hint: '0',
-                icon: Icons.bed,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Required';
-                  }
-                  return null;
-                },
-              ),
-            ),
-            SizedBox(width: 16),
-            Expanded(
-              child: _buildTextField(
-                controller: _bathroomsController,
-                label: 'Bathrooms',
-                hint: '0',
-                icon: Icons.bathtub,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Required';
-                  }
-                  return null;
-                },
-              ),
-            ),
-          ],
+        _buildTextField(
+          controller: _bedroomsController,
+          label: 'Bedrooms',
+          hint: '0',
+          icon: Icons.bed,
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Required';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: 16),
+        _buildTextField(
+          controller: _bathroomsController,
+          label: 'Bathrooms',
+          hint: '0',
+          icon: Icons.bathtub,
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Required';
+            }
+            return null;
+          },
         ),
         SizedBox(height: 20),
         _buildTextField(
@@ -817,34 +810,29 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     );
   }
 
-  Widget _buildPricingSection() {
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: _buildTextField(
-            controller: _priceController,
-            label: 'Price',
-            hint: '0',
-            icon: Icons.attach_money,
-            keyboardType: TextInputType.number,
-            prefixText: 'UGX',
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter the price';
-              }
-              return null;
-            },
-          ),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: _buildPriceTypeDropdown(),
-        ),
-      ],
-    );
-  }
+Widget _buildPricingSection() {
+  return Column(
+    children: [
+      _buildTextField(
+        controller: _priceController,
+        label: 'Price',
+        hint: '0',
+        icon: Icons.attach_money,
+        keyboardType: TextInputType.number,
+        prefixText: 'UGX',
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter the price';
+          }
+          return null;
+        },
+      ),
+      SizedBox(height: 16),
+      _buildPriceTypeDropdown(),
+    ],
+  );
+}
+
 
   Widget _buildAvailabilitySection() {
     return Column(
