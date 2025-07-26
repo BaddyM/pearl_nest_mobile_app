@@ -1434,7 +1434,7 @@ class AuthService {
   }
 
   /// Reset password with new password
-  static Future<Map<String, dynamic>> resetPassword(String newPassword) async {
+  static Future<Map<String, dynamic>> resetPassword(String newPassword, String email) async {
     try {
       // Validate password
       if (newPassword.trim().isEmpty) {
@@ -1445,6 +1445,7 @@ class AuthService {
       }
 
       final requestData = {
+        'email': email,
         'password': newPassword.trim(),
       };
 
