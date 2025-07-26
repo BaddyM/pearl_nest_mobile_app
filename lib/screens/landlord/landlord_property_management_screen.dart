@@ -521,7 +521,13 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
       },
     );
   }
-
+  String _formatLargePrice(double price) {
+    if (price >= 1000000) {
+      return '${(price / 1000000).toStringAsFixed(1)}M';
+    } else {
+      return NumberFormat('#,##0').format(price);
+    }
+  }
   Widget _buildPropertyListCard(Property property) {
     return Container(
       decoration: BoxDecoration(
@@ -675,12 +681,13 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       Row(
                         children: [
                           Text(
-                            "UGX ${NumberFormat('#,###').format(property.price.toInt())}",
+                            "UGX ${_formatLargePrice(property.price)}",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.primaryblue,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             ' ${property.priceType}',
@@ -1017,7 +1024,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             ),
           ),
           Expanded(
-            flex: 2,
+            flex: 6,
             child: Padding(
               padding: EdgeInsets.all(12),
               child: Column(
