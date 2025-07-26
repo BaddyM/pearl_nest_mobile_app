@@ -1414,9 +1414,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
+  String _formatLargePrice(double price) {
+    if (price >= 1000000) {
+      return '${(price / 1000000).toStringAsFixed(1)}M';
+    }  else {
+      return NumberFormat('#,##0').format(price);
+    }
+  }
   Widget _buildPropertyCard(Property property) {
-    final formattedPrice = NumberFormat('#,##0').format(property.price);
+    final formattedPrice = _formatLargePrice(property.price);
+
     return GestureDetector(
       onTap: () {
         Navigator.push(

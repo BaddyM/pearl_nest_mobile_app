@@ -60,7 +60,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
           final adminResult = await AuthService.verifyOtp(event.email, 'gid2023', '000000', result['tempToken']);
           debugPrint('AuthBloc: Admin login result received: $adminResult');
+          _currentUser = adminResult['user'];
+          debugPrint('AuthBloc: Current user set: $_currentUser');
+          _currentToken = adminResult['token'];
+
+          // Set token in ApiClient
+          ApiClient.setAuthToken(_currentToken);
+
+          debugPrint('AuthBloc: Login successful, user: ${_currentUser?.name}');
+          debugPrint('AuthBloc: About to emit AuthSuccess state');
+          debugPrint('AuthBloc: Current user: $_currentUser');
+
           emit(AuthSuccess(user: adminResult['user'], token: adminResult['token']));
+          return; // Add this return to prevent continuing to regular login flow
         } else {
         // Check if OTP verification is required
         if (result['requiresOtp'] == true) {

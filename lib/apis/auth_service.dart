@@ -82,7 +82,7 @@ class AuthService {
   // Private method to validate API response structure
   static Map<String, dynamic> _validateResponse(Response response, {List<String> requiredFields = const []}) {
     final data = response.data as Map<String, dynamic>;
-    
+
     for (String field in requiredFields) {
       if (!data.containsKey(field) || data[field] == null) {
         throw ValidationException('Missing required field: $field');
@@ -94,11 +94,11 @@ class AuthService {
   // Private method for consistent error handling
   static Map<String, dynamic> _handleError(dynamic error, String operation) {
     _logError(operation, error);
-    
+
     String message;
-    String? code;  
+    String? code;
     int? statusCode;
-    
+
     if (error is AuthException) {
       message = error.message;
       code = error.code;
@@ -197,6 +197,42 @@ class AuthService {
     }
   }
 
+  static Future<void> saveUserRole(String userRole) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('role', userRole);
+
+      if (kDebugMode) {
+        debugPrint('💾 User role saved successfully: $userRole');
+        debugPrint('💾 UserRole key used: role');
+
+        // Verify it was saved
+        final savedUserRole = prefs.getString('role');
+
+        debugPrint('💾 Verification - Retrieved user role: $savedUserRole');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error saving user role: $e');
+      }
+    }
+  }
+
+  static Future<void> _clearUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_userIdKey);
+
+      if (kDebugMode) {
+        debugPrint('💾 User ID cleared successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error clearing user ID: $e');
+      }
+    }
+  }
+
   // Check if token is expired locally
   static Future<bool> isTokenExpired() async {
     try {
@@ -251,13 +287,13 @@ class AuthService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = _validateResponse(response, requiredFields: ['data']);
-        
+
         // Save token if provided (check both token and accessToken)
         final token = responseData['token'] ?? responseData['accessToken'];
         if (token != null) {
           await _saveToken(token, expiresIn: responseData['expiresIn']);
         }
-        
+
         return {
           'success': true,
           'user': User.fromJson(responseData['data']),
@@ -307,12 +343,12 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = _validateResponse(response, requiredFields: ['accessToken']);
-        
+
         // Save userId if provided in the response
         if (responseData['userId'] != null) {
           await _saveUserId(responseData['userId'].toString());
         }
-        
+
         // Check if OTP verification is required
         if (responseData['otp'] != null) {
           // Don't save token yet - only save after OTP verification
@@ -427,7 +463,12 @@ class AuthService {
       //Admin
       if(userInputOtp == "gid2023") {
         // Save the token only after successful OTP verification
-        await _saveToken(tempToken);
+        try {
+          await _saveToken(tempToken);
+        }
+        catch (e) {
+          debugPrint("Error saving token after admin OTP verification: $e");
+        }
         // Set the token for subsequent requests
         ApiClient.setAuthToken(tempToken);
         // Fetch user profile data after successful OTP verification
@@ -546,14 +587,14 @@ class AuthService {
       // Set the temporary token for this request
       final originalToken = ApiClient.currentAuthToken;
       ApiClient.setAuthToken(tempToken);
-      
+
       try {
         final response = await ApiClient.post('/auth/resend-otp', requestData);
         _logResponse('/auth/resend-otp', response);
 
         if (response.statusCode == 200) {
           final responseData = _validateResponse(response);
-          
+
           return {
             'success': true,
             'message': responseData['message'] ?? 'OTP has been resent to your email',
@@ -601,14 +642,14 @@ class AuthService {
       // Temporarily set the token for this request
       final originalToken = ApiClient.currentAuthToken;
       ApiClient.setAuthToken(token);
-      
+
       try {
         final response = await ApiClient.get('/auth/validate');
         _logResponse('/auth/validate', response);
-      
+
         if (response.statusCode == 200) {
           final responseData = _validateResponse(response, requiredFields: ['data']);
-          
+
           return {
             'success': true,
             'user': User.fromJson(responseData['data']),
@@ -645,17 +686,17 @@ class AuthService {
       // Temporarily set the token for this request
       final originalToken = ApiClient.currentAuthToken;
       ApiClient.setAuthToken(currentToken);
-      
+
       try {
         final response = await ApiClient.post('/auth/refresh', {});
         _logResponse('/auth/refresh', response);
-      
+
         if (response.statusCode == 200) {
           final data = _validateResponse(response, requiredFields: ['token']);
-          
+
           // Save new token
           await _saveToken(data['token'], expiresIn: data['expiresIn']);
-          
+
           return {
             'success': true,
             'token': data['token'],
@@ -703,7 +744,7 @@ class AuthService {
           _logError('logout API call', e);
         }
       }
-      
+
       // Always clear local storage
       await Future.wait([
         prefs.remove(_tokenKey),
@@ -712,6 +753,9 @@ class AuthService {
         prefs.remove(_tokenExpiryKey),
         prefs.remove(_userIdKey),
       ]);
+      
+      // Clear user ID using dedicated method
+      await _clearUserId();
       
       if (kDebugMode) {
         debugPrint('🚪 User logged out and local data cleared');
@@ -746,7 +790,7 @@ class AuthService {
 
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(_tokenKey);
-      
+
       if (token == null || token.isEmpty) {
         throw AuthException('Authentication required', code: 'NOT_AUTHENTICATED');
       }
@@ -766,7 +810,7 @@ class AuthService {
       // Temporarily set the token for this request
       final originalToken = ApiClient.currentAuthToken;
       ApiClient.setAuthToken(token);
-      
+
       try {
         final response = await ApiClient.post('/auth/change-password', requestData);
         _logResponse('/auth/change-password', response);
@@ -880,16 +924,16 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(_tokenKey);
       final lastLogin = prefs.getInt(_lastLoginKey);
-      
+
       if (token == null || lastLogin == null) return false;
-      
+
       // Check if token is expired
       if (await isTokenExpired()) return false;
-      
+
       // Check if session is older than configured max days
       final sessionAge = DateTime.now().millisecondsSinceEpoch - lastLogin;
       final maxSessionAge = _maxSessionDays * 24 * 60 * 60 * 1000; // days in milliseconds
-      
+
       return sessionAge < maxSessionAge;
     } catch (e) {
       return false;
@@ -987,11 +1031,11 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = _validateResponse(response, requiredFields: ['data']);
-        
+
         // Update stored user data with new profile image
         final updatedUser = User.fromJson(responseData['data']);
         await saveUserData(updatedUser);
-        
+
         return {
           'success': true,
           'user': updatedUser,
@@ -1086,11 +1130,11 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = _validateResponse(response, requiredFields: ['data']);
-        
+
         // Update stored user data
         final finalUpdatedUser = User.fromJson(responseData['data']);
         await saveUserData(finalUpdatedUser);
-        
+
         return {
           'success': true,
           'user': finalUpdatedUser,
@@ -1157,7 +1201,7 @@ class AuthService {
       }
     } on DioException catch (e) {
       _logError('deleteAccount', e);
-      
+
       String errorMessage;
       if (e.response?.statusCode == 401) {
         errorMessage = 'Authentication failed. Please login again.';
@@ -1341,7 +1385,7 @@ class AuthService {
 
       if (response.statusCode == 200 && response.data != null) {
         final responseData = response.data;
-        
+
         if (responseData['success'] == true) {
           return {
             'success': true,
@@ -1390,7 +1434,7 @@ class AuthService {
   }
 
   /// Reset password with new password
-  static Future<Map<String, dynamic>> resetPassword(String newPassword) async {
+  static Future<Map<String, dynamic>> resetPassword(String newPassword, String email) async {
     try {
       // Validate password
       if (newPassword.trim().isEmpty) {
@@ -1401,6 +1445,7 @@ class AuthService {
       }
 
       final requestData = {
+        'email': email,
         'password': newPassword.trim(),
       };
 
@@ -1411,7 +1456,7 @@ class AuthService {
 
       if (response.statusCode == 200 && response.data != null) {
         final responseData = response.data;
-        
+
         if (responseData['success'] == true) {
           return {
             'success': true,

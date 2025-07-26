@@ -733,12 +733,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Icon(Icons.error_outline, color: Colors.red, size: 20),
                           SizedBox(width: 8),
-                          Text(
-                            'This action cannot be undone!',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Expanded(
+                            child: Text(
+                              'This action cannot be undone!',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                             ),
                           ),
                         ],
