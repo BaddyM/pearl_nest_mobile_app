@@ -194,10 +194,10 @@ class NotificationService {
 
   /// Handle foreground messages
   static Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    //debugPrint('📱 Received foreground message: ${message.messageId}');
-    //debugPrint('Title: ${message.notification?.title}');
-    //debugPrint('Body: ${message.notification?.body}');
-    //debugPrint('Data: ${message.data}');
+    // debugPrint('📱 Received foreground message: ${message.messageId}');
+    // debugPrint('Title: ${message.notification?.title}');
+    // debugPrint('Body: ${message.notification?.body}');
+    // debugPrint('Data: ${message.data}');
 
     // Show local notification
     await _showLocalNotification(message);
@@ -205,10 +205,12 @@ class NotificationService {
 
   /// Handle background messages
   static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-    //debugPrint('📱 Received background message: ${message.messageId}');
-    //debugPrint('Title: ${message.notification?.title}');
-    //debugPrint('Body: ${message.notification?.body}');
-    //debugPrint('Data: ${message.data}');
+    // debugPrint('📱 Received background message: ${message.messageId}');
+    // debugPrint('Title: ${message.notification?.title}');
+    // debugPrint('Body: ${message.notification?.body}');
+
+
+    // debugPrint('Data: ${message.data}');
 
     // Show local notification
     await _showLocalNotification(message);

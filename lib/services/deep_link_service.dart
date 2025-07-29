@@ -13,7 +13,7 @@ class DeepLinkService {
 
   /// Handle incoming deep links
   static void handleDeepLink(Uri uri) {
-    print('Received deep link: $uri');
+    // print('Received deep link: $uri');
     
     // Handle payment callback URLs
     if (uri.scheme == 'pearlnest' && uri.host == 'payment') {
@@ -27,11 +27,11 @@ class DeepLinkService {
     final status = uri.queryParameters['status'];
     
     if (paymentId != null) {
-      print('Payment callback received: paymentId=$paymentId, status=$status');
+      // print('Payment callback received: paymentId=$paymentId, status=$status');
       
       // Check payment status with backend
       PaymentService.checkPaymentStatus(paymentId).then((paymentStatus) {
-        print('Payment status check result: $paymentStatus');
+        // print('Payment status check result: $paymentStatus');
         
         // Here you can navigate to appropriate screen or show notification
         // based on payment status
@@ -41,7 +41,7 @@ class DeepLinkService {
           _showPaymentFailure();
         }
       }).catchError((error) {
-        print('Error checking payment status: $error');
+        // print('Error checking payment status: $error');
         _showPaymentError();
       });
     }
@@ -51,17 +51,17 @@ class DeepLinkService {
   static void _showPaymentSuccess() {
     // This could be improved by using a global navigation key
     // or state management to show notifications/navigate
-    print('Payment completed successfully!');
+    // print('Payment completed successfully!');
   }
 
   /// Show payment failure notification
   static void _showPaymentFailure() {
-    print('Payment failed!');
+    // print('Payment failed!');
   }
 
   /// Show payment error notification
   static void _showPaymentError() {
-    print('Error processing payment callback!');
+    // print('Error processing payment callback!');
   }
 
   /// Get the initial link when app is opened via deep link
@@ -69,7 +69,7 @@ class DeepLinkService {
     try {
       return await _appLinks.getInitialLink();
     } catch (e) {
-      print('Error getting initial link: $e');
+      // print('Error getting initial link: $e');
       return null;
     }
   }

@@ -457,7 +457,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           _buildContactInfoItem(
             Icons.phone,
             'Phone Support',
-            '+256700140826',
+            '+256791597476',
             'Available 24/7',
           ),
           _buildContactInfoItem(
@@ -466,12 +466,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             'pearlnestestates@gmail.com',
             'Response within 24 hours',
           ),
-          _buildContactInfoItem(
-            Icons.location_on,
-            'Office Address',
-            '123 Business Street, Suite 100',
-            'City, State 12345',
-          ),
+         
           _buildContactInfoItem(
             Icons.access_time,
             'Business Hours',
@@ -562,7 +557,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   }
 
   void _makePhoneCall() async {
-    const phoneNumber = 'tel:+256700140826';
+    const phoneNumber = 'tel:+256791597476';
     try {
       if (await canLaunch(phoneNumber)) {
         await launch(phoneNumber);

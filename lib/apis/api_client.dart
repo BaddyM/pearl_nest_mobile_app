@@ -48,7 +48,7 @@ class ApiClient {
   static void setAuthToken(String? token) async {
     _authToken = token;
     if (token != null) {
-      ///debugPrint('ApiClient: Auth token set - Full Token: $token');
+      // debugPrint('ApiClient: Auth token set - Full Token: $token');
     } else {
       final prefs = await SharedPreferences.getInstance();
       final keys = prefs.getKeys();
@@ -125,9 +125,9 @@ class ApiClient {
 
     // Check for token expiration (401 status)
     if (error.response?.statusCode == 401) {
-      ///debugPrint('ApiClient: Token expired, calling token expiration handler');
-      onTokenExpired?.call();
-      return 'Your session has expired. Please log in again.';
+      // ///debugPrint('ApiClient: Token expired, calling token expiration handler');
+      // onTokenExpired?.call();
+      // return 'Your session has expired. Please log in again.';
     }
 
     // Network/connection errors

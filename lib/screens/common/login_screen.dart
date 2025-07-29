@@ -7,6 +7,7 @@ import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/screens/common/register_screen.dart';
 import 'package:pearlnest/screens/common/otp_verification_screen.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -28,17 +29,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Welcome, ${state.user.name}!',
-                style: TextStyle(color: AppTheme.whiteColor),
-              ),
-              backgroundColor: AppTheme.primaryblue,
-              duration: Duration(milliseconds: 1500),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+          CustomSnackBar.showSuccess(
+            context,
+            'Welcome back, ${state.user.name}!',
+            duration: Duration(milliseconds: 1500),
           );
           Navigator.pushReplacement(
             context,
@@ -62,17 +56,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.message,
-                style: TextStyle(color: AppTheme.whiteColor),
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(milliseconds: 2000),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+          CustomSnackBar.showError(
+            context,
+            state.message,
+            duration: Duration(milliseconds: 2000),
+            onRetry: () => _handleLogin(), // Add retry functionality
           );
         }
       },

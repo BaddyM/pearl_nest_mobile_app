@@ -76,3 +76,5 @@ class AuthProfileUpdated extends AuthState {
   @override
   List<Object?> get props => [user];
 }
+class AdminMode extends AuthState {
+}

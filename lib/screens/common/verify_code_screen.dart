@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pearlnest/screens/common/reset_password_screen.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 
@@ -223,13 +224,10 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
       if (_currentServerOtp != null && _currentServerOtp!.isNotEmpty) {
         if (code != _currentServerOtp) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Invalid OTP. Please check and try again.'),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.all(16),
-              ),
+            CustomSnackBar.showError(
+              context,
+              'Invalid verification code. Please try again.',
+              duration: Duration(seconds: 2),
             );
           }
           return;
@@ -247,14 +245,8 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('An error occurred. Please try again.'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
+        CustomSnackBar.showError(context, 'An error occurred while verifying the code. Please try again.');
+
       }
     } finally {
       if (mounted) {
@@ -292,14 +284,8 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
       _startResendTimer();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to resend OTP. Please try again.'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
+        CustomSnackBar.showError(context, "Failed to resend OTP. Please try again.");
+
         
         setState(() {
           _canResend = true;

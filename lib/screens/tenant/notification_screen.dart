@@ -4,6 +4,8 @@ import 'package:pearlnest/models/notification.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/notification_api_service.dart';
 
+import '../../utils/custom_snackbar.dart';
+
 class NotificationScreen extends StatefulWidget {
   final User user;
 
@@ -14,7 +16,8 @@ class NotificationScreen extends StatefulWidget {
   _NotificationScreenState createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> with SingleTickerProviderStateMixin {
+class _NotificationScreenState extends State<NotificationScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<NotificationItem> _notifications = [];
   bool _isLoading = true;
@@ -27,7 +30,14 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
   int _totalCount = 0;
   int _unreadCount = 0;
 
-  final List<String> _filterOptions = ['All', 'Unread', 'Properties', 'Messages', 'Bookings', 'System'];
+  final List<String> _filterOptions = [
+    'All',
+    'Unread',
+    'Properties',
+    'Messages',
+    'Bookings',
+    'System'
+  ];
 
   @override
   void initState() {
@@ -75,7 +85,9 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
 
       if (result['success'] == true) {
         final notificationsData = result['notifications'] as List<dynamic>;
-        final notifications = notificationsData.map((data) => NotificationItem.fromJson(data as Map<String, dynamic>)).toList();
+        final notifications = notificationsData
+            .map((data) => NotificationItem.fromJson(data as Map<String, dynamic>))
+            .toList();
 
         setState(() {
           if (isRefresh) {
@@ -91,7 +103,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         });
 
         // Also get unread count
-        _getUnreadCount();
+
       } else {
         setState(() {
           _isLoading = false;
@@ -116,7 +128,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     });
 
     _currentPage++;
-
+    
     try {
       String? filterParam;
       switch (_selectedFilter) {
@@ -137,7 +149,9 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
 
       if (result['success'] == true) {
         final notificationsData = result['notifications'] as List<dynamic>;
-        final notifications = notificationsData.map((data) => NotificationItem.fromJson(data as Map<String, dynamic>)).toList();
+        final notifications = notificationsData
+            .map((data) => NotificationItem.fromJson(data as Map<String, dynamic>))
+            .toList();
 
         setState(() {
           _notifications.addAll(notifications);
@@ -158,57 +172,44 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     }
   }
 
-  void _getUnreadCount() async {
-    // try {
-    //   final result = await NotificationApiService.getNotificationCount();
-    //   if (result['success'] == true) {
-    //     setState(() {
-    //       _unreadCount = result['unreadCount'] ?? 0;
-    //     });
-    //   }
-    // } catch (e) {
-    //   // Silently fail for count - not critical
-    // }
-  }
+
 
   void _showErrorSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CustomSnackBar.showError(context, message);
     }
   }
 
   void _showSuccessSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppTheme.primaryblue,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CustomSnackBar.showSuccess(context, message);
     }
   }
 
   List<NotificationItem> get _filteredNotifications {
     if (_notifications.isEmpty) return [];
-
+    
     // For API-based filtering, we already get filtered results from the server
     // Only need to apply client-side filtering for types that aren't handled by the API
     switch (_selectedFilter) {
       case 'Properties':
-        return _notifications.where((n) => n.type == NotificationType.propertyUpdate || n.type == NotificationType.favorite).toList();
+        return _notifications
+            .where((n) => n.type == NotificationType.propertyUpdate ||
+                n.type == NotificationType.favorite)
+            .toList();
       case 'Messages':
-        return _notifications.where((n) => n.type == NotificationType.message).toList();
+        return _notifications
+            .where((n) => n.type == NotificationType.message)
+            .toList();
       case 'Bookings':
-        return _notifications.where((n) => n.type == NotificationType.booking || n.type == NotificationType.payment).toList();
+        return _notifications
+            .where((n) => n.type == NotificationType.booking ||
+                n.type == NotificationType.payment)
+            .toList();
       case 'System':
-        return _notifications.where((n) => n.type == NotificationType.system).toList();
+        return _notifications
+            .where((n) => n.type == NotificationType.system)
+            .toList();
       case 'All':
       case 'Unread':
       default:
@@ -391,10 +392,10 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: _buildAppBar(),
-      body: _isLoading
-          ? _buildLoadingState()
-          : _hasError
-              ? _buildErrorState()
+      body: _isLoading 
+          ? _buildLoadingState() 
+          : _hasError 
+              ? _buildErrorState() 
               : _buildNotificationContent(),
     );
   }
@@ -457,7 +458,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         itemBuilder: (context, index) {
           final filter = _filterOptions[index];
           final isSelected = _selectedFilter == filter;
-
+          
           return GestureDetector(
             onTap: () {
               _onFilterChanged(filter);
@@ -466,17 +467,25 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
               margin: EdgeInsets.only(right: 12, bottom: 10),
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryblue : AppTheme.getCardColor(context),
+                color: isSelected
+                    ? AppTheme.primaryblue
+                    : AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? AppTheme.primaryblue : AppTheme.greyColor.withValues(alpha: 0.2),
+                  color: isSelected
+                      ? AppTheme.primaryblue
+                      : AppTheme.greyColor.withValues(alpha: 0.2),
                 ),
               ),
               child: Text(
                 filter,
                 style: TextStyle(
-                  color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected
+                      ? AppTheme.whiteColor
+                      : AppTheme.getSecondaryTextColor(context),
+                  fontWeight: isSelected
+                      ? FontWeight.w600
+                      : FontWeight.normal,
                   fontSize: 14,
                 ),
               ),
@@ -541,7 +550,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
             }
             return SizedBox.shrink();
           }
-
+          
           final notification = filteredNotifications[index];
           return _buildNotificationCard(notification);
         },
@@ -561,11 +570,17 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
               color: AppTheme.lightGreyColor,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.notifications_none_outlined, size: 60, color: AppTheme.getSecondaryTextColor(context)),
+            child: Icon(
+              Icons.notifications_none_outlined,
+              size: 60,
+              color: AppTheme.getSecondaryTextColor(context)
+            ),
           ),
           SizedBox(height: 24),
           Text(
-            _selectedFilter == 'All' ? 'No notifications yet' : 'No ${_selectedFilter.toLowerCase()} notifications',
+            _selectedFilter == 'All' 
+                ? 'No notifications yet'
+                : 'No ${_selectedFilter.toLowerCase()} notifications',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -574,7 +589,9 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           ),
           SizedBox(height: 8),
           Text(
-            _selectedFilter == 'All' ? 'When you have notifications, they\'ll appear here' : 'Try selecting a different filter',
+            _selectedFilter == 'All'
+                ? 'When you have notifications, they\'ll appear here'
+                : 'Try selecting a different filter',
             style: TextStyle(
               fontSize: 16,
               color: AppTheme.getSecondaryTextColor(context),
@@ -608,10 +625,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         _deleteNotification(notification.id);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Notification deleted',
-              style: TextStyle(color: AppTheme.lightGreyColor),
-            ),
+            content: Text('Notification deleted', style: TextStyle(color: AppTheme.lightGreyColor),),
             duration: Duration(milliseconds: 500),
             backgroundColor: AppTheme.primaryblue,
             behavior: SnackBarBehavior.floating,
@@ -630,10 +644,14 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           margin: EdgeInsets.only(bottom: 12),
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: notification.isRead ? AppTheme.getCardColor(context) : AppTheme.primaryblue.withValues(alpha: 0.05),
+            color: notification.isRead 
+                ? AppTheme.getCardColor(context) 
+                : AppTheme.primaryblue.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: notification.isRead ? AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2) : AppTheme.primaryblue.withValues(alpha: 0.3),
+              color: notification.isRead
+                  ? AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)
+                  : AppTheme.primaryblue.withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: [
@@ -665,30 +683,32 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            notification.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: notification.isRead ? FontWeight.w600 : FontWeight.bold,
-                              color: AppTheme.getTextColor(context),
-                            ),
-                          ),
-                        ),
-                        if (!notification.isRead)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryblue,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: 6),
+                    // Row(
+                    //   children: [
+                    //     Expanded(
+                    //       child: Text(
+                    //         notification.title,
+                    //         style: TextStyle(
+                    //           fontSize: 16,
+                    //           fontWeight: notification.isRead 
+                    //               ? FontWeight.w600 
+                    //               : FontWeight.bold,
+                    //           color: AppTheme.getTextColor(context),
+                    //         ),
+                    //       ),
+                    //     ),
+                    //     if (!notification.isRead)
+                    //       Container(
+                    //         width: 8,
+                    //         height: 8,
+                    //         decoration: BoxDecoration(
+                    //           color: AppTheme.primaryblue,
+                    //           shape: BoxShape.circle,
+                    //         ),
+                    //       ),
+                    //   ],
+                    // ),
+                    // SizedBox(height: 6),
                     Text(
                       notification.message,
                       style: TextStyle(
@@ -731,7 +751,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                           ],
                         ),
                       ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 4),
                     Text(
                       _getTimeAgo(notification.timestamp),
                       style: TextStyle(
@@ -770,16 +790,10 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                       value: 'mark_read',
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.mark_email_read,
-                            size: 18,
-                            color: AppTheme.getTextColor(context),
-                          ),
+                          Icon(Icons.mark_email_read, size: 18, color: AppTheme.getTextColor(context),),
                           SizedBox(width: 8),
-                          Text(
-                            'Mark as read',
-                            style: TextStyle(color: AppTheme.getTextColor(context)),
-                          ),
+                          Text('Mark as read',
+                          style: TextStyle(color: AppTheme.getTextColor(context)),),
                         ],
                       ),
                     ),
@@ -809,10 +823,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         if (notification.propertyId != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'Opening property: ${notification.propertyTitle}',
-                style: TextStyle(color: AppTheme.lightGreyColor),
-              ),
+              content: Text('Opening property: ${notification.propertyTitle}', style: TextStyle(color: AppTheme.lightGreyColor),),
               duration: Duration(milliseconds: 500),
               backgroundColor: AppTheme.primaryblue,
               behavior: SnackBarBehavior.floating,
@@ -824,10 +835,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       case NotificationType.message:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Opening chat...',
-              style: TextStyle(color: AppTheme.lightGreyColor),
-            ),
+            content: Text('Opening chat...', style: TextStyle(color: AppTheme.lightGreyColor),),
             duration: Duration(milliseconds: 500),
             backgroundColor: AppTheme.primaryblue,
             behavior: SnackBarBehavior.floating,
@@ -838,10 +846,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       case NotificationType.booking:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Opening booking details...',
-              style: TextStyle(color: AppTheme.lightGreyColor),
-            ),
+            content: Text('Opening booking details...', style: TextStyle(color: AppTheme.lightGreyColor),),
             duration: Duration(milliseconds: 500),
             backgroundColor: AppTheme.primaryblue,
             behavior: SnackBarBehavior.floating,
@@ -852,10 +857,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       case NotificationType.payment:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Opening payment details...',
-              style: TextStyle(color: AppTheme.lightGreyColor),
-            ),
+            content: Text('Opening payment details...', style: TextStyle(color: AppTheme.lightGreyColor),),
             duration: Duration(milliseconds: 500),
             backgroundColor: AppTheme.primaryblue,
             behavior: SnackBarBehavior.floating,
@@ -866,10 +868,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       case NotificationType.review:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Opening reviews...',
-              style: TextStyle(color: AppTheme.lightGreyColor),
-            ),
+            content: Text('Opening reviews...', style: TextStyle(color: AppTheme.lightGreyColor),),
             duration: Duration(milliseconds: 500),
             backgroundColor: AppTheme.primaryblue,
             behavior: SnackBarBehavior.floating,
@@ -880,10 +879,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       case NotificationType.system:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'System notification opened',
-              style: TextStyle(color: AppTheme.lightGreyColor),
-            ),
+            content: Text('System notification opened', style: TextStyle(color: AppTheme.lightGreyColor),),
             duration: Duration(milliseconds: 500),
             backgroundColor: AppTheme.primaryblue,
             behavior: SnackBarBehavior.floating,

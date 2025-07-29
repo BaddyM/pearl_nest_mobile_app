@@ -249,7 +249,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       });
 
       try {
-        final response = await AuthService.resetPassword(_passwordController.text, widget.email);
+        final response = await AuthService.resetPassword(_passwordController.text,widget.email);
 
         if (response['success'] == true) {
           if (mounted) {

@@ -91,11 +91,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
   }
 
   void _loadFavoriteProperties() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
     });
     try {
       final favorites = await FavoritesService.fetchFavorites();
+      
+      if (!mounted) return;
+      
       setState(() {
         _favoriteProperties = favorites;
         _filteredProperties = List.from(_favoriteProperties);
@@ -103,6 +108,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
       });
       _animationController.forward();
     } catch (e) {
+      if (!mounted) return;
+      
       setState(() {
         _isLoading = false;
       });
@@ -189,11 +196,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         // Success - remove from local lists and update UI
         //debugPrint('✅ Removed from favorites for property: ${property.id}');
 
+        if (!mounted) return;
+
         setState(() {
           // Remove from favorites list since it was toggled off
           _favoriteProperties.removeWhere((prop) => prop.id == property.id);
-          _filterProperties();
         });
+        
+        // Filter properties after state update
+        _filterProperties();
 
         // Show success feedback with undo option
         if (mounted) {
@@ -282,6 +293,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
   }
 
   void _filterProperties() {
+    if (!mounted) return;
+    
     setState(() {
       List<Property> filtered = _favoriteProperties;
       if (_selectedCategory != 'All') {
@@ -427,8 +440,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         onChanged: (value) {
           setState(() {
             _searchQuery = value;
-            _filterProperties();
           });
+          _filterProperties();
         },
         decoration: InputDecoration(
           hintText: 'Search your favorites...',
@@ -590,8 +603,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
               onTap: () {
                 setState(() {
                   _selectedCategory = category;
-                  _filterProperties();
                 });
+                _filterProperties();
               },
               child: AnimatedContainer(
                 duration: Duration(milliseconds: 200),

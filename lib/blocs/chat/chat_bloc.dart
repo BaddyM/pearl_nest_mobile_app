@@ -166,8 +166,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     try {
       _currentChatUserId = event.chatWithUserId;
 
-      print("Current UserId = ${_currentChatUserId}");
-      print(_messages);
+      // print("Current UserId = ${_currentChatUserId}");
+      // print(_messages);
 
       // Filter messages for the current chat
       final filteredMessages = _messages.where((message) {
