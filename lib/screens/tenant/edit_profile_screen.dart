@@ -30,12 +30,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _bioController = TextEditingController();
-  
+
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
   bool _hasChanges = false;
-  
+
   // Notification settings
   bool _pushNotifications = true;
   bool _smsNotifications = true;
@@ -52,12 +52,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController.text = widget.user.email;
     _phoneController.text = widget.user.phone;
     _bioController.text = widget.user.bio ?? '';
-    
+
     // Initialize notification settings
     _pushNotifications = widget.user.pushNotifications;
     _smsNotifications = widget.user.smsNotifications;
     _emailNotifications = widget.user.emailNotifications;
-    
+
     _nameController.addListener(_onFieldChanged);
     _emailController.addListener(_onFieldChanged);
     _phoneController.addListener(_onFieldChanged);
@@ -164,9 +164,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   if (loadingProgress == null) return child;
                                   return Center(
                                     child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                          : null,
+                                      value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
                                       strokeWidth: 2,
                                       valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
                                     ),
@@ -542,9 +540,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: (_hasChanges || _selectedImage != null) && !_isLoading
-            ? _saveProfile
-            : null,
+        onPressed: (_hasChanges || _selectedImage != null) && !_isLoading ? _saveProfile : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryblue,
           foregroundColor: AppTheme.whiteColor,
@@ -640,9 +636,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDestructive 
-                  ? Colors.red.withOpacity(0.1)
-                  : AppTheme.primaryblue.withOpacity(0.1),
+              color: isDestructive ? Colors.red.withOpacity(0.1) : AppTheme.primaryblue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -674,7 +668,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         maxHeight: 1024,
         imageQuality: 85,
       );
-      
+
       if (image != null) {
         setState(() {
           _selectedImage = File(image.path);
@@ -682,8 +676,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
       }
     } catch (e, stackTrace) {
-      debugPrint('Image picker error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Image picker error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error picking image: $e');
     }
   }
@@ -706,8 +700,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      debugPrint('🔧 EditProfileScreen: Starting profile update...');
-      
+      //debugPrint('🔧 EditProfileScreen: Starting profile update...');
+
       // Call the AuthService to update profile
       final result = await AuthService.updateProfile(
         name: _nameController.text.trim(),
@@ -720,16 +714,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         emailNotifications: _emailNotifications,
       );
 
-      debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
+      //debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
 
       if (result['success'] == true) {
         // Trigger AuthBloc to refresh the user state with updated data
         if (mounted) {
           context.read<AuthBloc>().add(AuthCheckSessionRequested());
         }
-        
+
         _showSuccessSnackBar(result['message'] ?? 'Profile updated successfully!');
-        
+
         setState(() {
           _hasChanges = false;
           _isLoading = false;
@@ -741,11 +735,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
         _showErrorSnackBar(result['message'] ?? 'Failed to update profile. Please try again.');
       }
-
     } catch (e, stackTrace) {
-      debugPrint('🔧 EditProfileScreen: Profile update error: $e');
-      debugPrint('🔧 EditProfileScreen: Stack trace: $stackTrace');
-      
+      //debugPrint('🔧 EditProfileScreen: Profile update error: $e');
+      //debugPrint('🔧 EditProfileScreen: Stack trace: $stackTrace');
+
       setState(() {
         _isLoading = false;
       });

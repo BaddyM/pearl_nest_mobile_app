@@ -3,7 +3,8 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/notification.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/notification_api_service.dart';
-import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
+
+import '../../utils/custom_snackbar.dart';
 
 class NotificationScreen extends StatefulWidget {
   final User user;
@@ -102,7 +103,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         });
 
         // Also get unread count
-        _getUnreadCount();
+
       } else {
         setState(() {
           _isLoading = false;
@@ -171,18 +172,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 
-  void _getUnreadCount() async {
-    try {
-      final result = await NotificationApiService.getNotificationCount();
-      if (result['success'] == true) {
-        setState(() {
-          _unreadCount = result['unreadCount'] ?? 0;
-        });
-      }
-    } catch (e) {
-      // Silently fail for count - not critical
-    }
-  }
+
 
   void _showErrorSnackBar(String message) {
     if (mounted) {
@@ -693,32 +683,32 @@ class _NotificationScreenState extends State<NotificationScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            notification.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: notification.isRead 
-                                  ? FontWeight.w600 
-                                  : FontWeight.bold,
-                              color: AppTheme.getTextColor(context),
-                            ),
-                          ),
-                        ),
-                        if (!notification.isRead)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryblue,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: 6),
+                    // Row(
+                    //   children: [
+                    //     Expanded(
+                    //       child: Text(
+                    //         notification.title,
+                    //         style: TextStyle(
+                    //           fontSize: 16,
+                    //           fontWeight: notification.isRead 
+                    //               ? FontWeight.w600 
+                    //               : FontWeight.bold,
+                    //           color: AppTheme.getTextColor(context),
+                    //         ),
+                    //       ),
+                    //     ),
+                    //     if (!notification.isRead)
+                    //       Container(
+                    //         width: 8,
+                    //         height: 8,
+                    //         decoration: BoxDecoration(
+                    //           color: AppTheme.primaryblue,
+                    //           shape: BoxShape.circle,
+                    //         ),
+                    //       ),
+                    //   ],
+                    // ),
+                    // SizedBox(height: 6),
                     Text(
                       notification.message,
                       style: TextStyle(
@@ -761,7 +751,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                           ],
                         ),
                       ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 4),
                     Text(
                       _getTimeAgo(notification.timestamp),
                       style: TextStyle(
@@ -900,4 +890,3 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 }
-

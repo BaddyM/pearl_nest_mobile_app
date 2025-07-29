@@ -30,7 +30,7 @@ class AuthProvider extends ChangeNotifier {
 
   // Handle automatic logout when token expires
   void _handleTokenExpired() {
-    debugPrint('Token expired - automatic logout triggered');
+    //debugPrint('Token expired - automatic logout triggered');
     _clearSessionSilently();
   }
 
@@ -41,13 +41,13 @@ class AuthProvider extends ChangeNotifier {
       if (await AuthService.isSessionValid()) {
         final user = await AuthService.getCurrentUser();
         final token = await AuthService.getCurrentToken();
-        
+
         if (user != null && token != null) {
           // Use locally stored data without backend validation
           _token = token;
           _user = user;
           _status = AuthStatus.authenticated;
-          
+
           // Set token in ApiClient for future requests
           ApiClient.setAuthToken(_token);
         } else {
@@ -57,8 +57,8 @@ class AuthProvider extends ChangeNotifier {
         _status = AuthStatus.unauthenticated;
       }
     } catch (e, stackTrace) {
-      debugPrint('Auth initialization error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Auth initialization error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       _status = AuthStatus.unauthenticated;
     } finally {
       _setLoading(false);
@@ -69,32 +69,32 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       final result = await AuthService.login(email, password);
-      
+
       if (result['success'] == true) {
         _user = result['user'];
         _token = result['token'];
-        
+
         // Set token in ApiClient for future requests
         ApiClient.setAuthToken(_token);
-        
+
         // Update status and notify listeners with post-frame callback
         _status = AuthStatus.authenticated;
-        
-        debugPrint('AuthProvider: Login successful, setting status to authenticated');
-        debugPrint('AuthProvider: User: ${_user?.name}');
-        debugPrint('AuthProvider: Status: $_status');
-        debugPrint('AuthProvider: About to notify listeners');
-        
+
+        //debugPrint('AuthProvider: Login successful, setting status to authenticated');
+        //debugPrint('AuthProvider: User: ${_user?.name}');
+        //debugPrint('AuthProvider: Status: $_status');
+        //debugPrint('AuthProvider: About to notify listeners');
+
         // Use post-frame callback to ensure UI is ready for navigation
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
-          debugPrint('AuthProvider: Listeners notified via post-frame callback');
+          //debugPrint('AuthProvider: Listeners notified via post-frame callback');
         });
-        
+
         // Also notify immediately for synchronous checks
         notifyListeners();
-        debugPrint('AuthProvider: Immediate notification sent');
-        
+        //debugPrint('AuthProvider: Immediate notification sent');
+
         return {
           'success': true,
           'message': result['message'] ?? 'Login successful',
@@ -105,8 +105,8 @@ class AuthProvider extends ChangeNotifier {
         return result;
       }
     } catch (e, stackTrace) {
-      debugPrint('Login error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Login error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       _status = AuthStatus.unauthenticated;
       notifyListeners();
       return {
@@ -135,17 +135,17 @@ class AuthProvider extends ChangeNotifier {
         phone: phone,
         userType: userType,
       );
-      
+
       if (result['success'] == true) {
         // Check if auto-login is possible (token provided)
         if (result['token'] != null) {
           _user = result['user'];
           _token = result['token'];
           _status = AuthStatus.authenticated;
-          
+
           // Set token in ApiClient for future requests
           ApiClient.setAuthToken(_token);
-          
+
           notifyListeners();
         }
         return result;
@@ -153,8 +153,8 @@ class AuthProvider extends ChangeNotifier {
         return result;
       }
     } catch (e, stackTrace) {
-      debugPrint('Registration error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Registration error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       return {
         'success': false,
         'message': 'Network error. Please check your connection.',
@@ -172,8 +172,8 @@ class AuthProvider extends ChangeNotifier {
       await _clearSession();
       return result;
     } catch (e, stackTrace) {
-      debugPrint('Logout error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Logout error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       await _clearSession();
       return {
         'success': true,
@@ -186,7 +186,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> refreshToken() async {
     if (_token == null) return;
-    
+
     try {
       final result = await AuthService.refreshToken(_token!);
       if (result['success'] == true) {
@@ -194,18 +194,18 @@ class AuthProvider extends ChangeNotifier {
         if (result['user'] != null) {
           _user = result['user'];
         }
-        
+
         // Set new token in ApiClient
         ApiClient.setAuthToken(_token);
-        
+
         notifyListeners();
       } else {
         // Token refresh failed, logout user
         await logout();
       }
     } catch (e, stackTrace) {
-      debugPrint('Token refresh error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Token refresh error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       await logout();
     }
   }
@@ -225,8 +225,8 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e, stackTrace) {
-      debugPrint('Failed to refresh user data: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Failed to refresh user data: $e');
+      //debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -235,14 +235,14 @@ class AuthProvider extends ChangeNotifier {
       _user = null;
       _token = null;
       _status = AuthStatus.unauthenticated;
-      
+
       // Clear token from ApiClient
       ApiClient.setAuthToken(null);
-      
+
       notifyListeners();
     } catch (e, stackTrace) {
-      debugPrint('Clear session error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Clear session error: $e');
+      //debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -252,14 +252,14 @@ class AuthProvider extends ChangeNotifier {
       _user = null;
       _token = null;
       _status = AuthStatus.unauthenticated;
-      
+
       // Clear token from ApiClient
       ApiClient.setAuthToken(null);
-      
+
       notifyListeners();
     } catch (e, stackTrace) {
-      debugPrint('Clear session silently error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Clear session silently error: $e');
+      //debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -271,22 +271,22 @@ class AuthProvider extends ChangeNotifier {
   // Check if token needs refresh (call this periodically)
   Future<void> checkTokenExpiry() async {
     if (_token == null) return;
-    
+
     try {
       // Check if token is expired locally
       if (await AuthService.isTokenExpired()) {
         await refreshToken();
       }
     } catch (e, stackTrace) {
-      debugPrint('Token expiry check error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Token expiry check error: $e');
+      //debugPrint('Stack trace: $stackTrace');
     }
   }
 
   // Check if token exists locally (no backend validation)
   Future<bool> validateCurrentToken() async {
     if (_token == null) return false;
-    
+
     try {
       // Just check if we have a token locally - trust it's valid
       // If the token is actually invalid, API calls will fail and handle the error
@@ -298,8 +298,8 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
     } catch (e, stackTrace) {
-      debugPrint('Token check error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Token check error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       await logout();
       return false;
     }

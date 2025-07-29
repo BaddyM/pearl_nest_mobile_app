@@ -8,29 +8,29 @@ class NotificationApiService {
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data, {String? token}) {
     if (kDebugMode) {
-      debugPrint('🚀 NOTIFICATION REQUEST: $endpoint');
+      // debugPrint('🚀 NOTIFICATION REQUEST: $endpoint');
       if (data != null) {
-        debugPrint('📤 Request Data: ${jsonEncode(data)}');
+        // debugPrint('📤 Request Data: ${jsonEncode(data)}');
       }
       if (token != null) {
-        debugPrint('🔑 Token: ${token.substring(0, 10)}...');
+        // debugPrint('🔑 Token: ${token.substring(0, 10)}...');
       }
     }
   }
 
   static void _logResponse(String endpoint, Response response) {
     if (kDebugMode) {
-      debugPrint('📥 NOTIFICATION RESPONSE: $endpoint');
-      debugPrint('📊 Status Code: ${response.statusCode}');
-      debugPrint('📝 Response Body: ${jsonEncode(response.data)}');
+      // debugPrint('📥 NOTIFICATION RESPONSE: $endpoint');
+      // debugPrint('📊 Status Code: ${response.statusCode}');
+      // debugPrint('📝 Response Body: ${jsonEncode(response.data)}');
     }
   }
 
   static void _logError(String operation, dynamic error) {
     if (kDebugMode) {
-      debugPrint('❌ NOTIFICATION ERROR [$operation]: $error');
+      // debugPrint('❌ NOTIFICATION ERROR [$operation]: $error');
       if (error is Error) {
-        debugPrint('🔍 Stack Trace: ${error.stackTrace}');
+        // debugPrint('🔍 Stack Trace: ${error.stackTrace}');
       }
     }
   }
@@ -278,56 +278,5 @@ class NotificationApiService {
     }
   }
 
-  /// Get notification count (unread/total)
-  static Future<Map<String, dynamic>> getNotificationCount() async {
-    try {
-      final token = await AuthService.getCurrentToken();
-      if (token == null || token.isEmpty) {
-        return {
-          'success': false,
-          'message': 'Authentication required. Please login again.',
-          'code': 'NOT_AUTHENTICATED',
-          'unreadCount': 0,
-          'totalCount': 0,
-        };
-      }
 
-      _logRequest('/notifications/count', {}, token: token);
-
-      ApiClient.setAuthToken(token);
-      
-      final response = await ApiClient.get('/notifications/count');
-      _logResponse('/notifications/count', response);
-
-      if (response.statusCode == 200) {
-        final responseData = response.data as Map<String, dynamic>;
-        return {
-          'success': true,
-          'unreadCount': responseData['unread'] ?? 0,
-          'totalCount': responseData['total'] ?? 0,
-          'statusCode': response.statusCode,
-        };
-      } else {
-        final errorData = response.data as Map<String, dynamic>? ?? {};
-        return {
-          'success': false,
-          'message': errorData['message'] ?? 'Failed to fetch notification count',
-          'unreadCount': 0,
-          'totalCount': 0,
-          'statusCode': response.statusCode,
-        };
-      }
-    } catch (e) {
-      // Handle 404 and other errors gracefully since this endpoint doesn't exist yet
-      debugPrint('Notification count API not available: $e');
-      _logError('getNotificationCount', e);
-      return {
-        'success': false,
-        'message': 'Notification service temporarily unavailable',
-        'unreadCount': 0,
-        'totalCount': 0,
-        'statusCode': 404,
-      };
-    }
-  }
 }

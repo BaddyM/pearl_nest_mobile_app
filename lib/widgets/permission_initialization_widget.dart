@@ -9,11 +9,11 @@ class PermissionInitializationWidget extends StatefulWidget {
   final VoidCallback? onPermissionsDenied;
 
   const PermissionInitializationWidget({
-    Key? key,
+    super.key,
     required this.child,
     this.onPermissionsGranted,
     this.onPermissionsDenied,
-  }) : super(key: key);
+  });
 
   @override
   State<PermissionInitializationWidget> createState() => _PermissionInitializationWidgetState();
@@ -34,7 +34,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
     try {
       // Check if essential permissions are already granted
       final essentialGranted = await PermissionService.checkEssentialPermissions();
-      
+
       if (essentialGranted) {
         setState(() {
           _isCheckingPermissions = false;
@@ -42,15 +42,14 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
         widget.onPermissionsGranted?.call();
         return;
       }
-      
+
       // Show permission dialog
       setState(() {
         _showPermissionDialog = true;
         _permissionMessage = 'PearlNest needs certain permissions to work properly. Please grant the required permissions.';
       });
-      
     } catch (e) {
-      debugPrint('Error checking permissions: $e');
+      //debugPrint('Error checking permissions: $e');
       setState(() {
         _isCheckingPermissions = false;
       });
@@ -62,9 +61,9 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
       setState(() {
         _permissionMessage = 'Requesting permissions...';
       });
-      
+
       final granted = await PermissionService.requestAllPermissions();
-      
+
       if (granted) {
         setState(() {
           _showPermissionDialog = false;
@@ -78,7 +77,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
         widget.onPermissionsDenied?.call();
       }
     } catch (e) {
-      debugPrint('Error requesting permissions: $e');
+      //debugPrint('Error requesting permissions: $e');
       setState(() {
         _permissionMessage = 'Error requesting permissions. Please try again.';
       });
@@ -89,7 +88,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
     try {
       await PermissionService.openAppSettings();
     } catch (e) {
-      debugPrint('Error opening settings: $e');
+      //debugPrint('Error opening settings: $e');
     }
   }
 
@@ -98,11 +97,11 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
     if (_isCheckingPermissions && !_showPermissionDialog) {
       return _buildLoadingScreen();
     }
-    
+
     if (_showPermissionDialog) {
       return _buildPermissionDialog();
     }
-    
+
     return widget.child;
   }
 
@@ -138,9 +137,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
           padding: const EdgeInsets.all(20.0),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height - 
-                         MediaQuery.of(context).padding.top - 
-                         MediaQuery.of(context).padding.bottom - 40,
+              minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom - 40,
             ),
             child: IntrinsicHeight(
               child: Column(

@@ -56,24 +56,24 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
       final bookings = results[1];
 
       // Debug logging
-      debugPrint('🏠 Dashboard - Properties result type: ${properties.runtimeType}');
-      debugPrint('🏠 Dashboard - Properties content: $properties');
-      
+      //debugPrint('🏠 Dashboard - Properties result type: ${properties.runtimeType}');
+      //debugPrint('🏠 Dashboard - Properties content: $properties');
+
       int propertyCount = 0;
       if (properties is Map<String, dynamic>) {
         // The getPropertiesByLandlord method returns {properties: [...]} not {data: [...]}
         final propertiesList = properties['properties'];
-        debugPrint('🏠 Dashboard - Properties list type: ${propertiesList.runtimeType}');
-        debugPrint('🏠 Dashboard - Properties list: $propertiesList');
-        
+        //debugPrint('🏠 Dashboard - Properties list type: ${propertiesList.runtimeType}');
+        //debugPrint('🏠 Dashboard - Properties list: $propertiesList');
+
         if (propertiesList is List) {
           propertyCount = propertiesList.length;
-          debugPrint('🏠 Dashboard - Property count: $propertyCount');
+          //debugPrint('🏠 Dashboard - Property count: $propertyCount');
         }
       }
 
-      debugPrint('🏠 Dashboard - Bookings result type: ${bookings.runtimeType}');
-      debugPrint('🏠 Dashboard - Bookings count: ${bookings is List ? bookings.length : 0}');
+      //debugPrint('🏠 Dashboard - Bookings result type: ${bookings.runtimeType}');
+      //debugPrint('🏠 Dashboard - Bookings count: ${bookings is List ? bookings.length : 0}');
 
       if (mounted) {
         setState(() {
@@ -81,9 +81,9 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
           _totalBookings = bookings is List ? bookings.length : 0;
           _isLoading = false;
         });
-        
-        debugPrint('🏠 Dashboard - Final property count set to: $_totalProperties');
-        debugPrint('🏠 Dashboard - Final booking count set to: $_totalBookings');
+
+        //debugPrint('🏠 Dashboard - Final property count set to: $_totalProperties');
+        //debugPrint('🏠 Dashboard - Final booking count set to: $_totalBookings');
       }
     } catch (e) {
       if (mounted) {
@@ -262,9 +262,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                               if (loadingProgress == null) return child;
                               return Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
+                                  value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
                                 ),
@@ -344,7 +342,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             ),
           ),
           SizedBox(height: 16),
-          
+
           // Show error if any
           if (_error.isNotEmpty)
             Container(
@@ -375,34 +373,33 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                 ],
               ),
             ),
-          
+
           Row(
             children: [
               Expanded(
-                child: _isLoading 
-                  ? _buildLoadingStatCard('Properties', Icons.home_work, AppTheme.primaryblue)
-                  : _buildStatCard(
-                      'Properties',
-                      '$_totalProperties',
-                      Icons.home_work,
-                      AppTheme.primaryblue,
-                    ),
+                child: _isLoading
+                    ? _buildLoadingStatCard('Properties', Icons.home_work, AppTheme.primaryblue)
+                    : _buildStatCard(
+                        'Properties',
+                        '$_totalProperties',
+                        Icons.home_work,
+                        AppTheme.primaryblue,
+                      ),
               ),
               SizedBox(width: 16),
               Expanded(
-                child: _isLoading 
-                  ? _buildLoadingStatCard('Bookings', Icons.calendar_today, Colors.blue)
-                  : _buildStatCard(
-                      'Bookings',
-                      '$_totalBookings',
-                      Icons.calendar_today,
-                      Colors.blue,
-                    ),
+                child: _isLoading
+                    ? _buildLoadingStatCard('Bookings', Icons.calendar_today, Colors.blue)
+                    : _buildStatCard(
+                        'Bookings',
+                        '$_totalBookings',
+                        Icons.calendar_today,
+                        Colors.blue,
+                      ),
               ),
             ],
           ),
           SizedBox(height: 16),
-        
         ],
       ),
     );
@@ -544,7 +541,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                         ),
                       ),
                     );
-                    
+
                     // Refresh dashboard data if property was added
                     if (result == true) {
                       _loadDashboardData();
@@ -600,9 +597,6 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
       ),
     );
   }
-
-  
-
 }
 
 class LandlordProfileScreen extends StatelessWidget {

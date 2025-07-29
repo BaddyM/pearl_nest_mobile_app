@@ -9,9 +9,9 @@ import 'package:pearlnest/apis/app_config.dart';
 class FavoritesScreen extends StatefulWidget {
   final User user;
   final VoidCallback? onNavigateToExplore;
-  
+
   const FavoritesScreen({
-    super.key, 
+    super.key,
     required this.user,
     this.onNavigateToExplore,
   });
@@ -73,9 +73,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
       'isNarrowScreen': isNarrowScreen,
       'screenWidth': screenWidth,
       'screenHeight': screenHeight,
-      'horizontalPadding': isNarrowScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0,
+      'horizontalPadding': isNarrowScreen
+          ? 12.0
+          : isSmallScreen
+              ? 16.0
+              : 20.0,
       'verticalPadding': isSmallScreen ? 12.0 : 16.0,
-      'titleFontSize': isVerySmallScreen ? 22.0 : isSmallScreen ? 25.0 : 28.0,
+      'titleFontSize': isVerySmallScreen
+          ? 22.0
+          : isSmallScreen
+              ? 25.0
+              : 28.0,
       'subtitleFontSize': isSmallScreen ? 12.0 : 14.0,
       'cardSpacing': isSmallScreen ? 12.0 : 16.0,
       'borderRadius': isSmallScreen ? 12.0 : 16.0,
@@ -83,11 +91,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
   }
 
   void _loadFavoriteProperties() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
     });
     try {
       final favorites = await FavoritesService.fetchFavorites();
+      
+      if (!mounted) return;
+      
       setState(() {
         _favoriteProperties = favorites;
         _filteredProperties = List.from(_favoriteProperties);
@@ -95,10 +108,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
       });
       _animationController.forward();
     } catch (e) {
+      if (!mounted) return;
+      
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -126,18 +141,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   void _toggleFavorite(Property property) async {
     final responsive = _getResponsiveValues(context);
-    
+
     try {
       final wasLiked = _isPropertyFavorited(property);
-      
+
       // Since this is favorites screen, properties should always be "liked" initially
       // So tapping the heart should remove from favorites
       if (!wasLiked) {
         // This shouldn't happen in favorites screen, but handle it just in case
-        debugPrint('⚠️ Property not found in favorites list, this is unexpected in FavoritesScreen');
+        //debugPrint('⚠️ Property not found in favorites list, this is unexpected in FavoritesScreen');
         return;
       }
-      
+
       // Show loading feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -171,22 +186,26 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
       );
 
       // Make API call to sync with server using the working toggle method
-      debugPrint('🤍 Toggling favorite for property: ${property.id}');
+      //debugPrint('🤍 Toggling favorite for property: ${property.id}');
       final result = await FavoritesService.toggleFavorite(property.id);
-      
+
       // Hide loading message
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      
+
       if (result['success'] == true) {
         // Success - remove from local lists and update UI
-        debugPrint('✅ Removed from favorites for property: ${property.id}');
-        
+        //debugPrint('✅ Removed from favorites for property: ${property.id}');
+
+        if (!mounted) return;
+
         setState(() {
           // Remove from favorites list since it was toggled off
           _favoriteProperties.removeWhere((prop) => prop.id == property.id);
-          _filterProperties();
         });
         
+        // Filter properties after state update
+        _filterProperties();
+
         // Show success feedback with undo option
         if (mounted) {
           final snackBar = SnackBar(
@@ -234,8 +253,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         }
       } else {
         // API call failed, show error
-        debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
-        
+        //debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -251,12 +270,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           );
         }
       }
-      
     } catch (e) {
-      debugPrint('❌ Error toggling favorite: $e');
-      
+      //debugPrint('❌ Error toggling favorite: $e');
+
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -275,22 +293,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
   }
 
   void _filterProperties() {
+    if (!mounted) return;
+    
     setState(() {
       List<Property> filtered = _favoriteProperties;
       if (_selectedCategory != 'All') {
-        filtered = filtered
-            .where((property) => property.propertyTypeString == _selectedCategory)
-            .toList();
+        filtered = filtered.where((property) => property.propertyTypeString == _selectedCategory).toList();
       }
-      
+
       if (_searchQuery.isNotEmpty) {
-        filtered = filtered
-            .where((property) =>
-                property.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                property.location.toLowerCase().contains(_searchQuery.toLowerCase()))
-            .toList();
+        filtered = filtered.where((property) => property.title.toLowerCase().contains(_searchQuery.toLowerCase()) || property.location.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
       }
-      
+
       _filteredProperties = filtered;
     });
   }
@@ -318,7 +332,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   Widget _buildHeader() {
     final responsive = _getResponsiveValues(context);
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: responsive['horizontalPadding'],
@@ -404,7 +418,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   Widget _buildSearchBar() {
     final responsive = _getResponsiveValues(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
@@ -426,8 +440,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         onChanged: (value) {
           setState(() {
             _searchQuery = value;
-            _filterProperties();
           });
+          _filterProperties();
         },
         decoration: InputDecoration(
           hintText: 'Search your favorites...',
@@ -436,7 +450,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
             fontSize: responsive['isSmallScreen'] ? 14 : 16,
           ),
           prefixIcon: Icon(
-            Icons.search, 
+            Icons.search,
             color: AppTheme.primaryblue,
             size: responsive['isSmallScreen'] ? 20 : 24,
           ),
@@ -452,7 +466,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   Widget _buildLoadingState() {
     final responsive = _getResponsiveValues(context);
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -473,7 +487,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   Widget _buildEmptyState() {
     final responsive = _getResponsiveValues(context);
-    
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Center(
@@ -562,9 +576,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         children: [
           _buildCategoriesRow(),
           Expanded(
-            child: _filteredProperties.isEmpty
-                ? _buildNoResultsState()
-                : _buildFavoritesList(),
+            child: _filteredProperties.isEmpty ? _buildNoResultsState() : _buildFavoritesList(),
           ),
         ],
       ),
@@ -573,7 +585,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   Widget _buildCategoriesRow() {
     final responsive = _getResponsiveValues(context);
-    
+
     return Container(
       margin: EdgeInsets.symmetric(vertical: responsive['verticalPadding']),
       child: SizedBox(
@@ -585,16 +597,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           itemBuilder: (context, index) {
             final category = _categories[index];
             final isSelected = _selectedCategory == category;
-            final count = category == 'All'
-                ? _favoriteProperties.length
-                : _favoriteProperties.where((p) => p.propertyTypeString == category).length;
-            
+            final count = category == 'All' ? _favoriteProperties.length : _favoriteProperties.where((p) => p.propertyTypeString == category).length;
+
             return GestureDetector(
               onTap: () {
                 setState(() {
                   _selectedCategory = category;
-                  _filterProperties();
                 });
+                _filterProperties();
               },
               child: AnimatedContainer(
                 duration: Duration(milliseconds: 200),
@@ -604,23 +614,21 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                   vertical: responsive['isSmallScreen'] ? 8 : 10,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppTheme.primaryblue
-                      : AppTheme.getCardColor(context),
+                  color: isSelected ? AppTheme.primaryblue : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
-                    color: isSelected
-                        ? AppTheme.primaryblue
-                        : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                    color: isSelected ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
                     width: 1,
                   ),
-                  boxShadow: isSelected ? [
-                    BoxShadow(
-                      color: AppTheme.primaryblue.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ] : [],
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.primaryblue.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ]
+                      : [],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -631,9 +639,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                         style: TextStyle(
                           fontSize: responsive['isSmallScreen'] ? 12 : 14,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color: isSelected
-                              ? AppTheme.whiteColor
-                              : AppTheme.getSecondaryTextColor(context),
+                          color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -647,9 +653,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppTheme.whiteColor.withValues(alpha: 0.2)
-                              : AppTheme.primaryblue.withValues(alpha: 0.1),
+                          color: isSelected ? AppTheme.whiteColor.withValues(alpha: 0.2) : AppTheme.primaryblue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -657,9 +661,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                           style: TextStyle(
                             fontSize: responsive['isSmallScreen'] ? 8 : 10,
                             fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? AppTheme.whiteColor
-                                : AppTheme.primaryblue,
+                            color: isSelected ? AppTheme.whiteColor : AppTheme.primaryblue,
                           ),
                         ),
                       ),
@@ -676,7 +678,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   Widget _buildNoResultsState() {
     final responsive = _getResponsiveValues(context);
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -688,9 +690,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           ),
           SizedBox(height: 16),
           Text(
-            _searchQuery.isNotEmpty
-                ? 'No results found'
-                : 'No $_selectedCategory properties',
+            _searchQuery.isNotEmpty ? 'No results found' : 'No $_selectedCategory properties',
             style: TextStyle(
               fontSize: responsive['isSmallScreen'] ? 18 : 20,
               fontWeight: FontWeight.w600,
@@ -699,9 +699,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           ),
           SizedBox(height: 8),
           Text(
-            _searchQuery.isNotEmpty
-                ? 'Try adjusting your search terms'
-                : 'No $_selectedCategory properties in your favorites yet',
+            _searchQuery.isNotEmpty ? 'Try adjusting your search terms' : 'No $_selectedCategory properties in your favorites yet',
             style: TextStyle(
               fontSize: responsive['subtitleFontSize'],
               color: AppTheme.getSecondaryTextColor(context),
@@ -715,18 +713,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   Widget _buildFavoritesList() {
     final responsive = _getResponsiveValues(context);
-    
+
     if (_isGridView) {
       int crossAxisCount = 2;
       double childAspectRatio = 0.69;
       double crossAxisSpacing = 12.0;
       double mainAxisSpacing = 12.0;
-      
+
       if (MediaQuery.of(context).size.width < 380) {
         crossAxisCount = 1;
         childAspectRatio = 1.2;
       }
-      
+
       return GridView.builder(
         padding: EdgeInsets.fromLTRB(
           responsive['horizontalPadding'],
@@ -765,7 +763,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         },
       );
     }
-    
+
     return ListView.builder(
       padding: EdgeInsets.fromLTRB(
         responsive['horizontalPadding'],
@@ -846,16 +844,16 @@ class PropertyCard extends StatelessWidget {
       'borderRadius': isSmallScreen ? 12.0 : 16.0,
       'padding': isSmallScreen ? 10.0 : 12.0,
       'smallPadding': isSmallScreen ? 8.0 : 10.0,
-      'imageHeight': isHorizontal 
+      'imageHeight': isHorizontal
           ? (isSmallScreen ? 100.0 : 120.0)
-          : (isVerySmallScreen ? 120.0 : isSmallScreen ? 140.0 : 150.0),
+          : (isVerySmallScreen
+              ? 120.0
+              : isSmallScreen
+                  ? 140.0
+                  : 150.0),
       'imageWidth': isHorizontal ? (isSmallScreen ? 100.0 : 120.0) : double.infinity,
-      'titleFontSize': isHorizontal 
-          ? (isSmallScreen ? 13.0 : 14.0)
-          : (isSmallScreen ? 13.0 : 14.0),
-      'priceFontSize': isHorizontal 
-          ? (isSmallScreen ? 11.0 : 12.0)
-          : (isSmallScreen ? 14.0 : 16.0),
+      'titleFontSize': isHorizontal ? (isSmallScreen ? 13.0 : 14.0) : (isSmallScreen ? 13.0 : 14.0),
+      'priceFontSize': isHorizontal ? (isSmallScreen ? 11.0 : 12.0) : (isSmallScreen ? 14.0 : 16.0),
       'subtitleFontSize': isSmallScreen ? 10.0 : 11.0,
       'iconSize': isSmallScreen ? 12.0 : 13.0,
       'favIconSize': isSmallScreen ? 18.0 : 20.0,
@@ -866,7 +864,7 @@ class PropertyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responsive = _getResponsiveCardValues(context);
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -887,283 +885,273 @@ class PropertyCard extends StatelessWidget {
   }
 
   Widget _buildVerticalLayout() {
-    return Builder(
-      builder: (context) {
-        final responsive = _getResponsiveCardValues(context);
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildImageSection(),
-            Container(
-              padding: EdgeInsets.all(responsive['padding']),
-              child: _buildContentSection(),
-            ),
-          ],
-        );
-      }
-    );
+    return Builder(builder: (context) {
+      final responsive = _getResponsiveCardValues(context);
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildImageSection(),
+          Container(
+            padding: EdgeInsets.all(responsive['padding']),
+            child: _buildContentSection(),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildHorizontalLayout() {
-    return Builder(
-      builder: (context) {
-        final responsive = _getResponsiveCardValues(context);
-        
-        return IntrinsicHeight(
-          child: Row(
-            children: [
-              SizedBox(
-                width: responsive['imageWidth'],
-                child: _buildImageSection(),
+    return Builder(builder: (context) {
+      final responsive = _getResponsiveCardValues(context);
+
+      return IntrinsicHeight(
+        child: Row(
+          children: [
+            SizedBox(
+              width: responsive['imageWidth'],
+              child: _buildImageSection(),
+            ),
+            Expanded(
+              child: Container(
+                padding: EdgeInsets.all(responsive['smallPadding']),
+                child: _buildContentSection(),
               ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildImageSection() {
+    return Builder(builder: (context) {
+      final responsive = _getResponsiveCardValues(context);
+
+      return Stack(
+        children: [
+          Container(
+            height: responsive['imageHeight'],
+            width: responsive['imageWidth'],
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(responsive['borderRadius']),
+                topRight: Radius.circular(responsive['borderRadius']),
+                bottomLeft: isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
+                bottomRight: isHorizontal ? Radius.zero : Radius.zero,
+              ),
+              color: AppTheme.lightGreyColor,
+            ),
+            child: property.images.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(responsive['borderRadius']),
+                      topRight: Radius.circular(responsive['borderRadius']),
+                      bottomLeft: isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
+                      bottomRight: isHorizontal ? Radius.zero : Radius.zero,
+                    ),
+                    child: Image.network(
+                      _getFullImageUrl(property.images.first),
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: AppTheme.lightGreyColor,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primaryblue,
+                              strokeWidth: 2,
+                              value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: AppTheme.lightGreyColor,
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: AppTheme.getSecondaryTextColor(context),
+                            size: responsive['isSmallScreen'] ? 30 : 40,
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : Icon(
+                    Icons.home,
+                    color: AppTheme.greyColor,
+                    size: responsive['isSmallScreen'] ? 30 : 40,
+                  ),
+          ),
+
+          // Favorite button
+          Positioned(
+            top: responsive['isSmallScreen'] ? 8 : 12,
+            right: responsive['isSmallScreen'] ? 8 : 12,
+            child: GestureDetector(
+              onTap: onFavorite,
+              child: Container(
+                padding: EdgeInsets.all(responsive['isSmallScreen'] ? 6 : 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.whiteColor.withValues(alpha: 0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.greyColor.withValues(alpha: 0.2),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_outline,
+                  color: isFavorite ? Colors.red : AppTheme.greyColor,
+                  size: responsive['favIconSize'],
+                ),
+              ),
+            ),
+          ),
+
+          // Featured badge
+          if (property.isFeatured)
+            Positioned(
+              top: responsive['isSmallScreen'] ? 8 : 12,
+              left: responsive['isSmallScreen'] ? 8 : 12,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: responsive['isSmallScreen'] ? 6 : 8,
+                  vertical: responsive['isSmallScreen'] ? 2 : 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryblue,
+                  borderRadius: BorderRadius.circular(responsive['isSmallScreen'] ? 6 : 8),
+                ),
+                child: Text(
+                  'Featured',
+                  style: TextStyle(
+                    color: AppTheme.whiteColor,
+                    fontSize: responsive['badgeFontSize'],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+
+          // Verified badge
+          if (property.isVerified)
+            Positioned(
+              bottom: isHorizontal ? (responsive['isSmallScreen'] ? 8 : 12) : -8,
+              left: responsive['isSmallScreen'] ? 8 : 12,
+              child: Container(
+                padding: EdgeInsets.all(responsive['isSmallScreen'] ? 3 : 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryblue,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.verified,
+                  color: AppTheme.whiteColor,
+                  size: responsive['isSmallScreen'] ? 12 : 16,
+                ),
+              ),
+            ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildContentSection() {
+    return Builder(builder: (context) {
+      final responsive = _getResponsiveCardValues(context);
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Title - single line only
+          Text(
+            property.title,
+            style: TextStyle(
+              fontSize: responsive['titleFontSize'],
+              fontWeight: FontWeight.bold,
+              color: AppTheme.getTextColor(context),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          SizedBox(height: 4),
+
+          // Location - single line only
+          Row(
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                size: responsive['iconSize'],
+                color: AppTheme.getSecondaryTextColor(context),
+              ),
+              SizedBox(width: 2),
               Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(responsive['smallPadding']),
-                  child: _buildContentSection(),
+                child: Text(
+                  property.location,
+                  style: TextStyle(
+                    fontSize: responsive['subtitleFontSize'],
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-        );
-      }
-    );
-  }
 
-  Widget _buildImageSection() {
-    return Builder(
-      builder: (context) {
-        final responsive = _getResponsiveCardValues(context);
-        
-        return Stack(
-          children: [
-            Container(
-              height: responsive['imageHeight'],
-              width: responsive['imageWidth'],
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(responsive['borderRadius']),
-                  topRight: Radius.circular(responsive['borderRadius']),
-                  bottomLeft: isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
-                  bottomRight: isHorizontal ? Radius.zero : Radius.zero,
-                ),
-                color: AppTheme.lightGreyColor,
-              ),
-              child: property.images.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(responsive['borderRadius']),
-                        topRight: Radius.circular(responsive['borderRadius']),
-                        bottomLeft: isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
-                        bottomRight: isHorizontal ? Radius.zero : Radius.zero,
-                      ),
-                      child: Image.network(
-                        _getFullImageUrl(property.images.first),
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: AppTheme.lightGreyColor,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: AppTheme.primaryblue,
-                                strokeWidth: 2,
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: AppTheme.lightGreyColor,
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: AppTheme.getSecondaryTextColor(context),
-                              size: responsive['isSmallScreen'] ? 30 : 40,
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  : Icon(
-                      Icons.home,
-                      color: AppTheme.greyColor,
-                      size: responsive['isSmallScreen'] ? 30 : 40,
-                    ),
-            ),
-            
-            // Favorite button
-            Positioned(
-              top: responsive['isSmallScreen'] ? 8 : 12,
-              right: responsive['isSmallScreen'] ? 8 : 12,
-              child: GestureDetector(
-                onTap: onFavorite,
-                child: Container(
-                  padding: EdgeInsets.all(responsive['isSmallScreen'] ? 6 : 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.whiteColor.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.greyColor.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_outline,
-                    color: isFavorite ? Colors.red : AppTheme.greyColor,
-                    size: responsive['favIconSize'],
-                  ),
-                ),
-              ),
-            ),
-            
-            // Featured badge
-            if (property.isFeatured)
-              Positioned(
-                top: responsive['isSmallScreen'] ? 8 : 12,
-                left: responsive['isSmallScreen'] ? 8 : 12,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: responsive['isSmallScreen'] ? 6 : 8,
-                    vertical: responsive['isSmallScreen'] ? 2 : 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryblue,
-                    borderRadius: BorderRadius.circular(responsive['isSmallScreen'] ? 6 : 8),
-                  ),
-                  child: Text(
-                    'Featured',
-                    style: TextStyle(
-                      color: AppTheme.whiteColor,
-                      fontSize: responsive['badgeFontSize'],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            
-            // Verified badge
-            if (property.isVerified)
-              Positioned(
-                bottom: isHorizontal ? (responsive['isSmallScreen'] ? 8 : 12) : -8,
-                left: responsive['isSmallScreen'] ? 8 : 12,
-                child: Container(
-                  padding: EdgeInsets.all(responsive['isSmallScreen'] ? 3 : 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryblue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.verified,
-                    color: AppTheme.whiteColor,
-                    size: responsive['isSmallScreen'] ? 12 : 16,
-                  ),
-                ),
-              ),
-          ],
-        );
-      }
-    );
-  }
+          SizedBox(height: 6),
 
-  Widget _buildContentSection() {
-    return Builder(
-      builder: (context) {
-        final responsive = _getResponsiveCardValues(context);
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Title - single line only
-            Text(
-              property.title,
-              style: TextStyle(
-                fontSize: responsive['titleFontSize'],
-                fontWeight: FontWeight.bold,
-                color: AppTheme.getTextColor(context),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          // Price - single line
+          Text(
+            'UGX ${property.price.toStringAsFixed(0)}',
+            style: TextStyle(
+              fontSize: responsive['priceFontSize'],
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryblue,
             ),
-            
-            SizedBox(height: 4),
-            
-            // Location - single line only
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          // Price type - single line
+          Text(
+            property.priceType,
+            style: TextStyle(
+              fontSize: responsive['badgeFontSize'],
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          // Features - only show if not horizontal and enough space
+          if (!isHorizontal) ...[
+            SizedBox(height: 6),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.location_on_outlined,
-                  size: responsive['iconSize'],
-                  color: AppTheme.getSecondaryTextColor(context),
-                ),
-                SizedBox(width: 2),
-                Expanded(
-                  child: Text(
-                    property.location,
-                    style: TextStyle(
-                      fontSize: responsive['subtitleFontSize'],
-                      color: AppTheme.getSecondaryTextColor(context),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+                _buildCompactFeature(Icons.bed_outlined, '${property.bedrooms}', context, responsive),
+                _buildCompactFeature(Icons.bathroom_outlined, '${property.bathrooms}', context, responsive),
+                _buildCompactFeature(Icons.square_foot, '${property.area.toInt()}m²', context, responsive),
               ],
             ),
-            
-            SizedBox(height: 6),
-            
-            // Price - single line
-            Text(
-              'UGX ${property.price.toStringAsFixed(0)}',
-              style: TextStyle(
-                fontSize: responsive['priceFontSize'],
-                fontWeight: FontWeight.bold,
-                color: AppTheme.primaryblue,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            // Price type - single line
-            Text(
-              property.priceType,
-              style: TextStyle(
-                fontSize: responsive['badgeFontSize'],
-                color: AppTheme.getSecondaryTextColor(context),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            // Features - only show if not horizontal and enough space
-            if (!isHorizontal) ...[
-              SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildCompactFeature(Icons.bed_outlined, '${property.bedrooms}', context, responsive),
-                  _buildCompactFeature(Icons.bathroom_outlined, '${property.bathrooms}', context, responsive),
-                  _buildCompactFeature(Icons.square_foot, '${property.area.toInt()}m²', context, responsive),
-                ],
-              ),
-            ],
           ],
-        );
-      }
-    );
+        ],
+      );
+    });
   }
 
   Widget _buildCompactFeature(
-    IconData icon, 
-    String text, 
+    IconData icon,
+    String text,
     BuildContext context,
     Map<String, dynamic> responsive,
   ) {

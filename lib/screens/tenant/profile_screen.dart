@@ -26,7 +26,7 @@ class ProfileScreen extends StatefulWidget {
   final Landlord? landlord;
 
   const ProfileScreen({
-    super.key, 
+    super.key,
     required this.user,
     this.landlord,
   });
@@ -94,7 +94,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       totalBookings: 15,
       isVerified: true,
       createdAt: DateTime.now().subtract(Duration(days: 30)),
-      updatedAt: DateTime.now(), businessRegistrationNumber: '', verificationDocuments: [], applicationDate: DateTime.now().subtract(Duration(days: 30)),
+      updatedAt: DateTime.now(),
+      businessRegistrationNumber: '',
+      verificationDocuments: [],
+      applicationDate: DateTime.now().subtract(Duration(days: 30)),
     );
   }
 
@@ -130,9 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           if (loadingProgress == null) return child;
                           return Center(
                             child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                  : null,
+                              value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
                             ),
@@ -279,10 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             gradient: LinearGradient(
-              colors: [
-                AppTheme.primaryblue,
-                AppTheme.primaryblue.withOpacity(0.8)
-              ],
+              colors: [AppTheme.primaryblue, AppTheme.primaryblue.withOpacity(0.8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -384,55 +382,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMenuItems() {
     return Column(
       children: [
-      if (widget.user.userType == UserType.landlord) ...[
-        _buildMenuItem(
-          Icons.dashboard,
-          'Landlord Dashboard',
-          () {
-            final landlord = widget.landlord ?? _createDummyLandlord();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LandlordDashboardScreen(
-                  user: widget.user,
-                  landlord: landlord,
+        if (widget.user.userType == UserType.landlord) ...[
+          _buildMenuItem(
+            Icons.dashboard,
+            'Landlord Dashboard',
+            () {
+              final landlord = widget.landlord ?? _createDummyLandlord();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LandlordDashboardScreen(
+                    user: widget.user,
+                    landlord: landlord,
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
-        _buildMenuItem(
-          Icons.home_work,
-          'My Properties',
-          () {
-            final landlord = widget.landlord ?? _createDummyLandlord();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LandlordPropertyManagementScreen(
-                  user: widget.user,
-                  landlord: landlord,
-                  properties: [],
+              );
+            },
+          ),
+          _buildMenuItem(
+            Icons.home_work,
+            'My Properties',
+            () {
+              final landlord = widget.landlord ?? _createDummyLandlord();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LandlordPropertyManagementScreen(
+                    user: widget.user,
+                    landlord: landlord,
+                    properties: [],
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
-        _buildMenuItem(
-          Icons.calendar_today,
-          'Bookings',
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LandlordBookingRequestsScreen(
-                  user: widget.user,
+              );
+            },
+          ),
+          _buildMenuItem(
+            Icons.calendar_today,
+            'Bookings',
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LandlordBookingRequestsScreen(
+                    user: widget.user,
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
-      ],
+              );
+            },
+          ),
+        ],
         _buildMenuItem(
           Icons.settings,
           'Settings',
@@ -461,7 +459,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Icons.code,
           "Contact Developer",
           () {
-            Navigator.push (
+            Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => ContactDeveloperScreen(),
@@ -489,7 +487,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
           isDestructive: true,
         ),
-       
         _buildMenuItem(
           Icons.logout,
           'Logout',
@@ -502,8 +499,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap,
-      {bool isDestructive = false}) {
+  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap, {bool isDestructive = false}) {
     return ListTile(
       leading: Icon(
         icon,
@@ -616,20 +612,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showLogoutDialog() {
-    debugPrint('🔍 ProfileScreen: Showing logout dialog');
+    //debugPrint('🔍 ProfileScreen: Showing logout dialog');
     showDialog(
       context: context,
       barrierDismissible: false, // Prevent dismissal by tapping outside
       builder: (BuildContext context) {
-        debugPrint('🔍 ProfileScreen: Building logout dialog');
+        //debugPrint('🔍 ProfileScreen: Building logout dialog');
         return BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
-            debugPrint('🔍 ProfileScreen: Dialog BlocListener received state: ${state.runtimeType}');
+            //debugPrint('🔍 ProfileScreen: Dialog BlocListener received state: ${state.runtimeType}');
             if (state is AuthUnauthenticated) {
-              debugPrint('🔍 ProfileScreen: Logout completed, navigating to OnboardingScreen');
+              //debugPrint('🔍 ProfileScreen: Logout completed, navigating to OnboardingScreen');
               // Close the dialog
               Navigator.of(context).pop();
-              
+
               // Navigate to OnboardingScreen and clear the entire navigation stack
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => OnboardingScreen()),
@@ -638,9 +634,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             }
           },
           builder: (context, state) {
-            debugPrint('🔍 ProfileScreen: Dialog BlocBuilder received state: ${state.runtimeType}');
+            //debugPrint('🔍 ProfileScreen: Dialog BlocBuilder received state: ${state.runtimeType}');
             final isLoading = state is AuthLoading;
-            
+
             return AlertDialog(
               backgroundColor: AppTheme.getCardColor(context),
               title: Text(
@@ -653,21 +649,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: isLoading ? null : () {
-                    debugPrint('🔍 ProfileScreen: Cancel button pressed');
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          //debugPrint('🔍 ProfileScreen: Cancel button pressed');
+                          Navigator.of(context).pop();
+                        },
                   child: Text(
                     'Cancel',
                     style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                   ),
                 ),
                 TextButton(
-                  onPressed: isLoading ? null : () {
-                    debugPrint('🔍 ProfileScreen: Logout button pressed');
-                    // Trigger logout - BlocListener will handle navigation
-                    context.read<AuthBloc>().add(AuthLogoutRequested());
-                  },
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          //debugPrint('🔍 ProfileScreen: Logout button pressed');
+                          // Trigger logout - BlocListener will handle navigation
+                          context.read<AuthBloc>().add(AuthLogoutRequested());
+                        },
                   child: isLoading
                       ? SizedBox(
                           width: 16,
@@ -733,12 +733,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Icon(Icons.error_outline, color: Colors.red, size: 20),
                           SizedBox(width: 8),
-                          Text(
-                            'This action cannot be undone!',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Expanded(
+                            child: Text(
+                              'This action cannot be undone!',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                             ),
                           ),
                         ],
@@ -826,22 +830,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       '• Your reviews and ratings',
     ];
 
-    return points.map((point) => Padding(
-      padding: EdgeInsets.only(bottom: 4),
-      child: Text(
-        point,
-        style: TextStyle(
-          color: AppTheme.getTextColor(context),
-          fontSize: 14,
-        ),
-      ),
-    )).toList();
+    return points
+        .map((point) => Padding(
+              padding: EdgeInsets.only(bottom: 4),
+              child: Text(
+                point,
+                style: TextStyle(
+                  color: AppTheme.getTextColor(context),
+                  fontSize: 14,
+                ),
+              ),
+            ))
+        .toList();
   }
 
   void _showDeleteAccountConfirmation() {
     final TextEditingController reasonController = TextEditingController();
     String? selectedReason;
-    
+
     final reasons = [
       'I found a better alternative',
       'I no longer need this service',
@@ -989,14 +995,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
                     final isLoading = state is AuthLoading;
-                    
+
                     return ElevatedButton(
-                      onPressed: isLoading ? null : () {
-                        final reason = selectedReason == 'Other (please specify)' 
-                            ? reasonController.text.trim()
-                            : selectedReason;
-                        _performAccountDeletion(reason);
-                      },
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              final reason = selectedReason == 'Other (please specify)' ? reasonController.text.trim() : selectedReason;
+                              _performAccountDeletion(reason);
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         shape: RoundedRectangleBorder(
@@ -1050,7 +1056,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           _showAccountDeletedDialog();
         }
-        
+
         // Trigger logout through AuthBloc to navigate to login screen
         if (mounted) {
           context.read<AuthBloc>().add(AuthLogoutRequested());
@@ -1066,7 +1072,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         Navigator.of(context).pop();
       }
-      
+
       // Show error dialog
       if (mounted) {
         _showDeletionErrorDialog('An error occurred while deleting your account. Please try again.');

@@ -5,15 +5,15 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Pearlnest</string>
+		<string>Pearl Nest Estates</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
-		<string>com.pearlnest.mobile</string>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>pearlnest</string>
+		<string>pearl_nest_estates</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -60,61 +60,79 @@
 		
 		<!-- Camera Permission -->
 		<key>NSCameraUsageDescription</key>
-		<string>PearlNest needs access to your camera to take photos of properties for listings and sharing with landlords.</string>
-
+		<string>PearlNest needs access to your camera to take photos of properties you want to list or share with landlords during property inquiries. This helps provide visual information about properties and facilitates communication between tenants and landlords.</string>
+		
 		<!-- Photo Library Permission -->
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>PearlNest needs access to your photo library to select property images for listings and communication.</string>
-
+		<string>PearlNest needs access to your photo library to select and share property images during listing creation or communication with landlords. This enables you to showcase properties and communicate effectively about rental properties.</string>
+		
 		<!-- Photo Library Add Permission -->
 		<key>NSPhotoLibraryAddUsageDescription</key>
-		<string>PearlNest saves property photos to your photo library for your records.</string>
-
+		<string>PearlNest needs permission to save property photos to your photo library for your records and future reference when managing property listings and communications.</string>
+		
 		<!-- Location Permission -->
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>PearlNest uses your location to find nearby rental properties and calculate distances.</string>
-
+		<string>PearlNest uses your location to help you find nearby rental properties, calculate distances to properties, and provide location-based property recommendations. This improves your property search experience.</string>
+		
 		<!-- Location Always Permission -->
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>PearlNest uses your location to provide location-based property recommendations and notifications.</string>
-
+		<string>PearlNest uses your location to provide personalized property recommendations, help you find nearby rentals, and enable location-based notifications for properties in your area of interest.</string>
+		
 		<!-- Microphone Permission -->
 		<key>NSMicrophoneUsageDescription</key>
-		<string>PearlNest needs microphone access to record voice messages for communication with landlords.</string>
-
+		<string>PearlNest needs access to your microphone to record voice messages for communication with landlords and property owners. This enables convenient voice communication about property inquiries and rental arrangements.</string>
+		
+		<!-- Contacts Permission -->
+		<key>NSContactsUsageDescription</key>
+		<string>PearlNest may access your contacts to help you easily share property listings with friends and family, and to facilitate communication with landlords you've previously contacted.</string>
+		
 		<!-- Notifications Permission -->
 		<key>NSUserNotificationUsageDescription</key>
-		<string>PearlNest sends notifications about new property listings, messages, and booking updates.</string>
-
+		<string>PearlNest sends you notifications about new property listings matching your preferences, messages from landlords, booking confirmations, and important updates about your rental inquiries.</string>
+		
+		<!-- Calendar Permission -->
+		<key>NSCalendarsUsageDescription</key>
+		<string>PearlNest can add property viewing appointments and rental-related events to your calendar to help you keep track of important dates and scheduled property visits.</string>
+		
+		<!-- Reminders Permission -->
+		<key>NSRemindersUsageDescription</key>
+		<string>PearlNest can create reminders for property viewing appointments, rental payment due dates, and follow-up actions related to your property search and rental management.</string>
+		
+		<!-- Face ID / Touch ID Permission -->
+		<key>NSFaceIDUsageDescription</key>
+		<string>PearlNest uses Face ID or Touch ID to provide secure and convenient access to your account, protecting your personal information and rental history.</string>
+		
+		<!-- Motion and Fitness Permission -->
+		<key>NSMotionUsageDescription</key>
+		<string>PearlNest may use motion data to enhance location accuracy when searching for properties and to provide better property recommendations based on your activity patterns.</string>
+		
+		<!-- Speech Recognition Permission -->
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>PearlNest uses speech recognition to convert voice messages to text for better communication with landlords and to enable voice-based property search functionality.</string>
+		
+		<!-- Bluetooth Permission -->
+		<key>NSBluetoothAlwaysUsageDescription</key>
+		<string>PearlNest may use Bluetooth to connect with nearby devices for enhanced property viewing experiences and location-based features.</string>
+		
+		<!-- Local Network Permission -->
+		<key>NSLocalNetworkUsageDescription</key>
+		<string>PearlNest uses local network access to communicate with nearby devices and services for enhanced property viewing and location-based features.</string>
+		
 		<!-- App Transport Security -->
 		<key>NSAppTransportSecurity</key>
 		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<true/>
 			<key>NSExceptionDomains</key>
 			<dict>
 				<key>admin.pearlnestestates.com</key>
-				<dict>
-					<key>NSExceptionRequiresForwardSecrecy</key>
-					<false/>
-					<key>NSExceptionMinimumTLSVersion</key>
-					<string>TLSv1.2</string>
-					<key>NSIncludesSubdomains</key>
-					<true/>
-				</dict>
-				<key>pearlnestestates.com</key>
-				<dict>
-					<key>NSExceptionRequiresForwardSecrecy</key>
-					<false/>
-					<key>NSExceptionMinimumTLSVersion</key>
-					<string>TLSv1.2</string>
-					<key>NSIncludesSubdomains</key>
-					<true/>
-				</dict>
-				<key>localhost</key>
 				<dict>
 					<key>NSExceptionAllowsInsecureHTTPLoads</key>
 					<true/>
 					<key>NSExceptionMinimumTLSVersion</key>
 					<string>TLSv1.0</string>
+					<key>NSIncludesSubdomains</key>
+					<true/>
 				</dict>
 			</dict>
 		</dict>
@@ -122,8 +140,10 @@
 		<!-- Background Modes -->
 		<key>UIBackgroundModes</key>
 		<array>
+			<string>fetch</string>
 			<string>remote-notification</string>
-			<string>background-fetch</string>
+			<string>background-processing</string>
+			<string>location</string>
 		</array>
 		
 		<!-- URL Schemes for Deep Links -->

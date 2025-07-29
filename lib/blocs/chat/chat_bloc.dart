@@ -28,44 +28,38 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onInitialize(ChatInitialize event, Emitter<ChatState> emit) async {
     try {
-      debugPrint('🔍 ChatBloc: Initializing chat');
+      ///debugPrint('🔍 ChatBloc: Initializing chat');
       emit(const ChatLoading());
-      
-      // Debug connection status before connecting
-      ChatService.debugConnectionStatus();
-      
+
       // Initialize chat service
       await ChatService.connect();
-      
-      // Debug connection status after connecting
-      ChatService.debugConnectionStatus();
-      
+
       // Listen to incoming messages
       _messageSubscription?.cancel();
       _messageSubscription = ChatService.messageStream.listen((message) {
-        debugPrint('🔍 ChatBloc: Received message from stream');
+        ///debugPrint('🔍 ChatBloc: Received message from stream');
         add(ChatReceiveMessage(message: message));
       });
-      
+
       // Listen to connection changes
       _connectionSubscription?.cancel();
       _connectionSubscription = ChatService.connectionStream.listen((isConnected) {
-        debugPrint('🔍 ChatBloc: Connection status changed to: $isConnected');
+        ///debugPrint('🔍 ChatBloc: Connection status changed to: $isConnected');
         add(ChatConnectionChanged(isConnected: isConnected));
       });
-      
+
       _isConnected = ChatService.isConnected;
-      debugPrint('🔍 ChatBloc: Chat initialized successfully, connected: $_isConnected');
-      
+
+      ///debugPrint('🔍 ChatBloc: Chat initialized successfully, connected: $_isConnected');
+
       emit(ChatConnected(
         messages: List.from(_messages),
         isConnected: _isConnected,
         currentChatUserId: _currentChatUserId,
       ));
-      
     } catch (e) {
-      debugPrint('❌ ChatBloc: Chat initialization error: $e');
-      debugPrint('🔍 Stack trace: ${StackTrace.current}');
+      ///debugPrint('❌ ChatBloc: Chat initialization error: $e');
+      ///debugPrint('🔍 Stack trace: ${StackTrace.current}');
       emit(ChatError(
         error: 'Failed to initialize chat: ${e.toString()}',
         messages: List.from(_messages),
@@ -75,17 +69,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onConnect(ChatConnect event, Emitter<ChatState> emit) async {
     try {
+      ///debugPrint("Chat Connected");
       await ChatService.connect();
       _isConnected = ChatService.isConnected;
-      
+
       emit(ChatConnected(
         messages: List.from(_messages),
         isConnected: _isConnected,
         currentChatUserId: _currentChatUserId,
       ));
-      
     } catch (e) {
-      debugPrint('❌ Chat connection error: $e');
+      ///debugPrint('❌ Chat connection error: $e');
       emit(ChatError(
         error: 'Failed to connect to chat: ${e.toString()}',
         messages: List.from(_messages),
@@ -97,13 +91,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     try {
       ChatService.disconnect();
       _isConnected = false;
-      
+
       emit(ChatDisconnected(
         messages: List.from(_messages),
       ));
-      
     } catch (e) {
-      debugPrint('❌ Chat disconnection error: $e');
+      ///debugPrint('❌ Chat disconnection error: $e');
       emit(ChatError(
         error: 'Failed to disconnect from chat: ${e.toString()}',
         messages: List.from(_messages),
@@ -113,39 +106,33 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onSendMessage(ChatSendMessage event, Emitter<ChatState> emit) async {
     try {
-      debugPrint('🔍 ChatBloc: Attempting to send message');
-      debugPrint('🔍 To User ID: ${event.toUserId}');
-      debugPrint('🔍 Message Text: ${event.text}');
-      debugPrint('🔍 Current connection status: $_isConnected');
-      
+      ///debugPrint('🔍 ChatBloc: Attempting to send message');
+      ///debugPrint('🔍 To User ID: ${event.toUserId}');
+      ///debugPrint('🔍 Message Text: ${event.text}');
+      ///debugPrint('🔍 Current connection status: $_isConnected');
+
       // Emit sending state
       emit(ChatMessageSending(
         messages: List.from(_messages),
         isConnected: _isConnected,
         currentChatUserId: _currentChatUserId,
       ));
-      
+
       // Send message via socket
       await ChatService.sendMessage(
         toUserId: event.toUserId,
         text: event.text,
       );
-      
-      debugPrint('✅ ChatBloc: Message sent successfully');
-      
-      // Note: The message will be added to the list when received via the stream
-      // This ensures consistency between sent and received messages
-      
+
       emit(ChatMessageSent(
         messages: List.from(_messages),
         isConnected: _isConnected,
         currentChatUserId: _currentChatUserId,
       ));
-      
     } catch (e) {
-      debugPrint('❌ ChatBloc: Error sending message: $e');
-      debugPrint('🔍 Error type: ${e.runtimeType}');
-      debugPrint('🔍 Stack trace: ${StackTrace.current}');
+      ///debugPrint('❌ ChatBloc: Error sending message: $e');
+      ///debugPrint('🔍 Error type: ${e.runtimeType}');
+      ///debugPrint('🔍 Stack trace: ${StackTrace.current}');
       emit(ChatError(
         error: 'Failed to send message: ${e.toString()}',
         messages: List.from(_messages),
@@ -157,18 +144,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     try {
       // Add message to the list
       _messages.add(event.message);
-      
+
       // Sort messages by timestamp
       _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      
+
       emit(ChatConnected(
         messages: List.from(_messages),
         isConnected: _isConnected,
         currentChatUserId: _currentChatUserId,
       ));
-      
     } catch (e) {
-      debugPrint('❌ Error receiving message: $e');
+      ///debugPrint('❌ Error receiving message: $e');
       emit(ChatError(
         error: 'Failed to receive message: ${e.toString()}',
         messages: List.from(_messages),
@@ -179,22 +165,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   Future<void> _onLoadMessages(ChatLoadMessages event, Emitter<ChatState> emit) async {
     try {
       _currentChatUserId = event.chatWithUserId;
-      
+
+      // print("Current UserId = ${_currentChatUserId}");
+      // print(_messages);
+
       // Filter messages for the current chat
       final filteredMessages = _messages.where((message) {
         final currentUserId = ChatService.getCurrentUserId();
-        return (message.fromUserId == currentUserId && message.toUserId == event.chatWithUserId) ||
-               (message.fromUserId == event.chatWithUserId && message.toUserId == currentUserId);
+        return (message.fromUserId == currentUserId && message.toUserId == event.chatWithUserId) || (message.fromUserId == event.chatWithUserId && message.toUserId == currentUserId);
       }).toList();
-      
+
       emit(ChatConnected(
         messages: filteredMessages,
         isConnected: _isConnected,
         currentChatUserId: _currentChatUserId,
       ));
-      
     } catch (e) {
-      debugPrint('❌ Error loading messages: $e');
+      ///debugPrint('❌ Error loading messages: $e');
       emit(ChatError(
         error: 'Failed to load messages: ${e.toString()}',
         messages: List.from(_messages),
@@ -208,16 +195,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final messageIndex = _messages.indexWhere((m) => m.id == event.messageId);
       if (messageIndex != -1) {
         _messages[messageIndex] = _messages[messageIndex].copyWith(isRead: true);
-        
+
         emit(ChatConnected(
           messages: List.from(_messages),
           isConnected: _isConnected,
           currentChatUserId: _currentChatUserId,
         ));
       }
-      
     } catch (e) {
-      debugPrint('❌ Error marking message as read: $e');
+      ///debugPrint('❌ Error marking message as read: $e');
       emit(ChatError(
         error: 'Failed to mark message as read: ${e.toString()}',
         messages: List.from(_messages),
@@ -227,7 +213,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onConnectionChanged(ChatConnectionChanged event, Emitter<ChatState> emit) async {
     _isConnected = event.isConnected;
-    
+
     if (_isConnected) {
       emit(ChatConnected(
         messages: List.from(_messages),
@@ -245,7 +231,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   Future<void> _onClearMessages(ChatClearMessages event, Emitter<ChatState> emit) async {
     _messages.clear();
     _currentChatUserId = null;
-    
+
     emit(ChatConnected(
       messages: List.from(_messages),
       isConnected: _isConnected,

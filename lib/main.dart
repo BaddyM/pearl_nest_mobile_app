@@ -22,20 +22,22 @@ import 'package:pearlnest/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+
   // Initialize Firebase with platform-specific options
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+
   // Initialize notification service
   await NotificationService.initialize();
-  
+
   // Load environment variables with error handling
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    debugPrint('Warning: Could not load .env file: $e');
+    // debugPrint('Warning: Could not load .env file: $e');
     // Continue without .env file - app should still work with default values
   }
   
@@ -79,7 +81,7 @@ class MyApp extends StatelessWidget {
           builder: (context, themeProvider, child) {
             return BlocBuilder<AuthBloc, AuthState>(
               builder: (context, state) {
-                debugPrint('🔄 BlocBuilder called with state: ${state.runtimeType}');
+                // debugPrint('🔄 BlocBuilder called with state: ${state.runtimeType}');
                 return MaterialApp(
                   title: 'PearlNest Estates',
                   theme: AppTheme.lightTheme,
@@ -97,48 +99,48 @@ class MyApp extends StatelessWidget {
   }
 
   Widget _buildHome(AuthState state) {
-    debugPrint('Building home with auth state: ${state.runtimeType}');
-    debugPrint('Auth state details: $state');
+    // debugPrint('Building home with auth state: ${state.runtimeType}');
+    // debugPrint('Auth state details: $state');
     
     Widget homeWidget;
     
     switch (state) {
       case AuthInitial _:
-         debugPrint('Showing splash screen - AuthInitial');
+         // debugPrint('Showing splash screen - AuthInitial');
          homeWidget = const SplashScreen();
          break;
       case AuthInitializing _:
-        debugPrint('Showing splash screen - AuthInitializing');
+        // debugPrint('Showing splash screen - AuthInitializing');
         homeWidget = const SplashScreen();
         break;
       case AuthLoading _:
-        debugPrint(' - AuthLoading');
+        // debugPrint(' - AuthLoading');
         homeWidget = const SplashScreen();
         break;
       case AuthSuccess successState:
-        debugPrint('Showing home screen for user: ${successState.user.name}');
-        debugPrint('🏠 Creating HomeScreen widget for user: ${successState.user.name}');
+        // debugPrint('Showing home screen for user: ${successState.user.name}');
+        // debugPrint('🏠 Creating HomeScreen widget for user: ${successState.user.name}');
         homeWidget = HomeScreen(user: successState.user);
-        debugPrint('🏠 HomeScreen widget created successfully');
+        // debugPrint('🏠 HomeScreen widget created successfully');
         break;
       case AuthUnauthenticated _:
-        debugPrint('Showing onboarding screen - AuthUnauthenticated');
+        // debugPrint('Showing onboarding screen - AuthUnauthenticated');
         homeWidget = const SplashScreen();
         break;
       case AuthOtpRequired _:
-        debugPrint('Showing splash screen - AuthOtpRequired (handled by login screen)');
+        // debugPrint('Showing splash screen - AuthOtpRequired (handled by login screen)');
         homeWidget = const SplashScreen();
         break;
       case AuthFailure _:
-        debugPrint('Showing splash screen - AuthFailure');
+        // debugPrint('Showing splash screen - AuthFailure');
         homeWidget = const SplashScreen();
         break;
       default:
-         debugPrint('Showing splash screen - default case');
+         // debugPrint('Showing splash screen - default case');
         homeWidget = const SplashScreen();
         break;
     }
-    debugPrint('🏠 Returning widget: ${homeWidget.runtimeType}');
+    // debugPrint('🏠 Returning widget: ${homeWidget.runtimeType}');
     return homeWidget;
   }
 }

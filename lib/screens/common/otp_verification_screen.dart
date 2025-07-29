@@ -12,7 +12,8 @@ class OtpVerificationScreen extends StatefulWidget {
   final String email;
   final String tempToken;
   final String message;
-  final String serverOtp; // The OTP code from server for client-side verification
+  final String serverOtp;
+  final String? role;
 
   const OtpVerificationScreen({
     super.key,
@@ -20,6 +21,7 @@ class OtpVerificationScreen extends StatefulWidget {
     required this.tempToken,
     required this.message,
     required this.serverOtp,
+    this.role,
   });
 
   @override
@@ -101,13 +103,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (_isOtpComplete()) {
       final userInputOtp = _getOtpCode();
       context.read<AuthBloc>().add(
-        AuthOtpVerificationRequested(
-          email: widget.email,
-          userInputOtp: userInputOtp,
-          serverOtp: widget.serverOtp,
-          tempToken: widget.tempToken,
-        ),
-      );
+            AuthOtpVerificationRequested(
+              email: widget.email,
+              userInputOtp: userInputOtp,
+              serverOtp: widget.serverOtp,
+              tempToken: widget.tempToken,
+              role: widget.role,
+            ),
+          );
     } else {
       CustomSnackBar.showWarning(
         context,
@@ -137,13 +140,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   String _maskEmail(String email) {
     if (email.isEmpty) return '';
-    
+
     final parts = email.split('@');
     if (parts.length != 2) return email;
-    
+
     final username = parts[0];
     final domain = parts[1];
-    
+
     if (username.length <= 2) {
       return '${username}***@$domain';
     } else {
@@ -157,16 +160,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void _autofillOtp(String otp) {
     // Clear existing values first
     _clearOtp();
-    
+
     // Fill each digit into the corresponding controller
     for (int i = 0; i < otp.length && i < _controllers.length; i++) {
       _controllers[i].text = otp[i];
     }
-    
+
     // Focus on the last filled field
     int lastIndex = (otp.length - 1).clamp(0, _focusNodes.length - 1);
     _focusNodes[lastIndex].requestFocus();
-    
+
     // Auto-submit if OTP is complete
     if (_isOtpComplete()) {
       _verifyOtp();
@@ -235,9 +238,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           child: Text(
                             'Email Verification',
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: AppTheme.getTextColor(context),
-                              fontWeight: FontWeight.bold,
-                            ),
+                                  color: AppTheme.getTextColor(context),
+                                  fontWeight: FontWeight.bold,
+                                ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -263,37 +266,37 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     Text(
                       'Verify Your Email',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppTheme.getTextColor(context),
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: AppTheme.getTextColor(context),
+                            fontWeight: FontWeight.bold,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 16),
                     Text(
                       'We\'ve sent a verification code to',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
+                            color: AppTheme.getSecondaryTextColor(context),
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 8),
                     Text(
                       _maskEmail(widget.email),
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.primaryblue,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: AppTheme.primaryblue,
+                            fontWeight: FontWeight.w600,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 8),
                     Text(
                       'Enter the ${widget.serverOtp.length}-digit code from your email',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
+                            color: AppTheme.getSecondaryTextColor(context),
+                          ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     SizedBox(height: 40),
                     // OTP input fields
                     Row(
@@ -304,9 +307,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           height: 50,
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: _controllers[index].text.isNotEmpty
-                                  ? AppTheme.primaryblue
-                                  : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                              color: _controllers[index].text.isNotEmpty ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(12),
@@ -388,9 +389,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           child: Text(
                             _canResend ? 'Resend OTP' : 'Resend in ${_resendCountdown}s',
                             style: TextStyle(
-                              color: _canResend && !isLoading
-                                  ? AppTheme.primaryblue
-                                  : AppTheme.getSecondaryTextColor(context),
+                              color: _canResend && !isLoading ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
                               fontWeight: FontWeight.bold,
                             ),
                           ),

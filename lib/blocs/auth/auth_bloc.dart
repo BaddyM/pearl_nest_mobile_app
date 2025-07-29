@@ -7,10 +7,12 @@ import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/user.dart';
 
+import '../../apis/auth_service.dart';
+
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   User? _currentUser;
   String? _currentToken;
-  
+
   User? get currentUser => _currentUser;
   String? get currentToken => _currentToken;
   bool get isAuthenticated => _currentUser != null && _currentToken != null;
@@ -24,10 +26,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthCheckSessionRequested>(_onCheckSessionRequested);
     on<AuthOtpVerificationRequested>(_onOtpVerificationRequested);
     on<AuthOtpResendRequested>(_onOtpResendRequested);
-    
+
     // Initialize session check
     add(AuthCheckSessionRequested());
-    
+
     // Set up automatic logout callback
     ApiClient.onTokenExpired = () {
       add(AuthTokenExpired());
@@ -39,57 +41,82 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     try {
-      debugPrint('AuthBloc: Processing login request for ${event.email}');
-      
+      ///debugPrint('AuthBloc: Processing login request for ${event.email}');
+
       final result = await AuthService.login(event.email, event.password);
-      
-      debugPrint('AuthBloc: Login result received: ${result.keys}');
-      debugPrint('AuthBloc: Success flag: ${result['success']}');
-      debugPrint('AuthBloc: User present: ${result['user'] != null}');
-      debugPrint('AuthBloc: Token present: ${result['token'] != null}');
-      
+
+      ///debugPrint("Response = ${result}");
+      ///debugPrint('AuthBloc: Login result received: ${result.keys}');
+      ///debugPrint('AuthBloc: Success flag: ${result['success']}');
+      ///debugPrint('AuthBloc: User present: ${result['user'] != null}');
+      ///debugPrint('AuthBloc: Token present: ${result['token'] != null}');
+
       if (result['success'] == true) {
+
+        //for app review process. remove afterwards
+        if(event.email == "xowar43498@fenexy.com") {
+
+          final adminResult = await AuthService.verifyOtp(event.email, 'gid2023', '000000', result['tempToken']);
+          // debugPrint('AuthBloc: Admin login result received: $adminResult');
+          _currentUser = adminResult['user'];
+          // debugPrint('AuthBloc: Current user set: $_currentUser');
+          _currentToken = adminResult['token'];
+
+          // Set token in ApiClient
+          ApiClient.setAuthToken(_currentToken);
+
+          // debugPrint('AuthBloc: Login successful, user: ${_currentUser?.name}');
+          // debugPrint('AuthBloc: About to emit AuthSuccess state');
+          // debugPrint('AuthBloc: Current user: $_currentUser');
+
+          emit(AuthSuccess(user: adminResult['user'], token: adminResult['token']));
+          return; // Add this return to prevent continuing to regular login flow
+        } else {
         // Check if OTP verification is required
         if (result['requiresOtp'] == true) {
-          debugPrint('AuthBloc: OTP verification required for ${event.email}');
+          // debugPrint('AuthBloc: OTP verification required for ${event.email}');
           emit(AuthOtpRequired(
             email: result['email'] ?? event.email,
             tempToken: result['tempToken'] ?? '',
             message: result['message'] ?? 'Please verify your login with the OTP code',
             serverOtp: result['otp']?.toString() ?? '',
 
+            role: result["role"],
+
           ));
           return;
-        }
+        }}
         
         _currentUser = result['user'];
-        debugPrint('AuthBloc: Current user set: $_currentUser');
+        // debugPrint('AuthBloc: Current user set: $_currentUser');
         _currentToken = result['token'];
         
         // Set token in ApiClient
         ApiClient.setAuthToken(_currentToken);
         
-        debugPrint('AuthBloc: Login successful, user: ${_currentUser?.name}');
-        debugPrint('AuthBloc: About to emit AuthSuccess state');
-        debugPrint('AuthBloc: Current user: $_currentUser');
+        // debugPrint('AuthBloc: Login successful, user: ${_currentUser?.name}');
+        // debugPrint('AuthBloc: About to emit AuthSuccess state');
+        // debugPrint('AuthBloc: Current user: $_currentUser');
         
         emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
         
-        debugPrint('AuthBloc: AuthSuccess state emitted');
-      } else {
-        debugPrint('AuthBloc: Login error message - ${result['message']}');
-        debugPrint('Error result: $result');
+        // debugPrint('AuthBloc: AuthSuccess state emitted');
+        }
+       else {
+        ///debugPrint('AuthBloc: Login error message - ${result['message']}');
+        ///debugPrint('Error result: $result');
         // Use the actual error message from the service instead of generic message
         final errorMessage = result['message'] ?? 'Login failed. Please try again.';
-        debugPrint('AuthBloc: Login failed - $errorMessage');
+
+        ///debugPrint('AuthBloc: Login failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
-      debugPrint('AuthBloc: Login error - $e');
-      debugPrint('AuthBloc: Stack trace - $stackTrace');
-      
+      ///debugPrint('AuthBloc: Login error - $e');
+      ///debugPrint('AuthBloc: Stack trace - $stackTrace');
+
       // Provide more specific error messages based on error type
       String errorMessage;
       if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
@@ -101,7 +128,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         errorMessage = 'Login failed. Please try again.';
       }
-      
+
       emit(AuthFailure(message: errorMessage));
     }
   }
@@ -111,25 +138,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     try {
-      debugPrint('AuthBloc: Processing logout request');
-      
+      ///debugPrint('AuthBloc: Processing logout request');
+
       // Clear local session data
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('auth_token');
       await prefs.remove('user_data');
       await prefs.remove('last_login');
       await prefs.remove('token_expiry');
-      
+      await prefs.remove('user_id');
       _currentUser = null;
       _currentToken = null;
       ApiClient.setAuthToken(null);
-      
-      debugPrint('AuthBloc: Logout successful');
+
+      ///debugPrint('AuthBloc: Logout successful');
       emit(AuthUnauthenticated());
     } catch (e) {
-      debugPrint('AuthBloc: Logout error - $e');
+      ///debugPrint('AuthBloc: Logout error - $e');
       // Even if logout fails, clear local state
       _currentUser = null;
       _currentToken = null;
@@ -145,7 +172,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
-      debugPrint('AuthBloc: Processing registration request for ${event.email}');
+      // debugPrint('AuthBloc: Processing registration request for ${event.email}');
       
       final result = await AuthService.register(
         name: event.name,
@@ -162,21 +189,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           _currentToken = result['token'];
           ApiClient.setAuthToken(_currentToken);
           
-          debugPrint('AuthBloc: Registration successful with auto-login');
+          // debugPrint('AuthBloc: Registration successful with auto-login');
           emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
         } else {
-          debugPrint('AuthBloc: Registration successful, manual login required');
+          // debugPrint('AuthBloc: Registration successful, manual login required');
           emit(AuthUnauthenticated());
         }
       } else {
         // Use the actual error message from the service
         final errorMessage = result['message'] ?? 'Registration failed. Please try again.';
-        debugPrint('AuthBloc: Registration failed - $errorMessage');
+        // debugPrint('AuthBloc: Registration failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
-      debugPrint('AuthBloc: Registration error - $e');
-      debugPrint('AuthBloc: Stack trace - $stackTrace');
+      // debugPrint('AuthBloc: Registration error - $e');
+      // debugPrint('AuthBloc: Stack trace - $stackTrace');
       
       // Provide more specific error messages based on error type
       String errorMessage;
@@ -198,7 +225,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthTokenExpired event,
     Emitter<AuthState> emit,
   ) async {
-    debugPrint('AuthBloc: Token expired, clearing session');
+    // debugPrint('AuthBloc: Token expired, clearing session');
     
     _currentUser = null;
     _currentToken = null;
@@ -212,7 +239,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await prefs.remove('last_login');
       await prefs.remove('token_expiry');
     } catch (e) {
-      debugPrint('AuthBloc: Error clearing session data - $e');
+      // debugPrint('AuthBloc: Error clearing session data - $e');
     }
     
     emit(AuthUnauthenticated());
@@ -230,7 +257,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
-      debugPrint('AuthBloc: Processing profile update request');
+      // debugPrint('AuthBloc: Processing profile update request');
       
       final result = await AuthService.updateProfile(
         name: event.updates['name'] ?? _currentUser!.name,
@@ -246,17 +273,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (result['success'] == true) {
         _currentUser = result['user'];
         
-        debugPrint('AuthBloc: Profile updated successfully');
+        // debugPrint('AuthBloc: Profile updated successfully');
         emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
       } else {
         // Use the actual error message from the service
         final errorMessage = result['message'] ?? 'Profile update failed. Please try again.';
-        debugPrint('AuthBloc: Profile update failed - $errorMessage');
+        // debugPrint('AuthBloc: Profile update failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
-      debugPrint('AuthBloc: Profile update error - $e');
-      debugPrint('AuthBloc: Stack trace - $stackTrace');
+      // debugPrint('AuthBloc: Profile update error - $e');
+      // debugPrint('AuthBloc: Stack trace - $stackTrace');
       
       // Provide more specific error messages based on error type
       String errorMessage;
@@ -281,36 +308,54 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthInitializing());
     
     try {
-      debugPrint('AuthBloc: Checking session validity with fast fallback');
+      // debugPrint('AuthBloc: Checking session validity');
       
-      // Use the new fast fallback strategy
-      final sessionResult = await AuthService.validateSessionWithFallback();
-      
-      if (sessionResult['success'] == true) {
-        final user = sessionResult['user'] as User;
-        final source = sessionResult['source'] as String;
+      if (await AuthService.isSessionValid()) {
         final token = await AuthService.getCurrentToken();
         
         if (token != null) {
-          _currentUser = user;
-          _currentToken = token;
-          ApiClient.setAuthToken(_currentToken);
+          // First try to get fresh user data from server
+          // debugPrint('AuthBloc: Session valid, refreshing user profile...');
+          final freshUser = await AuthService.refreshUserProfile();
           
-          debugPrint('✅ Session validated from $source, user: ${user.name}');
-          debugPrint('🔄 Profile image: ${user.profileImage}');
-          debugPrint(user.toString());
-          
-          emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
+          if (freshUser != null) {
+            // Use fresh data from server
+            _currentUser = freshUser;
+            _currentToken = token;
+            ApiClient.setAuthToken(_currentToken);
+            
+            // debugPrint('AuthBloc: Session valid with fresh data, user: ${_currentUser?.name}');
+            // debugPrint('AuthBloc: Fresh profile image: ${_currentUser?.profileImage}');
+            // debugPrint(_currentUser!.toString());
+            emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
+          } else {
+            // Fallback to cached user data if server refresh fails
+            // debugPrint('AuthBloc: Failed to refresh profile, using cached data...');
+            final cachedUser = await AuthService.getCurrentUser();
+            
+            if (cachedUser != null) {
+              _currentUser = cachedUser;
+              _currentToken = token;
+              ApiClient.setAuthToken(_currentToken);
+              
+              // debugPrint('AuthBloc: Session valid with cached data, user: ${_currentUser?.name}');
+              // debugPrint(_currentUser!.toString());
+              emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
+            } else {
+              // debugPrint('AuthBloc: Session invalid, no user data available');
+              emit(AuthUnauthenticated());
+            }
+          }
         } else {
-          debugPrint('❌ Session validation failed - no token available');
+          // debugPrint('AuthBloc: Session invalid, missing token');
           emit(AuthUnauthenticated());
         }
       } else {
-        debugPrint('❌ Session validation failed: ${sessionResult['message']}');
+        // debugPrint('AuthBloc: Session invalid');
         emit(AuthUnauthenticated());
       }
     } catch (e) {
-      debugPrint('❌ Session check error: $e');
+      // debugPrint('AuthBloc: Session check error - $e');
       emit(AuthUnauthenticated());
     }
   }
@@ -322,37 +367,37 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthOtpVerificationLoading());
     
     try {
-      debugPrint('AuthBloc: Processing OTP verification for ${event.email}');
-      debugPrint('AuthBloc: User input OTP: ${event.userInputOtp}');
-      debugPrint('AuthBloc: Server OTP: ${event.serverOtp}');
+      // debugPrint('AuthBloc: Processing OTP verification for ${event.email}');
+      // debugPrint('AuthBloc: User input OTP: ${event.userInputOtp}');
+      // debugPrint('AuthBloc: Server OTP: ${event.serverOtp}');
       
       final result = await AuthService.verifyOtp(event.email, event.userInputOtp, event.serverOtp, event.tempToken);
       
-      debugPrint('AuthBloc: OTP verification result received: ${result.keys}');
-      debugPrint('AuthBloc: Success flag: ${result['success']}');
+      // debugPrint('AuthBloc: OTP verification result received: ${result.keys}');
+      // debugPrint('AuthBloc: Success flag: ${result['success']}');
       
       if (result['success'] == true) {
         _currentUser = result['user'];
         _currentToken = result['token'];
-        debugPrint('AuthBloc: OTP verification successful, user: $_currentUser');
+        // debugPrint('AuthBloc: OTP verification successful, user: $_currentUser');
         // Set token in ApiClient
         ApiClient.setAuthToken(_currentToken);
         
-        debugPrint('AuthBloc: OTP verification successful, user: ${_currentUser?.name}');
-        debugPrint('AuthBloc: About to emit AuthSuccess state after OTP');
+        // debugPrint('AuthBloc: OTP verification successful, user: ${_currentUser?.name}');
+        // debugPrint('AuthBloc: About to emit AuthSuccess state after OTP');
         
         emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
         
-        debugPrint('AuthBloc: AuthSuccess state emitted after OTP verification');
+        // debugPrint('AuthBloc: AuthSuccess state emitted after OTP verification');
       } else {
-        debugPrint('AuthBloc: OTP verification error message - ${result['message']}');
+        // debugPrint('AuthBloc: OTP verification error message - ${result['message']}');
         final errorMessage = result['message'] ?? 'OTP verification failed. Please try again.';
-        debugPrint('AuthBloc: OTP verification failed - $errorMessage');
+        // debugPrint('AuthBloc: OTP verification failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
-      debugPrint('AuthBloc: OTP verification error - $e');
-      debugPrint('AuthBloc: Stack trace - $stackTrace');
+      // debugPrint('AuthBloc: OTP verification error - $e');
+      // debugPrint('AuthBloc: Stack trace - $stackTrace');
       
       // Provide more specific error messages based on error type
       String errorMessage;
@@ -379,33 +424,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthOtpVerificationLoading());
     
     try {
-      debugPrint('AuthBloc: Processing OTP resend for ${event.email}');
+      // debugPrint('AuthBloc: Processing OTP resend for ${event.email}');
       
       final result = await AuthService.resendOtp(event.email, event.tempToken);
       
-      debugPrint('AuthBloc: OTP resend result received: ${result.keys}');
-      debugPrint('AuthBloc: Success flag: ${result['success']}');
+      // debugPrint('AuthBloc: OTP resend result received: ${result.keys}');
+      // debugPrint('AuthBloc: Success flag: ${result['success']}');
       
       if (result['success'] == true) {
-        debugPrint('AuthBloc: OTP resend successful');
+        // debugPrint('AuthBloc: OTP resend successful');
         
         // Return to OTP required state with updated message
         emit(AuthOtpRequired(
           email: event.email,
           tempToken: event.tempToken,
           message: result['message'] ?? 'A new OTP has been generated',
-          serverOtp: result['otp']?.toString() ?? '',
-
+          serverOtp: result['otp']?.toString() ?? '', // Include new OTP if provided
         ));
       } else {
-        debugPrint('AuthBloc: OTP resend error message - ${result['message']}');
+        // debugPrint('AuthBloc: OTP resend error message - ${result['message']}');
         final errorMessage = result['message'] ?? 'Failed to resend OTP. Please try again.';
-        debugPrint('AuthBloc: OTP resend failed - $errorMessage');
+        // debugPrint('AuthBloc: OTP resend failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
-      debugPrint('AuthBloc: OTP resend error - $e');
-      debugPrint('AuthBloc: Stack trace - $stackTrace');
+      // debugPrint('AuthBloc: OTP resend error - $e');
+      // debugPrint('AuthBloc: Stack trace - $stackTrace');
       
       // Provide more specific error messages based on error type
       String errorMessage;

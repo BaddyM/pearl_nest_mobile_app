@@ -10,7 +10,7 @@ class TokenRefreshService {
 
   static void startTokenRefreshTimer(BuildContext context) {
     stopTokenRefreshTimer(); // Stop any existing timer
-    
+
     _refreshTimer = Timer.periodic(_refreshInterval, (timer) {
       _checkAndRefreshToken(context);
     });
@@ -23,16 +23,16 @@ class TokenRefreshService {
 
   static Future<void> _checkAndRefreshToken(BuildContext context) async {
     if (!context.mounted) return;
-    
+
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       if (authProvider.isAuthenticated) {
         await authProvider.checkTokenExpiry();
       }
     } catch (e, stackTrace) {
-      debugPrint('Token refresh check error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Token refresh check error: $e');
+      //debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -44,10 +44,10 @@ class TokenRefreshService {
   // Call this when user performs an authenticated action
   static Future<bool> ensureValidToken(BuildContext context) async {
     if (!context.mounted) return false;
-    
+
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       if (!authProvider.isAuthenticated) {
         return false;
       }
@@ -55,8 +55,8 @@ class TokenRefreshService {
       await authProvider.checkTokenExpiry();
       return authProvider.isAuthenticated;
     } catch (e, stackTrace) {
-      debugPrint('Token validation error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Token validation error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       return false;
     }
   }
