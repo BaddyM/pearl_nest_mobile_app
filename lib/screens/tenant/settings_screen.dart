@@ -215,13 +215,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _buildSection(
       'Privacy & Security',
       [
-        _buildSwitchItem(
-          Icons.location_on_outlined,
-          'Location Services',
-          'Allow location access for better experience',
-          _locationEnabled,
-          (value) => setState(() => _locationEnabled = value),
-        ),
+        
 
         // _buildSettingsItem(
         //   Icons.download_outlined,
