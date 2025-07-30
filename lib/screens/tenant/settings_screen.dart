@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:provider/provider.dart';
@@ -223,12 +224,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Get help and find answers',
           () => _navigateToHelpCenter(),
         ),
-        _buildSettingsItem(
-          Icons.star_outline,
-          'Rate the App',
-          'Share your feedback',
-          () => _navigateToRateApp(),
-        ),
+        // _buildSettingsItem(
+        //   Icons.star_outline,
+        //   'Rate the App',
+        //   'Share your feedback',
+        //   () => _navigateToRateApp(),
+        // ),
         _buildSettingsItem(
           Icons.star_outline,
           'Contact Developer',
@@ -255,12 +256,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Learn about our privacy practices',
           () => _navigateToPrivacyPolicy(),
         ),
-        _buildSettingsItem(
-          Icons.gavel_outlined,
-          'Licenses',
-          'View open source licenses',
-          () => _navigateToLicenses(),
-        ),
+        
       ],
     );
   }
@@ -679,20 +675,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _navigateToRateApp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Rate App - Coming Soon',
-          style: TextStyle(color: AppTheme.lightGreyColor),
-        ),
-        duration: Duration(milliseconds: 500),
-        backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(16),
-      ),
-    );
-  }
+//   void _navigateToRateApp() async {
+//    final InAppReview inAppReview = InAppReview.instance;
+
+//   if (await inAppReview.isAvailable()) {
+//     await inAppReview.requestReview();
+//   } else {
+//     // Fallback: open the store listing
+//     await inAppReview.openStoreListing(
+//       appStoreId: '6749172641', // Only for iOS
+//        // Only for Android
+//     );
+//   }
+// }
 
   void _navigateToPrivacyPolicy() {
     Navigator.push(
@@ -703,15 +698,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _navigateToLicenses() {
-    showLicensePage(
-      context: context,
-      applicationName: 'PearlNest Estates',
-      applicationVersion: '1.0.0',
-      applicationIcon: Icon(Icons.home, size: 48),
-      applicationLegalese: '© 2025 PearlNest Estates. All rights reserved.',
-    );
-  }
+ 
 
   void _showChangePasswordDialog() {
     final currentPasswordController = TextEditingController();
