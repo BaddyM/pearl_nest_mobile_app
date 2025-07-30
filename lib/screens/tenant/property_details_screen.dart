@@ -1798,35 +1798,38 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 ),
               ),
               Spacer(),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.star, color: Colors.amber, size: isSmallScreen ? 10 : 14),
-                    SizedBox(width: 2),
-                    Text(
-                      '${widget.property.rating}',
-                      style: TextStyle(
-                        fontSize: ratingFontSize,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.getTextColor(context),
-                      ),
-                    ),
-                    Text(
-                      ' (${_reviews.length})',
-                      style: TextStyle(
-                        fontSize: reviewCountFontSize,
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+
+              //rating and review count  
+
+              // Container(
+              //   padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
+              //   decoration: BoxDecoration(
+              //     color: Colors.amber.withValues(alpha: 0.1),
+              //     borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
+              //   ),
+              //   child: Row(
+              //     mainAxisSize: MainAxisSize.min,
+              //     children: [
+              //       Icon(Icons.star, color: Colors.amber, size: isSmallScreen ? 10 : 14),
+              //       SizedBox(width: 2),
+              //       Text(
+              //         '${widget.property.rating}',
+              //         style: TextStyle(
+              //           fontSize: ratingFontSize,
+              //           fontWeight: FontWeight.bold,
+              //           color: AppTheme.getTextColor(context),
+              //         ),
+              //       ),
+              //       Text(
+              //         ' (${_reviews.length})',
+              //         style: TextStyle(
+              //           fontSize: reviewCountFontSize,
+              //           color: AppTheme.getSecondaryTextColor(context),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
             ],
           ),
           SizedBox(height: spacing),
@@ -3425,100 +3428,102 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       );
     }
 
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.star, color: Colors.amber, size: 24),
-                    SizedBox(width: 8),
-                    Text(
-                      '${widget.property.rating}',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.getTextColor(context),
-                      ),
-                    ),
-                    Text(
-                      ' out of 5',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 4),
-                Text(
-                  '${_reviews.length} review${_reviews.length != 1 ? 's' : ''}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.getSecondaryTextColor(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              for (int i = 5; i >= 1; i--)
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '$i',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.getSecondaryTextColor(context),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Container(
-                        width: 80,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: AppTheme.lightGreyColor,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: _getStarPercentage(i),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.amber,
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return SizedBox();
+
+    // return Container(
+    //   padding: EdgeInsets.all(20),
+    //   decoration: BoxDecoration(
+    //     color: AppTheme.getCardColor(context),
+    //     borderRadius: BorderRadius.circular(16),
+    //     boxShadow: [
+    //       BoxShadow(
+    //         color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+    //         blurRadius: 10,
+    //         offset: Offset(0, 2),
+    //       ),
+    //     ],
+    //   ),
+    //   child: Row(
+    //     children: [
+    //       Expanded(
+    //         child: Column(
+    //           crossAxisAlignment: CrossAxisAlignment.start,
+    //           children: [
+    //             Row(
+    //               children: [
+    //                 Icon(Icons.star, color: Colors.amber, size: 24),
+    //                 SizedBox(width: 8),
+    //                 Text(
+    //                   '${widget.property.rating}',
+    //                   style: TextStyle(
+    //                     fontSize: 24,
+    //                     fontWeight: FontWeight.bold,
+    //                     color: AppTheme.getTextColor(context),
+    //                   ),
+    //                 ),
+    //                 Text(
+    //                   ' out of 5',
+    //                   style: TextStyle(
+    //                     fontSize: 16,
+    //                     color: AppTheme.getSecondaryTextColor(context),
+    //                   ),
+    //                 ),
+    //               ],
+    //             ),
+    //             SizedBox(height: 4),
+    //             Text(
+    //               '${_reviews.length} review${_reviews.length != 1 ? 's' : ''}',
+    //               style: TextStyle(
+    //                 fontSize: 14,
+    //                 color: AppTheme.getSecondaryTextColor(context),
+    //               ),
+    //             ),
+    //           ],
+    //         ),
+    //       ),
+    //       Column(
+    //         crossAxisAlignment: CrossAxisAlignment.end,
+    //         children: [
+    //           for (int i = 5; i >= 1; i--)
+    //             Padding(
+    //               padding: EdgeInsets.symmetric(vertical: 2),
+    //               child: Row(
+    //                 mainAxisSize: MainAxisSize.min,
+    //                 children: [
+    //                   Text(
+    //                     '$i',
+    //                     style: TextStyle(
+    //                       fontSize: 12,
+    //                       color: AppTheme.getSecondaryTextColor(context),
+    //                     ),
+    //                   ),
+    //                   SizedBox(width: 8),
+    //                   Container(
+    //                     width: 80,
+    //                     height: 6,
+    //                     decoration: BoxDecoration(
+    //                       color: AppTheme.lightGreyColor,
+    //                       borderRadius: BorderRadius.circular(3),
+    //                     ),
+    //                     child: FractionallySizedBox(
+    //                       alignment: Alignment.centerLeft,
+    //                       widthFactor: _getStarPercentage(i),
+    //                       child: Container(
+    //                         decoration: BoxDecoration(
+    //                           color: Colors.amber,
+    //                           borderRadius: BorderRadius.circular(3),
+    //                         ),
+    //                       ),
+    //                     ),
+    //                   ),
+    //                 ],
+    //               ),
+    //             ),
+    //         ],
+    //       ),
+    //     ],
+    //   ),
+    // );
   }
 
   double _getStarPercentage(int stars) {
