@@ -1153,6 +1153,127 @@ class AuthService {
     }
   }
 
+  /// Update user currency preference
+  static Future<Map<String, dynamic>> updateCurrency({
+    required String currency,
+  }) async {
+    try {
+     // print('🚀 Starting currency update process...');
+     // print('🚀 Input currency: "$currency"');
+      
+      // Input validation
+      if (currency.trim().isEmpty) {
+       // print('❌ Currency validation failed: empty currency');
+        throw ValidationException('Currency is required');
+      }
+      
+      final cleanCurrency = currency.trim().toUpperCase();
+      //print('🚀 Cleaned currency: "$cleanCurrency"');
+      
+      // Get current user data to get userId
+     // print('🚀 Getting current user data...');
+      final currentUser = await getCurrentUser();
+      if (currentUser == null) {
+        //print('❌ getCurrentUser returned null');
+        throw AuthException('User not found. Please login again.');
+      }
+      
+     // print('🚀 Current user ID: "${currentUser.id}"');
+      //print('🚀 Current user name: "${currentUser.name}"');
+      //print('🚀 Current user email: "${currentUser.email}"');
+
+      // Check authentication status
+      //print('🚀 Checking authentication...');
+      final currentToken = await getCurrentToken();
+      if (currentToken == null || currentToken.isEmpty) {
+        //print('❌ No authentication token found');
+        throw AuthException('Authentication required. Please login again.');
+      }
+      //print('🚀 Auth token available: ${currentToken}');
+
+      // Ensure ApiClient has the current token
+      ApiClient.setAuthToken(currentToken);
+      //print('🚀 Auth token set in ApiClient');
+
+      // Check if userId is empty
+      if (currentUser.id.isEmpty) {
+          //print('⚠️ User ID is empty, attempting to fix...');
+        final fixResult = await fixMissingUserId();
+        if (!fixResult) {
+          //print('❌ Failed to fix missing user ID');
+          throw AuthException('User ID not found. Please login again.');
+        }
+        // Try to get user again after fixing
+        final updatedUser = await getCurrentUser();
+        if (updatedUser == null || updatedUser.id.isEmpty) {
+         // print('❌ User ID still empty after fix attempt');
+          throw AuthException('Unable to retrieve user ID. Please login again.');
+        }
+       // print('✅ User ID fixed: "${updatedUser.id}"');
+      }
+
+      final requestData = <String, dynamic>{
+        'userId': currentUser.id,
+        'symbol': cleanCurrency,
+        'type': cleanCurrency,
+      };
+
+     // print('🚀 Request data prepared: $requestData');
+     // print('🚀 Making API call to /currency/update...');
+      
+      // Log API client configuration
+      final baseUrl = ApiClient.currentAuthToken != null ? "authenticated" : "not authenticated";
+     // print('🚀 Auth status: $baseUrl');
+     // print('🚀 Current auth token in ApiClient: ${ApiClient.currentAuthToken?.substring(0, 20) ?? "none"}...');
+
+      _logRequest('/currency/update', requestData);
+
+      final response = await ApiClient.patch('/currency/update', requestData);
+      
+     // print('🚀 API response received');
+      //print('🚀 Response status code: ${response.statusCode}');
+      //print('🚀 Response headers: ${response.headers.map}');
+      //print('🚀 Response data: ${response.data}');
+      
+      _logResponse('/currency/update', response);
+
+      // Handle both 200 and 400 status codes if response contains success=true
+      if (response.statusCode == 200 || (response.statusCode == 400 && response.data?['success'] == true)) {
+        //print('✅ Currency update successful (status: ${response.statusCode})');
+        final responseData = response.data ?? {};
+
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Currency updated successfully',
+          'statusCode': response.statusCode,
+        };
+      } else {
+        final errorData = response.data;
+        //print('❌ Currency update failed with status: ${response.statusCode}');  
+        //print('❌ Error data: $errorData');
+       // print('❌ Full response: ${response.data}');
+        throw AuthException(
+          errorData?['message'] ?? 'Currency update failed',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      //print('❌ Exception in updateCurrency: $e');
+      //print('❌ Exception type: ${e.runtimeType}');
+      if (e is DioException) {
+       // print('❌ DioException details:');
+       // print('   - Type: ${e.type}');
+       // print('   - Message: ${e.message}');
+       // print('   - Response: ${e.response?.data}');
+       // print('   - Status code: ${e.response?.statusCode}');
+       // print('   - Request path: ${e.requestOptions.path}');
+       // print('   - Request data: ${e.requestOptions.data}');
+       // print('   - Request headers: ${e.requestOptions.headers}');
+      }
+      return _handleError(e, 'currency update');
+    }
+  }
+
   /// Delete user account permanently
   /// This is a destructive action that cannot be undone
   static Future<Map<String, dynamic>> deleteAccount({

@@ -10,6 +10,7 @@ import 'package:pearlnest/screens/tenant/edit_profile_screen.dart';
 import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 
 class SettingsScreen extends StatefulWidget {
   final User user;
@@ -30,7 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _smsNotifications;
   bool _bioEnabled = false;
   bool _locationEnabled = true;
-  String _selectedCurrency = 'USD';
+  String _selectedCurrency = 'UGX'; // Default to UGX for Uganda
   bool _isUpdatingNotifications = false;
 
   @override
@@ -61,7 +62,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildAccountSection(),
               _buildNotificationSection(),
               _buildAppearanceSection(themeProvider),
-              _buildPrivacySection(),
               _buildSupportSection(),
               _buildAboutSection(),
               SizedBox(height: 20),
@@ -205,34 +205,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Select your preferred currency',
           _selectedCurrency,
           ['UGX', 'USD'],
-          (value) => setState(() => _selectedCurrency = value!),
+          (value) => _updateCurrencyPreference(value!),
         ),
       ],
     );
   }
 
-  Widget _buildPrivacySection() {
-    return _buildSection(
-      'Privacy & Security',
-      [
-        
-
-        // _buildSettingsItem(
-        //   Icons.download_outlined,
-        //   'Download My Data',
-        //   'Get a copy of your data',
-        //   () => _showDownloadDataDialog(),
-        // ),
-        _buildSettingsItem(
-          Icons.delete_outline,
-          'Delete Account',
-          'Permanently delete your account',
-          () => _showDeleteAccountDialog(),
-          isDestructive: true,
-        ),
-      ],
-    );
-  }
+ 
 
   Widget _buildSupportSection() {
     return _buildSection(
@@ -590,6 +569,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // Method to update currency preference
+  Future<void> _updateCurrencyPreference(String currency) async {
+    print('🎯 SettingsScreen: Starting currency update process');
+    print('🎯 SettingsScreen: Selected currency: "$currency"');
+    print('🎯 SettingsScreen: Previous currency: "$_selectedCurrency"');
+    
+    // Update local state first for immediate UI feedback
+    final previousCurrency = _selectedCurrency;
+    setState(() {
+      _selectedCurrency = currency;
+    });
+    print('🎯 SettingsScreen: Local UI updated to: "$_selectedCurrency"');
+
+    try {
+      print('🎯 SettingsScreen: Calling AuthService.updateCurrency...');
+      // Call the updateCurrency method
+      final result = await AuthService.updateCurrency(currency: currency);
+      
+      print('🎯 SettingsScreen: AuthService response received');
+      print('🎯 SettingsScreen: Result success: ${result['success']}');
+      print('🎯 SettingsScreen: Result message: ${result['message']}');
+      print('🎯 SettingsScreen: Full result: $result');
+
+      if (result['success'] == true) {
+        print('✅ SettingsScreen: Currency update successful');
+        // Show success feedback
+        CustomSnackBar.showSuccess(
+          context,
+          'Currency updated to $currency',
+        );
+      } else {
+        print('❌ SettingsScreen: Currency update failed');
+        print("❌ SettingsScreen: RESULT: $result");
+        // Revert the local change if update failed
+        setState(() {
+          _selectedCurrency = previousCurrency;
+        });
+        print('🎯 SettingsScreen: UI reverted to: "$_selectedCurrency"');
+
+        CustomSnackBar.showError(
+          context,
+          'Failed to update currency: ${result['message'] ?? 'Unknown error'}',
+        );
+      }
+    } catch (e) {
+      print('❌ SettingsScreen: Exception in currency update: $e');
+      print('❌ SettingsScreen: Exception type: ${e.runtimeType}');
+      // Revert the local change if update failed
+      setState(() {
+        _selectedCurrency = previousCurrency;
+      });
+      print('🎯 SettingsScreen: UI reverted to: "$_selectedCurrency" due to exception');
+
+      CustomSnackBar.showError(
+        context,
+        'Network error. Please try again.',
+      );
+    }
+  }
+
   void _navigateToEmailPreferences() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -860,9 +899,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _showSnackBar(message, Colors.red);
         }
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       //debugPrint('Password change error: $e');
-      //debugPrint('Stack trace: $stackTrace');
       _showSnackBar('Network error. Please try again.', Colors.red);
     }
   }
@@ -882,372 +920,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showDownloadDataDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.getCardColor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.download_outlined, color: AppTheme.primaryblue),
-              SizedBox(width: 8),
-              Text(
-                'Download My Data',
-                style: TextStyle(color: AppTheme.getTextColor(context)),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'We will prepare a copy of your data and send it to your email address. This may take up to 24 hours.',
-                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Email: ${widget.user.email}',
-                style: TextStyle(
-                  color: AppTheme.getTextColor(context),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _showSnackBar('Data download request submitted', AppTheme.primaryblue);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryblue,
-                foregroundColor: AppTheme.whiteColor,
-              ),
-              child: Text('Request Download'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+ 
 
-  void _showDeleteAccountDialog() {
-    final confirmationController = TextEditingController();
+  
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            bool isDeleteEnabled = confirmationController.text.trim().toUpperCase() == 'DELETE';
+  
 
-            return Dialog(
-              backgroundColor: AppTheme.getCardColor(context),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.95,
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.8,
-                ),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.warning_outlined,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'DANGER ZONE',
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Delete Account',
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 24),
-                        Text(
-                          'Are you absolutely sure?',
-                          style: TextStyle(
-                            color: AppTheme.getTextColor(context),
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          'This action cannot be undone. This will permanently delete your account and remove all your data from our servers.',
-                          style: TextStyle(
-                            color: AppTheme.getSecondaryTextColor(context),
-                            fontSize: 14,
-                            height: 1.5,
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                                  SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'This data will be permanently deleted:',
-                                      style: TextStyle(
-                                        color: AppTheme.getTextColor(context),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 12),
-                              _buildDeleteItem('All your property listings'),
-                              _buildDeleteItem('Booking history and reservations'),
-                              _buildDeleteItem('Personal profile information'),
-                              _buildDeleteItem('Payment methods and transaction history'),
-                              _buildDeleteItem('Reviews and ratings'),
-                              _buildDeleteItem('Saved favorites and preferences'),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 24),
-                        Text(
-                          'Please type "DELETE" to confirm:',
-                          style: TextStyle(
-                            color: AppTheme.getTextColor(context),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        TextField(
-                          controller: confirmationController,
-                          style: TextStyle(
-                            color: AppTheme.getTextColor(context),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Type DELETE here',
-                            hintStyle: TextStyle(
-                              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.7),
-                              fontSize: 14,
-                            ),
-                            filled: true,
-                            fillColor: AppTheme.getBackgroundColor(context),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.red.withOpacity(0.3)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.red.withOpacity(0.3)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.red, width: 2),
-                            ),
-                          ),
-                          onChanged: (value) {
-                            setDialogState(() {});
-                          },
-                        ),
-                        SizedBox(height: 32),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    color: AppTheme.getSecondaryTextColor(context),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: isDeleteEnabled
-                                    ? () {
-                                        _handleAccountDeletion();
-                                      }
-                                    : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: isDeleteEnabled ? Colors.red : Colors.grey.withOpacity(0.3),
-                                  foregroundColor: AppTheme.whiteColor,
-                                  padding: EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: isDeleteEnabled ? 2 : 0,
-                                ),
-                                child: Text(
-                                  'Delete Account',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _handleAccountDeletion() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppTheme.getCardColor(context),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(
-                color: Colors.red,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Deleting account...',
-                style: TextStyle(
-                  color: AppTheme.getTextColor(context),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    Future.delayed(Duration(seconds: 2), () {
-      Navigator.of(context).pop();
-      Navigator.of(context).pop();
-      _showSnackBar('Account deletion initiated successfully', Colors.red);
-    });
-  }
-
-  Widget _buildDeleteItem(String text) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Icon(
-            Icons.close,
-            color: Colors.red,
-            size: 16,
-          ),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: AppTheme.getSecondaryTextColor(context),
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  
 }

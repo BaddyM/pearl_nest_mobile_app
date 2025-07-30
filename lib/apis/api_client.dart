@@ -48,7 +48,7 @@ class ApiClient {
   static void setAuthToken(String? token) async {
     _authToken = token;
     if (token != null) {
-      // debugPrint('ApiClient: Auth token set - Full Token: $token');
+      ///debugPrint('ApiClient: Auth token set - Full Token: $token');
     } else {
       final prefs = await SharedPreferences.getInstance();
       final keys = prefs.getKeys();
@@ -337,12 +337,24 @@ class ApiClient {
       final response = await _dio!.patch(
         endpoint,
         data: data,
-        options: Options(headers: headers),
+        options: Options(
+          headers: headers,
+          validateStatus: (status) {
+            // Allow 400 status codes for currency update endpoint
+            if (endpoint.contains('/currency/update') && status == 400) {
+              return true;
+            }
+            // Default validation for other endpoints
+            return status != null && status >= 200 && status < 300;
+          },
+        ),
       );
 
       _logResponse(response);
+      print('🔍 PATCH $endpoint: ${response.data}');
       return response;
     } on DioException catch (e) {
+      print('🔍 PATCH $endpoint error: ${e.message}');
       _logError(e);
       throw Exception(_handleError(e));
     }
