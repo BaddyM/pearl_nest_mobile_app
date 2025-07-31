@@ -248,10 +248,10 @@ class _NotificationScreenState extends State<NotificationScreen>
         });
         _showSuccessSnackBar('Notification marked as read');
       } else {
-        _showErrorSnackBar(result['message'] ?? 'Failed to mark as read');
+       // _showErrorSnackBar(result['message'] ?? 'Failed to mark as read');
       }
     } catch (e) {
-      _showErrorSnackBar('An error occurred while marking as read');
+      //_showErrorSnackBar('An error occurred while marking as read');
     }
   }
 
@@ -265,10 +265,10 @@ class _NotificationScreenState extends State<NotificationScreen>
         });
         _showSuccessSnackBar('All notifications marked as read');
       } else {
-        _showErrorSnackBar(result['message'] ?? 'Failed to mark all as read');
+        //_showErrorSnackBar(result['message'] ?? 'Failed to mark all as read');
       }
     } catch (e) {
-      _showErrorSnackBar('An error occurred while marking all as read');
+      //_showErrorSnackBar('An error occurred while marking all as read');
     }
   }
 
@@ -337,10 +337,10 @@ class _NotificationScreenState extends State<NotificationScreen>
         });
         _showSuccessSnackBar('Notification deleted');
       } else {
-        _showErrorSnackBar(result['message'] ?? 'Failed to delete notification');
+        //_showErrorSnackBar(result['message'] ?? 'Failed to delete notification');
       }
     } catch (e) {
-      _showErrorSnackBar('An error occurred while deleting notification');
+      //_showErrorSnackBar('An error occurred while deleting notification');
     }
   }
 
