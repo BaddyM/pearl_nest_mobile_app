@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (state is AuthSuccess) {
           CustomSnackBar.showSuccess(
             context,
-            'Welcome back, ${state.user.name}!',
+            'Welcome, ${state.user.name}!',
             duration: Duration(milliseconds: 1500),
           );
           Navigator.pushReplacement(
