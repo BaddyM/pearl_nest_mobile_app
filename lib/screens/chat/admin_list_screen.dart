@@ -24,6 +24,7 @@ class AdminListScreen extends StatefulWidget {
 
 class _AdminListScreenState extends State<AdminListScreen> {
   List<Admin> _admins = [];
+  List<UnreadChat> _unread = [];
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -45,15 +46,14 @@ class _AdminListScreenState extends State<AdminListScreen> {
     });
 
     try {
-      //debugPrint('🔄 AdminListScreen: Loading admin list...');
       final admins = await ChatService.fetchAvailableAdmins();
 
       if (mounted) {
         setState(() {
-          _admins = admins;
+          _admins = admins[0];
+          _unread = admins[1];
           _isLoading = false;
         });
-        //debugPrint('✅ AdminListScreen: Loaded ${admins.length} admins');
       }
     } catch (e) {
       //debugPrint('❌ AdminListScreen: Error loading admins - $e');
@@ -72,8 +72,6 @@ class _AdminListScreenState extends State<AdminListScreen> {
 
   void _startChatWithAdmin(Admin admin) async {
     try {
-      //debugPrint('💬 Starting chat with admin: ${admin.name}');
-
       // Create or get conversation with this admin
       final conversation = await ChatService.getOrCreateConversation(
         adminId: admin.id,
@@ -82,16 +80,19 @@ class _AdminListScreenState extends State<AdminListScreen> {
       );
 
       if (conversation != null && mounted) {
-        // Navigate to individual chat screen
-        Navigator.push(
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => IndividualChatScreen(
               conversation: conversation,
               currentUser: widget.user,
+              isOnline: admin.isOnline,
             ),
           ),
         );
+        if (result == "popped") {
+          _onRefresh();
+        }
       } else {
         _showErrorSnackBar('Unable to start chat. Please try again.');
       }
@@ -291,14 +292,11 @@ class _AdminListScreenState extends State<AdminListScreen> {
   Widget _buildAdminList() {
     return ListView.builder(
       padding: EdgeInsets.all(16),
-      itemCount: _admins.length, // +1 for header
+      itemCount: _admins.length,
       itemBuilder: (context, index) {
-        // if (index == 0) {
-        //   return _buildHeader();
-        // }
-
         final admin = _admins[index];
-        return _buildAdminCard(admin);
+        bool unread = _unread.any((msg) => msg.id == admin.id);
+        return _buildAdminCard(admin, unread);
       },
     );
   }
@@ -358,7 +356,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
     );
   }
 
-  Widget _buildAdminCard(Admin admin) {
+  Widget _buildAdminCard(Admin admin, bool unread) {
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -375,7 +373,12 @@ class _AdminListScreenState extends State<AdminListScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _startChatWithAdmin(admin),
+          onTap: () async {
+            unread = true;
+            final userId = ChatService.getCurrentUserId();
+            context.read<ChatBloc>().add(ChatMarkAsRead(fromUserId: admin.id, toUserId: userId.toString()));
+            _startChatWithAdmin(admin);
+          },
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: EdgeInsets.all(16),
@@ -414,8 +417,10 @@ class _AdminListScreenState extends State<AdminListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
+                            flex: 3,
                             child: Text(
                               admin.name,
                               style: TextStyle(
@@ -426,14 +431,6 @@ class _AdminListScreenState extends State<AdminListScreen> {
                             ),
                           ),
                           // Online status indicator
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: admin.isOnline ? Colors.green : Colors.grey,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
                         ],
                       ),
                       SizedBox(height: 4),
@@ -465,7 +462,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
                           ),
                           SizedBox(width: 4),
                           Text(
-                            admin.isAvailable ? 'Available' : 'Busy',
+                            admin.isAvailable ? 'Available' : 'Offline',
                             style: TextStyle(
                               color: admin.isAvailable ? Colors.green : Colors.orange,
                               fontSize: 12,
@@ -479,17 +476,17 @@ class _AdminListScreenState extends State<AdminListScreen> {
                 ),
 
                 // Chat arrow
-                Icon(
-                  Icons.chat_bubble_outline,
-                  color: AppTheme.primaryblue,
-                  size: 20,
-                ),
-                SizedBox(width: 8),
-                // Icon(
-                //   Icons.arrow_forward_ios,
-                //   color: AppTheme.getSecondaryTextColor(context),
-                //   size: 16,
-                // ),
+                unread == true
+                    ? Container(
+                        width: 15,
+                        height: 15,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      )
+                    : SizedBox(),
               ],
             ),
           ),

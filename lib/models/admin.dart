@@ -26,7 +26,7 @@ class Admin {
       email: json['email'] ?? '',
       profilePicture: json['profilePicture'] ?? json['profileImage'],
       isOnline: json['isOnline'] ?? false,
-      isAvailable: json['isAvailable'] ?? true,
+      isAvailable: json['isOnline'] ?? true,
       department: json['department'],
       role: json['role'],
     );
@@ -48,5 +48,18 @@ class Admin {
   @override
   String toString() {
     return 'Admin(id: $id, name: $name, isOnline: $isOnline, isAvailable: $isAvailable)';
+  }
+}
+
+class UnreadChat {
+  final String id;
+  final bool isRead;
+  UnreadChat({required this.id, required this.isRead});
+
+  factory UnreadChat.fromJson(Map<String, dynamic> json) {
+    return UnreadChat(
+      id: json['fromUserId'],
+      isRead: json["isRead"],
+    );
   }
 }

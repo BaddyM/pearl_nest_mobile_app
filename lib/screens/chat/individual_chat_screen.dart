@@ -18,11 +18,13 @@ import 'package:pearlnest/utils/custom_snackbar.dart';
 class IndividualChatScreen extends StatefulWidget {
   final ChatConversation conversation;
   final User currentUser;
+  final bool isOnline;
 
   const IndividualChatScreen({
     super.key,
     required this.conversation,
     required this.currentUser,
+    required this.isOnline,
   });
 
   @override
@@ -93,9 +95,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
             CustomSnackBar.showError(
               context,
               state.error,
-              onRetry: () {
-
-              },
+              onRetry: () {},
             );
           }
           // Auto-scroll when new messages arrive
@@ -124,7 +124,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       shadowColor: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
       leading: IconButton(
         icon: Icon(Icons.arrow_back, color: AppTheme.getTextColor(context)),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => Navigator.pop(context, "popped"),
       ),
       title: Row(
         children: [
@@ -149,7 +149,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                       : _buildDefaultAvatar(),
                 ),
               ),
-              if (widget.conversation.isOnline)
+              if (widget.isOnline)
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -184,7 +184,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  widget.conversation.isOnline ? 'Online' : 'Last seen recently',
+                  widget.isOnline ? 'Online' : 'Offline',
                   style: TextStyle(
                     color: AppTheme.getSecondaryTextColor(context),
                     fontSize: 12,
@@ -235,7 +235,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
           ),
         ),
       ),
-    );}
+    );
+  }
 
   Widget _buildPropertyInfo() {
     return Container(
@@ -344,7 +345,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
           children: [
             if (showTimestamp) _buildTimestamp(message.timestamp),
             MessageBubble(
-              message: _convertToMessage(message),
+              message: _convertToMessage(message, message.messageType!),
               isFromCurrentUser: isFromCurrentUser,
               senderAvatar: isFromCurrentUser ? null : widget.conversation.landlordProfilePic,
               senderName: widget.conversation.landlordName,
@@ -366,14 +367,14 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
   }
 
   // Helper method to convert ChatMessage to Message for MessageBubble
-  Message _convertToMessage(ChatMessage chatMessage) {
+  Message _convertToMessage(ChatMessage chatMessage, MessageType type) {
     return Message(
       id: chatMessage.id,
       senderId: chatMessage.fromUserId,
       receiverId: chatMessage.toUserId,
       content: chatMessage.text,
       timestamp: chatMessage.timestamp,
-      type: MessageType.text,
+      type: type,
     );
   }
 
@@ -715,7 +716,6 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 CustomSnackBar.showWarning(
                   context,
                   '${widget.conversation.landlordName} has been blocked',
-
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -772,7 +772,6 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 CustomSnackBar.showSuccess(
                   context,
                   'Report submitted. Thank you for your feedback.',
-
                 );
               },
               style: ElevatedButton.styleFrom(

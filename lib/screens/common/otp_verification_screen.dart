@@ -30,9 +30,7 @@ class OtpVerificationScreen extends StatefulWidget {
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   late List<TextEditingController> _controllers;
-
   late List<FocusNode> _focusNodes;
-
 
   bool _canResend = true;
   int _resendCountdown = 0;
@@ -41,7 +39,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void initState() {
     super.initState();
     _startResendTimer();
-  _focusNodes = List.generate(widget.serverOtp.length, (index) => FocusNode());
+    _focusNodes = List.generate(widget.serverOtp.length, (index) => FocusNode());
     _controllers = List.generate(widget.serverOtp.length, (index) => TextEditingController());
   }
 
@@ -79,7 +77,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   void _onOtpChanged(String value, int index) {
-    if (value.isNotEmpty && index < widget.serverOtp.length-1) {
+    if (value.isNotEmpty && index < widget.serverOtp.length - 1) {
       _focusNodes[index + 1].requestFocus();
     } else if (value.isEmpty && index > 0) {
       _focusNodes[index - 1].requestFocus();

@@ -1,3 +1,5 @@
+import 'package:pearlnest/screens/chat/message.dart';
+
 class ChatMessage {
   final String id;
   final String fromUserId;
@@ -5,7 +7,7 @@ class ChatMessage {
   final String text;
   final DateTime timestamp;
   final bool isRead;
-  final String? messageType; // text, image, etc.
+  final MessageType? messageType; // text, image, etc.
 
   ChatMessage({
     required this.id,
@@ -14,7 +16,7 @@ class ChatMessage {
     required this.text,
     required this.timestamp,
     this.isRead = false,
-    this.messageType = 'text',
+    this.messageType = MessageType.text,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -52,7 +54,7 @@ class ChatMessage {
     String? text,
     DateTime? timestamp,
     bool? isRead,
-    String? messageType,
+    MessageType? messageType,
   }) {
     return ChatMessage(
       id: id ?? this.id,
