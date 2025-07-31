@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:in_app_review/in_app_review.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:provider/provider.dart';
@@ -30,8 +29,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _emailNotifications;
   late bool _pushNotifications;
   late bool _smsNotifications;
-  bool _bioEnabled = false;
-  bool _locationEnabled = true;
   String _selectedCurrency = 'UGX'; // Default to UGX for Uganda
   bool _isUpdatingNotifications = false;
 
@@ -135,13 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Manage email settings',
           () => _navigateToEmailPreferences(),
         ),
-        _buildSettingsItem(
-          Icons.verified_user_outlined,
-          'Account Verification',
-          widget.user.isVerified ? 'Verified' : 'Verify your account',
-          () => _navigateToVerification(),
-          trailing: widget.user.isVerified ? Icon(Icons.check_circle, color: Colors.green) : null,
-        ),
+        
       ],
     );
   }
@@ -567,27 +558,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Method to update currency preference
   Future<void> _updateCurrencyPreference(String currency) async {
-    print('🎯 SettingsScreen: Starting currency update process');
-    print('🎯 SettingsScreen: Selected currency: "$currency"');
-    print('🎯 SettingsScreen: Previous currency: "$_selectedCurrency"');
-    
+   
     // Update local state first for immediate UI feedback
     final previousCurrency = _selectedCurrency;
     setState(() {
       _selectedCurrency = currency;
     });
-    print('🎯 SettingsScreen: Local UI updated to: "$_selectedCurrency"');
 
     try {
-      print('🎯 SettingsScreen: Calling AuthService.updateCurrency...');
       // Call the updateCurrency method
       final result = await AuthService.updateCurrency(currency: currency);
       
-      print('🎯 SettingsScreen: AuthService response received');
-      print('🎯 SettingsScreen: Result success: ${result['success']}');
-      print('🎯 SettingsScreen: Result message: ${result['message']}');
-      print('🎯 SettingsScreen: Full result: $result');
-
+     
       if (result['success'] == true) {
         print('✅ SettingsScreen: Currency update successful');
         // Show success feedback
@@ -596,13 +578,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Currency updated to $currency',
         );
       } else {
-        print('❌ SettingsScreen: Currency update failed');
-        print("❌ SettingsScreen: RESULT: $result");
+        
         // Revert the local change if update failed
         setState(() {
           _selectedCurrency = previousCurrency;
         });
-        print('🎯 SettingsScreen: UI reverted to: "$_selectedCurrency"');
 
         CustomSnackBar.showError(
           context,
@@ -610,13 +590,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } catch (e) {
-      print('❌ SettingsScreen: Exception in currency update: $e');
-      print('❌ SettingsScreen: Exception type: ${e.runtimeType}');
       // Revert the local change if update failed
       setState(() {
         _selectedCurrency = previousCurrency;
       });
-      print('🎯 SettingsScreen: UI reverted to: "$_selectedCurrency" due to exception');
 
       CustomSnackBar.showError(
         context,
@@ -640,20 +617,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _navigateToVerification() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Account Verification - Coming Soon',
-          style: TextStyle(color: AppTheme.lightGreyColor),
-        ),
-        duration: Duration(milliseconds: 500),
-        backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(16),
-      ),
-    );
-  }
+ 
 
   void _navigateToHelpCenter() {
     Navigator.push(
