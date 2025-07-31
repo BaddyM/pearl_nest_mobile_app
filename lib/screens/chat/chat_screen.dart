@@ -552,17 +552,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _openChatDetail(ChatConversation conversation) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => IndividualChatScreen(
-          conversation: conversation,
-          currentUser: widget.user,
-        ),
-      ),
-    ).then((_) {
-      _loadConversations();
-    });
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => IndividualChatScreen(
+    //       conversation: conversation,
+    //       currentUser: widget.user,
+    //     ),
+    //   ),
+    // ).then((_) {
+    //   _loadConversations();
+    // });
   }
 
   // Debug methods for development - output to terminal only

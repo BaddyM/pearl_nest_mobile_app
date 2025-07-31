@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 import '../models/chat_message.dart';
@@ -33,17 +32,9 @@ class ChatService {
 
   // Initialize and connect to socket with comprehensive debugging
   static Future<void> connect() async {
-    ///debugPrint('');
-    ///debugPrint('🚀 === SOCKET CONNECTION START ===');
-
     if (_socket != null && _socket!.connected) {
-      ///debugPrint('✅ Socket already connected - skipping connection');
-      ///debugPrint('   - Socket ID: ${_socket!.id}');
-      ///debugPrint('   - Connection state: CONNECTED');
       return;
     }
-
-    ///debugPrint('🔌 Initiating new socket connection...');
 
     try {
       ///debugPrint('🔍 Pre-connection checks:');
@@ -51,25 +42,12 @@ class ChatService {
       // Get preferences and token
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
-
-      ///debugPrint('   - SharedPreferences loaded successfully');
-      ///debugPrint('   - Auth token exists: ${token != null}');
-      ///debugPrint('   - Auth token length: ${token?.length ?? 0}');
-      if (token != null) {
-        ///debugPrint('   - Auth token preview: ${token.substring(0, token.length > 10 ? 10 : token.length)}...');
-      }
+      if (token != null) {}
 
       // Get user ID using AuthService
       _currentUserId = await AuthService.getUserId();
 
-      ///debugPrint('   - User ID retrieved: $_currentUserId');
-      ///debugPrint('   - User ID is null: ${_currentUserId == null}');
-      ///debugPrint('   - User ID is empty: ${_currentUserId?.isEmpty ?? true}');
-
       if (token == null) {
-        ///debugPrint('❌ CANNOT CONNECT: No auth token available');
-        ///debugPrint('   - User needs to login first');
-        ///debugPrint('   - Check authentication flow');
         return;
       }
 
@@ -94,15 +72,7 @@ class ChatService {
 
       // Socket configuration
       final socketUrl = AppConfig.getCurrentBaseUrl();
-
-      ///debugPrint('� Socket configuration:');
-      ///debugPrint('   - Socket URL: $socketUrl');
-      ///debugPrint('   - Transport: websocket');
-      ///debugPrint('   - Auto connect: enabled');
-      ///debugPrint('   - Reconnection: enabled');
-      ///debugPrint('   - Reconnection delay: 1000ms');
-      ///debugPrint('   - Reconnection delay max: 5000ms');
-      ///debugPrint('   - Auth data: {token: [HIDDEN], userId: $_currentUserId}');
+      print("Socket URL = ${socketUrl}");
 
       // Create socket instance
       ///debugPrint('🔧 Creating socket instance...');
@@ -120,47 +90,20 @@ class ChatService {
               })
               .build());
 
-      ///debugPrint('✅ Socket instance created successfully');
-      ///debugPrint('   - Socket object: ${_socket != null ? 'Created' : 'NULL'}');
-
-      // Setup event listeners before connecting
-      ///debugPrint('🔧 Setting up event listeners...');
       _setupEventListeners();
 
-      ///debugPrint('✅ Event listeners configured');
-
-      // Connect to socket
-      ///debugPrint('📡 Initiating socket connection...');
       final connectionStartTime = DateTime.now();
 
       _socket!.connect();
-
-      ///debugPrint('✅ Socket.connect() called');
-      ///debugPrint('   - Connection start time: $connectionStartTime');
-      ///debugPrint('   - Waiting for connection events...');
     } catch (e, stackTrace) {
-      ///debugPrint('');
-      ///debugPrint('❌ === SOCKET CONNECTION ERROR ===');
-      ///debugPrint('   - Error: $e');
-      ///debugPrint('   - Error type: ${e.runtimeType}');
-      ///debugPrint('   - Stack trace: $stackTrace');
-
       _isConnected = false;
       _connectionStreamController.add(false);
 
       // Specific error analysis
       if (e.toString().contains('network')) {
-        ///debugPrint('🔍 Network-related error detected');
-        ///debugPrint('   - Check internet connectivity');
-        ///debugPrint('   - Verify server is accessible');
-      } else if (e.toString().contains('auth')) {
-        ///debugPrint('🔍 Authentication-related error detected');
-        ///debugPrint('   - Check token validity');
-        ///debugPrint('   - Verify user credentials');
-      }
+      } else if (e.toString().contains('auth')) {}
     } finally {
-      ///debugPrint('🏁 === SOCKET CONNECTION PROCESS END ===');
-      ///debugPrint('');
+      print("Socket process ended");
     }
   }
 
@@ -175,14 +118,6 @@ class ChatService {
 
     _socket!.onConnect((_) {
       final connectTime = DateTime.now();
-
-      ///debugPrint('');
-      ///debugPrint('✅ === SOCKET CONNECTED SUCCESSFULLY ===');
-      ///debugPrint('   - Connection time: $connectTime');
-      ///debugPrint('   - Socket ID: ${_socket!.id}');
-      ///debugPrint('   - Socket transport: ${_socket!.io.engine?.transport?.name ?? 'unknown'}');
-      ///debugPrint('   - Connection state updated to: CONNECTED');
-
       _isConnected = true;
       _connectionStreamController.add(true);
 
@@ -190,35 +125,14 @@ class ChatService {
 
       // Register user with their ID
       if (_currentUserId != null && _currentUserId!.isNotEmpty) {
-        ///debugPrint('📤 Registering user with socket...');
-        ///debugPrint('   - User ID to register: $_currentUserId');
-        ///debugPrint('   - Emitting "register" event...');
-
         _socket!.emit('register', _currentUserId);
-
-        ///debugPrint('✅ User registration event emitted');
-        ///debugPrint('   - Event: "register"');
-        ///debugPrint('   - Data: $_currentUserId');
-        ///debugPrint('   - Socket ID used: ${_socket!.id}');
-      } else {
-        ///debugPrint('❌ CANNOT REGISTER USER:');
-        ///debugPrint('   - User ID is null: ${_currentUserId == null}');
-        ///debugPrint('   - User ID is empty: ${_currentUserId?.isEmpty ?? true}');
-        ///debugPrint('   - Current user ID value: $_currentUserId');
-      }
+      } else {}
 
       ///debugPrint('🏁 Socket connection setup complete');
     });
 
     _socket!.onDisconnect((reason) {
       final disconnectTime = DateTime.now();
-
-      ///debugPrint('');
-      ///debugPrint('❌ === SOCKET DISCONNECTED ===');
-      ///debugPrint('   - Disconnect time: $disconnectTime');
-      ///debugPrint('   - Disconnect reason: $reason');
-      ///debugPrint('   - Previous socket ID: ${_socket?.id}');
-      ///debugPrint('   - Connection state updated to: DISCONNECTED');
 
       _isConnected = false;
       _connectionStreamController.add(false);
@@ -271,41 +185,15 @@ class ChatService {
     _socket!.on('sendMessage', (data) {
       final receiveTime = DateTime.now();
 
-      ///debugPrint('');
-      ///debugPrint('📨 === INCOMING MESSAGE EVENT ===');
-      ///debugPrint('   - Receive time: $receiveTime');
-      ///debugPrint('   - Raw data: $data');
-      ///debugPrint('   - Data type: ${data.runtimeType}');
-      ///debugPrint('   - Data is Map: ${data is Map}');
-      ///debugPrint('   - Data is null: ${data == null}');
-
       try {
         ///debugPrint('🔍 Parsing message data...');
         final message = ChatMessage.fromJson(data);
 
-        ///debugPrint('✅ Message parsed successfully:');
-        ///debugPrint('   - Message ID: ${message.id}');
-        ///debugPrint('   - From User ID: ${message.fromUserId}');
-        ///debugPrint('   - To User ID: ${message.toUserId}');
-        ///debugPrint('   - Message Text: "${message.text}"');
-        ///debugPrint('   - Timestamp: ${message.timestamp}');
-        ///debugPrint('   - Is Read: ${message.isRead}');
-        ///debugPrint('   - Is from current user: ${message.fromUserId == _currentUserId}');
-        ///debugPrint('   - Is to current user: ${message.toUserId == _currentUserId}');
-
         // Add to message stream
-        ///debugPrint('📡 Adding message to stream...');
         _messageStreamController.add(message);
-
-        ///debugPrint('✅ Message added to stream successfully');
-        ///debugPrint('   - Stream has listeners: ${_messageStreamController.hasListener}');
-        ///debugPrint('   - Stream is closed: ${_messageStreamController.isClosed}');
       } catch (e, stackTrace) {
-        ///debugPrint('❌ === MESSAGE PARSING ERROR ===');
-        ///debugPrint('   - Error: $e');
-        ///debugPrint('   - Error type: ${e.runtimeType}');
-        ///debugPrint('   - Stack trace: $stackTrace');
-        ///debugPrint('   - Raw data that failed: $data');
+        print("Error = ${e}");
+        print("Error = ${stackTrace}");
       }
     });
 
@@ -323,17 +211,8 @@ class ChatService {
     _socket!.onReconnect((attempt) {
       final reconnectTime = DateTime.now();
 
-      ///debugPrint('');
-      ///debugPrint('🔄 === SOCKET RECONNECTED ===');
-      ///debugPrint('   - Reconnect time: $reconnectTime');
-      ///debugPrint('   - Reconnection attempt #: $attempt');
-      ///debugPrint('   - New Socket ID: ${_socket!.id}');
-      ///debugPrint('   - Connection state updated to: CONNECTED');
-
       _isConnected = true;
       _connectionStreamController.add(true);
-
-      ///debugPrint('   - Connection stream updated: true');
 
       // Re-register user after reconnection
       if (_currentUserId != null && _currentUserId!.isNotEmpty) {
@@ -384,46 +263,21 @@ class ChatService {
   static Future<void> sendMessage({
     required String toUserId,
     required String text,
+    bool? isMedia,
   }) async {
-    ///debugPrint('');
-    ///debugPrint('🚀 === SEND MESSAGE START ===');
-
     // Validate that message is only sent to admin users
     if (!isAdminUser(toUserId)) {
-      ///debugPrint('❌ MESSAGE VALIDATION FAILED:');
-      ///debugPrint('   - Attempted recipient: $toUserId');
-      ///debugPrint('   - Available admin IDs: ${_availableAdmins.map((a) => a.id).join(', ')}');
-      ///debugPrint('   - Only admin communication is allowed');
       throw Exception('Only admin communication is allowed');
     }
 
-    ///debugPrint('✅ Message validation passed - sending to admin');
-    ///debugPrint('📤 Message Send Debug Info:');
-    ///debugPrint('   - From User ID: $_currentUserId');
-    ///debugPrint('   - To User ID: $toUserId');
-    ///debugPrint('   - Message Text: "$text"');
-    ///debugPrint('   - Message Length: ${text.length} characters');
-    ///debugPrint('   - Socket exists: ${_socket != null}');
-    ///debugPrint('   - Socket connected: ${_socket?.connected}');
-    ///debugPrint('   - Socket ID: ${_socket?.id}');
-    ///debugPrint('   - Connection status flag: $_isConnected');
-
     // Socket connectivity checks
     if (_socket == null || !_socket!.connected) {
-      ///debugPrint('❌ SOCKET CONNECTION FAILED:');
-      ///debugPrint('   - Socket is null: ${_socket == null}');
-      ///debugPrint('   - Socket connected: ${_socket?.connected}');
-      ///debugPrint('   - Connection status flag: $_isConnected');
-      ///debugPrint('   - Socket state: ${_socket?.connected == true ? 'CONNECTED' : 'DISCONNECTED'}');
-
-      // Try to reconnect
-      ///debugPrint('� Attempting to reconnect socket...');
       try {
         await connect();
 
-        ///debugPrint('✅ Socket reconnection successful');
+        print("Sockets connected");
       } catch (reconnectError) {
-        ///debugPrint('❌ Socket reconnection failed: $reconnectError');
+        print("FAiled to connect to socket");
         throw Exception('Socket not connected and reconnection failed');
       }
 
@@ -463,6 +317,7 @@ class ChatService {
         'toUserId': toUserId,
         'text': text,
         'timestamp': timestamp,
+        "type": isMedia != null ? "media" : "text",
       };
 
       ///debugPrint('� Message Data Package:');
@@ -536,7 +391,7 @@ class ChatService {
   // Disconnect from socket
   static void disconnect() {
     if (_socket != null) {
-      ///debugPrint('🔌 Disconnecting socket');
+      print('🔌 Disconnecting socket');
       _socket!.disconnect();
       _socket!.dispose();
       _socket = null;
@@ -550,58 +405,45 @@ class ChatService {
   static String? getCurrentUserId() => _currentUserId;
 
   // Fetch available admins from the API
-  static Future<List<Admin>> fetchAvailableAdmins() async {
+  static Future<List<dynamic>> fetchAvailableAdmins() async {
     final stopwatch = Stopwatch()..start();
     final prefs = await SharedPreferences.getInstance();
-    final role = prefs.get("role");
+    final role = prefs.getString("role");
+    final userId = prefs.getString("user_id");
 
     try {
       ///debugPrint('📤 Making GET request to /chat/adminList...');
-      final response = (role == "ADMIN") ? await ApiClient.get('/chat/userList') : await ApiClient.get('/chat/adminList');
+      final response = (role == "ADMIN") ? await ApiClient.get('/chat/userList/$userId') : await ApiClient.get('/chat/adminList');
 
       stopwatch.stop();
 
-      ///debugPrint('📥 === API RESPONSE RECEIVED ===');
-      ///debugPrint('   - Status Code: ${response.statusCode}');
-      ///debugPrint('   - Response Time: ${stopwatch.elapsedMilliseconds}ms');
-      ///debugPrint('   - Response Data Type: ${response.data.runtimeType}');
-      ///debugPrint('   - Raw Response Data: ${response.data}');
-
       if (response.statusCode == 200) {
-        ///debugPrint('✅ HTTP 200 - Success response received');
-
         final responseData = response.data;
         if (responseData['success'] == true && responseData['data'] != null) {
-          ///debugPrint('✅ Response validation passed - processing admin data...');
-
           final adminData = responseData['data'] as List;
-
-          ///debugPrint('📊 Admin Data Analysis:');
-          ///debugPrint('   - Admin entries count: ${adminData.length}');
-          ///debugPrint('   - Raw admin data: $adminData');
+          final unreadData = responseData['unread'] != null ? responseData['unread'] as List : [];
 
           final admins = <Admin>[];
+          final unread = <UnreadChat>[];
+
+          for (int i = 0; i < unreadData.length; i++) {
+            unread.add(UnreadChat.fromJson(unreadData[i]));
+          }
+
           for (int i = 0; i < adminData.length; i++) {
             final adminJson = adminData[i];
             try {
               final admin = Admin.fromJson(adminJson);
               admins.add(admin);
-
-              ///debugPrint('   ✅ Successfully parsed admin: ${admin.name} (${admin.id})');
             } catch (adminError) {
               ///debugPrint('   ❌ Error parsing admin #${i + 1}: $adminError');
             }
           }
-
-          ///debugPrint('');
-          ///debugPrint('✅ === ADMIN LIST PROCESSING COMPLETE ===');
-          ///debugPrint('   - Total admins fetched: ${admins.length}');
-
           // Update cached admins
           _availableAdmins = admins;
           _adminsStreamController.add(admins);
 
-          return admins;
+          return [admins, unread];
         } else {
           ///debugPrint('❌ API response validation failed');
           return [];
@@ -611,11 +453,9 @@ class ChatService {
         return [];
       }
     } catch (e, stackTrace) {
+      print("Error = ${e}");
+      print("Location = ${stackTrace}");
       stopwatch.stop();
-
-      ///debugPrint('❌ === FETCH ADMIN LIST API ERROR ===');
-      ///debugPrint('   - Error: $e');
-      ///debugPrint('   - Stack trace: $stackTrace');
       return [];
     } finally {
       ///debugPrint('🏁 === FETCH ADMIN LIST API CALL END ===');
@@ -635,7 +475,7 @@ class ChatService {
         .map((admin) => ChatConversation(
               id: 'chat_admin_${admin.id}',
               landlordId: admin.id,
-              landlordName: admin.name.isNotEmpty ? admin.name : 'PearlNest Support',
+              landlordName: admin.name.isNotEmpty ? admin.name : 'Pearl Nest Support',
               landlordProfilePic: admin.profilePicture ?? '',
               lastMessage: 'Start your conversation with ${admin.name}',
               lastMessageTime: DateTime.now(),
@@ -688,8 +528,6 @@ class ChatService {
     String? propertyTitle,
   }) async {
     try {
-      ///debugPrint('💬 Getting/creating conversation with admin: $adminName ($adminId)');
-
       // Create a conversation object with the admin
       final conversation = ChatConversation(
         id: 'admin_$adminId',
@@ -736,6 +574,7 @@ class ChatService {
     final stopwatch = Stopwatch()..start();
     final prefs = await SharedPreferences.getInstance();
     final role = prefs.get("role");
+    print("ChatList running");
 
     try {
       ///debugPrint('📤 Making GET request to /chat/chatList...');

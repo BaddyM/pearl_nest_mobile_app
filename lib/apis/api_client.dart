@@ -85,10 +85,6 @@ class ApiClient {
   static void _logRequest(String method, String endpoint, {Map<String, dynamic>? data, Map<String, String>? headers}) {
     final baseUrl = _dio?.options.baseUrl ?? 'unknown';
     final fullUrl = '$baseUrl$endpoint';
-
-    ///debugPrint('ApiClient: [$method] $fullUrl');
-
-    // Log current auth token (full token for debugging)
     if (_authToken != null) {
       ///debugPrint('ApiClient: Using token: $_authToken');
     } else {
@@ -337,6 +333,28 @@ class ApiClient {
       final response = await _dio!.patch(
         endpoint,
         data: data,
+        options: Options(headers: headers),
+      );
+
+      _logResponse(response);
+      return response;
+    } on DioException catch (e) {
+      _logError(e);
+      throw Exception(_handleError(e));
+    }
+  }
+
+  static Future<Response> patchWithoutData(String endpoint) async {
+    if (_dio == null) {
+      throw Exception('ApiClient not initialized. Call ApiClient.initialize() first.');
+    }
+
+    try {
+      final headers = _getHeaders();
+      _logRequest('PATCH', endpoint, headers: headers);
+
+      final response = await _dio!.patch(
+        endpoint,
         options: Options(headers: headers),
       );
 

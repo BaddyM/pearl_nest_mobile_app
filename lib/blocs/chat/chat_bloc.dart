@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/foundation.dart';
+import 'package:pearlnest/apis/api_client.dart';
 import '../../apis/chat_service.dart';
 import '../../models/chat_message.dart';
 import 'chat_event.dart';
@@ -28,7 +28,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onInitialize(ChatInitialize event, Emitter<ChatState> emit) async {
     try {
-      ///debugPrint('🔍 ChatBloc: Initializing chat');
       emit(const ChatLoading());
 
       // Initialize chat service
@@ -69,9 +68,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onConnect(ChatConnect event, Emitter<ChatState> emit) async {
     try {
-      ///debugPrint("Chat Connected");
       await ChatService.connect();
       _isConnected = ChatService.isConnected;
+
+      print("ChatConnect running");
 
       emit(ChatConnected(
         messages: List.from(_messages),
@@ -106,10 +106,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onSendMessage(ChatSendMessage event, Emitter<ChatState> emit) async {
     try {
-      ///debugPrint('🔍 ChatBloc: Attempting to send message');
-      ///debugPrint('🔍 To User ID: ${event.toUserId}');
-      ///debugPrint('🔍 Message Text: ${event.text}');
-      ///debugPrint('🔍 Current connection status: $_isConnected');
+      print("ChatSendMessage running.....");
 
       // Emit sending state
       emit(ChatMessageSending(
@@ -130,9 +127,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         currentChatUserId: _currentChatUserId,
       ));
     } catch (e) {
-      ///debugPrint('❌ ChatBloc: Error sending message: $e');
-      ///debugPrint('🔍 Error type: ${e.runtimeType}');
-      ///debugPrint('🔍 Stack trace: ${StackTrace.current}');
       emit(ChatError(
         error: 'Failed to send message: ${e.toString()}',
         messages: List.from(_messages),
@@ -164,24 +158,30 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onLoadMessages(ChatLoadMessages event, Emitter<ChatState> emit) async {
     try {
+      emit(ChatLoading());
+      _messages.clear();
       _currentChatUserId = event.chatWithUserId;
-
-      // print("Current UserId = ${_currentChatUserId}");
-      // print(_messages);
-
-      // Filter messages for the current chat
-      final filteredMessages = _messages.where((message) {
-        final currentUserId = ChatService.getCurrentUserId();
-        return (message.fromUserId == currentUserId && message.toUserId == event.chatWithUserId) || (message.fromUserId == event.chatWithUserId && message.toUserId == currentUserId);
-      }).toList();
+      final data = await ApiClient.get("/chat/messagesList/$_currentChatUserId");
+      List messagesFromDB = data.data["data"];
+      for (int i = 0; i < messagesFromDB.length; i++) {
+        DateTime dateTime = DateTime.parse(messagesFromDB[i]["createdAt"]);
+        _messages.add(ChatMessage(
+          id: messagesFromDB[i]["id"],
+          fromUserId: messagesFromDB[i]["fromUserId"],
+          toUserId: messagesFromDB[i]["toUserId"],
+          text: messagesFromDB[i]["message"],
+          timestamp: dateTime,
+        ));
+      }
 
       emit(ChatConnected(
-        messages: filteredMessages,
+        messages: _messages,
         isConnected: _isConnected,
         currentChatUserId: _currentChatUserId,
       ));
-    } catch (e) {
-      ///debugPrint('❌ Error loading messages: $e');
+    } catch (e, stackTrace) {
+      print('❌ Error loading messages: $e');
+      print('❌ Location: $stackTrace');
       emit(ChatError(
         error: 'Failed to load messages: ${e.toString()}',
         messages: List.from(_messages),
@@ -191,17 +191,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onMarkAsRead(ChatMarkAsRead event, Emitter<ChatState> emit) async {
     try {
-      // Find and update the message
-      final messageIndex = _messages.indexWhere((m) => m.id == event.messageId);
-      if (messageIndex != -1) {
-        _messages[messageIndex] = _messages[messageIndex].copyWith(isRead: true);
-
-        emit(ChatConnected(
-          messages: List.from(_messages),
-          isConnected: _isConnected,
-          currentChatUserId: _currentChatUserId,
-        ));
-      }
+      await ApiClient.patchWithoutData("/chat/readMessage/${event.fromUserId}/${event.toUserId}");
+      emit(ChatConnected(
+        messages: List.from(_messages),
+        isConnected: _isConnected,
+        currentChatUserId: _currentChatUserId,
+      ));
     } catch (e) {
       ///debugPrint('❌ Error marking message as read: $e');
       emit(ChatError(

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class ChatInput extends StatefulWidget {
@@ -8,12 +9,14 @@ class ChatInput extends StatefulWidget {
   final VoidCallback onSend;
   final VoidCallback onAttachment;
   final bool isEnabled;
+  final MessageType type;
 
   const ChatInput({
     super.key,
     required this.controller,
     required this.onSend,
     required this.onAttachment,
+    this.type = MessageType.text,
     this.isEnabled = true,
   });
 
@@ -120,9 +123,7 @@ class _ChatInputState extends State<ChatInput> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: (_isTyping && widget.isEnabled) 
-                        ? AppTheme.primaryblue 
-                        : AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
+                    color: (_isTyping && widget.isEnabled) ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

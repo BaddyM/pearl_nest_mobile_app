@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -96,6 +97,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   int _sharesCount = 0;
   int _likesCount = 0;
   bool _isLoadingStats = false; // Changed to false since we have embedded data
+
+  //Get Role
+  Future<Object?>? fetchRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? role = prefs.getString('role');
+    return role;
+  }
 
   @override
   void initState() {
@@ -269,7 +277,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
   @override
   void dispose() {
-
     _animationController.dispose();
     _tabController.dispose();
     _pageController.dispose();
@@ -656,8 +663,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   // Initiate payment for a pending booking
   Future<void> _initiatePayment() async {
     if (_pendingBookingForProperty == null) {
-
-       CustomSnackBar.showWarning(context, "No pending booking found for this property.");
+      CustomSnackBar.showWarning(context, "No pending booking found for this property.");
 
       return;
     }
@@ -3398,21 +3404,31 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 ),
               ),
               SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _messageLandlord,
-                  icon: Icon(Icons.message, size: 18),
-                  label: Text('Message'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.primaryblue,
-                    side: BorderSide(color: AppTheme.primaryblue),
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
+              FutureBuilder(
+                  future: fetchRole(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
+                    if (snapshot.hasData && snapshot.data == "TENANT") {
+                      return Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _messageAdmin,
+                          icon: Icon(Icons.message, size: 18),
+                          label: Text('Message'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primaryblue,
+                            side: BorderSide(color: AppTheme.primaryblue),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return SizedBox();
+                  }),
             ],
           ),
         ],
@@ -3795,7 +3811,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     }
   }
 
-  void _messageLandlord() async {
+  void _messageAdmin() async {
     // Initialize chat and navigate to admin list screen
     final chatBloc = context.read<ChatBloc>();
 
@@ -3838,22 +3854,20 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   }
 
   void _showBookingSuccessBottomSheet(Map<String, dynamic> bookingData, String message) {
-
-    
     showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      // isDismissible: true,
-      // enableDrag: true,
-      // backgroundColor: Colors.transparent,
-      // builder: (context) => SingleChildScrollView(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          // isDismissible: true,
+          // enableDrag: true,
+          // backgroundColor: Colors.transparent,
+          // builder: (context) => SingleChildScrollView(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
@@ -3888,7 +3902,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     ),
                   ),
                   SizedBox(height: 16),
-                  
+
                   // Add payment reminder container
                   Container(
                     padding: EdgeInsets.all(16),
@@ -3916,16 +3930,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                               color: AppTheme.getTextColor(context),
                               fontWeight: FontWeight.w500,
                             ),
-                        
                           ),
                         ),
                         SizedBox(height: 16),
                       ],
-                        
                     ),
                   ),
                   SizedBox(height: 16),
-                  
+
                   if (_checkInDate != null && _checkOutDate != null) ...[
                     Container(
                       padding: EdgeInsets.all(16),
@@ -3979,7 +3991,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     ),
                     SizedBox(height: 16),
                   ],
-                  
+
                   ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop(); // Close bottom sheet
@@ -3988,7 +4000,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         _checkOutDate = null;
                       });
                       _bookingBloc.add(BookingReset());
-                      
+
                       // Refresh pending bookings to update the UI
                       _loadPendingBookings();
                     },
@@ -4009,19 +4021,19 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   ),
                 ],
               ),
-          ),
-          // child: Container(
-          // padding: const EdgeInsets.all(24),
-          // decoration: BoxDecoration(
-          //   color: AppTheme.getCardColor(context),
-          //   borderRadius: BorderRadius.circular(24),
-          //   ),
-          // ),
+            ),
+            // child: Container(
+            // padding: const EdgeInsets.all(24),
+            // decoration: BoxDecoration(
+            //   color: AppTheme.getCardColor(context),
+            //   borderRadius: BorderRadius.circular(24),
+            //   ),
+            // ),
           ),
         );
       },
     );
-}
+  }
 
   // Handle property sharing
   void _shareProperty() async {
