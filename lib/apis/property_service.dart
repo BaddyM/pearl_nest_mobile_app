@@ -750,7 +750,7 @@ class PropertyService {
     required String fullAddress,
     required String propertyMap,
     required String period,
-    required bool availability, // true for "Available Now", false for "Available Later"
+    //required bool availability, // true for "Available Now", false for "Available Later"
     DateTime? availableFrom, // Only needed when availability is false
     List<File>? images,
   }) async {
@@ -772,14 +772,14 @@ class PropertyService {
         'fullAddress': fullAddress,
         'propertyMap': propertyMap,
         'period': period,
-        'availability': availability,
+       // 'availability': availability,
       };
 
       // Add availableFrom date if provided (only for "Available Later")
-      if (!availability && availableFrom != null) {
-        // Format date as YYYY-MM-DD for API
-        fields['availableFrom'] = availableFrom.toIso8601String().split('T')[0];
-      }
+      // if (!availability && availableFrom != null) {
+      //   // Format date as YYYY-MM-DD for API
+      //   fields['availableFrom'] = availableFrom.toIso8601String().split('T')[0];
+      // }
 
       // Prepare files map
       Map<String, File> filesMap = {};

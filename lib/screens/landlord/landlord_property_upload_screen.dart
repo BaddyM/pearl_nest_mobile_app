@@ -583,11 +583,11 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               _buildPricingSection(),
             ),
             SizedBox(height: 20),
-            _buildSectionCard(
-              'Availability',
-              Icons.calendar_today_outlined,
-              _buildAvailabilitySection(),
-            ),
+            // _buildSectionCard(
+            //   'Availability',
+            //   Icons.calendar_today_outlined,
+            //   _buildAvailabilitySection(),
+            // ),
             SizedBox(height: 20),
             _buildSectionCard(
               'Amenities',
@@ -833,81 +833,82 @@ Widget _buildPricingSection() {
   );
 }
 
+//disabled for now
 
-  Widget _buildAvailabilitySection() {
-    return Column(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: AppTheme.getCardColor(context).withValues(alpha: -3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: Column(
-            children: [
-              _buildRadioTile(
-                'Available Now',
-                AvailabilityStatus.availableNow,
-                Icons.check_circle_outline,
-              ),
-              Divider(height: 1, color: Colors.grey[300]),
-              _buildRadioTile(
-                'Available Later',
-                AvailabilityStatus.availableLater,
-                Icons.schedule,
-              ),
-            ],
-          ),
-        ),
-        if (_availabilityStatus == AvailabilityStatus.availableLater) ...[
-          SizedBox(height: 16),
-          GestureDetector(
-            onTap: _selectAvailableDate,
-            child: Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.getCardColor(context),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryblue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.calendar_today,
-                      color: AppTheme.primaryblue,
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _availableFrom != null ? 'Available from: ${_availableFrom!.day}/${_availableFrom!.month}/${_availableFrom!.year}' : 'Select available date',
-                      style: TextStyle(
-                        color: _availableFrom != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.grey[400],
-                    size: 16,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  // Widget _buildAvailabilitySection() {
+  //   return Column(
+  //     children: [
+  //       Container(
+  //         decoration: BoxDecoration(
+  //           color: AppTheme.getCardColor(context).withValues(alpha: -3),
+  //           borderRadius: BorderRadius.circular(12),
+  //           border: Border.all(color: Colors.grey[300]!),
+  //         ),
+  //         child: Column(
+  //           children: [
+  //             _buildRadioTile(
+  //               'Available Now',
+  //               AvailabilityStatus.availableNow,
+  //               Icons.check_circle_outline,
+  //             ),
+  //             Divider(height: 1, color: Colors.grey[300]),
+  //             _buildRadioTile(
+  //               'Available Later',
+  //               AvailabilityStatus.availableLater,
+  //               Icons.schedule,
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //       if (_availabilityStatus == AvailabilityStatus.availableLater) ...[
+  //         SizedBox(height: 16),
+  //         GestureDetector(
+  //           onTap: _selectAvailableDate,
+  //           child: Container(
+  //             padding: EdgeInsets.all(16),
+  //             decoration: BoxDecoration(
+  //               color: AppTheme.getCardColor(context),
+  //               borderRadius: BorderRadius.circular(12),
+  //               border: Border.all(color: Colors.grey[300]!),
+  //             ),
+  //             child: Row(
+  //               children: [
+  //                 Container(
+  //                   padding: EdgeInsets.all(8),
+  //                   decoration: BoxDecoration(
+  //                     color: AppTheme.primaryblue.withOpacity(0.1),
+  //                     borderRadius: BorderRadius.circular(8),
+  //                   ),
+  //                   child: Icon(
+  //                     Icons.calendar_today,
+  //                     color: AppTheme.primaryblue,
+  //                     size: 20,
+  //                   ),
+  //                 ),
+  //                 SizedBox(width: 12),
+  //                 Expanded(
+  //                   child: Text(
+  //                     _availableFrom != null ? 'Available from: ${_availableFrom!.day}/${_availableFrom!.month}/${_availableFrom!.year}' : 'Select available date',
+  //                     style: TextStyle(
+  //                       color: _availableFrom != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
+  //                       fontSize: 16,
+  //                       fontWeight: FontWeight.w500,
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 Icon(
+  //                   Icons.arrow_forward_ios,
+  //                   color: Colors.grey[400],
+  //                   size: 16,
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ],
+  //   );
+  // }
 
   Widget _buildRadioTile(String title, AvailabilityStatus value, IconData icon) {
     return Theme(
@@ -2001,8 +2002,8 @@ Widget _buildPricingSection() {
               fullAddress: _addressController.text.trim(),
               propertyMap: _propertyMapController.text.trim(),
               period: _selectedPriceType,
-              availability: _availabilityStatus == AvailabilityStatus.availableNow,
-              availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
+             // availability: _availabilityStatus == AvailabilityStatus.availableNow,
+             // availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
               images: _selectedImages,
             ),
           );
