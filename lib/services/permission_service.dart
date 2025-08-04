@@ -17,13 +17,13 @@ class PermissionService {
         final status = await permission.status;
         if (!status.isGranted) {
           allGranted = false;
-          debugPrint('$_tag: Essential permission ${permission.toString()} not granted');
+          //debugPrint('$_tag: Essential permission ${permission.toString()} not granted');
         }
       }
 
       return allGranted;
     } catch (e) {
-      debugPrint('$_tag: Error checking essential permissions: $e');
+      //debugPrint('$_tag: Error checking essential permissions: $e');
       return false;
     }
   }
@@ -31,14 +31,14 @@ class PermissionService {
   // Request essential permissions
   static Future<bool> requestEssentialPermissions() async {
     try {
-      debugPrint('$_tag: Requesting essential permissions');
+      //debugPrint('$_tag: Requesting essential permissions');
 
       final permissions = await _getEssentialPermissions();
       final Map<Permission, PermissionStatus> statuses = await permissions.request();
 
       bool allGranted = true;
       statuses.forEach((permission, status) {
-        debugPrint('$_tag: Permission ${permission.toString()}: ${status.toString()}');
+        //debugPrint('$_tag: Permission ${permission.toString()}: ${status.toString()}');
         if (!status.isGranted) {
           allGranted = false;
         }
@@ -46,7 +46,7 @@ class PermissionService {
 
       return allGranted;
     } catch (e) {
-      debugPrint('$_tag: Error requesting essential permissions: $e');
+      //debugPrint('$_tag: Error requesting essential permissions: $e');
       return false;
     }
   }
@@ -69,14 +69,14 @@ class PermissionService {
   // Request camera permission
   static Future<bool> requestCameraPermission() async {
     try {
-      debugPrint('$_tag: Requesting camera permission');
+      //debugPrint('$_tag: Requesting camera permission');
 
       final status = await Permission.camera.request();
-      debugPrint('$_tag: Camera permission status: ${status.toString()}');
+      //debugPrint('$_tag: Camera permission status: ${status.toString()}');
 
       return status.isGranted;
     } catch (e) {
-      debugPrint('$_tag: Error requesting camera permission: $e');
+      //debugPrint('$_tag: Error requesting camera permission: $e');
       return false;
     }
   }
@@ -84,14 +84,14 @@ class PermissionService {
   // Request photo library permission
   static Future<bool> requestPhotoLibraryPermission() async {
     try {
-      debugPrint('$_tag: Requesting photo library permission');
+      //debugPrint('$_tag: Requesting photo library permission');
 
       final status = await Permission.photos.request();
-      debugPrint('$_tag: Photo library permission status: ${status.toString()}');
+      //debugPrint('$_tag: Photo library permission status: ${status.toString()}');
 
       return status.isGranted;
     } catch (e) {
-      debugPrint('$_tag: Error requesting photo library permission: $e');
+      //debugPrint('$_tag: Error requesting photo library permission: $e');
       return false;
     }
   }
@@ -99,18 +99,18 @@ class PermissionService {
   // Request storage permission
   static Future<bool> requestStoragePermission() async {
     try {
-      debugPrint('$_tag: Requesting storage permission');
+      //debugPrint('$_tag: Requesting storage permission');
 
       if (Platform.isAndroid) {
         final status = await Permission.storage.request();
-        debugPrint('$_tag: Storage permission status: ${status.toString()}');
+        //debugPrint('$_tag: Storage permission status: ${status.toString()}');
         return status.isGranted;
       } else {
         // iOS uses photo library permission
         return await requestPhotoLibraryPermission();
       }
     } catch (e) {
-      debugPrint('$_tag: Error requesting storage permission: $e');
+      //debugPrint('$_tag: Error requesting storage permission: $e');
       return false;
     }
   }
@@ -118,12 +118,12 @@ class PermissionService {
   // Request location permission
   static Future<bool> requestLocationPermission() async {
     try {
-      debugPrint('$_tag: Requesting location permission');
+      //debugPrint('$_tag: Requesting location permission');
 
       // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        debugPrint('$_tag: Location services are disabled');
+        //debugPrint('$_tag: Location services are disabled');
         return false;
       }
 
@@ -131,20 +131,20 @@ class PermissionService {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          debugPrint('$_tag: Location permission denied');
+          //debugPrint('$_tag: Location permission denied');
           return false;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        debugPrint('$_tag: Location permission denied forever');
+        //debugPrint('$_tag: Location permission denied forever');
         return false;
       }
 
-      debugPrint('$_tag: Location permission granted');
+      //debugPrint('$_tag: Location permission granted');
       return true;
     } catch (e) {
-      debugPrint('$_tag: Error requesting location permission: $e');
+      //debugPrint('$_tag: Error requesting location permission: $e');
       return false;
     }
   }
@@ -152,14 +152,14 @@ class PermissionService {
   // Request microphone permission
   static Future<bool> requestMicrophonePermission() async {
     try {
-      debugPrint('$_tag: Requesting microphone permission');
+      //debugPrint('$_tag: Requesting microphone permission');
 
       final status = await Permission.microphone.request();
-      debugPrint('$_tag: Microphone permission status: ${status.toString()}');
+      //debugPrint('$_tag: Microphone permission status: ${status.toString()}');
 
       return status.isGranted;
     } catch (e) {
-      debugPrint('$_tag: Error requesting microphone permission: $e');
+      //debugPrint('$_tag: Error requesting microphone permission: $e');
       return false;
     }
   }
@@ -167,14 +167,14 @@ class PermissionService {
   // Request notification permission
   static Future<bool> requestNotificationPermission() async {
     try {
-      debugPrint('$_tag: Requesting notification permission');
+      //debugPrint('$_tag: Requesting notification permission');
 
       final status = await Permission.notification.request();
-      debugPrint('$_tag: Notification permission status: ${status.toString()}');
+      //debugPrint('$_tag: Notification permission status: ${status.toString()}');
 
       return status.isGranted;
     } catch (e) {
-      debugPrint('$_tag: Error requesting notification permission: $e');
+      //debugPrint('$_tag: Error requesting notification permission: $e');
       return false;
     }
   }
@@ -182,14 +182,14 @@ class PermissionService {
   // Request phone permission
   static Future<bool> requestPhonePermission() async {
     try {
-      debugPrint('$_tag: Requesting phone permission');
+      //debugPrint('$_tag: Requesting phone permission');
 
       final status = await Permission.phone.request();
-      debugPrint('$_tag: Phone permission status: ${status.toString()}');
+      //debugPrint('$_tag: Phone permission status: ${status.toString()}');
 
       return status.isGranted;
     } catch (e) {
-      debugPrint('$_tag: Error requesting phone permission: $e');
+      //debugPrint('$_tag: Error requesting phone permission: $e');
       return false;
     }
   }
@@ -197,14 +197,14 @@ class PermissionService {
   // Request contacts permission
   static Future<bool> requestContactsPermission() async {
     try {
-      debugPrint('$_tag: Requesting contacts permission');
+      //debugPrint('$_tag: Requesting contacts permission');
 
       final status = await Permission.contacts.request();
-      debugPrint('$_tag: Contacts permission status: ${status.toString()}');
+      //debugPrint('$_tag: Contacts permission status: ${status.toString()}');
 
       return status.isGranted;
     } catch (e) {
-      debugPrint('$_tag: Error requesting contacts permission: $e');
+      //debugPrint('$_tag: Error requesting contacts permission: $e');
       return false;
     }
   }
@@ -215,7 +215,7 @@ class PermissionService {
       final status = await permission.status;
       return status.isGranted;
     } catch (e) {
-      debugPrint('$_tag: Error checking permission ${permission.toString()}: $e');
+      //debugPrint('$_tag: Error checking permission ${permission.toString()}: $e');
       return false;
     }
   }
@@ -223,10 +223,10 @@ class PermissionService {
   // Open app settings
   static Future<void> openAppSettings() async {
     try {
-      debugPrint('$_tag: Opening app settings');
+      //debugPrint('$_tag: Opening app settings');
       await openAppSettings();
     } catch (e) {
-      debugPrint('$_tag: Error opening app settings: $e');
+      //debugPrint('$_tag: Error opening app settings: $e');
     }
   }
 
@@ -236,7 +236,7 @@ class PermissionService {
       final status = await permission.status;
       return status.isPermanentlyDenied;
     } catch (e) {
-      debugPrint('$_tag: Error checking if permission is permanently denied: $e');
+      //debugPrint('$_tag: Error checking if permission is permanently denied: $e');
       return false;
     }
   }
@@ -258,10 +258,10 @@ class PermissionService {
         permissions['storage'] = await Permission.storage.isGranted;
       }
 
-      debugPrint('$_tag: All permissions status: $permissions');
+      //debugPrint('$_tag: All permissions status: $permissions');
       return permissions;
     } catch (e) {
-      debugPrint('$_tag: Error getting all permissions status: $e');
+      //debugPrint('$_tag: Error getting all permissions status: $e');
       return permissions;
     }
   }
@@ -269,7 +269,7 @@ class PermissionService {
   // Request all permissions at once
   static Future<bool> requestAllPermissions() async {
     try {
-      debugPrint('$_tag: Requesting all permissions');
+      //debugPrint('$_tag: Requesting all permissions');
 
       final Map<String, bool> results = {};
 
@@ -292,16 +292,16 @@ class PermissionService {
       for (String permission in criticalPermissions) {
         if (results[permission] != true) {
           allCriticalGranted = false;
-          debugPrint('$_tag: Critical permission $permission not granted');
+          //debugPrint('$_tag: Critical permission $permission not granted');
         }
       }
 
-      debugPrint('$_tag: All permissions request results: $results');
-      debugPrint('$_tag: All critical permissions granted: $allCriticalGranted');
+      //debugPrint('$_tag: All permissions request results: $results');
+      //debugPrint('$_tag: All critical permissions granted: $allCriticalGranted');
 
       return allCriticalGranted;
     } catch (e) {
-      debugPrint('$_tag: Error requesting all permissions: $e');
+      //debugPrint('$_tag: Error requesting all permissions: $e');
       return false;
     }
   }

@@ -677,8 +677,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
       }
     } catch (e, stackTrace) {
-      debugPrint('Image picker error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Image picker error: $e');
+      //debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error picking image: $e');
     }
   }
@@ -701,7 +701,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      debugPrint('🔧 EditProfileScreen: Starting profile update...');
+      //debugPrint('🔧 EditProfileScreen: Starting profile update...');
 
       // Call the AuthService to update profile
       final result = await AuthService.updateProfile(
@@ -715,7 +715,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         emailNotifications: _emailNotifications,
       );
 
-      debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
+      //debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
 
       if (result['success'] == true) {
         // Trigger AuthBloc to refresh the user state with updated data
@@ -743,8 +743,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _showErrorSnackBar(result['message'] ?? 'Failed to update profile. Please try again.');
       }
     } catch (e, stackTrace) {
-      debugPrint('🔧 EditProfileScreen: Profile update error: $e');
-      debugPrint('🔧 EditProfileScreen: Stack trace: $stackTrace');
+      //debugPrint('🔧 EditProfileScreen: Profile update error: $e');
+      //debugPrint('🔧 EditProfileScreen: Stack trace: $stackTrace');
 
       setState(() {
         _isLoading = false;

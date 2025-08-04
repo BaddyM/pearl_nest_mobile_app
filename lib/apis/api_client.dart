@@ -10,11 +10,11 @@ class ApiClient {
   static VoidCallback? onTokenExpired;
 
   static Future<void> initialize() async {
-    debugPrint('ApiClient: Initializing...');
+    //debugPrint('ApiClient: Initializing...');
 
     final baseUrl = AppConfig.getCurrentBaseUrl();
 
-    debugPrint('ApiClient: Using base URL: $baseUrl');
+    //debugPrint('ApiClient: Using base URL: $baseUrl');
 
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
@@ -30,7 +30,7 @@ class ApiClient {
     // Load saved auth token
     await _loadSavedToken();
 
-    debugPrint('ApiClient: Initialization complete');
+    //debugPrint('ApiClient: Initialization complete');
   }
 
   static Future<void> _loadSavedToken() async {
@@ -38,28 +38,28 @@ class ApiClient {
       final prefs = await SharedPreferences.getInstance();
       _authToken = prefs.getString('auth_token');
       if (_authToken != null) {
-        debugPrint('ApiClient: Loaded saved auth token - Full Token: $_authToken');
+        //debugPrint('ApiClient: Loaded saved auth token - Full Token: $_authToken');
       }
     } catch (e) {
-      debugPrint('ApiClient: Error loading saved token: $e');
+      //debugPrint('ApiClient: Error loading saved token: $e');
     }
   }
 
   static void setAuthToken(String? token) async {
     _authToken = token;
     if (token != null) {
-      debugPrint('ApiClient: Auth token set - Full Token: $token');
+      //debugPrint('ApiClient: Auth token set - Full Token: $token');
     } else {
       final prefs = await SharedPreferences.getInstance();
       final keys = prefs.getKeys();
 
       // Remove each key individually
       for (String key in keys) {
-        debugPrint("Logged out = $key");
+        //debugPrint("Logged out = $key");
         await prefs.remove(key);
       }
 
-      debugPrint('ApiClient: Auth token cleared');
+      //debugPrint('ApiClient: Auth token cleared');
     }
   }
 
@@ -86,42 +86,42 @@ class ApiClient {
     final baseUrl = _dio?.options.baseUrl ?? 'unknown';
     final fullUrl = '$baseUrl$endpoint';
     if (_authToken != null) {
-      debugPrint('ApiClient: Using token: $_authToken');
+      //debugPrint('ApiClient: Using token: $_authToken');
     } else {
-      debugPrint('ApiClient: No auth token set');
+      //debugPrint('ApiClient: No auth token set');
     }
 
     if (headers != null && headers.isNotEmpty) {
-      debugPrint('ApiClient: Headers: $headers');
+      //debugPrint('ApiClient: Headers: $headers');
     }
     if (data != null && data.isNotEmpty) {
-      debugPrint('ApiClient: Request data: $data');
+      //debugPrint('ApiClient: Request data: $data');
     }
   }
 
   static void _logResponse(Response response) {
     final fullUrl = '${response.requestOptions.baseUrl}${response.requestOptions.path}';
 
-    debugPrint('ApiClient: Response from $fullUrl - Status: ${response.statusCode}');
-    debugPrint('ApiClient: Response data: ${response.data}');
+    //debugPrint('ApiClient: Response from $fullUrl - Status: ${response.statusCode}');
+    //debugPrint('ApiClient: Response data: ${response.data}');
   }
 
   static void _logError(DioException error) {
     final fullUrl = '${error.requestOptions.baseUrl}${error.requestOptions.path}';
 
-    debugPrint('ApiClient: Error for $fullUrl - Type: ${error.type}, Message: ${error.message}');
+    //debugPrint('ApiClient: Error for $fullUrl - Type: ${error.type}, Message: ${error.message}');
     if (error.response != null) {
-      debugPrint('ApiClient: Error status: ${error.response!.statusCode}');
-      debugPrint('ApiClient: Error data: ${error.response!.data}');
+      //debugPrint('ApiClient: Error status: ${error.response!.statusCode}');
+      //debugPrint('ApiClient: Error data: ${error.response!.data}');
     }
   }
 
   static String _handleError(DioException error) {
-    debugPrint('ApiClient: Handling error...');
+    //debugPrint('ApiClient: Handling error...');
 
     // Check for token expiration (401 status)
     if (error.response?.statusCode == 401) {
-      // debugPrint('ApiClient: Token expired, calling token expiration handler');
+      // //debugPrint('ApiClient: Token expired, calling token expiration handler');
       // onTokenExpired?.call();
       // return 'Your session has expired. Please log in again.';
     }
@@ -304,8 +304,8 @@ class ApiClient {
 
       _logRequest('POST (multipart)', endpoint, headers: headers);
 
-      debugPrint('ApiClient: FormData fields: ${formData.fields.map((e) => '${e.key}: ${e.value}').join(', ')}');
-      debugPrint('ApiClient: FormData files: ${formData.files.map((e) => '${e.key}: ${e.value.filename}').join(', ')}');
+      //debugPrint('ApiClient: FormData fields: ${formData.fields.map((e) => '${e.key}: ${e.value}').join(', ')}');
+      //debugPrint('ApiClient: FormData files: ${formData.files.map((e) => '${e.key}: ${e.value.filename}').join(', ')}');
 
       final response = await _dio!.post(
         endpoint,
@@ -347,10 +347,10 @@ class ApiClient {
       );
 
       _logResponse(response);
-      print('🔍 PATCH $endpoint: ${response.data}');
+      //print('🔍 PATCH $endpoint: ${response.data}');
       return response;
     } on DioException catch (e) {
-      print('🔍 PATCH $endpoint error: ${e.message}');
+      //print('🔍 PATCH $endpoint error: ${e.message}');
       _logError(e);
       throw Exception(_handleError(e));
     }
@@ -396,18 +396,18 @@ class ApiClient {
       _logRequest('PATCH (multipart)', endpoint, headers: headers);
 
       // Detailed FormData debugging
-      debugPrint('🔍 FormData fields detail:');
+      //debugPrint('🔍 FormData fields detail:');
       for (var field in formData.fields) {
-        debugPrint('  - ${field.key}: "${field.value}" (length: ${field.value.length})');
+        //debugPrint('  - ${field.key}: "${field.value}" (length: ${field.value.length})');
       }
 
-      debugPrint('🔍 FormData files detail:');
+      //debugPrint('🔍 FormData files detail:');
       for (var file in formData.files) {
-        debugPrint('  - ${file.key}: ${file.value.filename} (${file.value.length} bytes)');
+        //debugPrint('  - ${file.key}: ${file.value.filename} (${file.value.length} bytes)');
       }
 
-      debugPrint('ApiClient: FormData fields: ${formData.fields.map((e) => '${e.key}: ${e.value}').join(', ')}');
-      debugPrint('ApiClient: FormData files: ${formData.files.map((e) => '${e.key}: ${e.value.filename}').join(', ')}');
+      //debugPrint('ApiClient: FormData fields: ${formData.fields.map((e) => '${e.key}: ${e.value}').join(', ')}');
+      //debugPrint('ApiClient: FormData files: ${formData.files.map((e) => '${e.key}: ${e.value.filename}').join(', ')}');
 
       final response = await _dio!.patch(
         endpoint,

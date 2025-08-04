@@ -17,7 +17,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
 
   void _logState(String operation, BookingState newState) {
     if (kDebugMode) {
-      debugPrint('🏨 BOOKING BLOC [$operation]: $newState');
+      //debugPrint('🏨 BOOKING BLOC [$operation]: $newState');
     }
   }
 
@@ -205,12 +205,12 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       emit(BookingLoaded(bookings: bookings));
       _logState('FETCH_LANDLORD_BOOKINGS_SUCCESS', state);
 
-      debugPrint('✅ Successfully loaded ${bookings.length} landlord bookings');
+      //debugPrint('✅ Successfully loaded ${bookings.length} landlord bookings');
     } catch (e) {
       emit(BookingError(message: e.toString()));
       _logState('FETCH_LANDLORD_BOOKINGS_ERROR', state);
 
-      debugPrint('❌ Failed to fetch landlord bookings: $e');
+      //debugPrint('❌ Failed to fetch landlord bookings: $e');
     }
   }
 }

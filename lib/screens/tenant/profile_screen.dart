@@ -611,17 +611,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showLogoutDialog() {
-    debugPrint('🔍 ProfileScreen: Showing logout dialog');
+    //debugPrint('🔍 ProfileScreen: Showing logout dialog');
     showDialog(
       context: context,
       barrierDismissible: false, // Prevent dismissal by tapping outside
       builder: (BuildContext context) {
-        debugPrint('🔍 ProfileScreen: Building logout dialog');
+        //debugPrint('🔍 ProfileScreen: Building logout dialog');
         return BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
-            debugPrint('🔍 ProfileScreen: Dialog BlocListener received state: ${state.runtimeType}');
+            //debugPrint('🔍 ProfileScreen: Dialog BlocListener received state: ${state.runtimeType}');
             if (state is AuthUnauthenticated) {
-              debugPrint('🔍 ProfileScreen: Logout completed, navigating to OnboardingScreen');
+              //debugPrint('🔍 ProfileScreen: Logout completed, navigating to OnboardingScreen');
               // Close the dialog
               Navigator.of(context).pop();
 
@@ -633,7 +633,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             }
           },
           builder: (context, state) {
-            debugPrint('🔍 ProfileScreen: Dialog BlocBuilder received state: ${state.runtimeType}');
+            //debugPrint('🔍 ProfileScreen: Dialog BlocBuilder received state: ${state.runtimeType}');
             final isLoading = state is AuthLoading;
 
             return AlertDialog(
@@ -651,7 +651,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onPressed: isLoading
                       ? null
                       : () {
-                          debugPrint('🔍 ProfileScreen: Cancel button pressed');
+                          //debugPrint('🔍 ProfileScreen: Cancel button pressed');
                           Navigator.of(context).pop();
                         },
                   child: Text(
@@ -663,7 +663,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onPressed: isLoading
                       ? null
                       : () {
-                          debugPrint('🔍 ProfileScreen: Logout button pressed');
+                          //debugPrint('🔍 ProfileScreen: Logout button pressed');
                           // Trigger logout - BlocListener will handle navigation
                           context.read<AuthBloc>().add(AuthLogoutRequested());
                         },

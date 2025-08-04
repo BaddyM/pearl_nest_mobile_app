@@ -209,7 +209,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   // Load pending bookings for current user and check if this property has pending booking
   void _loadPendingBookings() async {
     try {
-      debugPrint('📚 Loading pending bookings for property: ${widget.property.id}');
+      //debugPrint('📚 Loading pending bookings for property: ${widget.property.id}');
       final pendingBookings = await BookingService.fetchPendingBookings();
 
       // Check if this specific property has a pending booking
@@ -218,10 +218,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         pendingBookingForThisProperty = pendingBookings.firstWhere(
           (booking) => booking.propertyId == widget.property.id,
         );
-        debugPrint('📚 Found pending booking for this property: ${pendingBookingForThisProperty.id}');
+        //debugPrint('📚 Found pending booking for this property: ${pendingBookingForThisProperty.id}');
       } catch (e) {
         // No pending booking for this property
-        debugPrint('📚 No pending booking found for this property');
+        //debugPrint('📚 No pending booking found for this property');
       }
 
       if (mounted) {
@@ -232,7 +232,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading pending bookings: $e');
+      //debugPrint('❌ Error loading pending bookings: $e');
       if (mounted) {
         setState(() {
           _pendingBookings = [];
@@ -671,15 +671,15 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         },
       );
 
-      debugPrint('💳 Initiating payment for booking: ${_pendingBookingForProperty!.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
+      //debugPrint('💳 Initiating payment for booking: ${_pendingBookingForProperty!.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
 
       // Debug user ID to identify the issue
-      debugPrint('🔍 User ID validation:');
-      debugPrint('   - widget.user.id: "${widget.user.id}"');
-      debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
-      debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
-      debugPrint('   - widget.user.name: "${widget.user.name}"');
-      debugPrint('   - widget.user.email: "${widget.user.email}"');
+      //debugPrint('🔍 User ID validation:');
+      //debugPrint('   - widget.user.id: "${widget.user.id}"');
+      //debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
+      //debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
+      //debugPrint('   - widget.user.name: "${widget.user.name}"');
+      //debugPrint('   - widget.user.email: "${widget.user.email}"');
 
       // Validate user ID before making payment request
       if (widget.user.id.isEmpty) {
@@ -688,18 +688,18 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
           Navigator.of(context).pop();
         }
 
-        debugPrint('❌ User ID is empty - attempting to get from AuthService');
+        //debugPrint('❌ User ID is empty - attempting to get from AuthService');
 
         // Try to get user ID from AuthService as fallback
         final currentUserId = await AuthService.getUserId();
-        debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
+        //debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
 
         if (currentUserId == null || currentUserId.isEmpty) {
           _showPaymentError('User session invalid. Please logout and login again.');
           return;
         }
 
-        debugPrint('✅ Using fallback user ID: $currentUserId');
+        //debugPrint('✅ Using fallback user ID: $currentUserId');
 
         // Show loading dialog again
         showDialog(
@@ -861,7 +861,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         Navigator.of(context).pop();
       }
 
-      debugPrint('❌ Payment initiation error: $e');
+      //debugPrint('❌ Payment initiation error: $e');
       _showPaymentError('An error occurred while setting up payment. Please try again.');
     }
   }
@@ -3171,13 +3171,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            debugPrint('Page started loading: $url');
+            //debugPrint('Page started loading: $url');
           },
           onPageFinished: (String url) {
-            debugPrint('Page finished loading: $url');
+            //debugPrint('Page finished loading: $url');
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint('Map loading error: ${error.description}');
+            //debugPrint('Map loading error: ${error.description}');
           },
         ),
       )

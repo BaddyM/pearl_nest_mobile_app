@@ -18,7 +18,7 @@ class LandlordService {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('📤 Submitting landlord application for: $businessName');
+        //debugPrint('📤 Submitting landlord application for: $businessName');
       }
 
       final requestBody = {
@@ -34,7 +34,7 @@ class LandlordService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          debugPrint('✅ Landlord application submitted successfully');
+          //debugPrint('✅ Landlord application submitted successfully');
         }
 
         return {
@@ -44,7 +44,7 @@ class LandlordService {
         };
       } else {
         if (kDebugMode) {
-          debugPrint('❌ Landlord application failed with status: ${response.statusCode}');
+          //debugPrint('❌ Landlord application failed with status: ${response.statusCode}');
         }
 
         return {
@@ -55,7 +55,7 @@ class LandlordService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('💥 Landlord application error: $e');
+        //debugPrint('💥 Landlord application error: $e');
       }
 
       return {
@@ -73,8 +73,8 @@ class LandlordService {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('📤 Uploading document: $title');
-        debugPrint('📁 File path: $filePath');
+        //debugPrint('📤 Uploading document: $title');
+        //debugPrint('📁 File path: $filePath');
       }
 
       // Validate file exists
@@ -106,7 +106,7 @@ class LandlordService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
-          debugPrint('✅ Document uploaded successfully: $title');
+          //debugPrint('✅ Document uploaded successfully: $title');
         }
 
         return {
@@ -116,8 +116,8 @@ class LandlordService {
         };
       } else {
         if (kDebugMode) {
-          debugPrint('❌ Document upload failed with status: ${response.statusCode}');
-          debugPrint('📋 Response data: ${response.data}');
+          //debugPrint('❌ Document upload failed with status: ${response.statusCode}');
+          //debugPrint('📋 Response data: ${response.data}');
         }
 
         return {
@@ -129,7 +129,7 @@ class LandlordService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('💥 Document upload error: $e');
+        //debugPrint('💥 Document upload error: $e');
       }
 
       // Extract more specific error messages
@@ -167,7 +167,7 @@ class LandlordService {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('📤 Uploading ${documents.length} documents');
+        //debugPrint('📤 Uploading ${documents.length} documents');
       }
 
       final List<String> uploadedDocuments = [];
@@ -212,7 +212,7 @@ class LandlordService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('💥 Multiple documents upload error: $e');
+        //debugPrint('💥 Multiple documents upload error: $e');
       }
 
       return {

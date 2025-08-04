@@ -136,8 +136,8 @@ class LogoutButton extends StatelessWidget {
       // Call custom callback if provided
       onLogoutSuccess?.call();
     } catch (e, stackTrace) {
-      debugPrint('Logout error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      //debugPrint('Logout error: $e');
+      //debugPrint('Stack trace: $stackTrace');
 
       if (context.mounted) {
         CustomSnackBar.showError(

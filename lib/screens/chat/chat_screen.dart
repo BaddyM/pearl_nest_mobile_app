@@ -567,20 +567,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Debug methods for development - output to terminal only
   void _showDebugInfo() async {
-    debugPrint('🔧 === USER REQUESTED COMPREHENSIVE DEBUG ===');
-    debugPrint('🔧 Running comprehensive chat service debug...');
+    //debugPrint('🔧 === USER REQUESTED COMPREHENSIVE DEBUG ===');
+    //debugPrint('🔧 Running comprehensive chat service debug...');
 
-    debugPrint('🔧 === COMPREHENSIVE DEBUG COMPLETE ===');
-    debugPrint('🔧 Check the debug output above for detailed information.');
+    //debugPrint('🔧 === COMPREHENSIVE DEBUG COMPLETE ===');
+    //debugPrint('🔧 Check the debug output above for detailed information.');
   }
 
   void _testApiConnectivity() async {
-    debugPrint('🧪 === USER REQUESTED API CONNECTIVITY TEST ===');
-    debugPrint('🧪 Testing API connectivity...');
+    //debugPrint('🧪 === USER REQUESTED API CONNECTIVITY TEST ===');
+    //debugPrint('🧪 Testing API connectivity...');
   }
 
   void _testSocketConnectivity() async {
-    debugPrint('🔌 === USER REQUESTED SOCKET CONNECTIVITY TEST ===');
-    debugPrint('🔌 Testing socket connectivity...');
+    //debugPrint('🔌 === USER REQUESTED SOCKET CONNECTIVITY TEST ===');
+    //debugPrint('🔌 Testing socket connectivity...');
   }
 }

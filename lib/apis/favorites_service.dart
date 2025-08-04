@@ -19,26 +19,26 @@ class FavoritesService {
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data) {
     if (kDebugMode) {
-      debugPrint('⭐ FAVORITES REQUEST: $endpoint');
+      //debugPrint('⭐ FAVORITES REQUEST: $endpoint');
       if (data != null) {
-        debugPrint('⭐ Request data: $data');
+        //debugPrint('⭐ Request data: $data');
       }
     }
   }
 
   static void _logDioResponse(String endpoint, Response response) {
     if (kDebugMode) {
-      debugPrint('📝 FAVORITES RESPONSE [$endpoint]: Status ${response.statusCode}');
-      debugPrint('📝 Response Body: ${response.data}');
+      //debugPrint('📝 FAVORITES RESPONSE [$endpoint]: Status ${response.statusCode}');
+      //debugPrint('📝 Response Body: ${response.data}');
     }
   }
 
   static void _logError(String operation, dynamic error) {
     if (kDebugMode) {
-      debugPrint('❌ FAVORITES ERROR [$operation]: $error');
+      //debugPrint('❌ FAVORITES ERROR [$operation]: $error');
       if (error is DioException) {
-        debugPrint('❌ Response status: ${error.response?.statusCode}');
-        debugPrint('❌ Response data: ${error.response?.data}');
+        //debugPrint('❌ Response status: ${error.response?.statusCode}');
+        //debugPrint('❌ Response data: ${error.response?.data}');
       }
     }
   }
@@ -61,10 +61,10 @@ class FavoritesService {
             return Property.fromJson(propertyData);
           }).toList();
 
-          debugPrint('⭐ Successfully fetched ${favorites.length} favorite properties');
+          //debugPrint('⭐ Successfully fetched ${favorites.length} favorite properties');
           return favorites;
         } else {
-          debugPrint('⭐ API returned success: false or no data');
+          //debugPrint('⭐ API returned success: false or no data');
           return [];
         }
       } else if (response.statusCode == 401) {

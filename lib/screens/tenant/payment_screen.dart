@@ -45,7 +45,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ..addJavaScriptChannel(
         'FlutterPayment',
         onMessageReceived: (JavaScriptMessage message) {
-          debugPrint('💳 JavaScript message received: ${message.message}');
+          //debugPrint('💳 JavaScript message received: ${message.message}');
           _handleJavaScriptMessage(message.message);
         },
       )
@@ -59,14 +59,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
             }
           },
           onPageStarted: (String url) {
-            debugPrint('💳 Page started loading: $url');
+            //debugPrint('💳 Page started loading: $url');
             setState(() {
               _isLoading = true;
               _hasError = false;
             });
           },
           onPageFinished: (String url) {
-            debugPrint('💳 Page finished loading: $url');
+            //debugPrint('💳 Page finished loading: $url');
             setState(() {
               _isLoading = false;
             });
@@ -78,7 +78,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _checkPaymentCompletion(url);
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint('💳 WebView error: ${error.description}');
+            //debugPrint('💳 WebView error: ${error.description}');
             setState(() {
               _isLoading = false;
               _hasError = true;
@@ -86,7 +86,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             });
           },
           onNavigationRequest: (NavigationRequest request) {
-            debugPrint('💳 Navigation request: ${request.url}');
+            //debugPrint('💳 Navigation request: ${request.url}');
 
             // Handle deep links
             if (request.url.startsWith('pearlnest://')) {
@@ -159,7 +159,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _handleJavaScriptMessage(String message) {
-    debugPrint('💳 Handling JavaScript message: $message');
+    //debugPrint('💳 Handling JavaScript message: $message');
 
     switch (message) {
       case 'payment_success_detected':
@@ -170,7 +170,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _navigateToHomeScreen(true);
         break;
       default:
-      debugPrint('💳 Unknown JavaScript message: $message');
+      //debugPrint('💳 Unknown JavaScript message: $message');
     }
   }
 
@@ -185,7 +185,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _handleDeepLink(String url) {
-    debugPrint('💳 Handling deep link: $url');
+    //debugPrint('💳 Handling deep link: $url');
 
     if (url.contains('success')) {
       _showPaymentCompletionDialog(true);

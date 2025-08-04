@@ -49,7 +49,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
         _permissionMessage = 'PearlNest needs certain permissions to work properly. Please grant the required permissions.';
       });
     } catch (e) {
-      debugPrint('Error checking permissions: $e');
+      //debugPrint('Error checking permissions: $e');
       setState(() {
         _isCheckingPermissions = false;
       });
@@ -77,7 +77,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
         widget.onPermissionsDenied?.call();
       }
     } catch (e) {
-      debugPrint('Error requesting permissions: $e');
+      //debugPrint('Error requesting permissions: $e');
       setState(() {
         _permissionMessage = 'Error requesting permissions. Please try again.';
       });
@@ -88,7 +88,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
     try {
       await PermissionService.openAppSettings();
     } catch (e) {
-      debugPrint('Error opening settings: $e');
+      //debugPrint('Error opening settings: $e');
     }
   }
 

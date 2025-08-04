@@ -148,17 +148,17 @@ class _SearchScreenState extends State<SearchScreen> {
           _isLoading = false;
         });
 
-        debugPrint('🔍 Search completed: ${properties.length} properties found');
+        //debugPrint('🔍 Search completed: ${properties.length} properties found');
       } else {
         setState(() {
           _filteredProperties = [];
           _errorMessage = result['message'] ?? 'Failed to load properties.';
           _isLoading = false;
         });
-        debugPrint('❌ Search failed: ${result['message']}');
+        //debugPrint('❌ Search failed: ${result['message']}');
       }
     } catch (e) {
-      debugPrint('❌ Error performing search: $e');
+      //debugPrint('❌ Error performing search: $e');
       setState(() {
         _filteredProperties = [];
         _errorMessage = 'An error occurred while searching. Please try again.';
@@ -281,13 +281,13 @@ class _SearchScreenState extends State<SearchScreen> {
       });
 
       // Make API call to sync with server
-      debugPrint('🤍 Toggling favorite for property: ${property.id}');
+      //debugPrint('🤍 Toggling favorite for property: ${property.id}');
       final result = await FavoritesService.toggleFavorite(property.id);
 
       if (result['success'] == true) {
         // Success - UI is already updated optimistically
         final message = wasLiked ? 'Removed from favorites' : 'Added to favorites';
-        debugPrint('✅ $message for property: ${property.id}');
+        //debugPrint('✅ $message for property: ${property.id}');
 
         // Show success feedback
         if (mounted) {
@@ -317,7 +317,7 @@ class _SearchScreenState extends State<SearchScreen> {
           }
         });
 
-        debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
+        //debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -333,7 +333,7 @@ class _SearchScreenState extends State<SearchScreen> {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error toggling favorite: $e');
+      //debugPrint('❌ Error toggling favorite: $e');
 
       // Revert the optimistic update on error
       final wasLiked = _isPropertyFavorited(property);

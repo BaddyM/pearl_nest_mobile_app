@@ -571,7 +571,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       
      
       if (result['success'] == true) {
-        print('✅ SettingsScreen: Currency update successful');
+        //print('✅ SettingsScreen: Currency update successful');
         // Show success feedback
         CustomSnackBar.showSuccess(
           context,
@@ -851,7 +851,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Password change error: $e');
+      //debugPrint('Password change error: $e');
       _showSnackBar('Network error. Please try again.', Colors.red);
     }
   }

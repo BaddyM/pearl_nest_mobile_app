@@ -149,7 +149,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
       // So tapping the heart should remove from favorites
       if (!wasLiked) {
         // This shouldn't happen in favorites screen, but handle it just in case
-        debugPrint('⚠️ Property not found in favorites list, this is unexpected in FavoritesScreen');
+        //debugPrint('⚠️ Property not found in favorites list, this is unexpected in FavoritesScreen');
         return;
       }
 
@@ -186,7 +186,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
       );
 
       // Make API call to sync with server using the working toggle method
-      debugPrint('🤍 Toggling favorite for property: ${property.id}');
+      //debugPrint('🤍 Toggling favorite for property: ${property.id}');
       final result = await FavoritesService.toggleFavorite(property.id);
 
       // Hide loading message
@@ -194,7 +194,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
       if (result['success'] == true) {
         // Success - remove from local lists and update UI
-        debugPrint('✅ Removed from favorites for property: ${property.id}');
+        //debugPrint('✅ Removed from favorites for property: ${property.id}');
 
         if (!mounted) return;
 
@@ -253,7 +253,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         }
       } else {
         // API call failed, show error
-        debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
+        //debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -271,7 +271,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         }
       }
     } catch (e) {
-      debugPrint('❌ Error toggling favorite: $e');
+      //debugPrint('❌ Error toggling favorite: $e');
 
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 

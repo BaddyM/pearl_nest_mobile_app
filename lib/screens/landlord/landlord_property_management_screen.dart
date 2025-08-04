@@ -48,7 +48,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
     });
 
     try {
-      debugPrint('🏠 Loading properties for landlord: ${widget.user.id}');
+      //debugPrint('🏠 Loading properties for landlord: ${widget.user.id}');
 
       // Get auth token
       final token = await AuthService.getCurrentToken();
@@ -115,14 +115,14 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           _hasError = false;
         });
 
-        debugPrint('✅ Successfully loaded ${properties.length} properties');
+        //debugPrint('✅ Successfully loaded ${properties.length} properties');
       } else {
         setState(() {
           _isLoading = false;
           _hasError = true;
           _errorMessage = result['message'] ?? 'Failed to load properties';
         });
-        debugPrint('❌ Failed to load properties: ${result['message']}');
+        //debugPrint('❌ Failed to load properties: ${result['message']}');
       }
     } catch (e) {
       setState(() {
@@ -130,7 +130,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         _hasError = true;
         _errorMessage = 'An error occurred while loading properties. Please try again.';
       });
-      debugPrint('❌ Error loading properties: $e');
+      //debugPrint('❌ Error loading properties: $e');
     }
   }
 

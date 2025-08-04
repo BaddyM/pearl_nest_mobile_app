@@ -19,26 +19,26 @@ class BookingService {
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data) {
     if (kDebugMode) {
-      debugPrint('🏨 BOOKING REQUEST: $endpoint');
+      //debugPrint('🏨 BOOKING REQUEST: $endpoint');
       if (data != null) {
-        debugPrint('🏨 Request data: $data');
+        //debugPrint('🏨 Request data: $data');
       }
     }
   }
 
   static void _logDioResponse(String endpoint, Response response) {
     if (kDebugMode) {
-      debugPrint('📝 BOOKING RESPONSE [$endpoint]: Status ${response.statusCode}');
-      debugPrint('📝 Response Body: ${response.data}');
+      //debugPrint('📝 BOOKING RESPONSE [$endpoint]: Status ${response.statusCode}');
+      //debugPrint('📝 Response Body: ${response.data}');
     }
   }
 
   static void _logError(String operation, dynamic error) {
     if (kDebugMode) {
-      debugPrint('❌ BOOKING ERROR [$operation]: $error');
+      //debugPrint('❌ BOOKING ERROR [$operation]: $error');
       if (error is DioException) {
-        debugPrint('❌ Response status: ${error.response?.statusCode}');
-        debugPrint('❌ Response data: ${error.response?.data}');
+        //debugPrint('❌ Response status: ${error.response?.statusCode}');
+        //debugPrint('❌ Response data: ${error.response?.data}');
       }
     }
   }
@@ -141,10 +141,10 @@ class BookingService {
         if (data['success'] == true && data['data'] != null) {
           final bookings = (data['data'] as List).map((json) => Booking.fromApiJson(json)).toList();
 
-          debugPrint('🏨 Successfully fetched ${bookings.length} bookings');
+          //debugPrint('🏨 Successfully fetched ${bookings.length} bookings');
           return bookings;
         } else {
-          debugPrint('🏨 API returned success: false or no data');
+          //debugPrint('🏨 API returned success: false or no data');
           return [];
         }
       } else if (response.statusCode == 401) {
@@ -172,7 +172,7 @@ class BookingService {
     // Additional client-side filter to ensure only pending bookings are returned
     final pendingOnly = bookings.where((booking) => booking.status == BookingStatus.pending).toList();
 
-    debugPrint('🏨 Server returned ${bookings.length} bookings, filtered to ${pendingOnly.length} pending bookings');
+    //debugPrint('🏨 Server returned ${bookings.length} bookings, filtered to ${pendingOnly.length} pending bookings');
     return pendingOnly;
   }
 
@@ -192,7 +192,7 @@ class BookingService {
       if (response.statusCode == 200) {
         final data = response.data;
         if (data['success'] == true) {
-          debugPrint('🏨 Successfully updated booking status to $status');
+          //debugPrint('🏨 Successfully updated booking status to $status');
           return {
             'success': true,
             'message': data['message'] ?? 'Booking status updated successfully',
@@ -274,10 +274,10 @@ class BookingService {
           final bookingsJson = data['data'] as List;
           final bookings = bookingsJson.map((json) => Booking.fromApiJson(json as Map<String, dynamic>)).toList();
 
-          debugPrint('📋 Fetched ${bookings.length} landlord bookings');
+          //debugPrint('📋 Fetched ${bookings.length} landlord bookings');
           return bookings;
         } else {
-          debugPrint('⚠️ No booking data found in response');
+          //debugPrint('⚠️ No booking data found in response');
           return [];
         }
       } else {
