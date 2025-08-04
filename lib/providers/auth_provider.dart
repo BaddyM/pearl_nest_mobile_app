@@ -30,7 +30,7 @@ class AuthProvider extends ChangeNotifier {
 
   // Handle automatic logout when token expires
   void _handleTokenExpired() {
-    //debugPrint('Token expired - automatic logout triggered');
+    debugPrint('Token expired - automatic logout triggered');
     _clearSessionSilently();
   }
 
@@ -57,8 +57,8 @@ class AuthProvider extends ChangeNotifier {
         _status = AuthStatus.unauthenticated;
       }
     } catch (e, stackTrace) {
-      //debugPrint('Auth initialization error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Auth initialization error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _status = AuthStatus.unauthenticated;
     } finally {
       _setLoading(false);
@@ -80,20 +80,20 @@ class AuthProvider extends ChangeNotifier {
         // Update status and notify listeners with post-frame callback
         _status = AuthStatus.authenticated;
 
-        //debugPrint('AuthProvider: Login successful, setting status to authenticated');
-        //debugPrint('AuthProvider: User: ${_user?.name}');
-        //debugPrint('AuthProvider: Status: $_status');
-        //debugPrint('AuthProvider: About to notify listeners');
+        debugPrint('AuthProvider: Login successful, setting status to authenticated');
+        debugPrint('AuthProvider: User: ${_user?.name}');
+        debugPrint('AuthProvider: Status: $_status');
+        debugPrint('AuthProvider: About to notify listeners');
 
         // Use post-frame callback to ensure UI is ready for navigation
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
-          //debugPrint('AuthProvider: Listeners notified via post-frame callback');
+          debugPrint('AuthProvider: Listeners notified via post-frame callback');
         });
 
         // Also notify immediately for synchronous checks
         notifyListeners();
-        //debugPrint('AuthProvider: Immediate notification sent');
+        debugPrint('AuthProvider: Immediate notification sent');
 
         return {
           'success': true,
@@ -105,8 +105,8 @@ class AuthProvider extends ChangeNotifier {
         return result;
       }
     } catch (e, stackTrace) {
-      //debugPrint('Login error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Login error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _status = AuthStatus.unauthenticated;
       notifyListeners();
       return {
@@ -153,8 +153,8 @@ class AuthProvider extends ChangeNotifier {
         return result;
       }
     } catch (e, stackTrace) {
-      //debugPrint('Registration error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Registration error: $e');
+      debugPrint('Stack trace: $stackTrace');
       return {
         'success': false,
         'message': 'Network error. Please check your connection.',
@@ -172,8 +172,8 @@ class AuthProvider extends ChangeNotifier {
       await _clearSession();
       return result;
     } catch (e, stackTrace) {
-      //debugPrint('Logout error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Logout error: $e');
+      debugPrint('Stack trace: $stackTrace');
       await _clearSession();
       return {
         'success': true,
@@ -204,8 +204,8 @@ class AuthProvider extends ChangeNotifier {
         await logout();
       }
     } catch (e, stackTrace) {
-      //debugPrint('Token refresh error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Token refresh error: $e');
+      debugPrint('Stack trace: $stackTrace');
       await logout();
     }
   }
@@ -225,8 +225,8 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e, stackTrace) {
-      //debugPrint('Failed to refresh user data: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Failed to refresh user data: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -241,8 +241,8 @@ class AuthProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e, stackTrace) {
-      //debugPrint('Clear session error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Clear session error: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -258,8 +258,8 @@ class AuthProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e, stackTrace) {
-      //debugPrint('Clear session silently error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Clear session silently error: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -278,8 +278,8 @@ class AuthProvider extends ChangeNotifier {
         await refreshToken();
       }
     } catch (e, stackTrace) {
-      //debugPrint('Token expiry check error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Token expiry check error: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -298,8 +298,8 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
     } catch (e, stackTrace) {
-      //debugPrint('Token check error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Token check error: $e');
+      debugPrint('Stack trace: $stackTrace');
       await logout();
       return false;
     }

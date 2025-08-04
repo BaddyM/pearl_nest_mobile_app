@@ -851,7 +851,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       }
     } catch (e) {
-      //debugPrint('Password change error: $e');
+      debugPrint('Password change error: $e');
       _showSnackBar('Network error. Please try again.', Colors.red);
     }
   }

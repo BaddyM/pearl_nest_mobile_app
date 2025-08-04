@@ -57,7 +57,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthSuccess(user: adminResult['user'], token: adminResult['token']));
           return; // Add this return to prevent continuing to regular login flow
         } else {
-          //Print User
+          
           print(result);
 
           // Check if OTP verification is required
@@ -84,7 +84,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Use the actual error message from the service instead of generic message
         final errorMessage = result['message'] ?? 'Login failed. Please try again.';
 
-        ///debugPrint('AuthBloc: Login failed - $errorMessage');
+        debugPrint('AuthBloc: Login failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
@@ -128,7 +128,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthUnauthenticated());
       }
     } catch (e) {
-      ///debugPrint('AuthBloc: Logout error - $e');
+      debugPrint('AuthBloc: Logout error - $e');
       // Even if logout fails, clear local state
       _currentUser = null;
       _currentToken = null;

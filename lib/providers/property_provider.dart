@@ -243,7 +243,7 @@ class PropertyProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      //debugPrint('Error loading featured properties: $e');
+      debugPrint('Error loading featured properties: $e');
       // Don't show error for featured properties as it's not critical
     }
   }

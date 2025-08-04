@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/apis/api_client.dart';
 import '../../apis/chat_service.dart';
@@ -36,20 +37,20 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       // Listen to incoming messages
       _messageSubscription?.cancel();
       _messageSubscription = ChatService.messageStream.listen((message) {
-        ///debugPrint('🔍 ChatBloc: Received message from stream');
+        debugPrint('🔍 ChatBloc: Received message from stream');
         add(ChatReceiveMessage(message: message));
       });
 
       // Listen to connection changes
       _connectionSubscription?.cancel();
       _connectionSubscription = ChatService.connectionStream.listen((isConnected) {
-        ///debugPrint('🔍 ChatBloc: Connection status changed to: $isConnected');
+        debugPrint('🔍 ChatBloc: Connection status changed to: $isConnected');
         add(ChatConnectionChanged(isConnected: isConnected));
       });
 
       _isConnected = ChatService.isConnected;
 
-      ///debugPrint('🔍 ChatBloc: Chat initialized successfully, connected: $_isConnected');
+      debugPrint('🔍 ChatBloc: Chat initialized successfully, connected: $_isConnected');
 
       emit(ChatConnected(
         messages: List.from(_messages),
@@ -57,8 +58,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         currentChatUserId: _currentChatUserId,
       ));
     } catch (e) {
-      ///debugPrint('❌ ChatBloc: Chat initialization error: $e');
-      ///debugPrint('🔍 Stack trace: ${StackTrace.current}');
+      debugPrint('❌ ChatBloc: Chat initialization error: $e');
+      debugPrint('🔍 Stack trace: ${StackTrace.current}');
       emit(ChatError(
         error: 'Failed to initialize chat: ${e.toString()}',
         messages: List.from(_messages),
@@ -79,7 +80,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         currentChatUserId: _currentChatUserId,
       ));
     } catch (e) {
-      ///debugPrint('❌ Chat connection error: $e');
+      debugPrint('❌ Chat connection error: $e');
       emit(ChatError(
         error: 'Failed to connect to chat: ${e.toString()}',
         messages: List.from(_messages),
@@ -96,7 +97,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         messages: List.from(_messages),
       ));
     } catch (e) {
-      ///debugPrint('❌ Chat disconnection error: $e');
+      debugPrint('❌ Chat disconnection error: $e');
       emit(ChatError(
         error: 'Failed to disconnect from chat: ${e.toString()}',
         messages: List.from(_messages),
@@ -148,7 +149,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         currentChatUserId: _currentChatUserId,
       ));
     } catch (e) {
-      ///debugPrint('❌ Error receiving message: $e');
+      debugPrint('❌ Error receiving message: $e');
       emit(ChatError(
         error: 'Failed to receive message: ${e.toString()}',
         messages: List.from(_messages),
@@ -198,7 +199,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         currentChatUserId: _currentChatUserId,
       ));
     } catch (e) {
-      ///debugPrint('❌ Error marking message as read: $e');
+      debugPrint('❌ Error marking message as read: $e');
       emit(ChatError(
         error: 'Failed to mark message as read: ${e.toString()}',
         messages: List.from(_messages),

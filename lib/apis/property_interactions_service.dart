@@ -128,7 +128,7 @@ class PropertyInteractionsService {
   // Increment view counter (call when property is viewed)
   static Future<Map<String, dynamic>> incrementViewCounter(String propertyId) async {
     try {
-      final response = await ApiClient.put('/views/counter/$propertyId', {});
+      final response = await ApiClient.put('/views/add/$propertyId', {});
       
       if (response.statusCode == 200) {
         final data = response.data;

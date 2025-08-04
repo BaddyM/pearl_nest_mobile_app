@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
@@ -124,28 +126,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               backgroundColor: AppTheme.getCardColor(context),
               child: widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty
                   ? ClipOval(
-                      child: Image.network(
-                        ImageHelper.getFullImageUrl(widget.user.profileImage!),
+                      child: CachedNetworkImage(
+                        imageUrl: ImageHelper.getFullImageUrl(widget.user.profileImage!),
                         width: 100,
                         height: 100,
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.person,
-                            size: 50,
-                            color: AppTheme.primaryblue,
-                          );
-                        },
+                         placeholder: (context, url) => Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                        ),
+                      ),
+                        errorWidget: (context, url, error) => Icon(
+                        Icons.person,
+                        size: 50,
+                        color: AppTheme.primaryblue,
+                      ),
+                      cacheManager: DefaultCacheManager(),
+                      fadeInDuration: Duration(milliseconds: 300),
+                      fadeOutDuration: Duration(milliseconds: 300),
                       ),
                     )
                   : Icon(
@@ -612,17 +611,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showLogoutDialog() {
-    //debugPrint('🔍 ProfileScreen: Showing logout dialog');
+    debugPrint('🔍 ProfileScreen: Showing logout dialog');
     showDialog(
       context: context,
       barrierDismissible: false, // Prevent dismissal by tapping outside
       builder: (BuildContext context) {
-        //debugPrint('🔍 ProfileScreen: Building logout dialog');
+        debugPrint('🔍 ProfileScreen: Building logout dialog');
         return BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
-            //debugPrint('🔍 ProfileScreen: Dialog BlocListener received state: ${state.runtimeType}');
+            debugPrint('🔍 ProfileScreen: Dialog BlocListener received state: ${state.runtimeType}');
             if (state is AuthUnauthenticated) {
-              //debugPrint('🔍 ProfileScreen: Logout completed, navigating to OnboardingScreen');
+              debugPrint('🔍 ProfileScreen: Logout completed, navigating to OnboardingScreen');
               // Close the dialog
               Navigator.of(context).pop();
 
@@ -634,7 +633,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             }
           },
           builder: (context, state) {
-            //debugPrint('🔍 ProfileScreen: Dialog BlocBuilder received state: ${state.runtimeType}');
+            debugPrint('🔍 ProfileScreen: Dialog BlocBuilder received state: ${state.runtimeType}');
             final isLoading = state is AuthLoading;
 
             return AlertDialog(
@@ -652,7 +651,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onPressed: isLoading
                       ? null
                       : () {
-                          //debugPrint('🔍 ProfileScreen: Cancel button pressed');
+                          debugPrint('🔍 ProfileScreen: Cancel button pressed');
                           Navigator.of(context).pop();
                         },
                   child: Text(
@@ -664,7 +663,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onPressed: isLoading
                       ? null
                       : () {
-                          //debugPrint('🔍 ProfileScreen: Logout button pressed');
+                          debugPrint('🔍 ProfileScreen: Logout button pressed');
                           // Trigger logout - BlocListener will handle navigation
                           context.read<AuthBloc>().add(AuthLogoutRequested());
                         },

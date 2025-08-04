@@ -56,7 +56,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
         });
       }
     } catch (e) {
-      //debugPrint('❌ AdminListScreen: Error loading admins - $e');
+      debugPrint('❌ AdminListScreen: Error loading admins - $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load admin list. Please try again.';
@@ -97,7 +97,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
         _showErrorSnackBar('Unable to start chat. Please try again.');
       }
     } catch (e) {
-      //debugPrint('❌ Error starting chat with admin: $e');
+      debugPrint('❌ Error starting chat with admin: $e');
       _showErrorSnackBar('Failed to start chat. Please try again.');
     }
   }

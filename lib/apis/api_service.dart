@@ -59,19 +59,19 @@ class ApiService {
   // Helper to log requests and responses
   static void _logRequest(String method, String endpoint, {dynamic data, String? token}) {
     if (kDebugMode) {
-      //debugPrint('🌐 API $method: $baseUrl$endpoint');
+      debugPrint('🌐 API $method: $baseUrl$endpoint');
       if (data != null) {
         if (data is FormData) {
-          //debugPrint('📤 Request Data: FormData (multipart)');
+          debugPrint('📤 Request Data: FormData (multipart)');
           // Log form fields without sensitive data
           for (var field in data.fields) {
             if (field.key != 'password' && field.key != 'token') {
-              //debugPrint('  📋 ${field.key}: ${field.value}');
+              debugPrint('  📋 ${field.key}: ${field.value}');
             }
           }
-          //debugPrint('  📎 Files: ${data.files.length} file(s)');
+          debugPrint('  📎 Files: ${data.files.length} file(s)');
           for (var file in data.files) {
-            //debugPrint('  📄 File: ${file.key} -> ${file.value.filename}');
+            debugPrint('  📄 File: ${file.key} -> ${file.value.filename}');
           }
         } else {
           // Don't log sensitive data like passwords
@@ -88,14 +88,14 @@ class ApiService {
               sanitizedData['newPassword'] = '[REDACTED]';
             }
           }
-          //debugPrint('📤 Request Data: ${jsonEncode(sanitizedData)}');
+          debugPrint('📤 Request Data: ${jsonEncode(sanitizedData)}');
         }
       }
       if (token != null) {
         // Extract just the token part from "Bearer token"
         final tokenValue = token.startsWith('Bearer ') ? token.substring(7) : token;
         if (tokenValue.length > 10) {
-          //debugPrint('🔑 Token: ${tokenValue.substring(0, 10)}...');
+          debugPrint('🔑 Token: ${tokenValue.substring(0, 10)}...');
         }
       }
     }
@@ -103,9 +103,9 @@ class ApiService {
 
   static void _logResponse(String method, String endpoint, Response response) {
     if (kDebugMode) {
-      //debugPrint('📥 API $method Response: $endpoint');
-      //debugPrint('📊 Status Code: ${response.statusCode}');
-      //debugPrint('📋 Headers: ${response.headers}');
+      debugPrint('📥 API $method Response: $endpoint');
+      debugPrint('📊 Status Code: ${response.statusCode}');
+      debugPrint('📋 Headers: ${response.headers}');
 
       // Log response body (be careful with sensitive data)
       try {
@@ -117,24 +117,24 @@ class ApiService {
               sanitizedResponse['token'] = '${token.substring(0, 10)}...';
             }
           }
-          //debugPrint('📝 Response Body: ${jsonEncode(sanitizedResponse)}');
+          debugPrint('📝 Response Body: ${jsonEncode(sanitizedResponse)}');
         } else {
-          //debugPrint('📝 Response Body: ${response.data}');
+          debugPrint('📝 Response Body: ${response.data}');
         }
       } catch (e) {
-        //debugPrint('📝 Response Body (raw): ${response.data}');
+        debugPrint('📝 Response Body (raw): ${response.data}');
       }
     }
   }
 
   static void _logError(String method, String endpoint, DioException error) {
     if (kDebugMode) {
-      //debugPrint('❌ API $method Error: $endpoint');
-      //debugPrint('💥 Error Type: ${error.type}');
-      //debugPrint('📊 Status Code: ${error.response?.statusCode}');
-      //debugPrint('📝 Error Message: ${error.message}');
+      debugPrint('❌ API $method Error: $endpoint');
+      debugPrint('💥 Error Type: ${error.type}');
+      debugPrint('📊 Status Code: ${error.response?.statusCode}');
+      debugPrint('📝 Error Message: ${error.message}');
       if (error.response?.data != null) {
-        //debugPrint('📋 Error Response: ${error.response!.data}');
+        debugPrint('📋 Error Response: ${error.response!.data}');
       }
     }
   }
@@ -142,7 +142,7 @@ class ApiService {
   // Private method to handle 401 responses and automatic logout
   static Future<void> _handleUnauthorized(String endpoint) async {
     if (kDebugMode) {
-      //debugPrint('🔒 401 Unauthorized received for $endpoint - Token expired, logging out user');
+      debugPrint('🔒 401 Unauthorized received for $endpoint - Token expired, logging out user');
     }
 
     // Clear local storage
@@ -155,7 +155,7 @@ class ApiService {
     ]);
 
     if (kDebugMode) {
-      //debugPrint('🧹 Local auth data cleared due to token expiry');
+      debugPrint('🧹 Local auth data cleared due to token expiry');
     }
 
     // Trigger logout callback if available
@@ -164,7 +164,7 @@ class ApiService {
         onTokenExpired!();
       } catch (e) {
         if (kDebugMode) {
-          //debugPrint('❌ Error in token expired callback: $e');
+          debugPrint('❌ Error in token expired callback: $e');
         }
       }
     }
@@ -212,7 +212,7 @@ class ApiService {
       throw _handleDioError(e);
     } catch (e) {
       if (kDebugMode) {
-        //debugPrint('❌ POST $endpoint error: $e');
+        debugPrint('❌ POST $endpoint error: $e');
       }
       throw Exception('Network error: $e');
     }
@@ -237,7 +237,7 @@ class ApiService {
       throw _handleDioError(e);
     } catch (e) {
       if (kDebugMode) {
-        //debugPrint('❌ GET $endpoint error: $e');
+        debugPrint('❌ GET $endpoint error: $e');
       }
       throw Exception('Network error: $e');
     }
@@ -260,7 +260,7 @@ class ApiService {
       throw _handleDioError(e);
     } catch (e) {
       if (kDebugMode) {
-        //debugPrint('❌ GET (with token) $endpoint error: $e');
+        debugPrint('❌ GET (with token) $endpoint error: $e');
       }
       throw Exception('Network error: $e');
     }
@@ -283,7 +283,7 @@ class ApiService {
       throw _handleDioError(e);
     } catch (e) {
       if (kDebugMode) {
-        //debugPrint('❌ POST (with token) $endpoint error: $e');
+        debugPrint('❌ POST (with token) $endpoint error: $e');
       }
       throw Exception('Network error: $e');
     }
@@ -309,7 +309,7 @@ class ApiService {
       throw _handleDioError(e);
     } catch (e) {
       if (kDebugMode) {
-        //debugPrint('❌ PUT $endpoint error: $e');
+        debugPrint('❌ PUT $endpoint error: $e');
       }
       throw Exception('Network error: $e');
     }
@@ -335,7 +335,7 @@ class ApiService {
       throw _handleDioError(e);
     } catch (e) {
       if (kDebugMode) {
-        //debugPrint('❌ DELETE $endpoint error: $e');
+        debugPrint('❌ DELETE $endpoint error: $e');
       }
       throw Exception('Network error: $e');
     }
@@ -393,34 +393,34 @@ class ApiService {
       );
 
       if (kDebugMode) {
-        //debugPrint('📤 Uploading file: $fileName');
-        //debugPrint('📁 File path: $filePath');
-        //debugPrint('📋 Title: $title');
-        //debugPrint('🔑 Has token: ${token != null}');
+        debugPrint('📤 Uploading file: $fileName');
+        debugPrint('📁 File path: $filePath');
+        debugPrint('📋 Title: $title');
+        debugPrint('🔑 Has token: ${token != null}');
       }
 
       final response = await _dio.post(endpoint, data: formData, options: options);
 
       if (kDebugMode) {
-        //debugPrint('✅ Upload response status: ${response.statusCode}');
-        //debugPrint('📝 Upload response data: ${response.data}');
+        debugPrint('✅ Upload response status: ${response.statusCode}');
+        debugPrint('📝 Upload response data: ${response.data}');
       }
 
       return _convertResponse(response);
     } on DioException catch (e) {
       if (kDebugMode) {
-        //debugPrint('❌ File upload DioException: ${e.type}');
-        //debugPrint('📊 Status Code: ${e.response?.statusCode}');
-        //debugPrint('📝 Error Data: ${e.response?.data}');
-        //debugPrint('💥 Error Message: ${e.message}');
-        //debugPrint('🔗 Request URI: ${e.requestOptions.uri}');
-        //debugPrint('📋 Request Headers: ${e.requestOptions.headers}');
+        debugPrint('❌ File upload DioException: ${e.type}');
+        debugPrint('📊 Status Code: ${e.response?.statusCode}');
+        debugPrint('📝 Error Data: ${e.response?.data}');
+        debugPrint('💥 Error Message: ${e.message}');
+        debugPrint('🔗 Request URI: ${e.requestOptions.uri}');
+        debugPrint('📋 Request Headers: ${e.requestOptions.headers}');
       }
       throw _handleDioError(e);
     } catch (e) {
       if (kDebugMode) {
-        //debugPrint('❌ FILE UPLOAD $endpoint error: $e');
-        //debugPrint('🔍 Error type: ${e.runtimeType}');
+        debugPrint('❌ FILE UPLOAD $endpoint error: $e');
+        debugPrint('🔍 Error type: ${e.runtimeType}');
       }
       throw Exception('Network error: $e');
     }

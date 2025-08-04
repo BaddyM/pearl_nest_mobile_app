@@ -449,9 +449,9 @@ class AuthService {
       if (serverOtp.isEmpty) throw ValidationException('Server OTP is required');
       if (tempToken.isEmpty) throw ValidationException('Temporary token is required');
 
-      ///debugPrint('🔐 Client-side OTP verification:');
-      ///debugPrint('User Input: ${userInputOtp.trim()}');
-      ///debugPrint('Server OTP: $serverOtp');
+      debugPrint('🔐 Client-side OTP verification:');
+      debugPrint('User Input: ${userInputOtp.trim()}');
+      debugPrint('Server OTP: $serverOtp');
 
       // debugPrint('🔐 Client-side OTP verification:');
       // debugPrint('User Input: ${userInputOtp.trim()}');
@@ -1161,39 +1161,39 @@ class AuthService {
       }
       
       final cleanCurrency = currency.trim().toUpperCase();
-      //print('🚀 Cleaned currency: "$cleanCurrency"');
+      debugPrint('🚀 Cleaned currency: "$cleanCurrency"');
       
       // Get current user data to get userId
      // print('🚀 Getting current user data...');
       final currentUser = await getCurrentUser();
       if (currentUser == null) {
-        //print('❌ getCurrentUser returned null');
+        debugPrint('❌ getCurrentUser returned null');
         throw AuthException('User not found. Please login again.');
       }
       
      // print('🚀 Current user ID: "${currentUser.id}"');
-      //print('🚀 Current user name: "${currentUser.name}"');
-      //print('🚀 Current user email: "${currentUser.email}"');
+      debugPrint('🚀 Current user name: "${currentUser.name}"');
+      debugPrint('🚀 Current user email: "${currentUser.email}"');
 
       // Check authentication status
-      //print('🚀 Checking authentication...');
+      debugPrint('🚀 Checking authentication...');
       final currentToken = await getCurrentToken();
       if (currentToken == null || currentToken.isEmpty) {
-        //print('❌ No authentication token found');
+        debugPrint('❌ No authentication token found');
         throw AuthException('Authentication required. Please login again.');
       }
-      //print('🚀 Auth token available: ${currentToken}');
+      debugPrint('🚀 Auth token available: ${currentToken}');
 
       // Ensure ApiClient has the current token
       ApiClient.setAuthToken(currentToken);
-      //print('🚀 Auth token set in ApiClient');
+      debugPrint('🚀 Auth token set in ApiClient');
 
       // Check if userId is empty
       if (currentUser.id.isEmpty) {
-          //print('⚠️ User ID is empty, attempting to fix...');
+          debugPrint('⚠️ User ID is empty, attempting to fix...');
         final fixResult = await fixMissingUserId();
         if (!fixResult) {
-          //print('❌ Failed to fix missing user ID');
+          debugPrint('❌ Failed to fix missing user ID');
           throw AuthException('User ID not found. Please login again.');
         }
         // Try to get user again after fixing
@@ -1224,15 +1224,15 @@ class AuthService {
       final response = await ApiClient.patch('/currency/update', requestData);
       
      // print('🚀 API response received');
-      //print('🚀 Response status code: ${response.statusCode}');
-      //print('🚀 Response headers: ${response.headers.map}');
-      //print('🚀 Response data: ${response.data}');
+      debugPrint('🚀 Response status code: ${response.statusCode}');
+      debugPrint('🚀 Response headers: ${response.headers.map}');
+      debugPrint('🚀 Response data: ${response.data}');
       
       _logResponse('/currency/update', response);
 
       // Handle both 200 and 400 status codes if response contains success=true
       if (response.statusCode == 200 || (response.statusCode == 400 && response.data?['success'] == true)) {
-        //print('✅ Currency update successful (status: ${response.statusCode})');
+        debugPrint('✅ Currency update successful (status: ${response.statusCode})');
         final responseData = response.data ?? {};
 
         return {
@@ -1242,8 +1242,8 @@ class AuthService {
         };
       } else {
         final errorData = response.data;
-        //print('❌ Currency update failed with status: ${response.statusCode}');  
-        //print('❌ Error data: $errorData');
+        debugPrint('❌ Currency update failed with status: ${response.statusCode}');  
+        debugPrint('❌ Error data: $errorData');
        // print('❌ Full response: ${response.data}');
         throw AuthException(
           errorData?['message'] ?? 'Currency update failed',
@@ -1251,8 +1251,8 @@ class AuthService {
         );
       }
     } catch (e) {
-      //print('❌ Exception in updateCurrency: $e');
-      //print('❌ Exception type: ${e.runtimeType}');
+      debugPrint('❌ Exception in updateCurrency: $e');
+      debugPrint('❌ Exception type: ${e.runtimeType}');
       if (e is DioException) {
        // print('❌ DioException details:');
        // print('   - Type: ${e.type}');

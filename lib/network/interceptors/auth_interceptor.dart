@@ -19,14 +19,14 @@ class AuthInterceptor extends Interceptor {
       }
 
       if (kDebugMode) {
-        //debugPrint('🔐 Auth: Token ${token != null ? "added" : "not available"} for ${options.method} ${options.path}');
+        debugPrint('🔐 Auth: Token ${token != null ? "added" : "not available"} for ${options.method} ${options.path}');
       }
 
       handler.next(options);
     } catch (e, stackTrace) {
       if (kDebugMode) {
-        //debugPrint('❌ Auth Interceptor Error: $e');
-        //debugPrint('❌ Stack trace: $stackTrace');
+        debugPrint('❌ Auth Interceptor Error: $e');
+        debugPrint('❌ Stack trace: $stackTrace');
       }
       handler.next(options);
     }
@@ -45,7 +45,7 @@ class AuthInterceptor extends Interceptor {
   /// Handle token expiry by clearing local storage and triggering callback
   static Future<void> _handleTokenExpired(String endpoint) async {
     if (kDebugMode) {
-      //debugPrint('🔒 401 Unauthorized received for $endpoint - Token expired, logging out user');
+      debugPrint('🔒 401 Unauthorized received for $endpoint - Token expired, logging out user');
     }
 
     try {
@@ -59,7 +59,7 @@ class AuthInterceptor extends Interceptor {
       ]);
 
       if (kDebugMode) {
-        //debugPrint('🧹 Local auth data cleared due to token expiry');
+        debugPrint('🧹 Local auth data cleared due to token expiry');
       }
 
       // Trigger logout callback if available
@@ -68,15 +68,15 @@ class AuthInterceptor extends Interceptor {
           onTokenExpired!();
         } catch (e, stackTrace) {
           if (kDebugMode) {
-            //debugPrint('❌ Error in token expired callback: $e');
-            //debugPrint('❌ Stack trace: $stackTrace');
+            debugPrint('❌ Error in token expired callback: $e');
+            debugPrint('❌ Stack trace: $stackTrace');
           }
         }
       }
     } catch (e, stackTrace) {
       if (kDebugMode) {
-        //debugPrint('❌ Error handling token expiry: $e');
-        //debugPrint('❌ Stack trace: $stackTrace');
+        debugPrint('❌ Error handling token expiry: $e');
+        debugPrint('❌ Stack trace: $stackTrace');
       }
     }
   }

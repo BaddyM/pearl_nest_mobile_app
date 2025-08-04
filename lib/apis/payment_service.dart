@@ -5,26 +5,26 @@ import 'package:pearlnest/apis/api_client.dart';
 class PaymentService {
   static void _logRequest(String endpoint, Map<String, dynamic>? data) {
     if (kDebugMode) {
-      ///debugPrint('💳 PAYMENT REQUEST: $endpoint');
+      debugPrint('💳 PAYMENT REQUEST: $endpoint');
       if (data != null) {
-        ///debugPrint('💳 Request data: $data');
+        debugPrint('💳 Request data: $data');
       }
     }
   }
 
   static void _logResponse(String endpoint, Response response) {
     if (kDebugMode) {
-      ///debugPrint('💳 PAYMENT RESPONSE [$endpoint]: Status ${response.statusCode}');
-      ///debugPrint('💳 Response Body: ${response.data}');
+      debugPrint('💳 PAYMENT RESPONSE [$endpoint]: Status ${response.statusCode}');
+      debugPrint('💳 Response Body: ${response.data}');
     }
   }
 
   static void _logError(String operation, dynamic error) {
     if (kDebugMode) {
-      ///debugPrint('❌ PAYMENT ERROR [$operation]: $error');
+      debugPrint('❌ PAYMENT ERROR [$operation]: $error');
       if (error is DioException) {
-        ///debugPrint('❌ Response status: ${error.response?.statusCode}');
-        ///debugPrint('❌ Response data: ${error.response?.data}');
+        debugPrint('❌ Response status: ${error.response?.statusCode}');
+        debugPrint('❌ Response data: ${error.response?.data}');
       }
     }
   }

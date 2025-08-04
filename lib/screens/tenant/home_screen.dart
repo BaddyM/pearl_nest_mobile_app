@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:async';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_service.dart';
@@ -28,6 +29,7 @@ import 'package:pearlnest/screens/tenant/payment_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
   final User user;
@@ -224,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       
     } catch (e) {
-      //debugPrint('❌ Error toggling favorite: $e');
+      debugPrint('❌ Error toggling favorite: $e');
 
       // Revert the optimistic update on error
       final wasLiked = _isPropertyFavorited(property);
@@ -357,10 +359,10 @@ class _HomeScreenState extends State<HomeScreen> {
   //       setState(() {
   //         _unreadNotificationCount = result['unreadCount'] ?? 0;
   //       });
-  //       //debugPrint('🔔 Notification count loaded: $_unreadNotificationCount unread');
+  //       debugPrint('🔔 Notification count loaded: $_unreadNotificationCount unread');
   //     }
   //   } catch (e) {
-  //     //debugPrint('❌ Error loading notification count: $e');
+  //     debugPrint('❌ Error loading notification count: $e');
   //     // Silently fail - not critical for app functionality
   //   }
   // }
@@ -769,9 +771,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () { setState(() {
-                _currentIndex = 3;
-              });},
+                onTap: () { 
+                  setState(() {
+                    _currentIndex = 3;
+                  });
+                },
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -787,12 +791,38 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: CircleAvatar(
                     radius: 25,
                     backgroundColor: AppTheme.lightGreyColor,
-                    backgroundImage: widget.user.profileImage != null
-                        ? NetworkImage(_getFullImageUrl(widget.user.profileImage!))
-                        : null,
-                    child: widget.user.profileImage == null
-                        ? Icon(Icons.person, color: AppTheme.primaryblue)
-                        : null,
+                    child: widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty
+                        ? ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: _getFullImageUrl(widget.user.profileImage!),
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                width: 50,
+                                height: 50,
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Icon(
+                                Icons.person, 
+                                color: AppTheme.primaryblue,
+                                size: 30,
+                              ),
+                              cacheManager: DefaultCacheManager(),
+                              fadeInDuration: Duration(milliseconds: 200),
+                              fadeOutDuration: Duration(milliseconds: 200),
+                            ),
+                          )
+                        : Icon(Icons.person, color: AppTheme.primaryblue),
                   ),
                 ),
               ),
@@ -2235,15 +2265,15 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
 
-      //debugPrint('💳 Initiating payment for booking: ${booking.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
+      debugPrint('💳 Initiating payment for booking: ${booking.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
 
       // Debug user ID to identify the issue
-      //debugPrint('🔍 User ID validation:');
-      //debugPrint('   - widget.user.id: "${widget.user.id}"');
-      //debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
-      //debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
-      //debugPrint('   - widget.user.name: "${widget.user.name}"');
-      //debugPrint('   - widget.user.email: "${widget.user.email}"');
+      debugPrint('🔍 User ID validation:');
+      debugPrint('   - widget.user.id: "${widget.user.id}"');
+      debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
+      debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
+      debugPrint('   - widget.user.name: "${widget.user.name}"');
+      debugPrint('   - widget.user.email: "${widget.user.email}"');
 
       // Validate user ID before making payment request
       if (widget.user.id.isEmpty) {
@@ -3010,8 +3040,7 @@ void _onNavItemTapped(int index) {
             ],
           ),
         ),
-      ),
-    );
+      ));
   }
 
   // Helper methods for showing feedback

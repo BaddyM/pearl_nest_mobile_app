@@ -28,29 +28,29 @@ class PropertyService {
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data, {String? token}) {
     if (kDebugMode) {
-      ///debugPrint('🏠 PROPERTY REQUEST: $endpoint');
+      debugPrint('🏠 PROPERTY REQUEST: $endpoint');
       if (data != null) {
-        ///debugPrint('🏠 Request data: $data');
+        debugPrint('🏠 Request data: $data');
       }
       if (token != null) {
-        ///debugPrint('🔑 Full Token: $token');
+        debugPrint('🔑 Full Token: $token');
       }
     }
   }
 
   static void _logResponse(String endpoint, Response response) {
     if (kDebugMode) {
-      ///debugPrint('📝 PROPERTY RESPONSE [$endpoint]: Status ${response.statusCode}');
-      ///debugPrint('📝 Response Body: ${response.data}');
+      debugPrint('📝 PROPERTY RESPONSE [$endpoint]: Status ${response.statusCode}');
+      debugPrint('📝 Response Body: ${response.data}');
     }
   }
 
   static void _logError(String operation, dynamic error) {
     if (kDebugMode) {
-      ///debugPrint('❌ PROPERTY ERROR [$operation]: $error');
+      debugPrint('❌ PROPERTY ERROR [$operation]: $error');
       if (error is DioException) {
-        ///debugPrint('❌ Response status: ${error.response?.statusCode}');
-        ///debugPrint('❌ Response data: ${error.response?.data}');
+        debugPrint('❌ Response status: ${error.response?.statusCode}');
+        debugPrint('❌ Response data: ${error.response?.data}');
       }
     }
   }
@@ -424,19 +424,19 @@ class PropertyService {
     String? token,
   }) async {
     try {
-      ///debugPrint('');
-      ///debugPrint('🚀 === FETCH FEATURED PROPERTIES START ===');
-      ///debugPrint('🏠 Fetching featured properties from /property/featured endpoint...');
+      debugPrint('');
+      debugPrint('🚀 === FETCH FEATURED PROPERTIES START ===');
+      debugPrint('🏠 Fetching featured properties from /property/featured endpoint...');
 
       final queryParams = <String, dynamic>{
         'page': page,
         'limit': limit,
       };
 
-      ///debugPrint('🔍 Request parameters:');
-      ///debugPrint('   - Page: $page');
-      ///debugPrint('   - Limit: $limit');
-      ///debugPrint('   - Auth token available: ${ApiClient.currentAuthToken != null || token != null}');
+      debugPrint('🔍 Request parameters:');
+      debugPrint('   - Page: $page');
+      debugPrint('   - Limit: $limit');
+      debugPrint('   - Auth token available: ${ApiClient.currentAuthToken != null || token != null}');
 
       _logRequest('/property/featured', queryParams, token: token);
 
@@ -455,24 +455,24 @@ class PropertyService {
         ApiClient.setAuthToken(originalToken);
       }
 
-      ///debugPrint('📥 === FEATURED PROPERTIES API RESPONSE ===');
-      ///debugPrint('   - Response time: ${stopwatch.elapsedMilliseconds}ms');
-      ///debugPrint('   - Status code: ${response.statusCode}');
-      ///debugPrint('   - Response data type: ${response.data.runtimeType}');
-      ///debugPrint('   - Raw response: ${response.data}');
+      debugPrint('📥 === FEATURED PROPERTIES API RESPONSE ===');
+      debugPrint('   - Response time: ${stopwatch.elapsedMilliseconds}ms');
+      debugPrint('   - Status code: ${response.statusCode}');
+      debugPrint('   - Response data type: ${response.data.runtimeType}');
+      debugPrint('   - Raw response: ${response.data}');
 
       _logResponse('/property/featured', response);
 
       if (response.statusCode == 200) {
-        ///debugPrint('✅ HTTP 200 - Processing featured properties response...');
+        debugPrint('✅ HTTP 200 - Processing featured properties response...');
 
         final responseData = response.data as Map<String, dynamic>;
 
-        ///debugPrint('🔍 Response analysis:');
-        ///debugPrint('   - Success field: ${responseData['success']}');
-        ///debugPrint('   - Data field: ${responseData['data']}');
-        ///debugPrint('   - Data is null: ${responseData['data'] == null}');
-        ///debugPrint('   - Data type: ${responseData['data'].runtimeType}');
+        debugPrint('🔍 Response analysis:');
+        debugPrint('   - Success field: ${responseData['success']}');
+        debugPrint('   - Data field: ${responseData['data']}');
+        debugPrint('   - Data is null: ${responseData['data'] == null}');
+        debugPrint('   - Data type: ${responseData['data'].runtimeType}');
 
         // Handle the case where data can be null
         List<Property> featuredProperties = [];
@@ -480,29 +480,29 @@ class PropertyService {
         if (responseData['data'] != null) {
           final propertiesData = responseData['data'];
 
-          ///debugPrint('📊 Processing properties data:');
-          ///debugPrint('   - Properties data type: ${propertiesData.runtimeType}');
-          ///debugPrint('   - Is List: ${propertiesData is List}');
+          debugPrint('📊 Processing properties data:');
+          debugPrint('   - Properties data type: ${propertiesData.runtimeType}');
+          debugPrint('   - Is List: ${propertiesData is List}');
 
           if (propertiesData is List) {
-            ///debugPrint('   - Properties count: ${propertiesData.length}');
+            debugPrint('   - Properties count: ${propertiesData.length}');
 
             try {
               featuredProperties = propertiesData.map((propertyJson) {
-                ///debugPrint('     - Processing property: ${propertyJson['title'] ?? 'Unknown'}');
+                debugPrint('     - Processing property: ${propertyJson['title'] ?? 'Unknown'}');
                 return Property.fromJson(propertyJson);
               }).toList();
 
-              ///debugPrint('✅ Successfully parsed ${featuredProperties.length} featured properties');
+              debugPrint('✅ Successfully parsed ${featuredProperties.length} featured properties');
             } catch (parseError) {
-              ///debugPrint('❌ Error parsing properties: $parseError');
+              debugPrint('❌ Error parsing properties: $parseError');
               throw PropertyException('Failed to parse featured properties data');
             }
           } else {
-            ///debugPrint('⚠️ Properties data is not a List, treating as no properties');
+            debugPrint('⚠️ Properties data is not a List, treating as no properties');
           }
         } else {
-          ///debugPrint('ℹ️ No featured properties available (data is null)');
+          debugPrint('ℹ️ No featured properties available (data is null)');
         }
 
         final result = {
@@ -516,17 +516,17 @@ class PropertyService {
           'statusCode': response.statusCode,
         };
 
-        ///debugPrint('✅ === FEATURED PROPERTIES RESULT ===');
-        ///debugPrint('   - Success: ${result['success']}');
-        ///debugPrint('   - Properties count: ${featuredProperties.length}');
-        ///debugPrint('   - Has data: ${result['hasData']}');
-        ///debugPrint('   - Message: ${result['message']}');
+        debugPrint('✅ === FEATURED PROPERTIES RESULT ===');
+        debugPrint('   - Success: ${result['success']}');
+        debugPrint('   - Properties count: ${featuredProperties.length}');
+        debugPrint('   - Has data: ${result['hasData']}');
+        debugPrint('   - Message: ${result['message']}');
 
         return result;
       } else {
-        ///debugPrint('❌ HTTP Error - Featured properties request failed:');
-        ///debugPrint('   - Status code: ${response.statusCode}');
-        ///debugPrint('   - Response data: ${response.data}');
+        debugPrint('❌ HTTP Error - Featured properties request failed:');
+        debugPrint('   - Status code: ${response.statusCode}');
+        debugPrint('   - Response data: ${response.data}');
 
         final errorData = response.data;
         throw PropertyException(
@@ -535,16 +535,16 @@ class PropertyService {
         );
       }
     } catch (e, stackTrace) {
-      ///debugPrint('');
-      ///debugPrint('❌ === FEATURED PROPERTIES ERROR ===');
-      ///debugPrint('   - Error: $e');
-      ///debugPrint('   - Error type: ${e.runtimeType}');
-      ///debugPrint('   - Stack trace: $stackTrace');
+      debugPrint('');
+      debugPrint('❌ === FEATURED PROPERTIES ERROR ===');
+      debugPrint('   - Error: $e');
+      debugPrint('   - Error type: ${e.runtimeType}');
+      debugPrint('   - Stack trace: $stackTrace');
 
       return _handleError(e, 'get featured properties');
     } finally {
-      ///debugPrint('🏁 === FETCH FEATURED PROPERTIES END ===');
-      ///debugPrint('');
+      debugPrint('🏁 === FETCH FEATURED PROPERTIES END ===');
+      debugPrint('');
     }
   }
 
@@ -552,23 +552,23 @@ class PropertyService {
   static Future<void> clearCache() async {
     try {
       // Implementation for clearing cached property data
-      ///debugPrint('🏠 Property cache cleared');
+      debugPrint('🏠 Property cache cleared');
     } catch (e) {
-      ///debugPrint('❌ Error clearing property cache: $e');
+      debugPrint('❌ Error clearing property cache: $e');
     }
   }
 
   /// Get properties by landlord/user ID
   static Future<Map<String, dynamic>> getPropertiesByLandlord(String userId, {String? token}) async {
     try {
-      ///debugPrint('');
-      ///debugPrint('🏠 === FETCH LANDLORD PROPERTIES START ===');
-      ///debugPrint('   - User ID: $userId');
-      ///debugPrint('   - Endpoint: /property/landlord/$userId');
+      debugPrint('');
+      debugPrint('🏠 === FETCH LANDLORD PROPERTIES START ===');
+      debugPrint('   - User ID: $userId');
+      debugPrint('   - Endpoint: /property/landlord/$userId');
 
       // Validate inputs
       if (userId.isEmpty) {
-        ///debugPrint('❌ User ID is empty');
+        debugPrint('❌ User ID is empty');
         throw ValidationException('User ID is required');
       }
 
@@ -576,7 +576,7 @@ class PropertyService {
       if (token != null && token.isNotEmpty) {
         ApiClient.setAuthToken(token);
 
-        ///debugPrint('🔑 Auth token set for request');
+        debugPrint('🔑 Auth token set for request');
       }
 
       _logRequest('/property/landlord/$userId', null, token: token);
@@ -585,21 +585,21 @@ class PropertyService {
       _logResponse('/property/landlord/$userId', response);
 
       if (response.statusCode == 200) {
-        ///debugPrint('✅ HTTP Success - Properties request successful');
+        debugPrint('✅ HTTP Success - Properties request successful');
 
         final responseData = _validateResponse(response);
 
-        ///debugPrint('📊 Response structure validated');
+        debugPrint('📊 Response structure validated');
 
         List<Property> properties = [];
 
         if (responseData['data'] != null) {
           final data = responseData['data'];
 
-          ///debugPrint('📝 Processing properties data...');
+          debugPrint('📝 Processing properties data...');
 
           if (data is List) {
-            ///debugPrint('   - Data is List with ${data.length} items');
+            debugPrint('   - Data is List with ${data.length} items');
 
             for (var propertyData in data) {
               try {
@@ -639,20 +639,20 @@ class PropertyService {
                   );
                   properties.add(property);
 
-                  ///debugPrint('   ✓ Processed property: ${property.title}');
+                  debugPrint('   ✓ Processed property: ${property.title}');
                 }
               } catch (e) {
-                ///debugPrint('   ⚠️ Error processing property item: $e');
+                debugPrint('   ⚠️ Error processing property item: $e');
                 // Continue processing other properties
               }
             }
 
-            ///debugPrint('✅ Successfully processed ${properties.length} properties');
+            debugPrint('✅ Successfully processed ${properties.length} properties');
           } else {
-            ///debugPrint('⚠️ Properties data is not a List, treating as no properties');
+            debugPrint('⚠️ Properties data is not a List, treating as no properties');
           }
         } else {
-          ///debugPrint('ℹ️ No properties available (data is null)');
+          debugPrint('ℹ️ No properties available (data is null)');
         }
 
         final result = {
@@ -664,17 +664,17 @@ class PropertyService {
           'statusCode': response.statusCode,
         };
 
-        ///debugPrint('✅ === LANDLORD PROPERTIES RESULT ===');
-        ///debugPrint('   - Success: ${result['success']}');
-        ///debugPrint('   - Properties count: ${properties.length}');
-        ///debugPrint('   - Has data: ${result['hasData']}');
-        ///debugPrint('   - Message: ${result['message']}');
+        debugPrint('✅ === LANDLORD PROPERTIES RESULT ===');
+        debugPrint('   - Success: ${result['success']}');
+        debugPrint('   - Properties count: ${properties.length}');
+        debugPrint('   - Has data: ${result['hasData']}');
+        debugPrint('   - Message: ${result['message']}');
 
         return result;
       } else {
-        ///debugPrint('❌ HTTP Error - Properties request failed:');
-        ///debugPrint('   - Status code: ${response.statusCode}');
-        ///debugPrint('   - Response data: ${response.data}');
+        debugPrint('❌ HTTP Error - Properties request failed:');
+        debugPrint('   - Status code: ${response.statusCode}');
+        debugPrint('   - Response data: ${response.data}');
 
         final errorData = response.data;
         throw PropertyException(
@@ -683,16 +683,16 @@ class PropertyService {
         );
       }
     } catch (e, stackTrace) {
-      ///debugPrint('');
-      ///debugPrint('❌ === LANDLORD PROPERTIES ERROR ===');
-      ///debugPrint('   - Error: $e');
-      ///debugPrint('   - Error type: ${e.runtimeType}');
-      ///debugPrint('   - Stack trace: $stackTrace');
+      debugPrint('');
+      debugPrint('❌ === LANDLORD PROPERTIES ERROR ===');
+      debugPrint('   - Error: $e');
+      debugPrint('   - Error type: ${e.runtimeType}');
+      debugPrint('   - Stack trace: $stackTrace');
 
       return _handleError(e, 'get landlord properties');
     } finally {
-      ///debugPrint('🏁 === FETCH LANDLORD PROPERTIES END ===');
-      ///debugPrint('');
+      debugPrint('🏁 === FETCH LANDLORD PROPERTIES END ===');
+      debugPrint('');
     }
   }
 
@@ -799,13 +799,13 @@ class PropertyService {
 
       // Add text fields (convert to string like your working code does)
       fields.forEach((key, value) {
-        ///debugPrint('🏠 Adding field: $key = $value (${value.runtimeType})');
+        debugPrint('🏠 Adding field: $key = $value (${value.runtimeType})');
         formData.fields.add(MapEntry(key, value.toString()));
       });
 
       // Add files
       for (var entry in filesMap.entries) {
-        ///debugPrint('🏠 Adding file: image = ${entry.value.path}');
+        debugPrint('🏠 Adding file: image = ${entry.value.path}');
         formData.files.add(
           MapEntry(
             'image', // Use same key 'image' for all files
@@ -902,7 +902,7 @@ class PropertyService {
             return Property.fromJson(propertyData);
           }).toList();
 
-          ///debugPrint('🔍 Search for "$searchString" returned ${properties.length} properties');
+          debugPrint('🔍 Search for "$searchString" returned ${properties.length} properties');
 
           return {
             'success': true,

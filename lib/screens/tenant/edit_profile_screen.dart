@@ -10,6 +10,7 @@ import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/utils/image_helper.dart';
+import 'package:pearlnest/utils/cache_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -676,8 +677,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
       }
     } catch (e, stackTrace) {
-      //debugPrint('Image picker error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Image picker error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _showErrorDialog('Error picking image: $e');
     }
   }
@@ -700,7 +701,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      //debugPrint('🔧 EditProfileScreen: Starting profile update...');
+      debugPrint('🔧 EditProfileScreen: Starting profile update...');
 
       // Call the AuthService to update profile
       final result = await AuthService.updateProfile(
@@ -714,13 +715,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         emailNotifications: _emailNotifications,
       );
 
-      //debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
+      debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
 
       if (result['success'] == true) {
         // Trigger AuthBloc to refresh the user state with updated data
         if (mounted) {
           context.read<AuthBloc>().add(AuthCheckSessionRequested());
         }
+
+        // Clear old cached image
+        await CacheHelper.clearProfileImageCache(widget.user.profileImage);
+
+        // Optionally preload new image
+        await CacheHelper.preloadProfileImage(result['data']['profileImage']);
 
         _showSuccessSnackBar(result['message'] ?? 'Profile updated successfully!');
 
@@ -736,8 +743,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _showErrorSnackBar(result['message'] ?? 'Failed to update profile. Please try again.');
       }
     } catch (e, stackTrace) {
-      //debugPrint('🔧 EditProfileScreen: Profile update error: $e');
-      //debugPrint('🔧 EditProfileScreen: Stack trace: $stackTrace');
+      debugPrint('🔧 EditProfileScreen: Profile update error: $e');
+      debugPrint('🔧 EditProfileScreen: Stack trace: $stackTrace');
 
       setState(() {
         _isLoading = false;

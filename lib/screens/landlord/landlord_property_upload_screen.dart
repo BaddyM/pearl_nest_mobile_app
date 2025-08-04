@@ -60,7 +60,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     'per night',
     'per week',
     'per year',
-    'one time',
+    'for sale',
   ];
 
   final List<String> _availableAmenities = [
@@ -124,12 +124,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
   Future<void> _loadPropertyForEditing() async {
     try {
-      //debugPrint('🔄 Loading property for editing: ${widget.property?.id}');
+      debugPrint('🔄 Loading property for editing: ${widget.property?.id}');
 
       // Get auth token
       final token = await AuthService.getCurrentToken();
       if (token == null || token.isEmpty) {
-        //debugPrint('❌ No auth token available');
+        debugPrint('❌ No auth token available');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Authentication required. Please log in again.'),
@@ -139,27 +139,27 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         return;
       }
 
-      //debugPrint('✅ Auth token available, fetching property details...');
+      debugPrint('✅ Auth token available, fetching property details...');
 
       // Fetch property details from API
       final result = await PropertyService.getPropertyForEdit(widget.property!.id, token: token);
 
-      //debugPrint('📋 API Result keys: ${result.keys}');
-      //debugPrint('📋 API Result success: ${result['success']}');
-      //debugPrint('📋 API Result property type: ${result['property']?.runtimeType}');
-      //debugPrint('📋 API Result property is null: ${result['property'] == null}');
+      debugPrint('📋 API Result keys: ${result.keys}');
+      debugPrint('📋 API Result success: ${result['success']}');
+      debugPrint('📋 API Result property type: ${result['property']?.runtimeType}');
+      debugPrint('📋 API Result property is null: ${result['property'] == null}');
 
       if (result['success'] == true && result['property'] != null) {
-        //debugPrint('✅ API call successful, populating form with API data...');
+        debugPrint('✅ API call successful, populating form with API data...');
         _populateFormWithApiData(result['property']);
       } else {
-        //debugPrint('⚠️ API call failed or no data, falling back to existing property data...');
-        //debugPrint('⚠️ Success: ${result['success']}, Property: ${result['property']}');
+        debugPrint('⚠️ API call failed or no data, falling back to existing property data...');
+        debugPrint('⚠️ Success: ${result['success']}, Property: ${result['property']}');
         // Fallback to existing property data
         _populateFormForEditing();
       }
     } catch (e) {
-      //debugPrint('❌ Error loading property for editing: $e');
+      debugPrint('❌ Error loading property for editing: $e');
       // Fallback to existing property data
       _populateFormForEditing();
     }
@@ -196,7 +196,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   }
 
   void _populateFormWithApiData(Map<String, dynamic> propertyData) {
-    //debugPrint('🏠 Populating form with API data: ${propertyData.keys}');
+    debugPrint('🏠 Populating form with API data: ${propertyData.keys}');
 
     setState(() {
       _titleController.text = propertyData['propertyName'] ?? '';
@@ -211,13 +211,13 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _safetySecurityController.text = propertyData['safetyAndSecurity'] ?? '';
       _nearbyPlacesController.text = propertyData['nearbyPlaces'] ?? '';
       _propertyMapController.text = propertyData['propertyMap'] ?? '';
-      //debugPrint('🔍 API period: "${propertyData['period']}"');
+      debugPrint('🔍 API period: "${propertyData['period']}"');
       _selectedPriceType = _priceTypes.contains(propertyData['period']) ? propertyData['period'] : 'per month';
-      //debugPrint('🔍 Selected priceType from API: "$_selectedPriceType"');
+      debugPrint('🔍 Selected priceType from API: "$_selectedPriceType"');
 
-      //debugPrint('📝 Populated propertyMap: ${_propertyMapController.text}');
-      //debugPrint('📝 Populated safetyAndSecurity: ${_safetySecurityController.text}');
-      //debugPrint('📝 Populated nearbyPlaces: ${_nearbyPlacesController.text}');
+      debugPrint('📝 Populated propertyMap: ${_propertyMapController.text}');
+      debugPrint('📝 Populated safetyAndSecurity: ${_safetySecurityController.text}');
+      debugPrint('📝 Populated nearbyPlaces: ${_nearbyPlacesController.text}');
 
       // Parse amenities string to list
       if (propertyData['amenities'] != null && propertyData['amenities'].toString().isNotEmpty) {
@@ -243,7 +243,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           return path;
         }).toList();
         _existingImageUrls.addAll(imagePaths);
-        //debugPrint('📸 Loaded ${imagePaths.length} existing images: $imagePaths');
+        debugPrint('📸 Loaded ${imagePaths.length} existing images: $imagePaths');
       }
     });
   }
@@ -269,24 +269,24 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _propertyMapController.text = property.propertyMap ?? ''; // Use existing map if available
 
       // Property settings
-      //debugPrint('🔍 API priceType: "${property.priceType}"');
-      //debugPrint('🔍 Available priceTypes: $_priceTypes');
+      debugPrint('🔍 API priceType: "${property.priceType}"');
+      debugPrint('🔍 Available priceTypes: $_priceTypes');
       _selectedPriceType = _priceTypes.contains(property.priceType) ? property.priceType : 'per month';
-      //debugPrint('🔍 Selected priceType: "$_selectedPriceType"');
+      debugPrint('🔍 Selected priceType: "$_selectedPriceType"');
       _selectedType = property.type;
 
       // Set availability status based on property status and availability data
-      //debugPrint('🔍 Property status: ${property.status}');
-      //debugPrint('🔍 API availabilityStatus: ${property.availabilityStatus}');
+      debugPrint('🔍 Property status: ${property.status}');
+      debugPrint('🔍 API availabilityStatus: ${property.availabilityStatus}');
 
       if (property.status == PropertyStatus.unavailable) {
         // If property is unavailable, default to "Available Later"
         _availabilityStatus = AvailabilityStatus.availableLater;
-        //debugPrint('🔍 Property is unavailable, setting to Available Later');
+        debugPrint('🔍 Property is unavailable, setting to Available Later');
       } else {
         // Use the availability status from API
         _availabilityStatus = property.availabilityStatus;
-        //debugPrint('🔍 Using API availability status: $_availabilityStatus');
+        debugPrint('🔍 Using API availability status: $_availabilityStatus');
       }
 
       _availableFrom = property.availableFrom;
@@ -1337,7 +1337,7 @@ Widget _buildPricingSection() {
   }
 
   Widget _buildExistingImageCard(String imageUrl) {
-    //debugPrint('🖼️ Building image card for URL: $imageUrl');
+    debugPrint('🖼️ Building image card for URL: $imageUrl');
     return Container(
       width: 120,
       height: 120,
@@ -1362,7 +1362,7 @@ Widget _buildPricingSection() {
               height: 120,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
-                //debugPrint('❌ Image load error for $imageUrl: $error');
+                debugPrint('❌ Image load error for $imageUrl: $error');
                 return Container(
                   width: 120,
                   height: 120,
@@ -1379,7 +1379,7 @@ Widget _buildPricingSection() {
               },
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) {
-                  //debugPrint('✅ Image loaded successfully: $imageUrl');
+                  debugPrint('✅ Image loaded successfully: $imageUrl');
                   return child;
                 }
                 return Container(
@@ -1532,7 +1532,7 @@ Widget _buildPricingSection() {
         }
       } catch (e) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        //debugPrint('Error deleting image: $e');
+        debugPrint('Error deleting image: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting image. Please try again.'),
@@ -1811,8 +1811,8 @@ Widget _buildPricingSection() {
         });
       }
     } catch (e, stackTrace) {
-      //debugPrint('Image picker error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Image picker error: $e');
+      debugPrint('Stack trace: $stackTrace');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1954,9 +1954,9 @@ Widget _buildPricingSection() {
 
     // Debug availability information
     bool availabilityBoolean = _availabilityStatus == AvailabilityStatus.availableNow;
-    //debugPrint('🏠 Availability Status: $_availabilityStatus');
-    //debugPrint('🏠 Availability Boolean: $availabilityBoolean');
-    //debugPrint('🏠 Available From: $_availableFrom');
+    debugPrint('🏠 Availability Status: $_availabilityStatus');
+    debugPrint('🏠 Availability Boolean: $availabilityBoolean');
+    debugPrint('🏠 Available From: $_availableFrom');
 
     // Dispatch the appropriate event to the BLoC based on whether we're editing or creating
     if (widget.property != null) {

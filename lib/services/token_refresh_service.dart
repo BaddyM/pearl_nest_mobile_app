@@ -31,8 +31,8 @@ class TokenRefreshService {
         await authProvider.checkTokenExpiry();
       }
     } catch (e, stackTrace) {
-      //debugPrint('Token refresh check error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Token refresh check error: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -55,8 +55,8 @@ class TokenRefreshService {
       await authProvider.checkTokenExpiry();
       return authProvider.isAuthenticated;
     } catch (e, stackTrace) {
-      //debugPrint('Token validation error: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Token validation error: $e');
+      debugPrint('Stack trace: $stackTrace');
       return false;
     }
   }

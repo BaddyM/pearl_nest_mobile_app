@@ -21,7 +21,7 @@ class NotificationService {
     if (_isInitialized) return;
 
     try {
-      //debugPrint('🚀 Initializing NotificationService...');
+      debugPrint('🚀 Initializing NotificationService...');
 
       // Initialize Flutter Local Notifications
       await _initializeLocalNotifications();
@@ -39,10 +39,10 @@ class NotificationService {
       await _getFCMToken();
 
       _isInitialized = true;
-      //debugPrint('✅ NotificationService initialized successfully');
+      debugPrint('✅ NotificationService initialized successfully');
     } catch (e, stackTrace) {
-      //debugPrint('❌ Error initializing NotificationService: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('❌ Error initializing NotificationService: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -76,8 +76,8 @@ class NotificationService {
 
   /// Handle notification tap
   static void _onNotificationTapped(NotificationResponse notificationResponse) {
-    //debugPrint('🔔 Notification tapped: ${notificationResponse.id}');
-    //debugPrint('Payload: ${notificationResponse.payload}');
+    debugPrint('🔔 Notification tapped: ${notificationResponse.id}');
+    debugPrint('Payload: ${notificationResponse.payload}');
 
     // Handle navigation based on notification payload
     if (notificationResponse.payload != null) {
@@ -157,7 +157,7 @@ class NotificationService {
       sound: true,
     );
 
-    //debugPrint('FCM Permission status: ${settings.authorizationStatus}');
+    debugPrint('FCM Permission status: ${settings.authorizationStatus}');
 
     // Request local notifications permissions
     await _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
@@ -218,8 +218,8 @@ class NotificationService {
 
   /// Handle notification tap
   static Future<void> _handleNotificationTap(RemoteMessage message) async {
-    //debugPrint('📱 Notification tapped: ${message.messageId}');
-    //debugPrint('Data: ${message.data}');
+    debugPrint('📱 Notification tapped: ${message.messageId}');
+    debugPrint('Data: ${message.data}');
 
     // Handle navigation based on notification data
     _handleNotificationNavigation(message.data.toString());
@@ -229,7 +229,7 @@ class NotificationService {
   static Future<void> _handleInitialMessage() async {
     RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) {
-      //debugPrint('📱 App launched from notification: ${initialMessage.messageId}');
+      debugPrint('📱 App launched from notification: ${initialMessage.messageId}');
       _handleNotificationNavigation(initialMessage.data.toString());
     }
   }
@@ -275,7 +275,7 @@ class NotificationService {
         payload: message.data.toString(),
       );
     } catch (e) {
-      //debugPrint('❌ Error showing local notification: $e');
+      debugPrint('❌ Error showing local notification: $e');
     }
   }
 
@@ -330,7 +330,7 @@ class NotificationService {
   static void _handleNotificationNavigation(String payload) {
     // This would typically navigate to specific screens based on payload
     // For now, we'll just log the payload
-    //debugPrint('🔄 Handling notification navigation: $payload');
+    debugPrint('🔄 Handling notification navigation: $payload');
 
     // Example navigation logic:
     // Map<String, dynamic> data = jsonDecode(payload);
@@ -354,10 +354,10 @@ class NotificationService {
   static Future<String?> _getFCMToken() async {
     try {
       _fcmToken = await _firebaseMessaging.getToken();
-      //debugPrint('📱 FCM Token: $_fcmToken');
+      debugPrint('📱 FCM Token: $_fcmToken');
       return _fcmToken;
     } catch (e) {
-      //debugPrint('❌ Error getting FCM token: $e');
+      debugPrint('❌ Error getting FCM token: $e');
       return null;
     }
   }
@@ -374,9 +374,9 @@ class NotificationService {
   static Future<void> subscribeToTopic(String topic) async {
     try {
       await _firebaseMessaging.subscribeToTopic(topic);
-      //debugPrint('📱 Subscribed to topic: $topic');
+      debugPrint('📱 Subscribed to topic: $topic');
     } catch (e) {
-      //debugPrint('❌ Error subscribing to topic $topic: $e');
+      debugPrint('❌ Error subscribing to topic $topic: $e');
     }
   }
 
@@ -384,9 +384,9 @@ class NotificationService {
   static Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
-      //debugPrint('📱 Unsubscribed from topic: $topic');
+      debugPrint('📱 Unsubscribed from topic: $topic');
     } catch (e) {
-      //debugPrint('❌ Error unsubscribing from topic $topic: $e');
+      debugPrint('❌ Error unsubscribing from topic $topic: $e');
     }
   }
 
@@ -436,7 +436,7 @@ class NotificationService {
         payload: payload,
       );
     } catch (e) {
-      //debugPrint('❌ Error showing local notification: $e');
+      debugPrint('❌ Error showing local notification: $e');
     }
   }
 

@@ -56,24 +56,24 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
       final bookings = results[1];
 
       // Debug logging
-      //debugPrint('🏠 Dashboard - Properties result type: ${properties.runtimeType}');
-      //debugPrint('🏠 Dashboard - Properties content: $properties');
+      debugPrint('🏠 Dashboard - Properties result type: ${properties.runtimeType}');
+      debugPrint('🏠 Dashboard - Properties content: $properties');
 
       int propertyCount = 0;
       if (properties is Map<String, dynamic>) {
         // The getPropertiesByLandlord method returns {properties: [...]} not {data: [...]}
         final propertiesList = properties['properties'];
-        //debugPrint('🏠 Dashboard - Properties list type: ${propertiesList.runtimeType}');
-        //debugPrint('🏠 Dashboard - Properties list: $propertiesList');
+        debugPrint('🏠 Dashboard - Properties list type: ${propertiesList.runtimeType}');
+        debugPrint('🏠 Dashboard - Properties list: $propertiesList');
 
         if (propertiesList is List) {
           propertyCount = propertiesList.length;
-          //debugPrint('🏠 Dashboard - Property count: $propertyCount');
+          debugPrint('🏠 Dashboard - Property count: $propertyCount');
         }
       }
 
-      //debugPrint('🏠 Dashboard - Bookings result type: ${bookings.runtimeType}');
-      //debugPrint('🏠 Dashboard - Bookings count: ${bookings is List ? bookings.length : 0}');
+      debugPrint('🏠 Dashboard - Bookings result type: ${bookings.runtimeType}');
+      debugPrint('🏠 Dashboard - Bookings count: ${bookings is List ? bookings.length : 0}');
 
       if (mounted) {
         setState(() {
@@ -82,8 +82,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
           _isLoading = false;
         });
 
-        //debugPrint('🏠 Dashboard - Final property count set to: $_totalProperties');
-        //debugPrint('🏠 Dashboard - Final booking count set to: $_totalBookings');
+        debugPrint('🏠 Dashboard - Final property count set to: $_totalProperties');
+        debugPrint('🏠 Dashboard - Final booking count set to: $_totalBookings');
       }
     } catch (e) {
       if (mounted) {

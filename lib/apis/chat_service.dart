@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 import '../models/chat_message.dart';
@@ -37,7 +38,7 @@ class ChatService {
     }
 
     try {
-      ///debugPrint('🔍 Pre-connection checks:');
+      debugPrint('🔍 Pre-connection checks:');
 
       // Get preferences and token
       final prefs = await SharedPreferences.getInstance();
@@ -52,20 +53,20 @@ class ChatService {
       }
 
       if (_currentUserId == null || _currentUserId!.isEmpty) {
-        ///debugPrint('❌ CANNOT CONNECT: No user ID found');
-        ///debugPrint('� Attempting to diagnose and fix user ID issue...');
+        debugPrint('❌ CANNOT CONNECT: No user ID found');
+        debugPrint('� Attempting to diagnose and fix user ID issue...');
         await AuthService.debugStoredData();
 
-        ///debugPrint('� Attempting to fix missing user ID...');
+        debugPrint('� Attempting to fix missing user ID...');
         final fixed = await AuthService.fixMissingUserId();
         if (fixed) {
           _currentUserId = await AuthService.getUserId();
 
-          ///debugPrint('✅ User ID fixed and retrieved: $_currentUserId');
+          debugPrint('✅ User ID fixed and retrieved: $_currentUserId');
         } else {
-          ///debugPrint('❌ Failed to fix user ID - cannot connect to chat');
-          ///debugPrint('   - User may need to re-login');
-          ///debugPrint('   - Check AuthService.fixMissingUserId() implementation');
+          debugPrint('❌ Failed to fix user ID - cannot connect to chat');
+          debugPrint('   - User may need to re-login');
+          debugPrint('   - Check AuthService.fixMissingUserId() implementation');
           return;
         }
       }
@@ -75,7 +76,7 @@ class ChatService {
       print("Socket URL = ${socketUrl}");
 
       // Create socket instance
-      ///debugPrint('🔧 Creating socket instance...');
+      debugPrint('🔧 Creating socket instance...');
       _socket = socket_io.io(
           socketUrl,
           socket_io.OptionBuilder()
@@ -110,25 +111,25 @@ class ChatService {
   // Setup event listeners with comprehensive debugging
   static void _setupEventListeners() {
     if (_socket == null) {
-      ///debugPrint('❌ Cannot setup event listeners - socket is null');
+      debugPrint('❌ Cannot setup event listeners - socket is null');
       return;
     }
 
-    ///debugPrint('🔧 Setting up socket event listeners...');
+    debugPrint('🔧 Setting up socket event listeners...');
 
     _socket!.onConnect((_) {
       final connectTime = DateTime.now();
       _isConnected = true;
       _connectionStreamController.add(true);
 
-      ///debugPrint('   - Connection stream updated: true');
+      debugPrint('   - Connection stream updated: true');
 
       // Register user with their ID
       if (_currentUserId != null && _currentUserId!.isNotEmpty) {
         _socket!.emit('register', _currentUserId);
       } else {}
 
-      ///debugPrint('🏁 Socket connection setup complete');
+      debugPrint('🏁 Socket connection setup complete');
     });
 
     _socket!.onDisconnect((reason) {
@@ -137,48 +138,48 @@ class ChatService {
       _isConnected = false;
       _connectionStreamController.add(false);
 
-      ///debugPrint('   - Connection stream updated: false');
+      debugPrint('   - Connection stream updated: false');
 
       // Analyze disconnect reason
       if (reason.toString().contains('transport close')) {
-        ///debugPrint('🔍 Transport closed - likely network issue');
+        debugPrint('🔍 Transport closed - likely network issue');
       } else if (reason.toString().contains('ping timeout')) {
-        ///debugPrint('🔍 Ping timeout - connection lost');
+        debugPrint('🔍 Ping timeout - connection lost');
       } else if (reason.toString().contains('client namespace disconnect')) {
-        ///debugPrint('🔍 Client initiated disconnect');
+        debugPrint('🔍 Client initiated disconnect');
       } else {
-        ///debugPrint('🔍 Other disconnect reason: $reason');
+        debugPrint('🔍 Other disconnect reason: $reason');
       }
     });
 
     _socket!.onConnectError((error) {
-      ///debugPrint('');
-      ///debugPrint('❌ === SOCKET CONNECTION ERROR ===');
-      ///debugPrint('   - Error: $error');
-      ///debugPrint('   - Error type: ${error.runtimeType}');
-      ///debugPrint('   - Connection attempt failed');
+      debugPrint('');
+      debugPrint('❌ === SOCKET CONNECTION ERROR ===');
+      debugPrint('   - Error: $error');
+      debugPrint('   - Error type: ${error.runtimeType}');
+      debugPrint('   - Connection attempt failed');
 
       _isConnected = false;
       _connectionStreamController.add(false);
 
-      ///debugPrint('   - Connection stream updated: false');
+      debugPrint('   - Connection stream updated: false');
 
       // Analyze connection error
       if (error.toString().contains('timeout')) {
-        ///debugPrint('🔍 Connection timeout - server may be unreachable');
+        debugPrint('🔍 Connection timeout - server may be unreachable');
       } else if (error.toString().contains('refused')) {
-        ///debugPrint('🔍 Connection refused - server may be down');
+        debugPrint('🔍 Connection refused - server may be down');
       } else if (error.toString().contains('unauthorized')) {
-        ///debugPrint('🔍 Unauthorized - check authentication');
+        debugPrint('🔍 Unauthorized - check authentication');
       }
     });
 
     _socket!.onError((error) {
-      ///debugPrint('');
-      ///debugPrint('❌ === SOCKET GENERAL ERROR ===');
-      ///debugPrint('   - Error: $error');
-      ///debugPrint('   - Error type: ${error.runtimeType}');
-      ///debugPrint('   - Error timestamp: ${DateTime.now()}');
+      debugPrint('');
+      debugPrint('❌ === SOCKET GENERAL ERROR ===');
+      debugPrint('   - Error: $error');
+      debugPrint('   - Error type: ${error.runtimeType}');
+      debugPrint('   - Error timestamp: ${DateTime.now()}');
     });
 
     // Listen for incoming messages with detailed debugging
@@ -186,7 +187,7 @@ class ChatService {
       final receiveTime = DateTime.now();
 
       try {
-        ///debugPrint('🔍 Parsing message data...');
+        debugPrint('🔍 Parsing message data...');
         final message = ChatMessage.fromJson(data);
 
         // Add to message stream
@@ -199,12 +200,12 @@ class ChatService {
 
     // Listen for register acknowledgment
     _socket!.on('registered', (data) {
-      ///debugPrint('');
-      ///debugPrint('📝 === REGISTRATION ACKNOWLEDGMENT ===');
-      ///debugPrint('   - Acknowledgment time: ${DateTime.now()}');
-      ///debugPrint('   - Response data: $data');
-      ///debugPrint('   - Data type: ${data.runtimeType}');
-      ///debugPrint('   - User successfully registered with server');
+      debugPrint('');
+      debugPrint('📝 === REGISTRATION ACKNOWLEDGMENT ===');
+      debugPrint('   - Acknowledgment time: ${DateTime.now()}');
+      debugPrint('   - Response data: $data');
+      debugPrint('   - Data type: ${data.runtimeType}');
+      debugPrint('   - User successfully registered with server');
     });
 
     // Listen for reconnection events
@@ -216,19 +217,19 @@ class ChatService {
 
       // Re-register user after reconnection
       if (_currentUserId != null && _currentUserId!.isNotEmpty) {
-        ///debugPrint('📤 Re-registering user after reconnection...');
-        ///debugPrint('   - User ID to re-register: $_currentUserId');
+        debugPrint('📤 Re-registering user after reconnection...');
+        debugPrint('   - User ID to re-register: $_currentUserId');
 
         _socket!.emit('register', _currentUserId);
 
-        ///debugPrint('✅ User re-registration event emitted');
-        ///debugPrint('   - Event: "register"');
-        ///debugPrint('   - Data: $_currentUserId');
+        debugPrint('✅ User re-registration event emitted');
+        debugPrint('   - Event: "register"');
+        debugPrint('   - Data: $_currentUserId');
       } else {
-        ///debugPrint('❌ CANNOT RE-REGISTER USER:');
-        ///debugPrint('   - User ID is null: ${_currentUserId == null}');
-        ///debugPrint('   - User ID is empty: ${_currentUserId?.isEmpty ?? true}');
-        ///debugPrint('   - Current user ID value: $_currentUserId');
+        debugPrint('❌ CANNOT RE-REGISTER USER:');
+        debugPrint('   - User ID is null: ${_currentUserId == null}');
+        debugPrint('   - User ID is empty: ${_currentUserId?.isEmpty ?? true}');
+        debugPrint('   - Current user ID value: $_currentUserId');
       }
     });
 
@@ -236,16 +237,16 @@ class ChatService {
     _socket!.onAny((event, data) {
       if (event != 'sendMessage' && event != 'registered') {
         // Don't duplicate already logged events
-        ///debugPrint('');
-        ///debugPrint('🔍 === UNKNOWN SOCKET EVENT ===');
-        ///debugPrint('   - Event name: $event');
-        ///debugPrint('   - Event data: $data');
-        ///debugPrint('   - Event timestamp: ${DateTime.now()}');
-        ///debugPrint('   - Data type: ${data.runtimeType}');
+        debugPrint('');
+        debugPrint('🔍 === UNKNOWN SOCKET EVENT ===');
+        debugPrint('   - Event name: $event');
+        debugPrint('   - Event data: $data');
+        debugPrint('   - Event timestamp: ${DateTime.now()}');
+        debugPrint('   - Data type: ${data.runtimeType}');
       }
     });
 
-    ///debugPrint('✅ All socket event listeners configured');
+    debugPrint('✅ All socket event listeners configured');
   }
 
   // Send a message to the first available admin (for backward compatibility)
@@ -283,32 +284,32 @@ class ChatService {
 
       // Re-check after reconnection
       if (_socket == null || !_socket!.connected) {
-        ///debugPrint('❌ Socket still not connected after reconnection attempt');
+        debugPrint('❌ Socket still not connected after reconnection attempt');
         throw Exception('Socket not connected');
       }
     }
 
     // User ID validation
     if (_currentUserId == null || _currentUserId!.isEmpty) {
-      ///debugPrint('❌ USER ID VALIDATION FAILED:');
-      ///debugPrint('   - Current user ID: $_currentUserId');
-      ///debugPrint('   - User ID is null: ${_currentUserId == null}');
-      ///debugPrint('   - User ID is empty: ${_currentUserId?.isEmpty}');
+      debugPrint('❌ USER ID VALIDATION FAILED:');
+      debugPrint('   - Current user ID: $_currentUserId');
+      debugPrint('   - User ID is null: ${_currentUserId == null}');
+      debugPrint('   - User ID is empty: ${_currentUserId?.isEmpty}');
 
       // Try to get user ID again
-      ///debugPrint('🔄 Attempting to retrieve user ID...');
+      debugPrint('🔄 Attempting to retrieve user ID...');
       _currentUserId = await AuthService.getUserId();
 
-      ///debugPrint('🔍 Retrieved user ID: $_currentUserId');
+      debugPrint('🔍 Retrieved user ID: $_currentUserId');
 
       if (_currentUserId == null || _currentUserId!.isEmpty) {
-        ///debugPrint('❌ Still no valid user ID after retrieval attempt');
+        debugPrint('❌ Still no valid user ID after retrieval attempt');
         await AuthService.debugStoredData();
         throw Exception('No current user ID available');
       }
     }
 
-    ///debugPrint('✅ All validations passed - proceeding with message send');
+    debugPrint('✅ All validations passed - proceeding with message send');
 
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -320,15 +321,15 @@ class ChatService {
         "type": isMedia != null ? "media" : "text",
       };
 
-      ///debugPrint('� Message Data Package:');
-      ///debugPrint('   - fromUserId: $_currentUserId');
-      ///debugPrint('   - toUserId: $toUserId');
-      ///debugPrint('   - text: "$text"');
-      ///debugPrint('   - timestamp: $timestamp');
-      ///debugPrint('   - timestamp as DateTime: ${DateTime.fromMillisecondsSinceEpoch(timestamp)}');
-      ///debugPrint('   - full messageData: $messageData');
+      debugPrint('� Message Data Package:');
+      debugPrint('   - fromUserId: $_currentUserId');
+      debugPrint('   - toUserId: $toUserId');
+      debugPrint('   - text: "$text"');
+      debugPrint('   - timestamp: $timestamp');
+      debugPrint('   - timestamp as DateTime: ${DateTime.fromMillisecondsSinceEpoch(timestamp)}');
+      debugPrint('   - full messageData: $messageData');
 
-      ///debugPrint('📡 Emitting "sendMessage" event to socket...');
+      debugPrint('📡 Emitting "sendMessage" event to socket...');
       final emitStartTime = DateTime.now();
 
       _socket!.emit('sendMessage', messageData);
@@ -336,10 +337,10 @@ class ChatService {
       final emitEndTime = DateTime.now();
       final emitDuration = emitEndTime.difference(emitStartTime);
 
-      ///debugPrint('✅ Message event emitted successfully');
-      ///debugPrint('   - Emit duration: ${emitDuration.inMilliseconds}ms');
-      ///debugPrint('   - Event: "sendMessage"');
-      ///debugPrint('   - Socket ID used: ${_socket!.id}');
+      debugPrint('✅ Message event emitted successfully');
+      debugPrint('   - Emit duration: ${emitDuration.inMilliseconds}ms');
+      debugPrint('   - Event: "sendMessage"');
+      debugPrint('   - Socket ID used: ${_socket!.id}');
 
       // Create a local message for immediate UI update
       final localMessage = ChatMessage(
@@ -351,40 +352,40 @@ class ChatService {
         isRead: false,
       );
 
-      ///debugPrint('📝 Creating local message for immediate UI update:');
-      ///debugPrint('   - Local message ID: ${localMessage.id}');
-      ///debugPrint('   - Local message from: ${localMessage.fromUserId}');
-      ///debugPrint('   - Local message to: ${localMessage.toUserId}');
-      ///debugPrint('   - Local message text: "${localMessage.text}"');
-      ///debugPrint('   - Local message timestamp: ${localMessage.timestamp}');
-      ///debugPrint('   - Local message read status: ${localMessage.isRead}');
+      debugPrint('📝 Creating local message for immediate UI update:');
+      debugPrint('   - Local message ID: ${localMessage.id}');
+      debugPrint('   - Local message from: ${localMessage.fromUserId}');
+      debugPrint('   - Local message to: ${localMessage.toUserId}');
+      debugPrint('   - Local message text: "${localMessage.text}"');
+      debugPrint('   - Local message timestamp: ${localMessage.timestamp}');
+      debugPrint('   - Local message read status: ${localMessage.isRead}');
 
       _messageStreamController.add(localMessage);
 
-      ///debugPrint('✅ Local message added to stream for immediate UI update');
-      ///debugPrint('   - Stream controller has listeners: ${_messageStreamController.hasListener}');
-      ///debugPrint('   - Stream controller is closed: ${_messageStreamController.isClosed}');
+      debugPrint('✅ Local message added to stream for immediate UI update');
+      debugPrint('   - Stream controller has listeners: ${_messageStreamController.hasListener}');
+      debugPrint('   - Stream controller is closed: ${_messageStreamController.isClosed}');
     } catch (e, stackTrace) {
-      ///debugPrint('');
-      ///debugPrint('❌ === MESSAGE SEND ERROR ===');
-      ///debugPrint('   - Error: $e');
-      ///debugPrint('   - Error type: ${e.runtimeType}');
-      ///debugPrint('   - Stack trace: $stackTrace');
+      debugPrint('');
+      debugPrint('❌ === MESSAGE SEND ERROR ===');
+      debugPrint('   - Error: $e');
+      debugPrint('   - Error type: ${e.runtimeType}');
+      debugPrint('   - Stack trace: $stackTrace');
 
       // Analyze specific error types
       if (e.toString().contains('socket')) {
-        ///debugPrint('🔍 Socket-related error detected');
-        ///debugPrint('   - Socket state: ${_socket?.connected}');
-        ///debugPrint('   - Socket ID: ${_socket?.id}');
+        debugPrint('🔍 Socket-related error detected');
+        debugPrint('   - Socket state: ${_socket?.connected}');
+        debugPrint('   - Socket ID: ${_socket?.id}');
       } else if (e.toString().contains('emit')) {
-        ///debugPrint('🔍 Event emission error detected');
-        ///debugPrint('   - Check socket event handlers on server');
+        debugPrint('🔍 Event emission error detected');
+        debugPrint('   - Check socket event handlers on server');
       }
 
       throw Exception('Failed to send message: $e');
     } finally {
-      ///debugPrint('🏁 === SEND MESSAGE END ===');
-      ///debugPrint('');
+      debugPrint('🏁 === SEND MESSAGE END ===');
+      debugPrint('');
     }
   }
 
@@ -412,7 +413,7 @@ class ChatService {
     final userId = prefs.getString("user_id");
 
     try {
-      ///debugPrint('📤 Making GET request to /chat/adminList...');
+      debugPrint('📤 Making GET request to /chat/adminList...');
       final response = (role == "ADMIN") ? await ApiClient.get('/chat/userList/$userId') : await ApiClient.get('/chat/adminList');
 
       stopwatch.stop();
@@ -436,7 +437,7 @@ class ChatService {
               final admin = Admin.fromJson(adminJson);
               admins.add(admin);
             } catch (adminError) {
-              ///debugPrint('   ❌ Error parsing admin #${i + 1}: $adminError');
+              debugPrint('   ❌ Error parsing admin #${i + 1}: $adminError');
             }
           }
           // Update cached admins
@@ -445,11 +446,11 @@ class ChatService {
 
           return [admins, unread];
         } else {
-          ///debugPrint('❌ API response validation failed');
+          debugPrint('❌ API response validation failed');
           return [];
         }
       } else {
-        ///debugPrint('❌ HTTP Error - API request failed: ${response.statusCode}');
+        debugPrint('❌ HTTP Error - API request failed: ${response.statusCode}');
         return [];
       }
     } catch (e, stackTrace) {
@@ -458,7 +459,7 @@ class ChatService {
       stopwatch.stop();
       return [];
     } finally {
-      ///debugPrint('🏁 === FETCH ADMIN LIST API CALL END ===');
+      debugPrint('🏁 === FETCH ADMIN LIST API CALL END ===');
     }
   }
 
@@ -467,7 +468,7 @@ class ChatService {
     final admins = await fetchAvailableAdmins();
 
     if (admins.isEmpty) {
-      ///debugPrint('⚠️ No admins available, returning empty list');
+      debugPrint('⚠️ No admins available, returning empty list');
       return [];
     }
 
@@ -503,7 +504,7 @@ class ChatService {
   static Future<ChatConversation?> getAdminConversation({String? propertyTitle}) async {
     final admins = await fetchAvailableAdmins();
     if (admins.isEmpty) {
-      ///debugPrint('⚠️ No admins available for conversation');
+      debugPrint('⚠️ No admins available for conversation');
       return null;
     }
 
@@ -541,10 +542,10 @@ class ChatService {
         propertyTitle: propertyTitle ?? 'General Support',
       );
 
-      ///debugPrint('✅ Created conversation with admin: ${conversation.landlordName}');
+      debugPrint('✅ Created conversation with admin: ${conversation.landlordName}');
       return conversation;
     } catch (e) {
-      ///debugPrint('❌ Error creating conversation with admin: $e');
+      debugPrint('❌ Error creating conversation with admin: $e');
       return null;
     }
   }
@@ -577,11 +578,11 @@ class ChatService {
     print("ChatList running");
 
     try {
-      ///debugPrint('📤 Making GET request to /chat/chatList...');
+      debugPrint('📤 Making GET request to /chat/chatList...');
       final response = (role == "ADMIN") ? await ApiClient.get('/chat/userList') : await ApiClient.get('/chat/adminList');
 
       if (response.statusCode == 200) {
-        ///debugPrint('✅ HTTP 200 - Success response received');
+        debugPrint('✅ HTTP 200 - Success response received');
 
         final responseData = response.data;
         if (responseData['success'] == true && responseData['data'] != null) {
@@ -597,24 +598,24 @@ class ChatService {
               final toUser = chat['toUser'] ?? {};
               final currentUserId = _currentUserId;
 
-              ///debugPrint('   - fromUser: $fromUser');
-              ///debugPrint('   - toUser: $toUser');
-              ///debugPrint('   - fromUserId: ${chat['fromUserId']}');
-              ///debugPrint('   - toUserId: ${chat['toUserId']}');
-              ///debugPrint('   - message: ${chat['message']}');
-              ///debugPrint('   - currentUserId: $currentUserId');
+              debugPrint('   - fromUser: $fromUser');
+              debugPrint('   - toUser: $toUser');
+              debugPrint('   - fromUserId: ${chat['fromUserId']}');
+              debugPrint('   - toUserId: ${chat['toUserId']}');
+              debugPrint('   - message: ${chat['message']}');
+              debugPrint('   - currentUserId: $currentUserId');
 
               // Determine if current user is sender or receiver
               final isCurrentUserSender = chat['fromUserId'] == currentUserId;
               final otherUser = isCurrentUserSender ? toUser : fromUser;
               final otherUserId = isCurrentUserSender ? chat['toUserId'] : chat['fromUserId'];
 
-              ///debugPrint('   - isCurrentUserSender: $isCurrentUserSender');
-              ///debugPrint('   - otherUser: $otherUser');
-              ///debugPrint('   - otherUserId: $otherUserId');
-              ///debugPrint('   - otherUser name: ${otherUser['name']}');
-              ///debugPrint('   - otherUser role: ${otherUser['role']}');
-              ///debugPrint('   - otherUser profilePicture: ${otherUser['profilePicture']}');
+              debugPrint('   - isCurrentUserSender: $isCurrentUserSender');
+              debugPrint('   - otherUser: $otherUser');
+              debugPrint('   - otherUserId: $otherUserId');
+              debugPrint('   - otherUser name: ${otherUser['name']}');
+              debugPrint('   - otherUser role: ${otherUser['role']}');
+              debugPrint('   - otherUser profilePicture: ${otherUser['profilePicture']}');
 
               final conversation = ChatConversation(
                 id: 'chat_$otherUserId',
@@ -630,73 +631,73 @@ class ChatService {
 
               conversations.add(conversation);
 
-              ///debugPrint('   ✅ Successfully created conversation for ${conversation.landlordName}');
+              debugPrint('   ✅ Successfully created conversation for ${conversation.landlordName}');
             } catch (chatError) {
-              ///debugPrint('   ❌ Error processing chat entry #${i + 1}: $chatError');
-              ///debugPrint('   🔍 Chat processing error type: ${chatError.runtimeType}');
-              ///debugPrint('   🔍 Stack trace: ${StackTrace.current}');
+              debugPrint('   ❌ Error processing chat entry #${i + 1}: $chatError');
+              debugPrint('   🔍 Chat processing error type: ${chatError.runtimeType}');
+              debugPrint('   🔍 Stack trace: ${StackTrace.current}');
             }
           }
 
-          ///debugPrint('');
-          ///debugPrint('✅ === CHAT LIST PROCESSING COMPLETE ===');
-          ///debugPrint('   - Total conversations created: ${conversations.length}');
-          ///debugPrint('   - Conversation details:');
+          debugPrint('');
+          debugPrint('✅ === CHAT LIST PROCESSING COMPLETE ===');
+          debugPrint('   - Total conversations created: ${conversations.length}');
+          debugPrint('   - Conversation details:');
           for (int i = 0; i < conversations.length; i++) {
             final conv = conversations[i];
 
-            ///debugPrint('     ${i + 1}. ${conv.landlordName} (ID: ${conv.landlordId})');
-            ///debugPrint('        Last message: "${conv.lastMessage}"');
-            ///debugPrint('        Property: ${conv.propertyTitle}');
-            ///debugPrint('        Online: ${conv.isOnline}');
+            debugPrint('     ${i + 1}. ${conv.landlordName} (ID: ${conv.landlordId})');
+            debugPrint('        Last message: "${conv.lastMessage}"');
+            debugPrint('        Property: ${conv.propertyTitle}');
+            debugPrint('        Online: ${conv.isOnline}');
           }
 
           return conversations;
         } else {
-          ///debugPrint('❌ API response validation failed:');
-          ///debugPrint('   - Success value: ${responseData['success']} (expected: true)');
-          ///debugPrint('   - Data value: ${responseData['data']} (expected: non-null)');
-          ///debugPrint('   - Full response: $responseData');
+          debugPrint('❌ API response validation failed:');
+          debugPrint('   - Success value: ${responseData['success']} (expected: true)');
+          debugPrint('   - Data value: ${responseData['data']} (expected: non-null)');
+          debugPrint('   - Full response: $responseData');
         }
       } else {
-        ///debugPrint('❌ HTTP Error - API request failed:');
-        ///debugPrint('   - Status Code: ${response.statusCode}');
-        ///debugPrint('   - Status Message: ${response.statusMessage}');
-        ///debugPrint('   - Response Data: ${response.data}');
-        ///debugPrint('   - Response Headers: ${response.headers}');
+        debugPrint('❌ HTTP Error - API request failed:');
+        debugPrint('   - Status Code: ${response.statusCode}');
+        debugPrint('   - Status Message: ${response.statusMessage}');
+        debugPrint('   - Response Data: ${response.data}');
+        debugPrint('   - Response Headers: ${response.headers}');
       }
 
-      ///debugPrint('❌ Failed to fetch chat list: Invalid or unsuccessful response');
+      debugPrint('❌ Failed to fetch chat list: Invalid or unsuccessful response');
       return [];
     } catch (e, stackTrace) {
       stopwatch.stop();
 
-      ///debugPrint('');
-      ///debugPrint('❌ === FETCH CHAT LIST API ERROR ===');
-      ///debugPrint('   - Error occurred after: ${stopwatch.elapsedMilliseconds}ms');
-      ///debugPrint('   - Error: $e');
-      ///debugPrint('   - Error type: ${e.runtimeType}');
-      ///debugPrint('   - Stack trace: $stackTrace');
+      debugPrint('');
+      debugPrint('❌ === FETCH CHAT LIST API ERROR ===');
+      debugPrint('   - Error occurred after: ${stopwatch.elapsedMilliseconds}ms');
+      debugPrint('   - Error: $e');
+      debugPrint('   - Error type: ${e.runtimeType}');
+      debugPrint('   - Stack trace: $stackTrace');
 
       // Additional error analysis
       if (e.toString().contains('connection')) {
-        ///debugPrint('🔍 Network connectivity issue detected');
-        ///debugPrint('   - Check internet connection');
-        ///debugPrint('   - Verify server is running');
-        ///debugPrint('   - Check if base URL is correct: ${AppConfig.getCurrentBaseUrl()}');
+        debugPrint('🔍 Network connectivity issue detected');
+        debugPrint('   - Check internet connection');
+        debugPrint('   - Verify server is running');
+        debugPrint('   - Check if base URL is correct: ${AppConfig.getCurrentBaseUrl()}');
       } else if (e.toString().contains('401') || e.toString().contains('unauthorized')) {
-        ///debugPrint('🔍 Authentication issue detected');
-        ///debugPrint('   - Auth token may be invalid or expired');
-        ///debugPrint('   - Current token: ${ApiClient.currentAuthToken}');
+        debugPrint('🔍 Authentication issue detected');
+        debugPrint('   - Auth token may be invalid or expired');
+        debugPrint('   - Current token: ${ApiClient.currentAuthToken}');
       } else if (e.toString().contains('404')) {
-        ///debugPrint('🔍 Endpoint not found');
-        ///debugPrint('   - Verify /chat/chatList endpoint exists on server');
+        debugPrint('🔍 Endpoint not found');
+        debugPrint('   - Verify /chat/chatList endpoint exists on server');
       }
 
       return [];
     } finally {
-      ///debugPrint('🏁 === FETCH CHAT LIST API CALL END ===');
-      ///debugPrint('');
+      debugPrint('🏁 === FETCH CHAT LIST API CALL END ===');
+      debugPrint('');
     }
   }
 }
