@@ -2982,8 +2982,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             ? 20.0
             : 25.0;
 
-    // Grid settings - Adjust for small screens
-    final crossAxisCount = isVerySmallScreen ? 3 : 4; // Reduce columns on very small screens
+    // Parse amenities from property data first
+    final List<Map<String, dynamic>> amenities = _parseAmenities(widget.property.amenities);
+
+    // Grid settings - Adjust for small screens and number of amenities
+    final totalAmenities = amenities.length;
+    final crossAxisCount = isVerySmallScreen 
+        ? (totalAmenities > 6 ? 3 : 2) // Reduce columns on very small screens
+        : (totalAmenities > 8 ? 4 : 3); // Normal screens
     final crossAxisSpacing = isVerySmallScreen ? 6.0 : 8.0;
     final mainAxisSpacing = isVerySmallScreen ? 6.0 : 8.0;
     final childAspectRatio = isVerySmallScreen
@@ -2994,17 +3000,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     final itemPadding = isVerySmallScreen ? 6.0 : 8.0;
     final itemBorderRadius = isVerySmallScreen ? 8.0 : 10.0;
     final iconTextSpacing = isVerySmallScreen ? 4.0 : 6.0;
-
-    final amenities = [
-      {'icon': Icons.wifi, 'name': 'WiFi'},
-      {'icon': Icons.local_laundry_service, 'name': 'Laundry'},
-      {'icon': Icons.kitchen, 'name': 'Kitchen'},
-      {'icon': Icons.ac_unit, 'name': 'AC'},
-      {'icon': Icons.fitness_center, 'name': 'Gym'},
-      {'icon': Icons.pool, 'name': 'Pool'},
-      {'icon': Icons.security, 'name': 'Security'},
-      {'icon': Icons.elevator, 'name': 'Elevator'},
-    ];
 
     return Container(
       margin: EdgeInsets.all(margin),
@@ -3658,6 +3653,87 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       return '${(difference.inDays / 7).floor()} weeks ago';
     } else {
       return '${(difference.inDays / 30).floor()} months ago';
+    }
+  }
+
+  /// Parse amenities and return list with icons
+  List<Map<String, dynamic>> _parseAmenities(dynamic amenitiesData) {
+    List<String> amenityNames = [];
+    
+    if (amenitiesData is String) {
+      // If it's a string, split by comma
+      if (amenitiesData.isNotEmpty) {
+        amenityNames = amenitiesData
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+      }
+    } else if (amenitiesData is List) {
+      // If it's already a list, convert to strings
+      amenityNames = amenitiesData
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    
+    // If no amenities, return a default set with appropriate message
+    if (amenityNames.isEmpty) {
+      return [
+        {'icon': Icons.info_outline, 'name': 'No amenities listed'},
+      ];
+    }
+    
+    return amenityNames.map((name) {
+      return {
+        'icon': _getAmenityIcon(name),
+        'name': name,
+      };
+    }).toList();
+  }
+
+  /// Get appropriate icon for amenity name
+  IconData _getAmenityIcon(String amenityName) {
+    final lowerName = amenityName.toLowerCase();
+    
+    // Map amenity names to icons based on your actual data
+    if (lowerName.contains('wifi') || lowerName.contains('internet')) {
+      return Icons.wifi;
+    } else if (lowerName.contains('laundry') || lowerName.contains('washing')) {
+      return Icons.local_laundry_service;
+    } else if (lowerName.contains('kitchen')) {
+      return Icons.kitchen;
+    } else if (lowerName.contains('ac') || lowerName.contains('air condition') || lowerName.contains('cooling')) {
+      return Icons.ac_unit;
+    } else if (lowerName.contains('gym') || lowerName.contains('fitness')) {
+      return Icons.fitness_center;
+    } else if (lowerName.contains('pool') || lowerName.contains('swimming')) {
+      return Icons.pool;
+    } else if (lowerName.contains('security')) {
+      return Icons.security;
+    } else if (lowerName.contains('elevator') || lowerName.contains('lift')) {
+      return Icons.elevator;
+    } else if (lowerName.contains('parking')) {
+      return Icons.local_parking;
+    } else if (lowerName.contains('garage')) {
+      return Icons.garage;
+    } else if (lowerName.contains('balcony')) {
+      return Icons.balcony;
+    } else if (lowerName.contains('garden') || lowerName.contains('landscap')) {
+      return Icons.park;
+    } else if (lowerName.contains('pet') || lowerName.contains('animal') || lowerName.contains('friendly')) {
+      return Icons.pets;
+    } else if (lowerName.contains('compound')) {
+      return Icons.home_work;
+    } else if (lowerName.contains('heating') || lowerName.contains('heat')) {
+      return Icons.thermostat;
+    } else if (lowerName.contains('fireplace')) {
+      return Icons.fireplace;
+    } else if (lowerName.contains('laundry')) {
+      return Icons.local_laundry_service;
+    } else {
+      // Default icon for unknown amenities
+      return Icons.check_circle_outline;
     }
   }
 
