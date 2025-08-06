@@ -779,9 +779,9 @@ class _NotificationScreenState extends State<NotificationScreen>
                     case 'mark_read':
                       _markAsRead(notification);
                       break;
-                    case 'delete':
-                      _deleteNotification(notification.id);
-                      break;
+                    // case 'delete':
+                    //   //_deleteNotification(notification.id);
+                    //   break;
                   }
                 },
                 itemBuilder: (context) => [
@@ -797,16 +797,16 @@ class _NotificationScreenState extends State<NotificationScreen>
                         ],
                       ),
                     ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
+                  // PopupMenuItem(
+                  //   value: 'delete',
+                  //   child: Row(
+                  //     children: [
+                  //       Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                  //       SizedBox(width: 8),
+                  //       Text('Delete', style: TextStyle(color: Colors.red)),
+                  //     ],
+                  //   ),
+                  // ),
                 ],
               ),
             ],

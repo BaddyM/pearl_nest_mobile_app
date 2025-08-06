@@ -38,7 +38,7 @@ class NotificationItem {
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
     return NotificationItem(
       id: json['_id'] ?? json['id'] ?? '',
-      title: json['title'] ?? '',
+      title: json['title'] ?? 'System Notification',
       message: json['message'] ?? json['body'] ?? '',
       type: _parseNotificationType(json['type'] ?? 'system'),
       timestamp: _parseTimestamp(json['createdAt'] ?? json['timestamp']),

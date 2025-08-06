@@ -58,8 +58,10 @@ class Property {
   final String? propertyMap; // Iframe HTML for embedded map
   final String? safetyAndSecurity; // Optional safety features
   final String? nearbyPlaces; // Optional nearby places
+  final String? profilePicture;
 
   Property({
+    this.profilePicture,
     required this.id,
     required this.title,
     required this.description,
@@ -135,6 +137,7 @@ class Property {
     String? propertyMap,
     String? safetyAndSecurity,
     String? nearbyPlaces,
+    String? profilePicture,
   }) {
     return Property(
       id: id ?? this.id,
@@ -173,6 +176,7 @@ class Property {
       propertyMap: propertyMap ?? this.propertyMap,
       safetyAndSecurity: safetyAndSecurity ?? this.safetyAndSecurity,
       nearbyPlaces: nearbyPlaces ?? this.nearbyPlaces,
+      profilePicture: profilePicture ?? this.profilePicture,
     );
   }
 
@@ -240,6 +244,7 @@ class Property {
       landlordName: json['landlordName'] ?? json['ownerName'] ?? user?['name'] ?? '',
       landlordPhone: json['landlordPhone'] ?? json['ownerPhone'] ?? user?['contact'] ?? '',
       landlordEmail: json['landlordEmail'] ?? json['ownerEmail'] ?? user?['email'] ?? '',
+      profilePicture: json['profilePicture'] ?? user?['profilePicture'] ?? '',
       status: json['status'] != null 
           ? _parsePropertyStatus(json['status'])
           : json['availability'] == false 

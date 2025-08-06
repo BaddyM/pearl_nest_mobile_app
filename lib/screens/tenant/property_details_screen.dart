@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -3119,17 +3121,17 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   color: AppTheme.getTextColor(context),
                 ),
               ),
-              TextButton.icon(
-                onPressed: _openMap,
-                icon: Icon(Icons.map, color: AppTheme.primaryblue, size: 18),
-                label: Text(
-                  'View on Map',
-                  style: TextStyle(
-                    color: AppTheme.primaryblue,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+              // TextButton.icon(
+              //   onPressed: _openMap,
+              //   icon: Icon(Icons.map, color: AppTheme.primaryblue, size: 18),
+              //   label: Text(
+              //     'View on Map',
+              //     style: TextStyle(
+              //       color: AppTheme.primaryblue,
+              //       fontWeight: FontWeight.w600,
+              //     ),
+              //   ),
+              // ),
             ],
           ),
           SizedBox(height: 12),
@@ -3302,11 +3304,19 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   shape: BoxShape.circle,
                   color: AppTheme.primaryblue.withValues(alpha: 0.1),
                 ),
-                child: Icon(
-                  Icons.person,
-                  color: AppTheme.primaryblue,
-                  size: 30,
-                ),
+                child: widget.property.profilePicture != null || widget.property.profilePicture!.isNotEmpty
+                    ? ClipOval(
+                        child: CachedNetworkImage(
+                          cacheManager: DefaultCacheManager(),
+                          imageUrl: _getFullImageUrl(widget.property.profilePicture!),
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Icon(
+                        Icons.person,
+                        color: AppTheme.primaryblue,
+                        size: 30,
+                      ),
               ),
               SizedBox(width: 16),
               Expanded(
@@ -3330,27 +3340,27 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       ),
                     ),
                     SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.star, color: Colors.amber, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          '4.8',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.getTextColor(context),
-                          ),
-                        ),
-                        Text(
-                          ' (127 reviews)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.getSecondaryTextColor(context),
-                          ),
-                        ),
-                      ],
-                    ),
+                    // Row(
+                    //   children: [
+                    //     Icon(Icons.star, color: Colors.amber, size: 16),
+                    //     SizedBox(width: 4),
+                    //     Text(
+                    //       '4.8',
+                    //       style: TextStyle(
+                    //         fontSize: 14,
+                    //         fontWeight: FontWeight.bold,
+                    //         color: AppTheme.getTextColor(context),
+                    //       ),
+                    //     ),
+                    //     Text(
+                    //       ' (127 reviews)',
+                    //       style: TextStyle(
+                    //         fontSize: 12,
+                    //         color: AppTheme.getSecondaryTextColor(context),
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
                   ],
                 ),
               ),

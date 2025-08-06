@@ -162,12 +162,12 @@ class NotificationApiService {
         };
       }
 
-      _logRequest('/notifications/$notificationId/read', {}, token: token);
+      _logRequest('/notifications/read/$notificationId', {}, token: token);
 
       ApiClient.setAuthToken(token);
       
-      final response = await ApiClient.patch('/notifications/$notificationId/read', {});
-      _logResponse('/notifications/$notificationId/read', response);
+      final response = await ApiClient.patch('/notifications/read/$notificationId', {});
+      _logResponse('/notifications/read/$notificationId', response);
 
       if (response.statusCode == 200) {
         final responseData = response.data as Map<String, dynamic>;
