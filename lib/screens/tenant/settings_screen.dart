@@ -196,8 +196,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Currency',
           'Select your preferred currency',
           _selectedCurrency,
-          ['UGX', 'USD'],
-          (value) => _updateCurrencyPreference(value!),
+          ['UGX']
         ),
       ],
     );
@@ -389,7 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String subtitle,
     String value,
     List<String> options,
-    ValueChanged<String?> onChanged,
+    //ValueChanged<String?> onChanged,
   ) {
     return ListTile(
       leading: Container(
@@ -429,7 +428,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: value,
-            onChanged: onChanged,
+
+            //disabled updating currency
+            onChanged: (value) {},
             dropdownColor: AppTheme.getCardColor(context),
             style: TextStyle(color: AppTheme.getTextColor(context)),
             iconEnabledColor: AppTheme.primaryblue,
@@ -557,50 +558,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // Method to update currency preference
-  Future<void> _updateCurrencyPreference(String currency) async {
+  // Future<void> _updateCurrencyPreference(String currency) async {
    
-    // Update local state first for immediate UI feedback
-    final previousCurrency = _selectedCurrency;
-    setState(() {
-      _selectedCurrency = currency;
-    });
+  //   // Update local state first for immediate UI feedback
+  //   final previousCurrency = _selectedCurrency;
+  //   setState(() {
+  //     _selectedCurrency = currency;
+  //   });
 
-    try {
-      // Call the updateCurrency method
-      final result = await AuthService.updateCurrency(currency: currency);
+  //   try {
+  //     // Call the updateCurrency method
+  //     final result = await AuthService.updateCurrency(currency: currency);
       
      
-      if (result['success'] == true) {
-        //print('✅ SettingsScreen: Currency update successful');
-        // Show success feedback
-        CustomSnackBar.showSuccess(
-          context,
-          'Currency updated to $currency',
-        );
-      } else {
+  //     if (result['success'] == true) {
+  //       //print('✅ SettingsScreen: Currency update successful');
+  //       // Show success feedback
+  //       CustomSnackBar.showSuccess(
+  //         context,
+  //         'Currency updated to $currency',
+  //       );
+  //     } else {
         
-        // Revert the local change if update failed
-        setState(() {
-          _selectedCurrency = previousCurrency;
-        });
+  //       // Revert the local change if update failed
+  //       setState(() {
+  //         _selectedCurrency = previousCurrency;
+  //       });
 
-        CustomSnackBar.showError(
-          context,
-          'Failed to update currency: ${result['message'] ?? 'Unknown error'}',
-        );
-      }
-    } catch (e) {
-      // Revert the local change if update failed
-      setState(() {
-        _selectedCurrency = previousCurrency;
-      });
+  //       CustomSnackBar.showError(
+  //         context,
+  //         'Failed to update currency: ${result['message'] ?? 'Unknown error'}',
+  //       );
+  //     }
+  //   } catch (e) {
+  //     // Revert the local change if update failed
+  //     setState(() {
+  //       _selectedCurrency = previousCurrency;
+  //     });
 
-      CustomSnackBar.showError(
-        context,
-        'Network error. Please try again.',
-      );
-    }
-  }
+  //     CustomSnackBar.showError(
+  //       context,
+  //       'Network error. Please try again.',
+  //     );
+  //   }
+  // }
 
   void _navigateToEmailPreferences() {
     ScaffoldMessenger.of(context).showSnackBar(
