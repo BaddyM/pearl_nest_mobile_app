@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
@@ -1111,7 +1112,7 @@ class PropertyCard extends StatelessWidget {
 
           // Price - single line
           Text(
-            'UGX ${property.price.toStringAsFixed(0)}',
+            'UGX ${NumberFormat('#,###').format(property.price)}',
             style: TextStyle(
               fontSize: responsive['priceFontSize'],
               fontWeight: FontWeight.bold,
