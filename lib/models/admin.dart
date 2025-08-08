@@ -7,6 +7,7 @@ class Admin {
   final bool isAvailable;
   final String? department;
   final String? role;
+  final String contact;
 
   Admin({
     required this.id,
@@ -17,6 +18,7 @@ class Admin {
     this.isAvailable = true,
     this.department,
     this.role,
+    required this.contact,
   });
 
   factory Admin.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class Admin {
       isAvailable: json['isOnline'] ?? true,
       department: json['department'],
       role: json['role'],
+      contact: json['contact'] ?? '',
     );
   }
 

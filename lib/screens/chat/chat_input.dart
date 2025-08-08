@@ -7,7 +7,6 @@ import 'package:pearlnest/widgets/app_theme.dart';
 class ChatInput extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
-  final VoidCallback onAttachment;
   final bool isEnabled;
   final MessageType type;
 
@@ -15,7 +14,6 @@ class ChatInput extends StatefulWidget {
     super.key,
     required this.controller,
     required this.onSend,
-    required this.onAttachment,
     this.type = MessageType.text,
     this.isEnabled = true,
   });
@@ -71,13 +69,7 @@ class _ChatInputState extends State<ChatInput> {
       child: SafeArea(
         child: Row(
           children: [
-            IconButton(
-              icon: Icon(
-                Icons.attach_file,
-                color: widget.isEnabled ? AppTheme.getSecondaryTextColor(context) : AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
-              ),
-              onPressed: widget.isEnabled ? widget.onAttachment : null,
-            ),
+           
             Expanded(
               child: Container(
                 constraints: BoxConstraints(maxHeight: 120),

@@ -638,7 +638,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           if (!notification.isRead) {
             _markAsRead(notification);
           }
-          _handleNotificationTap(notification);
+          
         },
         child: Container(
           margin: EdgeInsets.only(bottom: 12),
@@ -816,77 +816,77 @@ class _NotificationScreenState extends State<NotificationScreen>
     );
   }
 
-  void _handleNotificationTap(NotificationItem notification) {
-    switch (notification.type) {
-      case NotificationType.propertyUpdate:
-      case NotificationType.favorite:
-        if (notification.propertyId != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Opening property: ${notification.propertyTitle}', style: TextStyle(color: AppTheme.lightGreyColor),),
-              duration: Duration(milliseconds: 500),
-              backgroundColor: AppTheme.primaryblue,
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
-          );
-        }
-        break;
-      case NotificationType.message:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening chat...', style: TextStyle(color: AppTheme.lightGreyColor),),
-            duration: Duration(milliseconds: 500),
-            backgroundColor: AppTheme.primaryblue,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
-        break;
-      case NotificationType.booking:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening booking details...', style: TextStyle(color: AppTheme.lightGreyColor),),
-            duration: Duration(milliseconds: 500),
-            backgroundColor: AppTheme.primaryblue,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
-        break;
-      case NotificationType.payment:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening payment details...', style: TextStyle(color: AppTheme.lightGreyColor),),
-            duration: Duration(milliseconds: 500),
-            backgroundColor: AppTheme.primaryblue,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
-        break;
-      case NotificationType.review:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening reviews...', style: TextStyle(color: AppTheme.lightGreyColor),),
-            duration: Duration(milliseconds: 500),
-            backgroundColor: AppTheme.primaryblue,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
-        break;
-      case NotificationType.system:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('System notification opened', style: TextStyle(color: AppTheme.lightGreyColor),),
-            duration: Duration(milliseconds: 500),
-            backgroundColor: AppTheme.primaryblue,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
-        break;
-    }
-  }
+  // void _handleNotificationTap(NotificationItem notification) {
+  //   switch (notification.type) {
+  //     case NotificationType.propertyUpdate:
+  //     case NotificationType.favorite:
+  //       if (notification.propertyId != null) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('Opening property: ${notification.propertyTitle}', style: TextStyle(color: AppTheme.lightGreyColor),),
+  //             duration: Duration(milliseconds: 500),
+  //             backgroundColor: AppTheme.primaryblue,
+  //             behavior: SnackBarBehavior.floating,
+  //             margin: EdgeInsets.all(16),
+  //           ),
+  //         );
+  //       }
+  //       break;
+  //     case NotificationType.message:
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Opening chat...', style: TextStyle(color: AppTheme.lightGreyColor),),
+  //           duration: Duration(milliseconds: 500),
+  //           backgroundColor: AppTheme.primaryblue,
+  //           behavior: SnackBarBehavior.floating,
+  //           margin: EdgeInsets.all(16),
+  //         ),
+  //       );
+  //       break;
+  //     case NotificationType.booking:
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Opening booking details...', style: TextStyle(color: AppTheme.lightGreyColor),),
+  //           duration: Duration(milliseconds: 500),
+  //           backgroundColor: AppTheme.primaryblue,
+  //           behavior: SnackBarBehavior.floating,
+  //           margin: EdgeInsets.all(16),
+  //         ),
+  //       );
+  //       break;
+  //     case NotificationType.payment:
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Opening payment details...', style: TextStyle(color: AppTheme.lightGreyColor),),
+  //           duration: Duration(milliseconds: 500),
+  //           backgroundColor: AppTheme.primaryblue,
+  //           behavior: SnackBarBehavior.floating,
+  //           margin: EdgeInsets.all(16),
+  //         ),
+  //       );
+  //       break;
+  //     case NotificationType.review:
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Opening reviews...', style: TextStyle(color: AppTheme.lightGreyColor),),
+  //           duration: Duration(milliseconds: 500),
+  //           backgroundColor: AppTheme.primaryblue,
+  //           behavior: SnackBarBehavior.floating,
+  //           margin: EdgeInsets.all(16),
+  //         ),
+  //       );
+  //       break;
+  //     case NotificationType.system:
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('System notification opened', style: TextStyle(color: AppTheme.lightGreyColor),),
+  //           duration: Duration(milliseconds: 500),
+  //           backgroundColor: AppTheme.primaryblue,
+  //           behavior: SnackBarBehavior.floating,
+  //           margin: EdgeInsets.all(16),
+  //         ),
+  //       );
+  //       break;
+  //   }
+  // }
 }

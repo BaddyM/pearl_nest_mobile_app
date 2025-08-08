@@ -113,6 +113,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       if (mounted) {
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load conversations. ${_allConversations.isEmpty ? 'No admin available.' : 'Showing available chats.'}'),

@@ -19,12 +19,14 @@ class IndividualChatScreen extends StatefulWidget {
   final ChatConversation conversation;
   final User currentUser;
   final bool isOnline;
+  final String adminContact;
 
   const IndividualChatScreen({
     super.key,
     required this.conversation,
     required this.currentUser,
     required this.isOnline,
+    required this.adminContact,
   });
 
   @override
@@ -399,7 +401,6 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     return ChatInput(
       controller: _messageController,
       onSend: _sendMessage,
-      onAttachment: _showAttachmentOptions,
       isEnabled: isConnected && !isLoading,
     );
   }
@@ -452,9 +453,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               onPressed: () async {
                 Navigator.pop(context);
 
-                String phoneNumber = "+256787018472";
-                // Edit this to pick the landlord number from the backend
-                // String phoneNumber = widget.conversation.landlordPhone;
+                String phoneNumber = widget.adminContact;
 
                 String cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
 
@@ -574,110 +573,9 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     );
   }
 
-  void _showAttachmentOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return Container(
-          padding: EdgeInsets.all(20),
-          color: AppTheme.getCardColor(context),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Send Attachment',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextColor(context),
-                ),
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildAttachmentOption(
-                    icon: Icons.photo_camera,
-                    label: 'Camera',
-                    color: Colors.blue,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _buildAttachmentOption(
-                    icon: Icons.photo_library,
-                    label: 'Gallery',
-                    color: Colors.green,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _buildAttachmentOption(
-                    icon: Icons.insert_drive_file,
-                    label: 'Document',
-                    color: Colors.orange,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  
 
-  Widget _buildAttachmentOption({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 30,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: AppTheme.getTextColor(context),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+ 
 
   void _showBlockDialog() {
     showDialog(

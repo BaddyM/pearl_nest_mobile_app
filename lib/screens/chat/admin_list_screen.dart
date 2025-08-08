@@ -6,6 +6,7 @@ import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class AdminListScreen extends StatefulWidget {
@@ -56,7 +57,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
         });
       }
     } catch (e) {
-      //debugPrint('❌ AdminListScreen: Error loading admins - $e');
+      debugPrint('❌ AdminListScreen: Error loading admins - $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load admin list. Please try again.';
@@ -84,6 +85,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => IndividualChatScreen(
+              adminContact: admin.contact,
               conversation: conversation,
               currentUser: widget.user,
               isOnline: admin.isOnline,
@@ -104,17 +106,11 @@ class _AdminListScreenState extends State<AdminListScreen> {
 
   void _showErrorSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
+      CustomSnackBar.showError(
+        context,
+        message,
+      );  
+      
     }
   }
 

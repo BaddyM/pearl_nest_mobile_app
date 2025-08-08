@@ -316,7 +316,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               SizedBox(height: 12),
               Text(
-                'Start earning by listing your properties on PearlNest. Join thousands of successful landlords and grow your business.',
+                'Make your property easily discoverable by listing it on Pearlnest - reach a wider audience and attract potential tenants or buyers with our platform.',
                 style: TextStyle(
                   color: AppTheme.getTextColor(context).withOpacity(0.9),
                   fontSize: 14,
