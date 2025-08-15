@@ -134,6 +134,9 @@ class AuthService {
     } else if (error.toString().contains('Connection refused') || error.toString().contains('Connection failed')) {
       message = 'Unable to connect to server. Please try again later.';
       code = 'CONNECTION_REFUSED';
+    } else if(error.toString().contains('Server error') || error.toString().contains('500 Internal Server Error')) {
+      message = 'Server error. Please try again later.';
+      code = 'SERVER_ERROR';
     } else {
       // Generic fallback with operation-specific messages
       if (operation == 'login') {

@@ -43,6 +43,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final result = await AuthService.login(event.email, event.password);
 
+      debugPrint('AuthBloc: Login result received: $result');
       if (result['success'] == true) {
         //for app review process. remove afterwards
         if (event.email == "xowar43498@fenexy.com") {
@@ -88,6 +89,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
+      debugPrint('AuthBloc: Login error - $e');
       // Provide more specific error messages based on error type
       String errorMessage;
       if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
