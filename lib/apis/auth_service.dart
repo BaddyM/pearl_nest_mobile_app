@@ -44,8 +44,8 @@ class AuthService {
 
   static void _logResponse(String endpoint, Response response) {
     if (kDebugMode) {
-      // //debugPrint('📥 AUTH RESPONSE: $endpoint');
-      // //debugPrint('📊 Status Code: ${response.statusCode}');
+      //debugPrint('📥 AUTH RESPONSE: $endpoint');
+      //debugPrint('📊 Status Code: ${response.statusCode}');
       // //debugPrint('📋 Headers: ${response.headers}');
 
       // Log response body (be careful with sensitive data)
@@ -72,9 +72,9 @@ class AuthService {
 
   static void _logError(String operation, dynamic error) {
     if (kDebugMode) {
-      // //debugPrint('❌ AUTH ERROR [$operation]: $error');
+      //debugPrint('❌ AUTH ERROR [$operation]: $error');
       if (error is Error) {
-        // //debugPrint('🔍 Stack Trace: ${error.stackTrace}');
+        //debugPrint('🔍 Stack Trace: ${error.stackTrace}');
       }
     }
   }

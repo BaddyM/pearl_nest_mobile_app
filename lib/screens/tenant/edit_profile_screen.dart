@@ -9,6 +9,7 @@ import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/utils/cache_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -715,7 +716,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         emailNotifications: _emailNotifications,
       );
 
-      //debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
+      debugPrint('🔧 EditProfileScreen: Profile update result: ${result['success']}');
 
       if (result['success'] == true) {
         // Trigger AuthBloc to refresh the user state with updated data
@@ -726,8 +727,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         // Clear old cached image
         await CacheHelper.clearProfileImageCache(widget.user.profileImage);
 
-        // Optionally preload new image
-        await CacheHelper.preloadProfileImage(result['data']['profileImage']);
+        
 
         _showSuccessSnackBar(result['message'] ?? 'Profile updated successfully!');
 
@@ -743,8 +743,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _showErrorSnackBar(result['message'] ?? 'Failed to update profile. Please try again.');
       }
     } catch (e, stackTrace) {
-      //debugPrint('🔧 EditProfileScreen: Profile update error: $e');
-      //debugPrint('🔧 EditProfileScreen: Stack trace: $stackTrace');
+      debugPrint('🔧 EditProfileScreen: Profile update error: $e');
+      debugPrint('🔧 EditProfileScreen: Stack trace: $stackTrace');
 
       setState(() {
         _isLoading = false;
@@ -782,28 +782,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _showErrorSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error, color: Colors.white),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  message,
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
+      CustomSnackBar.showError(context, message);
+     
     }
   }
 
