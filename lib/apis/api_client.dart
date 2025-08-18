@@ -86,7 +86,7 @@ class ApiClient {
     final baseUrl = _dio?.options.baseUrl ?? 'unknown';
     final fullUrl = '$baseUrl$endpoint';
     if (_authToken != null) {
-      debugPrint('ApiClient: Using token: $_authToken');
+     // debugPrint('ApiClient: Using token: $_authToken');
     } else {
       //debugPrint('ApiClient: No auth token set');
     }
