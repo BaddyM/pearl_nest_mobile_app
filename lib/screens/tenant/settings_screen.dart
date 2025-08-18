@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:provider/provider.dart';
@@ -9,8 +10,8 @@ import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/tenant/edit_profile_screen.dart';
 import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
+import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
-import 'package:pearlnest/utils/custom_snackbar.dart';
 
 class SettingsScreen extends StatefulWidget {
   final User user;
@@ -124,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Icons.lock_outline,
           'Change Password',
           'Update your account password',
-          () => _showChangePasswordDialog(),
+          () => _navigateToChangePassword(),
         ),
         _buildSettingsItem(
           Icons.email_outlined,
@@ -665,196 +666,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
  
 
-  void _showChangePasswordDialog() {
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-    bool obscureCurrentPassword = true;
-    bool obscureNewPassword = true;
-    bool obscureConfirmPassword = true;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppTheme.getCardColor(context),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Row(
-                children: [
-                  Icon(Icons.lock_outline, color: AppTheme.primaryblue),
-                  SizedBox(width: 8),
-                  Text(
-                    'Change Password',
-                    style: TextStyle(color: AppTheme.getTextColor(context)),
-                  ),
-                ],
-              ),
-              content: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.9,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildPasswordField(
-                      controller: currentPasswordController,
-                      labelText: 'Current Password',
-                      obscureText: obscureCurrentPassword,
-                      onToggleVisibility: () {
-                        setDialogState(() {
-                          obscureCurrentPassword = !obscureCurrentPassword;
-                        });
-                      },
-                      icon: Icons.lock_outline,
-                    ),
-                    SizedBox(height: 16),
-                    _buildPasswordField(
-                      controller: newPasswordController,
-                      labelText: 'New Password',
-                      obscureText: obscureNewPassword,
-                      onToggleVisibility: () {
-                        setDialogState(() {
-                          obscureNewPassword = !obscureNewPassword;
-                        });
-                      },
-                      icon: Icons.lock_reset_outlined,
-                    ),
-                    SizedBox(height: 16),
-                    _buildPasswordField(
-                      controller: confirmPasswordController,
-                      labelText: 'Confirm New Password',
-                      obscureText: obscureConfirmPassword,
-                      onToggleVisibility: () {
-                        setDialogState(() {
-                          obscureConfirmPassword = !obscureConfirmPassword;
-                        });
-                      },
-                      icon: Icons.lock_person_outlined,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    _handlePasswordChange(
-                      currentPasswordController.text,
-                      newPasswordController.text,
-                      confirmPasswordController.text,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryblue,
-                    foregroundColor: AppTheme.whiteColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text('Change Password'),
-                ),
-              ],
-            );
+  void _navigateToChangePassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ForgotPasswordScreen(
+          isChangePassword: true,
+          onPasswordChangeSuccess: () {
+            CustomSnackBar.showSuccess(context, 'Password changed successfully');
           },
-        );
-      },
-    );
-  }
-
-  Widget _buildPasswordField({
-    required TextEditingController controller,
-    required String labelText,
-    required bool obscureText,
-    required VoidCallback onToggleVisibility,
-    required IconData icon,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      style: TextStyle(color: AppTheme.getTextColor(context)),
-      decoration: InputDecoration(
-        labelText: labelText,
-        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-        filled: true,
-        fillColor: AppTheme.getBackgroundColor(context),
-        prefixIcon: Icon(icon, color: AppTheme.primaryblue),
-        suffixIcon: IconButton(
-          icon: Icon(
-            obscureText ? Icons.visibility_off : Icons.visibility,
-            color: AppTheme.getSecondaryTextColor(context),
-          ),
-          onPressed: onToggleVisibility,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
         ),
       ),
     );
-  }
-
-  void _handlePasswordChange(String currentPassword, String newPassword, String confirmPassword) async {
-    if (currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
-      _showSnackBar('Please fill all fields', Colors.red);
-      return;
-    }
-
-    if (newPassword != confirmPassword) {
-      _showSnackBar('New passwords do not match', Colors.red);
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      _showSnackBar('Password must be at least 6 characters', Colors.red);
-      return;
-    }
-
-    Navigator.of(context).pop();
-
-    // Show loading
-    _showSnackBar('Changing password...', AppTheme.primaryblue);
-
-    try {
-      final result = await AuthService.changePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
-
-      if (result['success'] == true) {
-        _showSnackBar('Password changed successfully', AppTheme.primaryblue);
-      } else {
-        // Handle specific error codes
-        final code = result['code'];
-        final message = result['message'] ?? 'Password change failed';
-
-        if (code == 'TOKEN_EXPIRED') {
-          _showSnackBar('Session expired. Please login again.', Colors.red);
-          // TODO: Navigate to login screen or trigger re-authentication
-          // You can use Provider.of<AuthProvider>(context, listen: false).logout();
-        } else if (code == 'NO_INTERNET') {
-          _showSnackBar('No internet connection. Please try again.', Colors.red);
-        } else {
-          _showSnackBar(message, Colors.red);
-        }
-      }
-    } catch (e) {
-      //debugPrint('Password change error: $e');
-      _showSnackBar('Network error. Please try again.', Colors.red);
-    }
   }
 
   void _showSnackBar(String message, Color backgroundColor) {
@@ -871,12 +694,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
- 
-
-  
-
-  
-
-  
 }

@@ -8,7 +8,14 @@ import 'package:pearlnest/network/exceptions/network_exceptions.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
 
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+  final bool isChangePassword;
+  final VoidCallback? onPasswordChangeSuccess;
+  
+  const ForgotPasswordScreen({
+    super.key,
+    this.isChangePassword = false,
+    this.onPasswordChangeSuccess,
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -52,7 +59,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         )
                       ),
                       Text(
-                        'Reset Your Password',
+                        widget.isChangePassword ? 'Change Your Password' : 'Reset Your Password',
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: AppTheme.getTextColor(context),
                         ),
@@ -60,7 +67,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       SizedBox(height: 16),
                       Text(
-                        'Enter your email address and we\'ll send you a verification code to reset your password.',
+                        widget.isChangePassword 
+                            ? 'Enter your email address and we\'ll send you a verification code to change your password.'
+                            : 'Enter your email address and we\'ll send you a verification code to reset your password.',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: AppTheme.getSecondaryTextColor(context),
                         ),
@@ -116,7 +125,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 child: _isLoading
                                     ? CircularProgressIndicator(color: AppTheme.whiteColor)
                                     : Text(
-                                        'Send Verification Code',
+                                        widget.isChangePassword ? 'Send Verification Code' : 'Send Verification Code',
                                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                       ),
                               ),
@@ -172,6 +181,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 builder: (context) => VerifyCodeScreen(
                   email: _emailController.text,
                   serverOtp: otp,
+                  isChangePassword: widget.isChangePassword,
+                  onPasswordChangeSuccess: widget.onPasswordChangeSuccess,
                 ),
               ),
             );

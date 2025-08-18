@@ -1386,7 +1386,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
                         SizedBox(height: 16),
                         Text(
-                          'Payment is required within 24 hours to secure your booking. Failure to pay will result in the property being made available for other bookings',
+                          "Thank you for booking with PearlNest Estates! To confirm your booking and receive feedback promptly, please make a payment of at least UGX 5,000 (or \$2) within 24 hours. If payment is not made within this time, the property will automatically be made available to other clients.",
                           style: TextStyle(
                             fontSize: 14,
                             color: AppTheme.getSecondaryTextColor(context),

@@ -8,8 +8,16 @@ import 'package:pearlnest/apis/auth_service.dart';
 class VerifyCodeScreen extends StatefulWidget {
   final String email;
   final String? serverOtp;
+  final bool isChangePassword;
+  final VoidCallback? onPasswordChangeSuccess;
 
-  const VerifyCodeScreen({super.key, required this.email, this.serverOtp});
+  const VerifyCodeScreen({
+    super.key, 
+    required this.email, 
+    this.serverOtp,
+    this.isChangePassword = false,
+    this.onPasswordChangeSuccess,
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -239,7 +247,11 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ResetPasswordScreen(email: widget.email),
+            builder: (context) => ResetPasswordScreen(
+              email: widget.email,
+              isChangePassword: widget.isChangePassword,
+              onPasswordChangeSuccess: widget.onPasswordChangeSuccess,
+            ),
           ),
         );
       }

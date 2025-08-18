@@ -2,14 +2,22 @@
 
 import 'package:flutter/material.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
+import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/network/exceptions/network_exceptions.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
+  final bool isChangePassword;
+  final VoidCallback? onPasswordChangeSuccess;
 
-  const ResetPasswordScreen({super.key, required this.email});
+  const ResetPasswordScreen({
+    super.key, 
+    required this.email,
+    this.isChangePassword = false,
+    this.onPasswordChangeSuccess,
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -280,7 +288,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       ),
                       SizedBox(height: 20),
                       Text(
-                        'Password Reset Successful!',
+                        widget.isChangePassword 
+                          ? 'Password Changed Successfully!' 
+                          : 'Password Reset Successful!',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -290,7 +300,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       ),
                       SizedBox(height: 12),
                       Text(
-                        'Your password has been successfully reset. You can now sign in with your new password.',
+                        widget.isChangePassword
+                          ? 'Your password has been successfully changed.'
+                          : 'Your password has been successfully reset. You can now sign in with your new password.',
                         style: TextStyle(
                           color: AppTheme.getSecondaryTextColor(context),
                           fontSize: 14,
@@ -301,12 +313,47 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => LoginScreen()),
-                              (route) => false,
-                            );
+                          onPressed: () async {
+                            if (widget.isChangePassword) {
+                              // Close the dialog first
+                              Navigator.pop(context);
+                              
+                              // Get current user and navigate to home screen
+                              try {
+                                final currentUser = await AuthService.getCurrentUser();
+                                if (currentUser != null && mounted) {
+                                  // Navigate to HomeScreen and remove all previous routes
+                                  Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => HomeScreen(user: currentUser),
+                                    ),
+                                    (route) => false,
+                                  );
+                                  
+                                  // Call the success callback
+                                  widget.onPasswordChangeSuccess?.call();
+                                } else {
+                                  // Fallback: just pop all dialogs and screens
+                                  Navigator.pop(context); // Pop ResetPasswordScreen
+                                  Navigator.pop(context); // Pop VerifyCodeScreen  
+                                  Navigator.pop(context); // Pop ForgotPasswordScreen
+                                  widget.onPasswordChangeSuccess?.call();
+                                }
+                              } catch (e) {
+                                // Fallback: just pop all dialogs and screens
+                                Navigator.pop(context); // Pop ResetPasswordScreen
+                                Navigator.pop(context); // Pop VerifyCodeScreen  
+                                Navigator.pop(context); // Pop ForgotPasswordScreen
+                                widget.onPasswordChangeSuccess?.call();
+                              }
+                            } else {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(builder: (context) => LoginScreen()),
+                                (route) => false,
+                              );
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryblue,
@@ -317,7 +364,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             ),
                           ),
                           child: Text(
-                            'Back to Sign In',
+                            widget.isChangePassword ? 'Done' : 'Back to Sign In',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
