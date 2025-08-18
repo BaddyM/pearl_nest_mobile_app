@@ -1386,7 +1386,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
                         SizedBox(height: 16),
                         Text(
-                          'Your booking request will be sent to the landlord for approval.',
+                          'Payment is required within 24 hours to secure your booking. Failure to pay will result in the property being made available for other bookings',
                           style: TextStyle(
                             fontSize: 14,
                             color: AppTheme.getSecondaryTextColor(context),
@@ -3741,6 +3741,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     // Check if this property has a pending booking
     final hasPendingBooking = _pendingBookingForProperty != null;
 
+    // Check if property is available for booking
+  final isPropertyAvailable = widget.property.status == PropertyStatus.available;
+  
+
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -3763,13 +3768,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
           SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoadingPendingBookings
+              onPressed: _isLoadingPendingBookings || !isPropertyAvailable
                   ? null
                   : hasPendingBooking
                       ? _initiatePayment
                       : _showBookingConfirmationDialog,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isLoadingPendingBookings
+                backgroundColor: _isLoadingPendingBookings || !isPropertyAvailable
                     ? Colors.grey
                     : hasPendingBooking
                         ? AppTheme.primaryblue
@@ -3791,7 +3796,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   ),
                   SizedBox(width: 8),
                   Text(
-                    hasPendingBooking ? 'Complete Payment' : 'Book Now',
+                    hasPendingBooking ? 'Complete Payment' : isPropertyAvailable ? 'Book Now' : 'Unavailable',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
