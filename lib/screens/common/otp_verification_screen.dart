@@ -7,8 +7,10 @@ import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
+import 'dart:async';
 
 class OtpVerificationScreen extends StatefulWidget {
+  final String password;
   final String email;
   final String tempToken;
   final String message;
@@ -21,6 +23,7 @@ class OtpVerificationScreen extends StatefulWidget {
     required this.tempToken,
     required this.message,
     required this.serverOtp,
+    required this.password,
     this.role,
   });
 
@@ -34,6 +37,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   bool _canResend = true;
   int _resendCountdown = 0;
+  Timer? _timer; // Add this line
 
   @override
   void initState() {
@@ -45,6 +49,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   void dispose() {
+    _timer?.cancel(); // Cancel timer
     for (var controller in _controllers) {
       controller.dispose();
     }
@@ -60,18 +65,22 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _resendCountdown = 60;
     });
 
-    Future.delayed(Duration(seconds: 1), () {
-      if (mounted && _resendCountdown > 0) {
+    _timer?.cancel();
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCountdown > 1) {
         setState(() {
           _resendCountdown--;
         });
-        if (_resendCountdown > 0) {
-          _startResendTimer();
-        } else {
-          setState(() {
-            _canResend = true;
-          });
-        }
+      } else {
+        timer.cancel();
+        setState(() {
+          _canResend = true;
+          _resendCountdown = 0;
+        });
       }
     });
   }
@@ -119,10 +128,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   void _resendOtp() {
     if (_canResend) {
-      // For client-side verification, we just show a message that the code hasn't changed
+       context.read<AuthBloc>().add(
+            AuthLoginRequested(
+              email: widget.email,
+              password: widget.password,
+            ),
+          );
       CustomSnackBar.showInfo(
         context,
-        'The OTP code is still valid. Please check your email again.',
+        'The OTP code has been resent to your email.',
         duration: Duration(milliseconds: 2000),
       );
       _startResendTimer();

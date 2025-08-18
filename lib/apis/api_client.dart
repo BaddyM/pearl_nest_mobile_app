@@ -86,7 +86,7 @@ class ApiClient {
     final baseUrl = _dio?.options.baseUrl ?? 'unknown';
     final fullUrl = '$baseUrl$endpoint';
     if (_authToken != null) {
-      //debugPrint('ApiClient: Using token: $_authToken');
+      debugPrint('ApiClient: Using token: $_authToken');
     } else {
       //debugPrint('ApiClient: No auth token set');
     }
@@ -95,24 +95,24 @@ class ApiClient {
       //debugPrint('ApiClient: Headers: $headers');
     }
     if (data != null && data.isNotEmpty) {
-      //debugPrint('ApiClient: Request data: $data');
+      debugPrint('ApiClient: Request data: $data');
     }
   }
 
   static void _logResponse(Response response) {
     final fullUrl = '${response.requestOptions.baseUrl}${response.requestOptions.path}';
 
-    //debugPrint('ApiClient: Response from $fullUrl - Status: ${response.statusCode}');
-    //debugPrint('ApiClient: Response data: ${response.data}');
+    debugPrint('ApiClient: Response from $fullUrl - Status: ${response.statusCode}');
+    debugPrint('ApiClient: Response data: ${response.data}');
   }
 
   static void _logError(DioException error) {
     final fullUrl = '${error.requestOptions.baseUrl}${error.requestOptions.path}';
 
-    //debugPrint('ApiClient: Error for $fullUrl - Type: ${error.type}, Message: ${error.message}');
+    debugPrint('ApiClient: Error for $fullUrl - Type: ${error.type}, Message: ${error.message}');
     if (error.response != null) {
-      //debugPrint('ApiClient: Error status: ${error.response!.statusCode}');
-      //debugPrint('ApiClient: Error data: ${error.response!.data}');
+      debugPrint('ApiClient: Error status: ${error.response!.statusCode}');
+      debugPrint('ApiClient: Error data: ${error.response!.data}');
     }
   }
 

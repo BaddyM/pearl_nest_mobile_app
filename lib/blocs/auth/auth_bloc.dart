@@ -46,7 +46,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       debugPrint('AuthBloc: Login result received: $result');
       if (result['success'] == true) {
         //for app review process. remove afterwards
-        if (event.email == "xowar43498@fenexy.com") {
+        if (event.email == "nirage6590@euleina.com") {
           final adminResult = await AuthService.verifyOtp(event.email, 'gid2023', '000000', result['tempToken']);
           // //debugPrint('AuthBloc: Admin login result received: $adminResult');
           _currentUser = adminResult['user'];

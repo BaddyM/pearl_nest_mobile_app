@@ -47,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
             context,
             MaterialPageRoute(
               builder: (context) => OtpVerificationScreen(
+                password: _passwordController.text,
                 email: state.email,
                 tempToken: state.tempToken,
                 serverOtp: state.serverOtp,
@@ -222,44 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                             ),
                           ),
-                          // SizedBox(height: 24),
-                          // Row(
-                          //   children: [
-                          //     Expanded(child: Divider(color: AppTheme.getSecondaryTextColor(context))),
-                          //     Padding(
-                          //       padding: EdgeInsets.symmetric(horizontal: 16),
-                          //       child: Text(
-                          //         'OR',
-                          //         style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-                          //       ),
-                          //     ),
-                          //     Expanded(child: Divider(color: AppTheme.getSecondaryTextColor(context))),
-                          //   ],
-                          // ),
-                          // SizedBox(height: 24),
-                          // Row(
-                          //   children: [
-                          //     Expanded(
-                          //       child: _socialLoginButton(
-                          //         icon: Icons.g_mobiledata,
-                          //         label: 'Google',
-                          //         onPressed: () {
-                          //           // TODO: Implement Google login
-                          //         },
-                          //       ),
-                          //     ),
-                          //     SizedBox(width: 16),
-                          //     Expanded(
-                          //       child: _socialLoginButton(
-                          //         icon: Icons.facebook,
-                          //         label: 'Facebook',
-                          //         onPressed: () {
-                          //           // TODO: Implement Facebook login
-                          //         },
-                          //       ),
-                          //     ),
-                          //   ],
-                          // ),
+                        
                           SizedBox(height: 40),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
