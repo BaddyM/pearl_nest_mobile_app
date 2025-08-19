@@ -413,7 +413,7 @@ class ChatService {
     final userId = prefs.getString("user_id");
 
     try {
-      //debugPrint('📤 Making GET request to /chat/adminList...');
+      //debugPrint('📤 Making GET request to /chat/adminList...with role $role');
       final response = (role == "ADMIN") ? await ApiClient.get('/chat/userList/$userId') : await ApiClient.get('/chat/adminList');
 
       stopwatch.stop();
@@ -578,7 +578,7 @@ class ChatService {
     //print("ChatList running");
 
     try {
-      //debugPrint('📤 Making GET request to /chat/chatList...');
+      //debugPrint('📤 Making GET request to /chat/chatList... with role $role');
       final response = (role == "ADMIN") ? await ApiClient.get('/chat/userList') : await ApiClient.get('/chat/adminList');
 
       if (response.statusCode == 200) {
