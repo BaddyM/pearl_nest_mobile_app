@@ -100,41 +100,6 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: _buildBody(),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        selectedItemColor: AppTheme.primaryblue,
-        unselectedItemColor: AppTheme.getSecondaryTextColor(context),
-        backgroundColor: AppTheme.getCardColor(context),
-        elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_work),
-            label: 'Properties',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
     );
   }
 
@@ -176,7 +141,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
               _buildHeader(),
               _buildStatsCards(),
               _buildQuickActions(),
-              SizedBox(height: 20), // Add some bottom padding
+              SizedBox(height: 20),
             ],
           ),
         ),
@@ -213,9 +178,16 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
         children: [
           Row(
             children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: AppTheme.blackColor,
+                ),
+              ),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       'Welcome back,',

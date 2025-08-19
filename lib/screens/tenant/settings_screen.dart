@@ -126,14 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Change Password',
           'Update your account password',
           () => _navigateToChangePassword(),
-        ),
-        _buildSettingsItem(
-          Icons.email_outlined,
-          'Email Preferences',
-          'Manage email settings',
-          () => _navigateToEmailPreferences(),
-        ),
-        
+        ),        
       ],
     );
   }
@@ -164,17 +157,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           isLoading: _isUpdatingNotifications,
         ),
-        _buildSwitchItem(
-          Icons.sms_outlined,
-          'SMS Notifications',
-          'Receive notifications via SMS',
-          _smsNotifications,
-          (value) => _updateNotificationPreference(
-            preferenceType: 'sms',
-            value: value,
-          ),
-          isLoading: _isUpdatingNotifications,
-        ),
       ],
     );
   }
@@ -195,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildDropdownItem(
           Icons.attach_money_outlined,
           'Currency',
-          'Select your preferred currency',
+          'Only UGX available for now',
           _selectedCurrency,
           ['UGX']
         ),
@@ -476,9 +458,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         case 'email':
           _emailNotifications = value;
           break;
-        case 'sms':
-          _smsNotifications = value;
-          break;
       }
       setState(() {});
 
@@ -603,21 +582,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   //     );
   //   }
   // }
-
-  void _navigateToEmailPreferences() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Email Preferences - Coming Soon',
-          style: TextStyle(color: AppTheme.lightGreyColor),
-        ),
-        duration: Duration(milliseconds: 500),
-        backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(16),
-      ),
-    );
-  }
 
  
 

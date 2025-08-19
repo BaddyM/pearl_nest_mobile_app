@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -13,6 +15,7 @@ class ContactDeveloperScreen extends StatefulWidget {
 
 class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
   PackageInfo? _packageInfo;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
   @override
   void initState() {
@@ -228,77 +231,48 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
     );
   }
 
-
-
-  Widget _buildInfoRow(String label, String value) {
-    return Builder(
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildFeedbackSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        color: AppTheme.getCardColor(context),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                label,
+                'Quick Feedback',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextColor(context),
+                ),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'How would you rate your experience with PearlNest?',
                 style: TextStyle(
                   color: AppTheme.getSecondaryTextColor(context),
                   fontSize: 14,
                 ),
               ),
-              Text(
-                value,
-                style: TextStyle(
-                  color: AppTheme.getTextColor(context),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+              SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildFeedbackButton(context, '😞', 'Poor'),
+                  _buildFeedbackButton(context, '😐', 'Fair'),
+                  _buildFeedbackButton(context, '😊', 'Good'),
+                  _buildFeedbackButton(context, '😍', 'Excellent'),
+                ],
               ),
             ],
           ),
-        );
-      }
-    );
-  }
-
-  Widget _buildFeedbackSection(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      color: AppTheme.getCardColor(context),
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Quick Feedback',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.getTextColor(context),
-              ),
-            ),
-            SizedBox(height: 12),
-            Text(
-              'How would you rate your experience with PearlNest?',
-              style: TextStyle(
-                color: AppTheme.getSecondaryTextColor(context),
-                fontSize: 14,
-              ),
-            ),
-            SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildFeedbackButton(context, '😞', 'Poor'),
-                _buildFeedbackButton(context, '😐', 'Fair'),
-                _buildFeedbackButton(context, '😊', 'Good'),
-                _buildFeedbackButton(context, '😍', 'Excellent'),
-              ],
-            ),
-          ],
         ),
       ),
     );
@@ -306,7 +280,9 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
 
   Widget _buildFeedbackButton(BuildContext context, String emoji, String label) {
     return GestureDetector(
-      onTap: () => _showFeedbackDialog(context, label),
+      onTap: () {
+        _showFloatingEmojis(context, emoji);
+      },
       child: Column(
         children: [
           Container(
@@ -374,43 +350,188 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
     );
   }
 
-  void _showFeedbackDialog(BuildContext context, String rating) {
-    showDialog(
-      context: context,
+  void _showFloatingEmojis(BuildContext context, String emoji) {
+    final overlay = Overlay.of(context);
+    if (overlay == null) return;
+
+    // Get the render box of the specific feedback button that was tapped
+    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final Offset globalPosition = renderBox.localToGlobal(Offset.zero);
+    final Size size = renderBox.size;
+
+    // Create multiple floating emojis
+    for (int i = 0; i < 7; i++) {
+      _createFloatingEmoji(overlay, emoji, globalPosition, size, i);
+    }
+  }
+
+  void _createFloatingEmoji(
+    OverlayState overlay,
+    String emoji,
+    Offset startPosition,
+    Size buttonSize,
+    int index,
+  ) {
+    final random = Random();
+    
+    // Calculate starting position (center of the button)
+    final double startX = startPosition.dx + (buttonSize.width / 2) - 15; // Center horizontally
+    final double startY = startPosition.dy + (buttonSize.height / 2) - 15; // Center vertically
+    
+    // Random variations for more natural animation
+    final double horizontalDrift = (random.nextDouble() - 0.5) * 100; // -50 to 50
+    final double verticalDistance = 150 + random.nextDouble() * 50; // 150-200px up
+    final int animationDelay = index * 100; // Stagger animations
+    
+    late OverlayEntry overlayEntry;
+    
+    overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.getCardColor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'Thank You!',
-            style: TextStyle(color: AppTheme.getTextColor(context)),
-          ),
-          content: Text(
-            'Thank you for rating your experience as "$rating". Your feedback helps us improve PearlNest.',
-            style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+        return FloatingEmojiWidget(
+          emoji: emoji,
+          startX: startX,
+          startY: startY,
+          horizontalDrift: horizontalDrift,
+          verticalDistance: verticalDistance,
+          delay: animationDelay,
+          onAnimationComplete: () {
+            // Safely remove the overlay entry
+            try {
+              overlayEntry.remove();
+            } catch (e) {
+              // Handle case where overlay is already removed
+              debugPrint('Overlay entry already removed: $e');
+            }
+          },
+        );
+      },
+    );
+    
+    overlay.insert(overlayEntry);
+  }
+}
+
+class FloatingEmojiWidget extends StatefulWidget {
+  final String emoji;
+  final double startX;
+  final double startY;
+  final double horizontalDrift;
+  final double verticalDistance;
+  final int delay;
+  final VoidCallback onAnimationComplete;
+
+  const FloatingEmojiWidget({
+    Key? key,
+    required this.emoji,
+    required this.startX,
+    required this.startY,
+    required this.horizontalDrift,
+    required this.verticalDistance,
+    required this.delay,
+    required this.onAnimationComplete,
+  }) : super(key: key);
+
+  @override
+  State<FloatingEmojiWidget> createState() => _FloatingEmojiWidgetState();
+}
+
+class _FloatingEmojiWidgetState extends State<FloatingEmojiWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _verticalAnimation;
+  late Animation<double> _horizontalAnimation;
+  late Animation<double> _opacityAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _controller = AnimationController(
+      duration: Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    // Vertical movement (upward)
+    _verticalAnimation = Tween<double>(
+      begin: 0,
+      end: -widget.verticalDistance,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    ));
+
+    // Horizontal drift
+    _horizontalAnimation = Tween<double>(
+      begin: 0,
+      end: widget.horizontalDrift,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+
+    // Opacity (fade out)
+    _opacityAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Interval(0.7, 1.0, curve: Curves.easeOut),
+    ));
+
+    // Scale (slight grow then shrink)
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    ));
+
+    // Add listener for animation completion
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        widget.onAnimationComplete();
+      }
+    });
+
+    // Start animation after delay
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Positioned(
+          left: widget.startX + _horizontalAnimation.value,
+          top: widget.startY + _verticalAnimation.value,
+          child: Opacity(
+            opacity: _opacityAnimation.value,
+            child: Transform.scale(
+              scale: _scaleAnimation.value,
               child: Text(
-                'Close',
-                style: TextStyle(color: AppTheme.primaryblue),
+                widget.emoji,
+                style: TextStyle(
+                  fontSize: 28,
+                  decoration: TextDecoration.none,
+                ),
               ),
             ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _launchEmail('feedback@pearlnest.com');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryblue,
-                foregroundColor: AppTheme.whiteColor,
-              ),
-              child: Text('Send Detailed Feedback'),
-            ),
-          ],
+          ),
         );
       },
     );

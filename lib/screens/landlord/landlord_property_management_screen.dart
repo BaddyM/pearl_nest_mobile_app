@@ -285,9 +285,16 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         children: [
           Row(
             children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: AppTheme.blackColor,
+                ),
+              ),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       'My Properties',
@@ -753,42 +760,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         ],
                       ),
                     ),
-                    // PopupMenuItem(
-                    //   value: 'duplicate',
-                    //   child: Row(
-                    //     children: [
-                    //       Icon(Icons.copy, size: 16, color: AppTheme.getTextColor(context)),
-                    //       SizedBox(width: 8),
-                    //       Text(
-                    //         'Duplicate',
-                    //         style: TextStyle(color: AppTheme.getTextColor(context)),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
-                    // PopupMenuItem(
-                    //   value: 'feature',
-                    //   child: Row(
-                    //     children: [
-                    //       Icon(property.isFeatured ? Icons.star : Icons.star_border, size: 16, color: AppTheme.getTextColor(context)),
-                    //       SizedBox(width: 8),
-                    //       Text(
-                    //         property.isFeatured ? 'Unfeature' : 'Feature',
-                    //         style: TextStyle(color: AppTheme.getTextColor(context)),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
-                    // PopupMenuItem(
-                    //   value: 'delete',
-                    //   child: Row(
-                    //     children: [
-                    //       Icon(Icons.delete, size: 16, color: Colors.red),
-                    //       SizedBox(width: 8),
-                    //       Text('Delete', style: TextStyle(color: Colors.red)),
-                    //     ],
-                    //   ),
-                    // ),
                   ],
                   child: Container(
                     padding: EdgeInsets.all(4),
@@ -936,46 +907,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                             ],
                           ),
                         ),
-                        // PopupMenuItem(
-                        //   value: 'duplicate',
-                        //   child: Row(
-                        //     children: [
-                        //       Icon(Icons.copy, size: 16, color: AppTheme.getTextColor(context)),
-                        //       SizedBox(width: 8),
-                        //       Text(
-                        //         'Duplicate',
-                        //         style: TextStyle(color: AppTheme.getTextColor(context)),
-                        //       ),
-                        //     ],
-                        //   ),
-                        // ),
-                        // PopupMenuItem(
-                        //   value: 'feature',
-                        //   child: Row(
-                        //     children: [
-                        //       Icon(
-                        //         property.isFeatured ? Icons.star : Icons.star_border,
-                        //         size: 16,
-                        //         color: AppTheme.getTextColor(context),
-                        //       ),
-                        //       SizedBox(width: 8),
-                        //       Text(
-                        //         property.isFeatured ? 'Unfeature' : 'Feature',
-                        //         style: TextStyle(color: AppTheme.getTextColor(context)),
-                        //       ),
-                        //     ],
-                        //   ),
-                        // ),
-                        // PopupMenuItem(
-                        //   value: 'delete',
-                        //   child: Row(
-                        //     children: [
-                        //       Icon(Icons.delete, size: 16, color: Colors.red),
-                        //       SizedBox(width: 8),
-                        //       Text('Delete', style: TextStyle(color: Colors.red)),
-                        //     ],
-                        //   ),
-                        // ),
                       ],
                       child: Container(
                         padding: EdgeInsets.all(6),

@@ -251,7 +251,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           ),
           _buildFAQItem(
             'How do I book a property?',
-            'Browse available properties, select your preferred dates, and submit a booking request. The landlord will review and respond to your request.',
+            'Browse available properties, select your preferred dates, and submit a make a small payment of atleast \$2 to submit a booking request. The landlord will review and respond to your request immediately.',
           ),
           _buildFAQItem(
             'What payment methods are accepted?',
@@ -262,8 +262,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             'You can cancel a booking through your bookings section. Cancellation policies vary by property and timing.',
           ),
           _buildFAQItem(
-            'How do I verify my account?',
-            'Upload a valid government ID and proof of address in your profile settings. Verification typically takes 24-48 hours.',
+            'What documents are needed to become a landloard?',
+            'Property proof documents or Images, A valid government ID or Passport',
           ),
         ],
       ),
@@ -614,29 +614,16 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    final subject = Uri.encodeComponent("Support Request - $_selectedCategory");
+    final body = Uri.encodeComponent(_messageController.text.trim());
+    final email = "pearlnestestates@gmail.com";
 
-    try {
-      await Future.delayed(Duration(seconds: 2));
+    final uri = Uri.parse("mailto:$email?subject=$subject&body=$body");
 
-      _messageController.clear();
-      setState(() {
-        _selectedCategory = 'General';
-      });
-
-      _showSuccessDialog(
-        'Your message has been sent successfully! We\'ll get back to you within 24 hours.',
-      );
-    } catch (e, stackTrace) {
-      //debugPrint('Message submission error: $e');
-      //debugPrint('Stack trace: $stackTrace');
-      _showErrorDialog('Failed to send message. Please try again.');
-    } finally {
-      setState(() {
-        _isSubmitting = false;
-      });
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      _showErrorDialog('Could not open email client.');
     }
   }
 

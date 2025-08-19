@@ -230,9 +230,16 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         children: [
           Row(
             children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: AppTheme.blackColor,
+                ),
+              ),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       'Booking Requests',
