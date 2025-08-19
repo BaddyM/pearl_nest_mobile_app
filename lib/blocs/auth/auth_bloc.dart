@@ -58,8 +58,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthSuccess(user: adminResult['user'], token: adminResult['token']));
           return; // Add this return to prevent continuing to regular login flow
         } else {
-          
-          //print(result);
+
 
           // Check if OTP verification is required
           if (result['requiresOtp'] == true) {
@@ -89,7 +88,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
-      debugPrint('AuthBloc: Login error - $e');
+      //debugPrint('AuthBloc: Login error - $e');
       // Provide more specific error messages based on error type
       String errorMessage;
       if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
@@ -212,6 +211,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await prefs.remove('user_data');
       await prefs.remove('last_login');
       await prefs.remove('token_expiry');
+      await prefs.remove('role');
     } catch (e) {
       // //debugPrint('AuthBloc: Error clearing session data - $e');
     }

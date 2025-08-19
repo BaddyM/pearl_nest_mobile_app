@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
     ));
 
     _startAnimations();
-    _navigateToNextScreen();
+    // _navigateToNextScreen();
     // Navigation is handled by AuthBloc in main.dart
   }
 
@@ -84,15 +84,15 @@ class _SplashScreenState extends State<SplashScreen>
     _subtitleController.forward();
   }
 
-  _navigateToNextScreen() async {
-    await Future.delayed(const Duration(seconds: 4));
-    if (mounted && !_isDisposed) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-      );
-    }
-  }
+  // _navigateToNextScreen() async {
+  //   await Future.delayed(const Duration(seconds: 4));
+  //   if (mounted && !_isDisposed) {
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+  //     );
+  //   }
+  // }
 
 
   @override

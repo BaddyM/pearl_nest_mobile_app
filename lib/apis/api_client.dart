@@ -102,7 +102,7 @@ class ApiClient {
   static void _logResponse(Response response) {
     final fullUrl = '${response.requestOptions.baseUrl}${response.requestOptions.path}';
 
-    //debugPrint('ApiClient: Response from $fullUrl - Status: ${response.statusCode}');
+   // debugPrint('ApiClient: Response from $fullUrl - Status: ${response.statusCode}');
     //debugPrint('ApiClient: Response data: ${response.data}');
   }
 
@@ -111,7 +111,7 @@ class ApiClient {
 
     //debugPrint('ApiClient: Error for $fullUrl - Type: ${error.type}, Message: ${error.message}');
     if (error.response != null) {
-      //debugPrint('ApiClient: Error status: ${error.response!.statusCode}');
+     // debugPrint('ApiClient: Error status: ${error.response!.statusCode}');
       //debugPrint('ApiClient: Error data: ${error.response!.data}');
     }
   }

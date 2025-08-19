@@ -748,6 +748,7 @@ class AuthService {
         prefs.remove(_lastLoginKey),
         prefs.remove(_tokenExpiryKey),
         prefs.remove(_userIdKey),
+        prefs.remove('role')
       ]);
 
       // Clear user ID using dedicated method
@@ -893,6 +894,7 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       final userJson = jsonEncode(user.toJson());
       await prefs.setString(_userDataKey, userJson);
+      await prefs.setString("role", user.userType.toString().split('.').last.toUpperCase());
       await prefs.setInt(_lastLoginKey, DateTime.now().millisecondsSinceEpoch);
 
       // Only save user ID if it's not empty to avoid overwriting existing valid ID
@@ -955,7 +957,7 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = _validateResponse(response, requiredFields: ['data']);
-
+        //debugPrint("User profile data: $responseData");
         // Create user object from fresh profile data
         final userData = responseData['data'];
         final user = User.fromJson(userData);
