@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:pearlnest/screens/common/login_screen.dart';
 import 'firebase_options.dart'; // Add this import
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
@@ -113,10 +114,7 @@ class MyApp extends StatelessWidget {
         // //debugPrint('Showing splash screen - AuthInitializing');
         homeWidget = const SplashScreen();
         break;
-      case AuthLoading _:
-        // //debugPrint(' - AuthLoading');
-        homeWidget = const SplashScreen();
-        break;
+      
       case AuthSuccess successState:
         // //debugPrint('Showing home screen for user: ${successState.user.name}');
         // //debugPrint('🏠 Creating HomeScreen widget for user: ${successState.user.name}');

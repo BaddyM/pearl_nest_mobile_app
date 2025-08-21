@@ -11,7 +11,7 @@ import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/common/onboarding_screen.dart';
-import 'package:pearlnest/screens/tenant/booking_screen.dart';
+import 'package:pearlnest/screens/tenant/tenant_booking_history_screen.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_application_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
@@ -416,33 +416,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
           ),
-          _buildMenuItem(
-            Icons.calendar_today,
-            'Bookings',
-            () {
-              if (widget.user.userType == UserType.landlord) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LandlordBookingRequestsScreen(
-                      user: widget.user,
-                    ),
-                  ),
-                );
-              } else if (widget.user.userType == UserType.tenant) {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //     builder: (context) => BookingScreen(
-                //       propertyTitle: widget.propertyTitle,
-                //       user: widget.user,
-                //     ),
-                //   ),
-                // );
-              } else {}
-            },
-          ),
         ],
+        _buildMenuItem(
+          Icons.calendar_today,
+          'Bookings',
+          () {
+            if (widget.user.userType == UserType.landlord) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LandlordBookingRequestsScreen(
+                    user: widget.user,
+                  ),
+                ),
+              );
+            } else if (widget.user.userType == UserType.tenant) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TenantBookingHistoryScreen(
+                    user: widget.user,
+                  ),
+                ),
+              );
+            } else {}
+          },
+        ),
         _buildMenuItem(
           Icons.settings,
           'Settings',
