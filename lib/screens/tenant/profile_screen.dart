@@ -418,6 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
         ],
+        if(widget.user.userType == UserType.tenant || widget.user.userType == UserType.landlord)
         _buildMenuItem(
           Icons.calendar_today,
           'Bookings',
