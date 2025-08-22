@@ -10,6 +10,7 @@ import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/screens/common/onboarding_screen.dart';
 import 'package:pearlnest/screens/tenant/tenant_booking_history_screen.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
@@ -639,7 +640,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Navigate to OnboardingScreen and clear the entire navigation stack
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => OnboardingScreen()),
+                MaterialPageRoute(builder: (context) => LoginScreen()),
                 (route) => false,
               );
             }

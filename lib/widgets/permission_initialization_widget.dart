@@ -34,7 +34,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
     try {
       // Check if essential permissions are already granted
       final essentialGranted = await PermissionService.checkEssentialPermissions();
-
+      debugPrint('Essential permissions granted: $essentialGranted');
       if (essentialGranted) {
         setState(() {
           _isCheckingPermissions = false;
@@ -65,6 +65,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
       final granted = await PermissionService.requestAllPermissions();
 
       if (granted) {
+        debugPrint("Requesting all permissions...");
         setState(() {
           _showPermissionDialog = false;
           _isCheckingPermissions = false;

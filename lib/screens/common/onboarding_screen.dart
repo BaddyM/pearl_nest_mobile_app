@@ -1,6 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
@@ -43,15 +44,37 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _nextPage() {
     if (_currentPage == _items.length - 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      _completeOnboarding();
     } else {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOutCubic,
       );
+    }
+  }
+
+  Future<void> _completeOnboarding() async {
+    try {
+      //debugPrint('✅ Completing onboarding - marking first launch as complete');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_first_launch', false);
+      
+      if (mounted) {
+        //debugPrint('🔐 Navigating to login screen');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
+    } catch (e) {
+      //debugPrint('❌ Error completing onboarding: $e');
+      // Navigate anyway if SharedPreferences fails
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
     }
   }
 

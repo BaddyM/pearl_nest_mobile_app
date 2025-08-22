@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:pearlnest/screens/common/login_screen.dart';
 import 'firebase_options.dart'; // Add this import
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
@@ -38,7 +37,7 @@ void main() async {
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    // //debugPrint('Warning: Could not load .env file: $e');
+    //debugPrint('Warning: Could not load .env file: $e');
     // Continue without .env file - app should still work with default values
   }
   
@@ -53,6 +52,9 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  // Add a global navigator key
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
@@ -80,18 +82,34 @@ class MyApp extends StatelessWidget {
         ],
         child: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
-            return BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                // //debugPrint('🔄 BlocBuilder called with state: ${state.runtimeType}');
-                return MaterialApp(
-                  title: 'PearlNest Estates',
-                  theme: AppTheme.lightTheme,
-                  darkTheme: AppTheme.darkTheme,
-                  themeMode: themeProvider.themeMode,
-                  debugShowCheckedModeBanner: false,
-                  home: PermissionInitializationWidget(child:_buildHome(state)),
-                );
+            return BlocListener<AuthBloc, AuthState>(
+              listener: (context, state) {
+                //debugPrint('🔄 BlocListener received state: ${state.runtimeType}');
+                
+                if (state is AuthSuccess) {
+                  //debugPrint('🏠 Navigating to HomeScreen for user: ${state.user.name}');
+                  // Use navigatorKey to access navigator
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    navigatorKey.currentState?.pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (_) => HomeScreen(user: state.user),
+                      ),
+                      (route) => false,
+                    );
+                  });
+                }
               },
+              child: MaterialApp(
+                title: 'PearlNest Estates',
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: themeProvider.themeMode,
+                debugShowCheckedModeBanner: false,
+                navigatorKey: navigatorKey, // Add the navigator key
+                home: PermissionInitializationWidget(
+                  child: _getInitialScreen(),
+                ),
+              ),
             );
           },
         ),
@@ -99,46 +117,9 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  Widget _buildHome(AuthState state) {
-    // //debugPrint('Building home with auth state: ${state.runtimeType}');
-    // //debugPrint('Auth state details: $state');
-    
-    Widget homeWidget;
-    
-    switch (state) {
-      case AuthInitial _:
-         // //debugPrint('Showing splash screen - AuthInitial');
-         homeWidget = const SplashScreen();
-         break;
-      case AuthInitializing _:
-        // //debugPrint('Showing splash screen - AuthInitializing');
-        homeWidget = const SplashScreen();
-        break;
-      
-      case AuthSuccess successState:
-        // //debugPrint('Showing home screen for user: ${successState.user.name}');
-        // //debugPrint('🏠 Creating HomeScreen widget for user: ${successState.user.name}');
-        homeWidget = HomeScreen(user: successState.user);
-        // //debugPrint('🏠 HomeScreen widget created successfully');
-        break;
-      case AuthUnauthenticated _:
-        // //debugPrint('Showing onboarding screen - AuthUnauthenticated');
-        homeWidget = const SplashScreen();
-        break;
-      case AuthOtpRequired _:
-        // //debugPrint('Showing splash screen - AuthOtpRequired (handled by login screen)');
-        homeWidget = const SplashScreen();
-        break;
-      case AuthFailure _:
-        // //debugPrint('Showing splash screen - AuthFailure');
-        homeWidget = const SplashScreen();
-        break;
-      default:
-         // //debugPrint('Showing splash screen - default case');
-        homeWidget = const SplashScreen();
-        break;
-    }
-    // //debugPrint('🏠 Returning widget: ${homeWidget.runtimeType}');
-    return homeWidget;
+  Widget _getInitialScreen() {
+    // Always start with SplashScreen - let each screen handle its own state management
+    //debugPrint('🏠 Starting with SplashScreen - screens will handle their own navigation');
+    return const SplashScreen();
   }
 }

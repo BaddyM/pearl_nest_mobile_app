@@ -1,7 +1,13 @@
 // ignore_for_file: library_private_types_in_public_api
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pearlnest/blocs/auth/auth_bloc.dart';
+import 'package:pearlnest/blocs/auth/auth_event.dart';
+import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/screens/common/onboarding_screen.dart';
+import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -67,8 +73,45 @@ class _SplashScreenState extends State<SplashScreen>
     ));
 
     _startAnimations();
-    // _navigateToNextScreen();
-    // Navigation is handled by AuthBloc in main.dart
+    
+    // Check first launch status and handle navigation
+    _handleAppInitialization();
+  }
+
+  Future<void> _handleAppInitialization() async {
+    debugPrint('🚀 Checking app initialization status...');
+    
+    // Wait for animations to complete
+    await Future.delayed(const Duration(seconds: 2));
+    
+    if (!mounted || _isDisposed) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
+      
+      debugPrint('🏠 First launch: $isFirstLaunch');
+      
+      if (isFirstLaunch) {
+        debugPrint('🎯 First time user - navigating to onboarding');
+        if (mounted && !_isDisposed) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+          );
+        }
+      } else {
+        debugPrint('🔄 Returning user - checking auth status');
+        // Trigger auth check for returning users
+        context.read<AuthBloc>().add(AuthCheckSessionRequested());
+      }
+    } catch (e) {
+      debugPrint('❌ Error checking first launch: $e');
+      // Fallback to auth check if SharedPreferences fails
+      if (mounted && !_isDisposed) {
+        context.read<AuthBloc>().add(AuthCheckSessionRequested());
+      }
+    }
   }
 
   void _startAnimations() async {
@@ -106,12 +149,27 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        debugPrint('💫 SplashScreen received auth state: ${state.runtimeType}');
+        
+        // Only handle auth states for returning users
+        // First-time users are handled by _handleAppInitialization
+        if (state is AuthUnauthenticated || state is AuthFailure) {
+          debugPrint('🔐 Auth failed - navigating to login');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        }
+        // AuthSuccess is handled by main.dart's BlocListener
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.getBackgroundColor(context),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             AnimatedBuilder(
               animation: _logoAnimation,
               builder: (context, child) {
@@ -174,6 +232,7 @@ class _SplashScreenState extends State<SplashScreen>
           ],
         ),
       ),
+    ),
     );
   }
 }
