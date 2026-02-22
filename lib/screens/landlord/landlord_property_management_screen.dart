@@ -74,6 +74,10 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             title: property.title,
             description: property.description,
             price: property.price,
+            deposit: property.deposit,
+            isRent: property.isRent,
+            parking: property.parking,
+            isSale: property.isSale,
             priceType: property.priceType,
             location: property.location,
             address: property.address,
@@ -503,6 +507,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
       },
     );
   }
+
   String _formatLargePrice(double price) {
     if (price >= 1000000) {
       return '${(price / 1000000).toStringAsFixed(1)}M';
@@ -510,6 +515,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
       return NumberFormat('#,##0').format(price);
     }
   }
+
   Widget _buildPropertyListCard(Property property) {
     return Container(
       decoration: BoxDecoration(

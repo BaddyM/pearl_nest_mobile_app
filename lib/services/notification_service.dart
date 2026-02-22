@@ -209,7 +209,6 @@ class NotificationService {
     // //debugPrint('Title: ${message.notification?.title}');
     // //debugPrint('Body: ${message.notification?.body}');
 
-
     // //debugPrint('Data: ${message.data}');
 
     // Show local notification

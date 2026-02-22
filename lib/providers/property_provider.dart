@@ -87,8 +87,8 @@ class PropertyProvider extends ChangeNotifier {
         filters: _filters,
       );
 
-      if (result['success']) {
-        final List<Property> newProperties = result['properties'] ?? [];
+      if (result.isNotEmpty) {
+        final List<Property> newProperties = List<Property>.from(result).toList();
 
         if (_currentPage == 1) {
           _properties = newProperties;
@@ -96,13 +96,9 @@ class PropertyProvider extends ChangeNotifier {
           _properties.addAll(newProperties);
         }
 
-        _totalPages = result['totalPages'] ?? 1;
-        _totalProperties = result['total'] ?? 0;
-        _hasNextPage = result['hasNextPage'] ?? false;
-
         _setState(PropertyLoadingState.loaded);
       } else {
-        _setError(result['message'] ?? 'Failed to load properties');
+        _setError('Failed to load properties');
         _setState(PropertyLoadingState.error);
       }
     } catch (e) {
@@ -130,13 +126,13 @@ class PropertyProvider extends ChangeNotifier {
         filters: _filters,
       );
 
-      if (result['success']) {
-        final List<Property> newProperties = result['properties'] ?? [];
+      if (result.isNotEmpty) {
+        final List<Property> newProperties = List<Property>.from(result).toList();
         _properties.addAll(newProperties);
         _currentPage = nextPage;
-        _hasNextPage = result['hasNextPage'] ?? false;
+        _hasNextPage = false;
       } else {
-        _setError(result['message'] ?? 'Failed to load more properties');
+        _setError('Failed to load more properties');
       }
     } catch (e) {
       _setError('Error loading more properties: ${e.toString()}');
@@ -173,24 +169,15 @@ class PropertyProvider extends ChangeNotifier {
         filters: _filters,
       );
 
-      if (result['success']) {
-        final List<Property> searchProperties = result['properties'] ?? [];
+      final List<Property> searchProperties = List<Property>.from(result).toList();
 
-        if (_currentPage == 1) {
-          _searchResults = searchProperties;
-        } else {
-          _searchResults.addAll(searchProperties);
-        }
-
-        _totalPages = result['totalPages'] ?? 1;
-        _totalProperties = result['total'] ?? 0;
-        _hasNextPage = result['hasNextPage'] ?? false;
-
-        _setState(PropertyLoadingState.searchLoaded);
+      if (_currentPage == 1) {
+        _searchResults = searchProperties;
       } else {
-        _setError(result['message'] ?? 'Search failed');
-        _setState(PropertyLoadingState.searchError);
+        _searchResults.addAll(searchProperties);
       }
+
+      _setState(PropertyLoadingState.searchLoaded);
     } catch (e) {
       _setError('Search error: ${e.toString()}');
       _setState(PropertyLoadingState.searchError);
@@ -217,14 +204,10 @@ class PropertyProvider extends ChangeNotifier {
         filters: _filters,
       );
 
-      if (result['success']) {
-        final List<Property> newProperties = result['properties'] ?? [];
-        _searchResults.addAll(newProperties);
-        _currentPage = nextPage;
-        _hasNextPage = result['hasNextPage'] ?? false;
-      } else {
-        _setError(result['message'] ?? 'Failed to load more search results');
-      }
+      final List<Property> newProperties = List<Property>.from(result).toList();
+      _searchResults.addAll(newProperties);
+      _currentPage = nextPage;
+      _hasNextPage = false;
     } catch (e) {
       _setError('Error loading more search results: ${e.toString()}');
     } finally {

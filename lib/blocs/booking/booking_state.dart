@@ -68,3 +68,8 @@ class BookingError extends BookingState {
   @override
   List<Object?> get props => [message];
 }
+
+class PaymentLink extends BookingState {
+  final String paymentLink;
+  const PaymentLink({required this.paymentLink});
+}

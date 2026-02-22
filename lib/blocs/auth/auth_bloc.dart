@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pearlnest/apis/auth_service.dart';
@@ -46,7 +45,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       //debugPrint('AuthBloc: Login result received: $result');
       if (result['success'] == true) {
         //for app review process. remove afterwards
-        if (event.email == "nirage6590@euleina.com") {
+        if (event.email == "arnoldhenry958@gmail.com") {
           final adminResult = await AuthService.verifyOtp(event.email, 'gid2023', '000000', result['tempToken']);
           //debugPrint('AuthBloc: Admin login result received: $adminResult');
           _currentUser = adminResult['user'];
@@ -58,8 +57,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthSuccess(user: adminResult['user'], token: adminResult['token']));
           return; // Add this return to prevent continuing to regular login flow
         } else {
-
-
           // Check if OTP verification is required
           if (result['requiresOtp'] == true) {
             emit(AuthOtpRequired(

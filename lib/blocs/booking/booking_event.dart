@@ -11,11 +11,13 @@ class BookingCreateRequested extends BookingEvent {
   final String propertyId;
   final String checkInDate;
   final String checkOutDate;
+  final int deposit;
 
   const BookingCreateRequested({
     required this.propertyId,
     required this.checkInDate,
     required this.checkOutDate,
+    required this.deposit,
   });
 
   @override
@@ -45,4 +47,12 @@ class BookingStatusUpdateRequested extends BookingEvent {
 
   @override
   List<Object?> get props => [bookingId, status];
+}
+
+class CreatePayment extends BookingEvent {
+  final String propertyId;
+  final String bookingId;
+  final int amount;
+
+  const CreatePayment({required this.propertyId, required this.bookingId, required this.amount});
 }

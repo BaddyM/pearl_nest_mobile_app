@@ -1,3 +1,5 @@
+import 'package:pearlnest/models/property.dart';
+
 enum BookingStatus {
   pending,
   confirmed,
@@ -25,6 +27,7 @@ class Booking {
   final String? message;
   final double? amount;
   final DateTime createdAt;
+  final Property? property;
 
   // Add fields for API parsing
   final String tenantName;
@@ -40,6 +43,7 @@ class Booking {
     required this.landlordId,
     required this.type,
     required this.requestedDate,
+    this.property,
     this.startDate,
     this.endDate,
     required this.status,
@@ -56,7 +60,7 @@ class Booking {
   factory Booking.fromApiJson(Map<String, dynamic> json) {
     final property = json['property'] ?? {};
     final user = json['user'] ?? {};
-    
+
     // Parse dates safely
     DateTime parseDate(String? dateStr) {
       if (dateStr == null || dateStr.isEmpty) return DateTime.now();
@@ -66,7 +70,7 @@ class Booking {
         return DateTime.now();
       }
     }
-    
+
     // Determine booking type based on property data
     BookingType determineType() {
       final period = property['period']?.toString().toLowerCase() ?? '';
@@ -74,7 +78,7 @@ class Booking {
       if (period.contains('day')) return BookingType.daily;
       return BookingType.rental; // default
     }
-    
+
     // Determine status - map from API response
     BookingStatus determineStatus() {
       final status = json['bookingStatus']?.toString().toUpperCase();
@@ -82,10 +86,10 @@ class Booking {
         case 'PENDING':
           return BookingStatus.pending;
         case 'CONFIRMED':
-        case 'APPROVED':  // Map APPROVED to confirmed status
+        case 'APPROVED': // Map APPROVED to confirmed status
           return BookingStatus.confirmed;
         case 'CANCELLED':
-        case 'REJECTED':  // Map both CANCELLED and REJECTED to cancelled status
+        case 'REJECTED': // Map both CANCELLED and REJECTED to cancelled status
           return BookingStatus.cancelled;
         case 'COMPLETED':
           return BookingStatus.completed;
@@ -93,10 +97,11 @@ class Booking {
           return BookingStatus.pending; // default to pending
       }
     }
-    
+
     return Booking(
       id: json['id']?.toString() ?? '',
       propertyId: property['id']?.toString() ?? '',
+      property: json['property'] != null ? Property.fromJson(json['property']) : null,
       tenantId: user['id']?.toString() ?? '',
       landlordId: property['userId']?.toString() ?? '',
       type: determineType(),
@@ -111,9 +116,7 @@ class Booking {
       tenantEmail: user['email']?.toString() ?? 'No email provided',
       tenantPhone: user['contact']?.toString() ?? 'No phone provided',
       propertyTitle: property['propertyName']?.toString() ?? 'Unknown Property',
-      payments: (json['Payments'] as List<dynamic>?)
-          ?.map((p) => p as Map<String, dynamic>)
-          .toList() ?? [],
+      payments: (json['Payments'] as List<dynamic>?)?.map((p) => p as Map<String, dynamic>).toList() ?? [],
     );
   }
 
@@ -143,7 +146,7 @@ class Booking {
   double? get totalAmount => amount;
   DateTime? get checkInDate => startDate;
   DateTime? get checkOutDate => endDate;
-  
+
   // Calculate total payments received
   double get totalPayments {
     return payments.fold(0.0, (sum, payment) {
@@ -154,7 +157,7 @@ class Booking {
       return sum;
     });
   }
-  
+
   // Get payment count
   int get paymentCount => payments.length;
 }

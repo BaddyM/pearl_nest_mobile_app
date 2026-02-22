@@ -142,7 +142,7 @@ class PropertyService {
   }
 
   // Get list of properties
-  static Future<Map<String, dynamic>> getProperties({
+  static Future<List<Property>> getProperties({
     int page = 1,
     int limit = 20,
     String? sortBy,
@@ -177,28 +177,16 @@ class PropertyService {
       _logResponse('/property/list', response);
 
       if (response.statusCode == 200) {
-        final responseData = _validateResponse(response, requiredFields: ['data']);
-
         // Parse properties list
-        final propertiesData = responseData['data'];
+        final propertiesData = response.data;
         List<Property> properties = [];
 
         if (propertiesData is List) {
           properties = propertiesData.map((propertyJson) => Property.fromJson(propertyJson)).toList();
+          return properties;
         }
 
-        return {
-          'success': true,
-          'properties': properties,
-          'total': responseData['total'] ?? properties.length,
-          'page': responseData['page'] ?? page,
-          'limit': responseData['limit'] ?? limit,
-          'totalPages': responseData['totalPages'] ?? ((responseData['total'] ?? properties.length) / limit).ceil(),
-          'hasNextPage': responseData['hasNextPage'] ?? false,
-          'hasPrevPage': responseData['hasPrevPage'] ?? false,
-          'message': responseData['message'] ?? 'Properties loaded successfully',
-          'statusCode': response.statusCode,
-        };
+        return [];
       } else {
         final errorData = response.data;
         throw PropertyException(
@@ -206,13 +194,18 @@ class PropertyService {
           statusCode: response.statusCode,
         );
       }
-    } catch (e) {
-      return _handleError(e, 'get properties');
+    } catch (e, trace) {
+      debugPrint("Properties Error: $e");
+      debugPrint("Properties Error Location: $trace");
+      throw PropertyException(
+        'Failed to fetch properties',
+        statusCode: 500,
+      );
     }
   }
 
   // Search properties
-  static Future<Map<String, dynamic>> searchProperties({
+  static Future<List<Property>> searchProperties({
     required String searchString,
     int page = 1,
     int limit = 20,
@@ -236,7 +229,7 @@ class PropertyService {
       if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
       if (filters != null) queryParams.addAll(filters);
 
-      final endpoint = '/property/search/${Uri.encodeComponent(searchString.trim())}';
+      final endpoint = '/property/list?search=${Uri.encodeComponent(searchString.trim())}';
       _logRequest(endpoint, queryParams, token: token);
 
       // Set token temporarily if provided
@@ -254,29 +247,15 @@ class PropertyService {
       _logResponse(endpoint, response);
 
       if (response.statusCode == 200) {
-        final responseData = _validateResponse(response, requiredFields: ['data']);
-
-        // Parse properties list
-        final propertiesData = responseData['data'];
+        final propertiesData = response.data;
         List<Property> properties = [];
 
         if (propertiesData is List) {
           properties = propertiesData.map((propertyJson) => Property.fromJson(propertyJson)).toList();
+          return properties;
         }
 
-        return {
-          'success': true,
-          'properties': properties,
-          'searchString': searchString.trim(),
-          'total': responseData['total'] ?? properties.length,
-          'page': responseData['page'] ?? page,
-          'limit': responseData['limit'] ?? limit,
-          'totalPages': responseData['totalPages'] ?? ((responseData['total'] ?? properties.length) / limit).ceil(),
-          'hasNextPage': responseData['hasNextPage'] ?? false,
-          'hasPrevPage': responseData['hasPrevPage'] ?? false,
-          'message': responseData['message'] ?? 'Search completed successfully',
-          'statusCode': response.statusCode,
-        };
+        return [];
       } else {
         final errorData = response.data;
         throw PropertyException(
@@ -284,8 +263,13 @@ class PropertyService {
           statusCode: response.statusCode,
         );
       }
-    } catch (e) {
-      return _handleError(e, 'search properties');
+    } catch (e, trace) {
+      print("Search Error: $e");
+      print("Search Error Trace: $trace");
+      throw PropertyException(
+        'Search failed',
+        statusCode: 500,
+      );
     }
   }
 
@@ -610,6 +594,10 @@ class PropertyService {
                     title: propertyData['propertyName'] ?? '',
                     description: propertyData['description'] ?? '',
                     price: (propertyData['price'] ?? 0).toDouble(),
+                    deposit: (propertyData['deposit'] ?? 0).toDouble(),
+                    isRent: propertyData['isRent'],
+                    isSale: propertyData['isSale'],
+                    parking: propertyData['parking'],
                     priceType: propertyData['period'] ?? 'per month',
                     location: propertyData['location'] ?? '',
                     address: propertyData['fullAddress'] ?? '',
@@ -626,7 +614,7 @@ class PropertyService {
                     rating: 0.0, // Not provided in API response
                     reviewCount: 0, // Not provided in API response
                     status: propertyData['availability'] == true ? PropertyStatus.available : PropertyStatus.unavailable,
-                    availabilityStatus: propertyData['availability'] == true ? AvailabilityStatus.availableNow : AvailabilityStatus.availableLater,
+                    availabilityStatus: propertyData['availability'],
                     createdAt: DateTime.tryParse(propertyData['createdAt'] ?? '') ?? DateTime.now(),
                     updatedAt: DateTime.tryParse(propertyData['updatedAt'] ?? '') ?? DateTime.now(),
                     latitude: 0.0, // Not provided in API response
@@ -772,7 +760,7 @@ class PropertyService {
         'fullAddress': fullAddress,
         'propertyMap': propertyMap,
         'period': period,
-       // 'availability': availability,
+        // 'availability': availability,
       };
 
       // Add availableFrom date if provided (only for "Available Later")

@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AppConfig {
   static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'https://admin.pearlnestestates.com';
 
-  static String get devBaseUrl => dotenv.env['DEV_API_BASE_URL'] ?? 'http://localhost:3000/api';
+  static String get devBaseUrl => dotenv.env['DEV_API_BASE_URL'] ?? 'http://localhost:3000';
 
   static String get androidEmulatorUrl => dotenv.env['ANDROID_EMULATOR_URL'] ?? 'http://10.0.2.2:3000/api';
 
@@ -17,7 +17,7 @@ class AppConfig {
   static const String propertySearchEndpoint = '/property/search';
   static const String favoritesEndpoint = '/favorites';
 
-  static const int requestTimeout = 30; 
+  static const int requestTimeout = 30;
   static const int maxRetries = 3;
 
   static String getCurrentBaseUrl() {

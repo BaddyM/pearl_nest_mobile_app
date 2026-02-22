@@ -19,14 +19,13 @@ enum PropertyStatus {
   unavailable,
 }
 
-enum AvailabilityStatus { availableNow, availableLater }
-
 class Property {
   final String id;
   final String title;
   final String description;
   final PropertyType type;
   final double price;
+  final double deposit;
   final String priceType;
   final String location;
   final String address;
@@ -49,7 +48,10 @@ class Property {
   final DateTime updatedAt;
   final bool isFeatured;
   final bool isVerified;
-  final AvailabilityStatus availabilityStatus;
+  final bool parking;
+  final bool isSale;
+  final bool isRent;
+  final bool availabilityStatus;
   final DateTime? availableFrom;
   final List<Map<String, dynamic>> views;
   final List<Map<String, dynamic>> shares;
@@ -89,6 +91,10 @@ class Property {
     required this.updatedAt,
     this.isFeatured = false,
     this.isVerified = false,
+    this.isRent = false,
+    this.isSale = false,
+    required this.deposit,
+    this.parking = false,
     required this.availabilityStatus,
     this.availableFrom,
     this.views = const [],
@@ -128,7 +134,7 @@ class Property {
     DateTime? updatedAt,
     bool? isFeatured,
     bool? isVerified,
-    AvailabilityStatus? availabilityStatus,
+    bool? availabilityStatus,
     DateTime? availableFrom,
     List<Map<String, dynamic>>? views,
     List<Map<String, dynamic>>? shares,
@@ -145,6 +151,10 @@ class Property {
       description: description ?? this.description,
       type: type ?? this.type,
       price: price ?? this.price,
+      deposit: deposit,
+      isSale: isSale,
+      isRent: isRent,
+      parking: parking,
       priceType: priceType ?? this.priceType,
       location: location ?? this.location,
       address: address ?? this.address,
@@ -167,7 +177,7 @@ class Property {
       updatedAt: updatedAt ?? this.updatedAt,
       isFeatured: isFeatured ?? this.isFeatured,
       isVerified: isVerified ?? this.isVerified,
-      availabilityStatus: availabilityStatus ?? this.availabilityStatus,
+      availabilityStatus: this.availabilityStatus,
       availableFrom: availableFrom ?? this.availableFrom,
       views: views ?? this.views,
       shares: shares ?? this.shares,
@@ -219,16 +229,18 @@ class Property {
       }
       return [];
     }
+
     // Support both 'images' and 'media' keys for images
     final images = json['images'] ?? json['media'];
     final user = json['user'] as Map<String, dynamic>?;
-    
+
     return Property(
       id: json['id'] ?? json['_id'] ?? '',
       title: json['title'] ?? json['propertyName'] ?? '',
       description: json['description'] ?? '',
       type: _parsePropertyType(json['type'] ?? json['propertyType'] ?? 'apartment'),
       price: (json['price'] ?? 0).toDouble(),
+      deposit: (json['deposit'] ?? 0).toDouble(),
       priceType: json['priceType'] ?? json['period'] ?? 'monthly',
       location: json['location'] ?? '',
       address: json['address'] ?? json['fullAddress'] ?? '',
@@ -245,29 +257,22 @@ class Property {
       landlordPhone: json['landlordPhone'] ?? json['ownerPhone'] ?? user?['contact'] ?? '',
       landlordEmail: json['landlordEmail'] ?? json['ownerEmail'] ?? user?['email'] ?? '',
       profilePicture: json['profilePicture'] ?? user?['profilePicture'] ?? '',
-      status: json['status'] != null 
+      status: json['status'] != null
           ? _parsePropertyStatus(json['status'])
-          : json['availability'] == false 
+          : json['availability'] == false
               ? PropertyStatus.unavailable
               : PropertyStatus.available,
+      isRent: json['isRent'],
+      parking: json['parking'],
+      isSale: json['isSale'],
       rating: (json['rating'] ?? 0.0).toDouble(),
       reviewCount: json['reviewCount'] ?? 0,
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
-          : DateTime.now(),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt']) 
-          : DateTime.now(),
-      isFeatured: json['isFeatured'] ?? json['featured'] ?? false,
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
+      isFeatured: json['featured'] ?? false,
       isVerified: json['isVerified'] ?? false,
-      availabilityStatus: json['availability'] == true 
-          ? AvailabilityStatus.availableNow 
-          : json['availability'] == false 
-              ? AvailabilityStatus.availableLater 
-              : _parseAvailabilityStatus(json['availabilityStatus'] ?? 'availableNow'),
-      availableFrom: json['availableFrom'] != null 
-          ? DateTime.parse(json['availableFrom']) 
-          : null,
+      availabilityStatus: json['availability'],
+      availableFrom: json['availableFrom'] != null ? DateTime.parse(json['availableFrom']) : null,
       views: (json['views'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
       shares: (json['shares'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
       favourites: (json['favourites'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
@@ -326,20 +331,6 @@ class Property {
     }
   }
 
-  // Helper method to parse AvailabilityStatus from string
-  static AvailabilityStatus _parseAvailabilityStatus(String statusString) {
-    switch (statusString.toLowerCase()) {
-      case 'availablenow':
-      case 'available_now':
-        return AvailabilityStatus.availableNow;
-      case 'availablelater':
-      case 'available_later':
-        return AvailabilityStatus.availableLater;
-      default:
-        return AvailabilityStatus.availableNow;
-    }
-  }
-
   // Convert Property to JSON
   Map<String, dynamic> toJson() {
     return {
@@ -367,7 +358,7 @@ class Property {
       'updatedAt': updatedAt.toIso8601String(),
       'featured': isFeatured,
       'isVerified': isVerified,
-      'availability': availabilityStatus == AvailabilityStatus.availableNow,
+      'availability': availabilityStatus,
       'availableFrom': availableFrom?.toIso8601String(),
       'views': views,
       'shares': shares,

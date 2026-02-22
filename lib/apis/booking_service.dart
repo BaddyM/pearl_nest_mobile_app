@@ -48,12 +48,14 @@ class BookingService {
     required String propertyId,
     required String checkInDate,
     required String checkOutDate,
+    required int deposit,
   }) async {
     try {
       final requestData = {
         'propertyId': propertyId,
         'checkInDate': checkInDate,
         'checkOutDate': checkOutDate,
+        'deposit': deposit,
       };
 
       _logRequest('/booking/create', requestData);

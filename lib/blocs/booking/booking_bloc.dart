@@ -1,6 +1,8 @@
 import 'package:bloc/bloc.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/booking_service.dart';
+import '../../apis/api_client.dart';
 import 'booking_event.dart';
 import 'booking_state.dart';
 
@@ -13,6 +15,28 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     on<FetchBookings>(_onFetchBookings);
     on<FetchLandlordBookings>(_onFetchLandlordBookings);
     on<BookingStatusUpdateRequested>(_onBookingStatusUpdateRequested);
+    on<CreatePayment>((event, emit) async {
+      emit(BookingLoading());
+      try {
+        Map<String, dynamic> data = {
+          "propertyId": event.propertyId,
+          "bookingId": event.bookingId,
+          "amount": event.amount,
+          "paymentType": "MOBILE_MONEY",
+        };
+
+        final Response response = await ApiClient.post("/payments/create", data);
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          String paymentLink = response.data["data"]["paymentInfo"]["redirect_url"];
+          emit(PaymentLink(paymentLink: paymentLink));
+        } else {
+          emit(BookingError(message: "Sorry, failed to create a payment.\nPlease try again later."));
+        }
+      } catch (e) {
+        print("Error: $e");
+        emit(BookingError(message: "Sorry, failed to create a payment.\nPlease try again later."));
+      }
+    });
   }
 
   void _logState(String operation, BookingState newState) {
@@ -47,6 +71,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         propertyId: event.propertyId,
         checkInDate: event.checkInDate,
         checkOutDate: event.checkOutDate,
+        deposit: event.deposit,
       );
 
       emit(BookingSuccess(

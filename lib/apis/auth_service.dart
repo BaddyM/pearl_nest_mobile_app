@@ -134,7 +134,8 @@ class AuthService {
     } else if (error.toString().contains('Connection refused') || error.toString().contains('Connection failed')) {
       message = 'Unable to connect to server. Please try again later.';
       code = 'CONNECTION_REFUSED';
-    } else if(error.toString().contains('Server error') || error.toString().contains('500 Internal Server Error')) {
+    } else if (error.toString().contains('Server error') || error.toString().contains('500 Internal Server Error')) {
+      print(error);
       message = 'Server error. Please try again later.';
       code = 'SERVER_ERROR';
     } else {
@@ -742,14 +743,7 @@ class AuthService {
       }
 
       // Always clear local storage
-      await Future.wait([
-        prefs.remove(_tokenKey),
-        prefs.remove(_userDataKey),
-        prefs.remove(_lastLoginKey),
-        prefs.remove(_tokenExpiryKey),
-        prefs.remove(_userIdKey),
-        prefs.remove('role')
-      ]);
+      await Future.wait([prefs.remove(_tokenKey), prefs.remove(_userDataKey), prefs.remove(_lastLoginKey), prefs.remove(_tokenExpiryKey), prefs.remove(_userIdKey), prefs.remove('role')]);
 
       // Clear user ID using dedicated method
       await _clearUserId();
@@ -1156,27 +1150,27 @@ class AuthService {
     required String currency,
   }) async {
     try {
-     // //print('🚀 Starting currency update process...');
-     // //print('🚀 Input currency: "$currency"');
-      
+      // //print('🚀 Starting currency update process...');
+      // //print('🚀 Input currency: "$currency"');
+
       // Input validation
       if (currency.trim().isEmpty) {
-       // //print('❌ Currency validation failed: empty currency');
+        // //print('❌ Currency validation failed: empty currency');
         throw ValidationException('Currency is required');
       }
-      
+
       final cleanCurrency = currency.trim().toUpperCase();
       //debugPrint('🚀 Cleaned currency: "$cleanCurrency"');
-      
+
       // Get current user data to get userId
-     // //print('🚀 Getting current user data...');
+      // //print('🚀 Getting current user data...');
       final currentUser = await getCurrentUser();
       if (currentUser == null) {
         //debugPrint('❌ getCurrentUser returned null');
         throw AuthException('User not found. Please login again.');
       }
-      
-     // //print('🚀 Current user ID: "${currentUser.id}"');
+
+      // //print('🚀 Current user ID: "${currentUser.id}"');
       //debugPrint('🚀 Current user name: "${currentUser.name}"');
       //debugPrint('🚀 Current user email: "${currentUser.email}"');
 
@@ -1195,7 +1189,7 @@ class AuthService {
 
       // Check if userId is empty
       if (currentUser.id.isEmpty) {
-          //debugPrint('⚠️ User ID is empty, attempting to fix...');
+        //debugPrint('⚠️ User ID is empty, attempting to fix...');
         final fixResult = await fixMissingUserId();
         if (!fixResult) {
           //debugPrint('❌ Failed to fix missing user ID');
@@ -1204,10 +1198,10 @@ class AuthService {
         // Try to get user again after fixing
         final updatedUser = await getCurrentUser();
         if (updatedUser == null || updatedUser.id.isEmpty) {
-         // //print('❌ User ID still empty after fix attempt');
+          // //print('❌ User ID still empty after fix attempt');
           throw AuthException('Unable to retrieve user ID. Please login again.');
         }
-       // //print('✅ User ID fixed: "${updatedUser.id}"');
+        // //print('✅ User ID fixed: "${updatedUser.id}"');
       }
 
       final requestData = <String, dynamic>{
@@ -1216,23 +1210,23 @@ class AuthService {
         'type': cleanCurrency,
       };
 
-     // //print('🚀 Request data prepared: $requestData');
-     // //print('🚀 Making API call to /currency/update...');
-      
+      // //print('🚀 Request data prepared: $requestData');
+      // //print('🚀 Making API call to /currency/update...');
+
       // Log API client configuration
       final baseUrl = ApiClient.currentAuthToken != null ? "authenticated" : "not authenticated";
-     // //print('🚀 Auth status: $baseUrl');
-     // //print('🚀 Current auth token in ApiClient: ${ApiClient.currentAuthToken?.substring(0, 20) ?? "none"}...');
+      // //print('🚀 Auth status: $baseUrl');
+      // //print('🚀 Current auth token in ApiClient: ${ApiClient.currentAuthToken?.substring(0, 20) ?? "none"}...');
 
       _logRequest('/currency/update', requestData);
 
       final response = await ApiClient.patch('/currency/update', requestData);
-      
-     // //print('🚀 API response received');
+
+      // //print('🚀 API response received');
       //debugPrint('🚀 Response status code: ${response.statusCode}');
       //debugPrint('🚀 Response headers: ${response.headers.map}');
       //debugPrint('🚀 Response data: ${response.data}');
-      
+
       _logResponse('/currency/update', response);
 
       // Handle both 200 and 400 status codes if response contains success=true
@@ -1247,9 +1241,9 @@ class AuthService {
         };
       } else {
         final errorData = response.data;
-        //debugPrint('❌ Currency update failed with status: ${response.statusCode}');  
+        //debugPrint('❌ Currency update failed with status: ${response.statusCode}');
         //debugPrint('❌ Error data: $errorData');
-       // //print('❌ Full response: ${response.data}');
+        // //print('❌ Full response: ${response.data}');
         throw AuthException(
           errorData?['message'] ?? 'Currency update failed',
           statusCode: response.statusCode,
@@ -1259,14 +1253,14 @@ class AuthService {
       //debugPrint('❌ Exception in updateCurrency: $e');
       //debugPrint('❌ Exception type: ${e.runtimeType}');
       if (e is DioException) {
-       // //print('❌ DioException details:');
-       // //print('   - Type: ${e.type}');
-       // //print('   - Message: ${e.message}');
-       // //print('   - Response: ${e.response?.data}');
-       // //print('   - Status code: ${e.response?.statusCode}');
-       // //print('   - Request path: ${e.requestOptions.path}');
-       // //print('   - Request data: ${e.requestOptions.data}');
-       // //print('   - Request headers: ${e.requestOptions.headers}');
+        // //print('❌ DioException details:');
+        // //print('   - Type: ${e.type}');
+        // //print('   - Message: ${e.message}');
+        // //print('   - Response: ${e.response?.data}');
+        // //print('   - Status code: ${e.response?.statusCode}');
+        // //print('   - Request path: ${e.requestOptions.path}');
+        // //print('   - Request data: ${e.requestOptions.data}');
+        // //print('   - Request headers: ${e.requestOptions.headers}');
       }
       return _handleError(e, 'currency update');
     }

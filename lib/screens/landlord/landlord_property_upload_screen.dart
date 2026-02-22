@@ -49,7 +49,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
   PropertyType _selectedType = PropertyType.apartment;
   String _selectedPriceType = 'per month';
-  AvailabilityStatus _availabilityStatus = AvailabilityStatus.availableNow;
+  bool _availabilityStatus = false;
   DateTime? _availableFrom;
   final List<String> _selectedAmenities = [];
   final List<File> _selectedImages = [];
@@ -281,7 +281,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
       if (property.status == PropertyStatus.unavailable) {
         // If property is unavailable, default to "Available Later"
-        _availabilityStatus = AvailabilityStatus.availableLater;
+        _availabilityStatus = false;
         //debugPrint('🔍 Property is unavailable, setting to Available Later');
       } else {
         // Use the availability status from API
@@ -817,28 +817,28 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     );
   }
 
-Widget _buildPricingSection() {
-  return Column(
-    children: [
-      _buildTextField(
-        controller: _priceController,
-        label: 'Price',
-        hint: '0',
-        icon: Icons.attach_money,
-        keyboardType: TextInputType.number,
-        prefixText: 'UGX',
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter the price';
-          }
-          return null;
-        },
-      ),
-      SizedBox(height: 16),
-      _buildPriceTypeDropdown(),
-    ],
-  );
-}
+  Widget _buildPricingSection() {
+    return Column(
+      children: [
+        _buildTextField(
+          controller: _priceController,
+          label: 'Price',
+          hint: '0',
+          icon: Icons.attach_money,
+          keyboardType: TextInputType.number,
+          prefixText: 'UGX',
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter the price';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: 16),
+        _buildPriceTypeDropdown(),
+      ],
+    );
+  }
 
 //disabled for now
 
@@ -917,12 +917,12 @@ Widget _buildPricingSection() {
   //   );
   // }
 
-  Widget _buildRadioTile(String title, AvailabilityStatus value, IconData icon) {
+  Widget _buildRadioTile(String title, bool value, IconData icon) {
     return Theme(
       data: Theme.of(context).copyWith(
         unselectedWidgetColor: AppTheme.blackColor,
       ),
-      child: RadioListTile<AvailabilityStatus>(
+      child: RadioListTile<bool>(
         title: Row(
           children: [
             Icon(icon, color: AppTheme.primaryblue, size: 20),
@@ -941,7 +941,7 @@ Widget _buildPricingSection() {
         onChanged: (newValue) {
           setState(() {
             _availabilityStatus = newValue!;
-            if (newValue == AvailabilityStatus.availableNow) {
+            if (newValue == true) {
               _availableFrom = null;
             }
           });
@@ -1936,7 +1936,7 @@ Widget _buildPricingSection() {
       return;
     }
 
-    if (_availabilityStatus == AvailabilityStatus.availableLater && _availableFrom == null) {
+    if (_availabilityStatus == false && _availableFrom == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Please select an available date', style: TextStyle(color: Colors.white)),
@@ -1960,7 +1960,7 @@ Widget _buildPricingSection() {
     String areaMeasurementString = '${_areaController.text} sq meters';
 
     // Debug availability information
-    bool availabilityBoolean = _availabilityStatus == AvailabilityStatus.availableNow;
+    bool availabilityBoolean = _availabilityStatus == true;
     //debugPrint('🏠 Availability Status: $_availabilityStatus');
     //debugPrint('🏠 Availability Boolean: $availabilityBoolean');
     //debugPrint('🏠 Available From: $_availableFrom');
@@ -1986,8 +1986,8 @@ Widget _buildPricingSection() {
               fullAddress: _addressController.text.trim(),
               propertyMap: _propertyMapController.text.trim(),
               period: _selectedPriceType,
-              availability: _availabilityStatus == AvailabilityStatus.availableNow,
-              availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
+              availability: _availabilityStatus == true,
+              availableFrom: _availabilityStatus == false ? _availableFrom : null,
             ),
           );
     } else {
@@ -2009,8 +2009,8 @@ Widget _buildPricingSection() {
               fullAddress: _addressController.text.trim(),
               propertyMap: _propertyMapController.text.trim(),
               period: _selectedPriceType,
-             // availability: _availabilityStatus == AvailabilityStatus.availableNow,
-             // availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
+              // availability: _availabilityStatus == AvailabilityStatus.availableNow,
+              // availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
               images: _selectedImages,
             ),
           );

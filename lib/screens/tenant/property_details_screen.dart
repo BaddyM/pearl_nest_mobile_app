@@ -1,3 +1,4 @@
+import 'package:add_comma/add_comma.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -31,7 +32,6 @@ class Review {
   final String propertyId;
   final String userName;
   final String review;
-  
 
   Review({
     required this.id,
@@ -71,11 +71,13 @@ class PropertyDetailsScreen extends StatefulWidget {
 }
 
 class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with TickerProviderStateMixin {
+  final String pearlNestContact = "+256778632307";
   late PageController _pageController;
   bool _isFavorite = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late TabController _tabController;
+  final putCommas = addCommas();
 
   List<Review> _reviews = [];
   double _userRating = 0;
@@ -205,8 +207,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       // Fallback to mock data if API fails
     }
   }
-
-
 
   // Load pending bookings for current user and check if this property has pending booking
   void _loadPendingBookings() async {
@@ -342,7 +342,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         Icon(Icons.phone, color: AppTheme.primaryblue, size: 16),
                         SizedBox(width: 8),
                         Text(
-                          widget.property.landlordPhone,
+                          pearlNestContact,
                           style: TextStyle(
                             fontSize: 14,
                             color: AppTheme.getSecondaryTextColor(context),
@@ -1132,7 +1132,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     );
   }
 
-  void _showBookingConfirmationDialog() {
+  void _showBookingConfirmationDialog({final bool? isSale, final int deposit = 0}) {
     // Local state for the dialog
     DateTime? localCheckInDate = _checkInDate;
     DateTime? localCheckOutDate = _checkOutDate;
@@ -1386,7 +1386,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
                         SizedBox(height: 16),
                         Text(
-                          "Thank you for booking with PearlNest Estates! To confirm your booking and receive feedback promptly, please make a payment of at least UGX 5,000 (or \$2) within 24 hours. If payment is not made within this time, the property will automatically be made available to other clients.",
+                          "Thank you for booking with PearlNest Estates! To confirm your booking and receive feedback promptly, please make an initial deposit of at least UGX ${putCommas(deposit)} within 24 hours. If payment is not made within this time, the property will automatically be made available to other clients.",
                           style: TextStyle(
                             fontSize: 14,
                             color: AppTheme.getSecondaryTextColor(context),
@@ -1406,7 +1406,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     BlocBuilder<BookingBloc, BookingState>(
                       builder: (context, state) {
                         final isLoading = state is BookingLoading;
-                        final canSubmit = localCheckInDate != null && localCheckOutDate != null && !isLoading;
+                        final canSubmit = !isLoading;
 
                         return ElevatedButton(
                           onPressed: canSubmit
@@ -1416,7 +1416,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                     _checkInDate = localCheckInDate;
                                     _checkOutDate = localCheckOutDate;
                                   });
-                                  _submitBooking();
+                                  _submitBooking(deposit: deposit);
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
@@ -1805,39 +1805,26 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   ),
                 ),
               ),
-              Spacer(),
-
-              //rating and review count  
-
-              // Container(
-              //   padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
-              //   decoration: BoxDecoration(
-              //     color: Colors.amber.withValues(alpha: 0.1),
-              //     borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
-              //   ),
-              //   child: Row(
-              //     mainAxisSize: MainAxisSize.min,
-              //     children: [
-              //       Icon(Icons.star, color: Colors.amber, size: isSmallScreen ? 10 : 14),
-              //       SizedBox(width: 2),
-              //       Text(
-              //         '${widget.property.rating}',
-              //         style: TextStyle(
-              //           fontSize: ratingFontSize,
-              //           fontWeight: FontWeight.bold,
-              //           color: AppTheme.getTextColor(context),
-              //         ),
-              //       ),
-              //       Text(
-              //         ' (${_reviews.length})',
-              //         style: TextStyle(
-              //           fontSize: reviewCountFontSize,
-              //           color: AppTheme.getSecondaryTextColor(context),
-              //         ),
-              //       ),
-              //     ],
-              //   ),
-              // ),
+              SizedBox(width: 10),
+              Flexible(
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
+                  decoration: BoxDecoration(
+                    color: widget.property.isRent ? Colors.orange.withOpacity(0.2) : Colors.purple.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
+                  ),
+                  child: Text(
+                    widget.property.isRent ? "Rent" : "Sale",
+                    style: TextStyle(
+                      fontSize: tagFontSize,
+                      color: widget.property.isRent ? Colors.orange : Colors.purple,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
             ],
           ),
           SizedBox(height: spacing),
@@ -1965,7 +1952,21 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
           _buildAmenities(),
           _buildLocationSection(),
           _buildLandlordInfo(),
-          _buildSafetyFeatures(),
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.getCardColor(context),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                _buildSafetyFeatures(Icons.security, "Safety & Security", widget.property.safetyAndSecurity == "true" ? true : false),
+                SizedBox(height: 10),
+                _buildSafetyFeatures(Icons.local_parking, "Parking", widget.property.parking),
+              ],
+            ),
+          ),
           _buildNearbyPlaces(),
         ],
       ),
@@ -2033,7 +2034,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             child: _buildStatCard(
               icon: Icons.schedule,
               title: 'Available',
-              value: widget.property.availabilityStatus == AvailabilityStatus.availableNow ? 'Now' : 'Later',
+              value: widget.property.availabilityStatus == true ? 'Now' : 'Later',
               color: AppTheme.primaryblue,
               isSmallScreen: isSmallScreen,
               isVerySmallScreen: isVerySmallScreen,
@@ -2150,94 +2151,38 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     );
   }
 
-  Widget _buildSafetyFeatures() {
-    final safetyFeatures = [
-      {'icon': Icons.security, 'name': '24/7 Security', 'available': true},
-      {'icon': Icons.local_fire_department, 'name': 'Fire Safety', 'available': true},
-      {'icon': Icons.videocam, 'name': 'CCTV', 'available': true},
-      {'icon': Icons.emergency, 'name': 'Emergency Exit', 'available': true},
-      {'icon': Icons.lock, 'name': 'Secure Entry', 'available': true},
-      {'icon': Icons.medical_services, 'name': 'First Aid', 'available': false},
-    ];
-
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: Offset(0, 2),
+  Widget _buildSafetyFeatures(IconData icon, String title, bool checked) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: checked ? AppTheme.primaryblue.withValues(alpha: 0.1) : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            shape: BoxShape.circle,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.shield, color: Colors.orange, size: 20),
-              ),
-              SizedBox(width: 12),
-              Text(
-                'Safety & Security',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextColor(context),
-                ),
-              ),
-            ],
+          child: Icon(
+            icon,
+            color: checked ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+            size: 16,
           ),
-          SizedBox(height: 16),
-          ...safetyFeatures.map((feature) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: feature['available'] as bool ? AppTheme.primaryblue.withValues(alpha: 0.1) : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      feature['icon'] as IconData,
-                      color: feature['available'] as bool ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
-                      size: 16,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      feature['name'] as String,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: feature['available'] as bool ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    feature['available'] as bool ? Icons.check_circle : Icons.cancel,
-                    color: feature['available'] as bool ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
-                    size: 18,
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: checked ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Icon(
+          checked ? Icons.check_circle : Icons.cancel,
+          color: checked ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+          size: 18,
+        ),
+      ],
     );
   }
 
@@ -2311,14 +2256,16 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             ? 8.0
             : 12.0; // Reduced padding
 
-    final nearbyPlaces = [
-      {'icon': Icons.school, 'name': 'University', 'distance': '0.5 km', 'color': Colors.blue},
-      {'icon': Icons.local_hospital, 'name': 'Hospital', 'distance': '1.2 km', 'color': Colors.red},
-      {'icon': Icons.shopping_cart, 'name': 'Shopping Mall', 'distance': '0.8 km', 'color': Colors.purple},
-      {'icon': Icons.train, 'name': 'Metro Station', 'distance': '0.3 km', 'color': Colors.green},
-      {'icon': Icons.restaurant, 'name': 'Restaurants', 'distance': '0.2 km', 'color': Colors.orange},
-      {'icon': Icons.local_gas_station, 'name': 'Gas Station', 'distance': '0.6 km', 'color': Colors.grey},
-    ];
+    // final nearbyPlaces = [
+    //   {'icon': Icons.school, 'name': 'University', 'distance': '0.5 km', 'color': Colors.blue},
+    //   {'icon': Icons.local_hospital, 'name': 'Hospital', 'distance': '1.2 km', 'color': Colors.red},
+    //   {'icon': Icons.shopping_cart, 'name': 'Shopping Mall', 'distance': '0.8 km', 'color': Colors.purple},
+    //   {'icon': Icons.train, 'name': 'Metro Station', 'distance': '0.3 km', 'color': Colors.green},
+    //   {'icon': Icons.restaurant, 'name': 'Restaurants', 'distance': '0.2 km', 'color': Colors.orange},
+    //   {'icon': Icons.local_gas_station, 'name': 'Gas Station', 'distance': '0.6 km', 'color': Colors.grey},
+    // ];
+
+    final List<String> nearbyPlaces = (widget.property.nearbyPlaces!).toString().split(",");
 
     return Container(
       margin: EdgeInsets.all(margin),
@@ -2364,7 +2311,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               ),
             ],
           ),
-          SizedBox(height: sectionSpacing),
 
           // Grid of nearby places
           GridView.builder(
@@ -2382,18 +2328,19 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               return Container(
                 padding: EdgeInsets.all(gridPadding),
                 decoration: BoxDecoration(
-                  color: (place['color'] as Color).withValues(alpha: 0.1),
+                  color: Colors.green.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(borderRadius * 0.75),
                   border: Border.all(
-                    color: (place['color'] as Color).withValues(alpha: 0.2),
+                    color: Colors.green,
                   ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center, // Added for better alignment
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      place['icon'] as IconData,
-                      color: place['color'] as Color,
+                      Icons.location_city,
+                      color: Colors.green,
                       size: placeIconSize,
                     ),
                     SizedBox(width: isVerySmallScreen ? 4.0 : 6.0), // Reduced spacing
@@ -2406,26 +2353,12 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                           Flexible(
                             // Changed from FittedBox to Flexible
                             child: Text(
-                              place['name'] as String,
+                              place,
                               style: TextStyle(
                                 fontSize: placeFontSize,
                                 fontWeight: FontWeight.w600,
                                 color: AppTheme.getTextColor(context),
                                 height: 1.1, // Reduced line height
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          SizedBox(height: isVerySmallScreen ? 1.0 : 2.0),
-                          Flexible(
-                            // Added Flexible for distance too
-                            child: Text(
-                              place['distance'] as String,
-                              style: TextStyle(
-                                fontSize: distanceFontSize,
-                                color: AppTheme.getSecondaryTextColor(context),
-                                height: 1.0, // Tight line height
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -2801,7 +2734,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 child: _buildDetailItem(
                   Icons.local_parking,
                   'Parking',
-                  widget.property.amenities.contains('Parking') == true ? 'Available' : 'Not Available',
+                  widget.property.parking == true ? 'Available' : 'Not Available',
                 ),
               ),
             ],
@@ -2904,13 +2837,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             ),
           ),
           SizedBox(height: 16),
-          Row(
-            children: [
-              _buildHighlightChip('Move-in Ready', Icons.check_circle, Colors.green),
-              SizedBox(width: 8),
-              _buildHighlightChip('Furnished', Icons.chair, Colors.blue),
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     _buildHighlightChip('Move-in Ready', Icons.check_circle, Colors.green),
+          //     SizedBox(width: 8),
+          //     _buildHighlightChip('Furnished', Icons.chair, Colors.blue),
+          //   ],
+          // ),
         ],
       ),
     );
@@ -2987,7 +2920,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
     // Grid settings - Adjust for small screens and number of amenities
     final totalAmenities = amenities.length;
-    final crossAxisCount = isVerySmallScreen 
+    final crossAxisCount = isVerySmallScreen
         ? (totalAmenities > 6 ? 3 : 2) // Reduce columns on very small screens
         : (totalAmenities > 8 ? 4 : 3); // Normal screens
     final crossAxisSpacing = isVerySmallScreen ? 6.0 : 8.0;
@@ -3299,7 +3232,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   shape: BoxShape.circle,
                   color: AppTheme.primaryblue.withValues(alpha: 0.1),
                 ),
-                child: widget.property.profilePicture != null || widget.property.profilePicture!.isNotEmpty
+                child: widget.property.profilePicture != null || widget.property.profilePicture!.isNotEmpty || widget.property.profilePicture != ""
                     ? ClipOval(
                         child: CachedNetworkImage(
                           cacheManager: DefaultCacheManager(),
@@ -3335,27 +3268,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       ),
                     ),
                     SizedBox(height: 8),
-                    // Row(
-                    //   children: [
-                    //     Icon(Icons.star, color: Colors.amber, size: 16),
-                    //     SizedBox(width: 4),
-                    //     Text(
-                    //       '4.8',
-                    //       style: TextStyle(
-                    //         fontSize: 14,
-                    //         fontWeight: FontWeight.bold,
-                    //         color: AppTheme.getTextColor(context),
-                    //       ),
-                    //     ),
-                    //     Text(
-                    //       ' (127 reviews)',
-                    //       style: TextStyle(
-                    //         fontSize: 12,
-                    //         color: AppTheme.getSecondaryTextColor(context),
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
                   ],
                 ),
               ),
@@ -3450,101 +3362,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     }
 
     return SizedBox();
-
-    // return Container(
-    //   padding: EdgeInsets.all(20),
-    //   decoration: BoxDecoration(
-    //     color: AppTheme.getCardColor(context),
-    //     borderRadius: BorderRadius.circular(16),
-    //     boxShadow: [
-    //       BoxShadow(
-    //         color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
-    //         blurRadius: 10,
-    //         offset: Offset(0, 2),
-    //       ),
-    //     ],
-    //   ),
-    //   child: Row(
-    //     children: [
-    //       Expanded(
-    //         child: Column(
-    //           crossAxisAlignment: CrossAxisAlignment.start,
-    //           children: [
-    //             Row(
-    //               children: [
-    //                 Icon(Icons.star, color: Colors.amber, size: 24),
-    //                 SizedBox(width: 8),
-    //                 Text(
-    //                   '${widget.property.rating}',
-    //                   style: TextStyle(
-    //                     fontSize: 24,
-    //                     fontWeight: FontWeight.bold,
-    //                     color: AppTheme.getTextColor(context),
-    //                   ),
-    //                 ),
-    //                 Text(
-    //                   ' out of 5',
-    //                   style: TextStyle(
-    //                     fontSize: 16,
-    //                     color: AppTheme.getSecondaryTextColor(context),
-    //                   ),
-    //                 ),
-    //               ],
-    //             ),
-    //             SizedBox(height: 4),
-    //             Text(
-    //               '${_reviews.length} review${_reviews.length != 1 ? 's' : ''}',
-    //               style: TextStyle(
-    //                 fontSize: 14,
-    //                 color: AppTheme.getSecondaryTextColor(context),
-    //               ),
-    //             ),
-    //           ],
-    //         ),
-    //       ),
-    //       Column(
-    //         crossAxisAlignment: CrossAxisAlignment.end,
-    //         children: [
-    //           for (int i = 5; i >= 1; i--)
-    //             Padding(
-    //               padding: EdgeInsets.symmetric(vertical: 2),
-    //               child: Row(
-    //                 mainAxisSize: MainAxisSize.min,
-    //                 children: [
-    //                   Text(
-    //                     '$i',
-    //                     style: TextStyle(
-    //                       fontSize: 12,
-    //                       color: AppTheme.getSecondaryTextColor(context),
-    //                     ),
-    //                   ),
-    //                   SizedBox(width: 8),
-    //                   Container(
-    //                     width: 80,
-    //                     height: 6,
-    //                     decoration: BoxDecoration(
-    //                       color: AppTheme.lightGreyColor,
-    //                       borderRadius: BorderRadius.circular(3),
-    //                     ),
-    //                     child: FractionallySizedBox(
-    //                       alignment: Alignment.centerLeft,
-    //                       widthFactor: _getStarPercentage(i),
-    //                       child: Container(
-    //                         decoration: BoxDecoration(
-    //                           color: Colors.amber,
-    //                           borderRadius: BorderRadius.circular(3),
-    //                         ),
-    //                       ),
-    //                     ),
-    //                   ),
-    //                 ],
-    //               ),
-    //             ),
-    //         ],
-    //       ),
-    //     ],
-    //   ),
-    // );
   }
 
   double _getStarPercentage(int stars) {
@@ -3554,7 +3371,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   }
 
   Widget _buildReviewCard(Review review) {
-    
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       padding: EdgeInsets.all(16),
@@ -3617,7 +3433,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                           }),
                         ),
                         SizedBox(width: 8),
-                       
                       ],
                     ),
                   ],
@@ -3659,31 +3474,24 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   /// Parse amenities and return list with icons
   List<Map<String, dynamic>> _parseAmenities(dynamic amenitiesData) {
     List<String> amenityNames = [];
-    
+
     if (amenitiesData is String) {
       // If it's a string, split by comma
       if (amenitiesData.isNotEmpty) {
-        amenityNames = amenitiesData
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList();
+        amenityNames = amenitiesData.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
       }
     } else if (amenitiesData is List) {
       // If it's already a list, convert to strings
-      amenityNames = amenitiesData
-          .map((e) => e.toString().trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
+      amenityNames = amenitiesData.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
     }
-    
+
     // If no amenities, return a default set with appropriate message
     if (amenityNames.isEmpty) {
       return [
         {'icon': Icons.info_outline, 'name': 'No amenities listed'},
       ];
     }
-    
+
     return amenityNames.map((name) {
       return {
         'icon': _getAmenityIcon(name),
@@ -3695,7 +3503,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   /// Get appropriate icon for amenity name
   IconData _getAmenityIcon(String amenityName) {
     final lowerName = amenityName.toLowerCase();
-    
+
     // Map amenity names to icons based on your actual data
     if (lowerName.contains('wifi') || lowerName.contains('internet')) {
       return Icons.wifi;
@@ -3742,9 +3550,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     final hasPendingBooking = _pendingBookingForProperty != null;
 
     // Check if property is available for booking
-  final isPropertyAvailable = widget.property.status == PropertyStatus.available;
-  
-
+    final isPropertyAvailable = widget.property.status == PropertyStatus.available;
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20),
@@ -3772,7 +3578,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   ? null
                   : hasPendingBooking
                       ? _initiatePayment
-                      : _showBookingConfirmationDialog,
+                      : () => _showBookingConfirmationDialog(deposit: widget.property.deposit.toInt()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isLoadingPendingBookings || !isPropertyAvailable
                     ? Colors.grey
@@ -3796,7 +3602,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   ),
                   SizedBox(width: 8),
                   Text(
-                    hasPendingBooking ? 'Complete Payment' : isPropertyAvailable ? 'Book Now' : 'Unavailable',
+                    hasPendingBooking
+                        ? 'Complete Payment'
+                        : isPropertyAvailable
+                            ? 'Book Now'
+                            : 'Unavailable',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -3830,7 +3640,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   }
 
   void _callLandlord() async {
-    final phoneNumber = widget.property.landlordPhone;
+    final phoneNumber = pearlNestContact;
     if (phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -3889,17 +3699,17 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     );
   }
 
-  void _submitBooking() {
-    if (_checkInDate == null || _checkOutDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please select both check-in and check-out dates'),
-          backgroundColor: Colors.orange,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+  void _submitBooking({final int deposit = 0}) {
+    // if (_checkInDate == null || _checkOutDate == null) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(
+    //       content: Text('Please select both check-in and check-out dates'),
+    //       backgroundColor: Colors.orange,
+    //       behavior: SnackBarBehavior.floating,
+    //     ),
+    //   );
+    //   return;
+    // }
 
     // Format dates as ISO 8601 strings for API
     final checkInFormatted = DateFormat('yyyy-MM-dd').format(_checkInDate!);
@@ -3909,6 +3719,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       propertyId: widget.property.id,
       checkInDate: checkInFormatted,
       checkOutDate: checkOutFormatted,
+      deposit: deposit,
     ));
   }
 

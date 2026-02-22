@@ -81,13 +81,13 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_performSearch);
+    // _searchController.addListener(_performSearch);
     _performSearch();
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_performSearch);
+    // _searchController.removeListener(_performSearch);
     _searchController.dispose();
     super.dispose();
   }
@@ -106,28 +106,9 @@ class _SearchScreenState extends State<SearchScreen> {
     });
 
     try {
-      Map<String, dynamic> result;
+      List<Property> result;
 
-      if (searchQuery.isEmpty) {
-        // If no search text, check if we have price filters
-        if (_filters.priceRange.start != 0 || _filters.priceRange.end != 5000) {
-          // Use price search API
-          result = await PropertyService.searchPropertiesByPrice(
-            minPrice: _filters.priceRange.start,
-            maxPrice: _filters.priceRange.end,
-            sortBy: _getSortField(_sortBy),
-            sortOrder: _getSortOrder(_sortBy),
-          );
-        } else {
-          // No search query and no price filter - clear results
-          setState(() {
-            _filteredProperties = [];
-            _errorMessage = null;
-            _isLoading = false;
-          });
-          return;
-        }
-      } else {
+      if (searchQuery.isNotEmpty) {
         // Text search takes priority - use text search API with filters
         result = await PropertyService.searchProperties(
           searchString: searchQuery,
@@ -135,30 +116,22 @@ class _SearchScreenState extends State<SearchScreen> {
           sortOrder: _getSortOrder(_sortBy),
           filters: _buildApiFilters(),
         );
-      }
-
-      if (result['success'] == true) {
-        List<Property> properties = List<Property>.from(result['properties'] ?? []);
-
-        // Apply local filters for features not supported by API
-        properties = _applyLocalFilters(properties);
-
-        setState(() {
-          _filteredProperties = properties;
-          _isLoading = false;
-        });
-
-        //debugPrint('🔍 Search completed: ${properties.length} properties found');
       } else {
-        setState(() {
-          _filteredProperties = [];
-          _errorMessage = result['message'] ?? 'Failed to load properties.';
-          _isLoading = false;
-        });
-        //debugPrint('❌ Search failed: ${result['message']}');
+        result = [];
       }
+
+      List<Property> apiProperties = List<Property>.from(result);
+      List<Property> properties = apiProperties.where((property) => property.availabilityStatus == true).toList();
+
+      // Apply local filters for features not supported by API
+      properties = _applyLocalFilters(properties);
+
+      setState(() {
+        _filteredProperties = properties;
+        _isLoading = false;
+      });
     } catch (e) {
-      //debugPrint('❌ Error performing search: $e');
+      debugPrint('❌ Error performing search: $e');
       setState(() {
         _filteredProperties = [];
         _errorMessage = 'An error occurred while searching. Please try again.';
@@ -557,6 +530,7 @@ class _SearchScreenState extends State<SearchScreen> {
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
+        onEditingComplete: _performSearch,
       ),
     );
   }
@@ -1042,20 +1016,20 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: property.availabilityStatus == AvailabilityStatus.availableNow ? Colors.green : Colors.orange,
+                      color: property.availabilityStatus == true ? Colors.green : Colors.orange,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          property.availabilityStatus == AvailabilityStatus.availableNow ? Icons.check_circle : Icons.schedule,
+                          property.availabilityStatus == true ? Icons.check_circle : Icons.schedule,
                           color: AppTheme.whiteColor,
                           size: 12,
                         ),
                         SizedBox(width: 4),
                         Text(
-                          property.availabilityStatus == AvailabilityStatus.availableNow ? 'Available Now' : 'Available Later',
+                          property.availabilityStatus == true ? 'Available Now' : 'Available Later',
                           style: TextStyle(
                             color: AppTheme.whiteColor,
                             fontSize: 10,
@@ -1225,7 +1199,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                             ],
                           ),
-                          if (property.availabilityStatus == AvailabilityStatus.availableLater && property.availableFrom != null)
+                          if (property.availabilityStatus == false && property.availableFrom != null)
                             Text(
                               'Available from ${_formatDate(property.availableFrom!)}',
                               style: TextStyle(

@@ -8,7 +8,6 @@ import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
-import 'package:pearlnest/apis/notification_api_service.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
@@ -19,12 +18,12 @@ import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/chat/admin_list_screen.dart';
+import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/screens/tenant/favorites_screen.dart';
 import 'package:pearlnest/screens/tenant/notification_screen.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/screens/tenant/search_screen.dart';
-import 'package:pearlnest/screens/tenant/booking_screen.dart';
 import 'package:pearlnest/screens/tenant/payment_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:shimmer/shimmer.dart';
@@ -33,15 +32,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
   final User user;
-  
+
   const HomeScreen({super.key, required this.user});
 
   @override
   // ignore: library_private_types_in_public_api
   _HomeScreenState createState() => _HomeScreenState();
 }
-
-
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
@@ -58,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showBackToTop = false;
   int _unreadNotificationCount = 0; // Count of unread notifications
   Timer? _notificationTimer; // Timer for periodic notification refresh
-  
+
   // Pagination state
   int _currentPage = 1;
   int _totalPages = 1;
@@ -81,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = date.difference(now).inDays;
-    
+
     if (difference < 30) {
       return '$difference days';
     } else if (difference < 365) {
@@ -116,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       }
-      
+
       // Infinite scroll logic for pagination
       if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
         if (_hasNextPage && !_isLoadingMore) {
@@ -155,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _toggleFavorite(Property property) async {
     try {
       final wasLiked = _isPropertyFavorited(property);
-      
+
       // Optimistically update the UI for better UX
       setState(() {
         if (wasLiked) {
@@ -169,16 +166,16 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       });
-      
+
       // Make API call to sync with server
       // //debugPrint('🤍 Toggling favorite for property: ${property.id}');
       final result = await FavoritesService.toggleFavorite(property.id);
-      
+
       if (result['success'] == true) {
         // Success - UI is already updated optimistically
         final message = wasLiked ? 'Removed from favorites' : 'Added to favorites';
         // //debugPrint('✅ $message for property: ${property.id}');
-        
+
         // Show success feedback
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -208,9 +205,9 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           });
         }
-        
+
         // //debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -224,7 +221,6 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
       }
-      
     } catch (e) {
       //debugPrint('❌ Error toggling favorite: $e');
 
@@ -244,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         });
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -262,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadProperties({bool loadMore = false}) async {
     if (!mounted) return;
-    
+
     if (loadMore) {
       if (!_hasNextPage || _isLoadingMore) return;
       setState(() {
@@ -275,37 +271,42 @@ class _HomeScreenState extends State<HomeScreen> {
         _currentPage = 1;
       });
     }
-    
+
     try {
       final page = loadMore ? _currentPage + 1 : 1;
-      
+
       // Load general properties, featured properties, and pending bookings in parallel
-      final [propertiesResult, featuredResult] = await Future.wait([
-        PropertyService.getProperties(page: page, limit: _pageLimit),
-        PropertyService.getFeaturedProperties(page: 1, limit: _pageLimit), // Featured always from page 1
-      ]);
-      
-      if (propertiesResult['success'] == true) {
-        final newProperties = List<Property>.from(propertiesResult['properties'] ?? []);
-        
+      // final [propertiesResult, featuredResult] = await Future.wait([
+      //   PropertyService.getProperties(page: page, limit: _pageLimit),
+      //   PropertyService.getFeaturedProperties(page: 1, limit: _pageLimit),
+      // ]);
+
+      final List<Property> propertiesResult = await PropertyService.getProperties(page: page, limit: _pageLimit);
+      final featuredResult = await PropertyService.getFeaturedProperties(page: 1, limit: _pageLimit);
+
+      if (propertiesResult.isNotEmpty) {
+        final filteredProperties = List<Property>.from(propertiesResult);
+        final newProperties = filteredProperties.where((property) => property.availabilityStatus == true).toList();
+
         // Update pagination metadata
-        _currentPage = propertiesResult['page'] ?? page;
-        _totalPages = propertiesResult['totalPages'] ?? 1;
-        _totalProperties = propertiesResult['total'] ?? newProperties.length;
-        _hasNextPage = propertiesResult['hasNextPage'] ?? false;
-        _hasPrevPage = propertiesResult['hasPrevPage'] ?? false;
-        
+        // _currentPage = propertiesResult['page'] ?? page;
+        // _totalPages = propertiesResult['totalPages'] ?? 1;
+        _totalProperties = newProperties.length;
+        // _hasNextPage = propertiesResult['hasNextPage'] ?? false;
+        // _hasPrevPage = propertiesResult['hasPrevPage'] ?? false;
+
         List<Property> featuredProperties = [];
         if (featuredResult['success'] == true) {
           // Use dedicated featured properties if available
-          featuredProperties = List<Property>.from(featuredResult['properties'] ?? []);
+          final filterFeaturedProperties = List<Property>.from(featuredResult['properties'] ?? []);
+          featuredProperties = filterFeaturedProperties.where((property) => property.availabilityStatus == true).toList();
           // //debugPrint('🏠 Loaded ${featuredProperties.length} featured properties from dedicated API');
         } else {
           // Fallback to filtering general properties if featured API fails
-          featuredProperties = newProperties.where((p) => p.isFeatured).toList();
+          featuredProperties = newProperties.where((p) => p.isFeatured && p.availabilityStatus == true).toList();
           // //debugPrint('🏠 Using ${featuredProperties.length} featured properties from general properties (fallback)');
         }
-        
+
         if (mounted) {
           setState(() {
             if (loadMore) {
@@ -320,16 +321,15 @@ class _HomeScreenState extends State<HomeScreen> {
             _isLoadingMore = false;
           });
         }
-        
+
         // //debugPrint('🏠 Properties loaded - General: ${_properties.length}, Featured: ${featuredProperties.length}, Page: $_currentPage/$_totalPages');
-        
+
         // Load pending bookings after properties are loaded
         await _loadPendingBookings();
-        
       } else {
         if (mounted) {
           setState(() {
-            _errorMessage = propertiesResult['message'] ?? 'Failed to load properties.';
+            _errorMessage = 'Failed to load properties.';
             _categoryProperties = []; // Initialize empty category properties
             _pendingBookings = []; // Initialize empty pending bookings
             _pendingProperties = []; // Initialize empty pending properties
@@ -338,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      // //debugPrint('❌ Error loading properties: $e');
+      debugPrint('❌ Error loading properties: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'An error occurred while loading properties.';
@@ -395,7 +395,10 @@ class _HomeScreenState extends State<HomeScreen> {
       totalBookings: 15,
       isVerified: true,
       createdAt: DateTime.now().subtract(Duration(days: 30)),
-      updatedAt: DateTime.now(), businessRegistrationNumber: '', verificationDocuments: [], applicationDate: DateTime.now().subtract(Duration(days: 30)),
+      updatedAt: DateTime.now(),
+      businessRegistrationNumber: '',
+      verificationDocuments: [],
+      applicationDate: DateTime.now().subtract(Duration(days: 30)),
     );
   }
 
@@ -408,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
         url = urls.first;
       }
     }
-    
+
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
@@ -420,7 +423,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Handle category selection and load properties for that category
   Future<void> _onCategorySelected(String categoryName) async {
     if (_selectedCategory == categoryName) return; // Already selected
-    
+
     setState(() {
       _selectedCategory = categoryName;
       _isCategoryLoading = true;
@@ -439,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // Search for properties of the selected category
         // //debugPrint('🔍 Searching for properties of type: $categoryName');
         final searchResult = await PropertyService.searchPropertiesByType(categoryName);
-        
+
         if (searchResult['success'] == true) {
           final categoryProps = List<Property>.from(searchResult['properties'] ?? []);
           if (mounted) {
@@ -467,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _isCategoryLoading = false;
         });
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -488,29 +491,26 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       // //debugPrint('📚 Loading pending bookings...');
       final pendingBookings = await BookingService.fetchPendingBookings();
-      
+
       // //debugPrint('📚 API returned ${pendingBookings.length} pending bookings');
-      
+
       // Log each booking for debugging
       for (var booking in pendingBookings) {
         // //debugPrint('📚 Booking ID: ${booking.id}, Status: ${booking.status}, Property: ${booking.propertyId}');
       }
-      
+
       // Extract properties from pending bookings
       final pendingPropertyIds = pendingBookings.map((b) => b.propertyId).toSet();
-      final pendingProps = _properties.where(
-        (property) => pendingPropertyIds.contains(property.id)
-      ).toList();
-      
+      final pendingProps = _properties.where((property) => pendingPropertyIds.contains(property.id)).toList();
+
       if (mounted) {
         setState(() {
           _pendingBookings = pendingBookings;
           _pendingProperties = pendingProps;
         });
       }
-      
+
       // //debugPrint('📚 Extracted ${pendingProps.length} properties with pending bookings');
-      
     } catch (e) {
       // //debugPrint('❌ Error loading pending bookings: $e');
       // Don't show error to user, just continue without pending bookings
@@ -532,11 +532,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Get property IDs that have pending bookings
     final pendingPropertyIds = _pendingProperties.map((p) => p.id).toSet();
-    
+
     // Separate properties into those with and without pending bookings
     final propertiesWithPendingBookings = <Property>[];
     final propertiesWithoutPendingBookings = <Property>[];
-    
+
     for (final property in properties) {
       if (pendingPropertyIds.contains(property.id)) {
         propertiesWithPendingBookings.add(property);
@@ -544,18 +544,18 @@ class _HomeScreenState extends State<HomeScreen> {
         propertiesWithoutPendingBookings.add(property);
       }
     }
-    
+
     // Return prioritized list: pending bookings first, then others
     final result = [
       ...propertiesWithPendingBookings,
       ...propertiesWithoutPendingBookings,
     ];
-    
+
     // //debugPrint('🏆 Prioritized properties: ${propertiesWithPendingBookings.length} with pending bookings first, ${propertiesWithoutPendingBookings.length} others');
-    
+
     return result;
   }
-  
+
   @override
   Widget build(BuildContext context) {
     // //debugPrint('🏠 HomeScreen: build() called for user: ${widget.user.name}');
@@ -598,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
           0 => _buildHomeContent(),
           1 => SearchScreen(
               user: widget.user,
-              allProperties: _properties,
+              allProperties: _properties.where((property) => property.availabilityStatus == true).toList(),
             ),
           2 => FavoritesScreen(
               user: widget.user,
@@ -608,7 +608,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 });
               },
             ),
-          3 => ProfileScreen(
+          3 => BookingsListScreen(),
+          4 => ProfileScreen(
               user: widget.user,
               landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
             ),
@@ -626,13 +627,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _onRefresh() async {
     // //debugPrint('🔄 HomeScreen: Refreshing data...');
-    
+
     try {
       await Future.wait([
         _loadProperties(),
         _loadPendingBookings(),
       ]);
-      
+
       // //debugPrint('✅ HomeScreen: Refresh completed');
     } catch (e) {
       // //debugPrint('❌ HomeScreen: Refresh failed - $e');
@@ -661,7 +662,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildHeader(),
               _buildCategories(),
-              _buildPendingBookingsSection(),
+              // _buildPendingBookingsSection(),
               _buildFeaturedSection(),
               _buildRecentProperties(),
               SizedBox(height: 100),
@@ -714,9 +715,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      widget.user.userType == UserType.tenant
-                          ? 'Find your perfect home'
-                          : 'Manage your properties',
+                      widget.user.userType == UserType.tenant ? 'Find your perfect home' : 'Manage your properties',
                       style: TextStyle(
                         fontSize: 16,
                         color: AppTheme.getSecondaryTextColor(context),
@@ -745,7 +744,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                         // Refresh notification count when returning from notification screen
                         // _loadNotificationCount();
-
                       },
                       icon: Icon(
                         Icons.notifications_outlined,
@@ -771,7 +769,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () { 
+                onTap: () {
                   setState(() {
                     _currentIndex = 3;
                   });
@@ -813,7 +811,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               errorWidget: (context, url, error) => Icon(
-                                Icons.person, 
+                                Icons.person,
                                 color: AppTheme.primaryblue,
                                 size: 30,
                               ),
@@ -858,7 +856,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      Icons.search, 
+                      Icons.search,
                       color: AppTheme.primaryblue,
                       size: 20,
                     ),
@@ -880,7 +878,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      Icons.tune, 
+                      Icons.tune,
                       color: AppTheme.primaryblue,
                       size: 20,
                     ),
@@ -897,32 +895,30 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCategories() {
     return Container(
       margin: EdgeInsets.only(top: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              'Categories',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.getTextColor(context),
-              ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Categories',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.getTextColor(context),
             ),
           ),
-          SizedBox(height: 16),
-          SizedBox(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                final isSelected = _selectedCategory == category['name'];
-                
-                return GestureDetector(
+        ),
+        SizedBox(height: 16),
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            itemCount: _categories.length,
+            itemBuilder: (context, index) {
+              final category = _categories[index];
+              final isSelected = _selectedCategory == category['name'];
+
+              return GestureDetector(
                   onTap: () => _onCategorySelected(category['name']),
                   child: Container(
                     width: 70,
@@ -933,23 +929,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 60,
                           height: 60,
                           decoration: BoxDecoration(
-                            color: isSelected 
-                                ? AppTheme.primaryblue 
-                                : AppTheme.getCardColor(context),
+                            color: isSelected ? AppTheme.primaryblue : AppTheme.getCardColor(context),
                             shape: BoxShape.circle,
-                            boxShadow: isSelected ? [
-                              BoxShadow(
-                                color: AppTheme.primaryblue.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
-                              ),
-                            ] : null,
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppTheme.primaryblue.withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: Icon(
                             category['icon'],
-                            color: isSelected 
-                                ? AppTheme.whiteColor 
-                                : AppTheme.getSecondaryTextColor(context),
+                            color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
                             size: 24,
                           ),
                         ),
@@ -958,12 +952,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           category['name'],
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: isSelected 
-                                ? FontWeight.w600 
-                                : FontWeight.normal,
-                            color: isSelected 
-                                ? AppTheme.primaryblue 
-                                : AppTheme.getSecondaryTextColor(context),
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            color: isSelected ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 1,
@@ -972,12 +962,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ));
-                },
-              ),
-            ),
-        ]
-        
-      ),
+            },
+          ),
+        ),
+      ]),
     );
   }
 
@@ -986,104 +974,101 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedCategory != 'All') {
       return SizedBox.shrink(); // Return empty widget
     }
-    
+
     if (_isLoading) {
       // Shimmer loading for featured section
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(left: 20, right: 20, bottom: 5, top: 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Featured Properties',
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: EdgeInsets.only(left: 20, right: 20, bottom: 5, top: 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Featured Properties',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextColor(context),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _currentIndex = 1;
+                  });
+                },
+                child: Text(
+                  'See All',
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.getTextColor(context),
+                    color: AppTheme.primaryblue,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentIndex = 1;
-                    });
-                  },
-                  child: Text(
-                    'See All',
-                    style: TextStyle(
-                      color: AppTheme.primaryblue,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          SizedBox(
-            height: 220,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              itemCount: 3,
-              itemBuilder: (context, index) {
-                return Container(
-                  width: 280,
-                  margin: EdgeInsets.only(right: 16),
-                  child: Shimmer.fromColors(
-                    baseColor: Colors.grey.shade300,
-                    highlightColor: Colors.grey.shade100,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            height: 120,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(20),
-                                topRight: Radius.circular(20),
+        ),
+        SizedBox(
+          height: 220,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            itemCount: 3,
+            itemBuilder: (context, index) {
+              return Container(
+                width: 280,
+                margin: EdgeInsets.only(right: 16),
+                child: Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 120,
+                                height: 16,
+                                color: Colors.grey.shade300,
                               ),
-                            ),
+                              SizedBox(height: 8),
+                              Container(
+                                width: 80,
+                                height: 14,
+                                color: Colors.grey.shade300,
+                              ),
+                            ],
                           ),
-                          Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 120,
-                                  height: 16,
-                                  color: Colors.grey.shade300,
-                                ),
-                                SizedBox(height: 8),
-                                Container(
-                                  width: 80,
-                                  height: 14,
-                                  color: Colors.grey.shade300,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-        ]
-      );       
+        ),
+      ]);
     }
-    
+
     if (_errorMessage != null) {
       return Container(
         height: 200,
@@ -1261,9 +1246,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentProperties() {
     // Use category properties if a specific category is selected and loaded
-    List<Property> baseProperties = _selectedCategory == 'All'
-        ? _properties
-        : _categoryProperties;
+    List<Property> baseProperties = _selectedCategory == 'All' ? _properties : _categoryProperties;
 
     // Prioritize properties with pending bookings
     final filteredProperties = _prioritizePropertiesWithPendingBookings(baseProperties);
@@ -1277,9 +1260,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _selectedCategory == 'All' 
-                    ? 'Recent Properties' 
-                    : '$_selectedCategory Properties',
+                _selectedCategory == 'All' ? 'Recent Properties' : '$_selectedCategory Properties',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -1298,7 +1279,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        
+
         if (_isCategoryLoading)
           // Show loading shimmer for category properties
           ListView.builder(
@@ -1376,44 +1357,68 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else
           // Show properties list
-          ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            itemCount: filteredProperties.length + (_isLoadingMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Show loading indicator at the end when loading more
-              if (index == filteredProperties.length) {
-                return Container(
-                  padding: EdgeInsets.all(20),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Loading more properties...',
-                          style: TextStyle(
-                            color: AppTheme.getSecondaryTextColor(context),
-                            fontSize: 14,
+          filteredProperties.length > 0
+              ? ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: filteredProperties.length + (_isLoadingMore ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    // Show loading indicator at the end when loading more
+                    if (index == filteredProperties.length) {
+                      return Container(
+                        padding: EdgeInsets.all(20),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Loading more properties...',
+                                style: TextStyle(
+                                  color: AppTheme.getSecondaryTextColor(context),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    }
+
+                    final property = filteredProperties[index];
+                    return Container(
+                      margin: EdgeInsets.only(bottom: 16),
+                      child: _buildPropertyCard(property),
+                    );
+                  },
+                )
+              : Container(
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        "assets/images/empty.png",
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.contain,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        "No properties available at the moment",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              }
-              
-              final property = filteredProperties[index];
-              return Container(
-                margin: EdgeInsets.only(bottom: 16),
-                child: _buildPropertyCard(property),
-              );
-            },
-          ),
-        
+                ),
+
         // Pagination info
         if (filteredProperties.isNotEmpty && _totalPages > 1) ...[
           Container(
@@ -1439,18 +1444,20 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
-        
+
         SizedBox(height: 20),
       ],
     );
   }
+
   String _formatLargePrice(double price) {
     if (price >= 1000000) {
       return '${(price / 1000000).toStringAsFixed(1)}M';
-    }  else {
+    } else {
       return NumberFormat('#,##0').format(price);
     }
   }
+
   Widget _buildPropertyCard(Property property) {
     final formattedPrice = _formatLargePrice(property.price);
 
@@ -1560,7 +1567,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                 ),
-                
                 Container(
                   height: 220,
                   decoration: BoxDecoration(
@@ -1578,7 +1584,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-
                 Positioned(
                   top: 16,
                   left: 16,
@@ -1645,12 +1650,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                           child: Icon(
-                            _isPropertyFavorited(property)
-                                ? Icons.favorite
-                                : Icons.favorite_outline,
-                            color: _isPropertyFavorited(property)
-                                ? Colors.red
-                                : AppTheme.getSecondaryTextColor(context),
+                            _isPropertyFavorited(property) ? Icons.favorite : Icons.favorite_outline,
+                            color: _isPropertyFavorited(property) ? Colors.red : AppTheme.getSecondaryTextColor(context),
                             size: 20,
                           ),
                         ),
@@ -1658,16 +1659,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-
                 Positioned(
                   bottom: 16,
                   left: 16,
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: property.availabilityStatus == AvailabilityStatus.availableNow
-                          ? Colors.green
-                          : Colors.orange,
+                      color: property.availabilityStatus == true ? Colors.green : Colors.orange,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -1681,17 +1679,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          property.availabilityStatus == AvailabilityStatus.availableNow
-                              ? Icons.check_circle
-                              : Icons.schedule,
+                          property.availabilityStatus == true ? Icons.check_circle : Icons.schedule,
                           color: AppTheme.whiteColor,
                           size: 14,
                         ),
                         SizedBox(width: 6),
                         Text(
-                          property.availabilityStatus == AvailabilityStatus.availableNow
-                              ? 'Available Now'
-                              : 'Available Later',
+                          property.availabilityStatus == true ? 'Available Now' : 'Available Later',
                           style: TextStyle(
                             color: AppTheme.whiteColor,
                             fontSize: 11,
@@ -1752,7 +1746,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       SizedBox(width: 12),
 
                       //rating wigdet
-                      
+
                       // Container(
                       //   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       //   decoration: BoxDecoration(
@@ -1781,9 +1775,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       // ),
                     ],
                   ),
-                  
+
                   SizedBox(height: 10), // Reduced from 12
-                  
+
                   Row(
                     children: [
                       Container(
@@ -1813,10 +1807,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  
+
                   SizedBox(height: 12), // Reduced from 16
-                  
-                  if (property.availabilityStatus == AvailabilityStatus.availableLater && property.availableFrom != null)
+
+                  if (property.availabilityStatus == false && property.availableFrom != null)
                     Container(
                       margin: EdgeInsets.only(bottom: 16),
                       padding: EdgeInsets.all(12),
@@ -1907,9 +1901,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   SizedBox(height: 10), // Reduced from 12
-                  
-                  // Conditional booking/payment button
 
+                  // Conditional booking/payment button
                 ],
               ),
             ),
@@ -1979,7 +1972,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               final property = _pendingProperties[index];
               final booking = _getPendingBookingForProperty(property.id);
-              
+
               return Container(
                 width: 280,
                 margin: EdgeInsets.only(right: 16),
@@ -2005,7 +1998,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPendingPropertyCard(Property property, Booking? booking) {
     final formattedPrice = NumberFormat('#,##0').format(property.price);
-    
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -2110,7 +2103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                 ),
-                
+
                 // Pending payment indicator
                 Positioned(
                   top: 12,
@@ -2144,7 +2137,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            
+
             Padding(
               padding: EdgeInsets.all(8),
               child: Column(
@@ -2214,12 +2207,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   // Initiate payment for a pending booking
   Future<void> _initiatePayment(Property property, Booking booking) async {
     // First show dialog to get payment amount
     final double? paymentAmount = await _showPaymentAmountDialog(property);
-    
+
     if (paymentAmount == null) {
       // User cancelled the dialog
       return;
@@ -2281,20 +2273,20 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) {
           Navigator.of(context).pop();
         }
-        
+
         // //debugPrint('❌ User ID is empty - attempting to get from AuthService');
-        
+
         // Try to get user ID from AuthService as fallback
         final currentUserId = await AuthService.getUserId();
         // //debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
-        
+
         if (currentUserId == null || currentUserId.isEmpty) {
           _showPaymentError('User session invalid. Please logout and login again.');
           return;
         }
-        
+
         // //debugPrint('✅ Using fallback user ID: $currentUserId');
-        
+
         // Show loading dialog again
         showDialog(
           context: context,
@@ -2333,7 +2325,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         );
-        
+
         // Create payment with the fallback user ID
         final paymentResult = await PaymentService.createPayment(
           userId: currentUserId,
@@ -2341,12 +2333,12 @@ class _HomeScreenState extends State<HomeScreen> {
           propertyId: property.id,
           amount: paymentAmount,
         );
-        
+
         // Close loading dialog
         if (mounted) {
           Navigator.of(context).pop();
         }
-        
+
         if (paymentResult['success'] == true) {
           final String? redirectUrl = paymentResult['redirectUrl'];
           final String? orderTrackingId = paymentResult['orderTrackingId'];
@@ -2371,7 +2363,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (paymentSuccess == true) {
               // Payment successful - refresh data
               _loadProperties();
-              
+
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -2391,10 +2383,10 @@ class _HomeScreenState extends State<HomeScreen> {
         } else {
           _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
         }
-        
+
         return; // Return early since we handled the payment with fallback ID
       }
-      
+
       // Create payment with the user-specified amount
       final paymentResult = await PaymentService.createPayment(
         userId: widget.user.id,
@@ -2432,7 +2424,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (paymentSuccess == true) {
             // Payment successful - refresh data
             _loadProperties();
-            
+
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -2457,7 +2449,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         Navigator.of(context).pop();
       }
-      
+
       // //debugPrint('❌ Payment initiation error: $e');
       _showPaymentError('An error occurred while setting up payment. Please try again.');
     }
@@ -2466,7 +2458,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Show payment error dialog
   void _showPaymentError(String message) {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -2530,7 +2522,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final TextEditingController amountController = TextEditingController();
     final formattedPropertyPrice = NumberFormat('#,##0').format(property.price);
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    
+
     return await showDialog<double>(
       context: context,
       barrierDismissible: false,
@@ -2630,20 +2622,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter an amount';
                     }
-                    
+
                     final double? amount = double.tryParse(value.trim().replaceAll(',', ''));
                     if (amount == null) {
                       return 'Please enter a valid number';
                     }
-                    
+
                     if (amount <= 0) {
                       return 'Amount must be greater than 0';
                     }
-                    
+
                     if (amount > property.price) {
                       return 'Amount cannot exceed UGX $formattedPropertyPrice';
                     }
-                    
+
                     return null;
                   },
                 ),
@@ -2781,16 +2773,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 index: 2,
               ),
               _buildNavItem(
+                icon: Icons.book_outlined,
+                activeIcon: Icons.book_rounded,
+                label: 'Bookings',
+                index: 3,
+              ),
+              _buildNavItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
                 label: 'Profile',
-                index: 3,
+                index: 4,
               ),
               _buildNavItem(
                 icon: Icons.chat_bubble_outline,
                 activeIcon: Icons.chat_bubble,
                 label: 'Chat',
-                index: 4,
+                index: 5,
                 onTap: () => _navigateToPearlNestChat(),
               ),
             ],
@@ -2800,31 +2798,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-void _onNavItemTapped(int index) {
-  if (index == 4) return;
-  
-  if (index == 0 && _currentIndex == 0) {
-    // //debugPrint('🏠 HomeScreen: Home icon tapped while on home - triggering refresh');
-    
-    HapticFeedback.lightImpact();
-    
-    _onRefresh();
-    
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        0,
-        duration: Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    }
-    return;
-  }
-  
-  setState(() {
-    _currentIndex = index;
-  });
-}
+  void _onNavItemTapped(int index) {
+    if (index == 5) return;
 
+    if (index == 0 && _currentIndex == 0) {
+      // //debugPrint('🏠 HomeScreen: Home icon tapped while on home - triggering refresh');
+
+      HapticFeedback.lightImpact();
+
+      _onRefresh();
+
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   Widget _buildNavItem({
     required IconData icon,
@@ -2837,7 +2834,7 @@ void _onNavItemTapped(int index) {
     return GestureDetector(
       onTap: onTap ?? () => _onNavItemTapped(index),
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
           color: isActive ? AppTheme.primaryblue.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -2868,185 +2865,187 @@ void _onNavItemTapped(int index) {
   // Show confirmation dialog for canceling a booking
   void _showCancelBookingDialog(Booking booking) {
     showDialog(
-      context: context,
-      builder: (context) => BlocProvider.value(
-        value: context.read<BookingBloc>(),
-        child: BlocListener<BookingBloc, BookingState>(
-          listener: (context, state) {
-            if (!mounted) return; // Safety check
-            
-            if (state is BookingSuccess) {
-              Navigator.of(context).pop(); // Close dialog
-              _showSuccessSnackBar('Booking cancelled successfully');
-              // //debugPrint('✅ Booking cancellation successful, refreshing all data...');
-              // Add slight delay to ensure server has processed the update
-              Future.delayed(Duration(milliseconds: 1000), () {
-                if (mounted) {
-                  _onRefresh(); // Use full refresh instead of just pending bookings
-                }
-              });
-            } else if (state is BookingFailure) {
-              Navigator.of(context).pop(); // Close dialog
-              // //debugPrint('❌ Booking cancellation failed: ${state.error}');
-              _showErrorSnackBar(state.error);
-            }
-          },
-          child: AlertDialog(
-            backgroundColor: AppTheme.getCardColor(context),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+        context: context,
+        builder: (context) => BlocProvider.value(
+              value: context.read<BookingBloc>(),
+              child: BlocListener<BookingBloc, BookingState>(
+                listener: (context, state) {
+                  if (!mounted) return; // Safety check
+
+                  if (state is BookingSuccess) {
+                    Navigator.of(context).pop(); // Close dialog
+                    _showSuccessSnackBar('Booking cancelled successfully');
+                    // //debugPrint('✅ Booking cancellation successful, refreshing all data...');
+                    // Add slight delay to ensure server has processed the update
+                    Future.delayed(Duration(milliseconds: 1000), () {
+                      if (mounted) {
+                        _onRefresh(); // Use full refresh instead of just pending bookings
+                      }
+                    });
+                  } else if (state is BookingFailure) {
+                    Navigator.of(context).pop(); // Close dialog
+                    // //debugPrint('❌ Booking cancellation failed: ${state.error}');
+                    _showErrorSnackBar(state.error);
+                  }
+                },
+                child: AlertDialog(
+                  backgroundColor: AppTheme.getCardColor(context),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(
-                    Icons.cancel_outlined,
-                    color: Colors.red,
-                    size: 24,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Cancel Booking',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.getTextColor(context),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Are you sure you want to cancel this booking?',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.getTextColor(context),
-                  ),
-                ),
-                SizedBox(height: 12),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  title: Row(
                     children: [
-                      Text(
-                        'Booking ID: ${booking.id}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.getTextColor(context),
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.cancel_outlined,
+                          color: Colors.red,
+                          size: 24,
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Check-in: ${booking.checkInDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkInDate!) : 'N/A'}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.getSecondaryTextColor(context),
-                        ),
-                      ),
-                      Text(
-                        'Check-out: ${booking.checkOutDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkOutDate!) : 'N/A'}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.getSecondaryTextColor(context),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Cancel Booking',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.getTextColor(context),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                SizedBox(height: 12),
-                Text(
-                  'This action cannot be undone.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.red,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'Keep Booking',
-                  style: TextStyle(
-                    color: AppTheme.getSecondaryTextColor(context),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              BlocBuilder<BookingBloc, BookingState>(
-                builder: (context, state) {
-                  final isLoading = state is BookingLoading;
-                  return ElevatedButton(
-                    onPressed: isLoading ? null : () {
-                      try {
-                        if (mounted) {
-                          context.read<BookingBloc>().add(
-                            BookingStatusUpdateRequested(
-                              bookingId: booking.id,
-                              status: 'REJECTED',
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Are you sure you want to cancel this booking?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppTheme.getTextColor(context),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Booking ID: ${booking.id}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.getTextColor(context),
+                              ),
                             ),
-                          );
-                        }
-                      } catch (e) {
-                        // //debugPrint('❌ Error adding booking event: $e');
-                        Navigator.of(context).pop(); // Close dialog
-                        _showErrorSnackBar('Unable to cancel booking. Please try again.');
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                            SizedBox(height: 4),
+                            Text(
+                              'Check-in: ${booking.checkInDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkInDate!) : 'N/A'}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.getSecondaryTextColor(context),
+                              ),
+                            ),
+                            Text(
+                              'Check-out: ${booking.checkOutDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkOutDate!) : 'N/A'}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.getSecondaryTextColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'This action cannot be undone.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'Keep Booking',
+                        style: TextStyle(
+                          color: AppTheme.getSecondaryTextColor(context),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    child: isLoading
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            'Cancel Booking',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                    BlocBuilder<BookingBloc, BookingState>(
+                      builder: (context, state) {
+                        final isLoading = state is BookingLoading;
+                        return ElevatedButton(
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  try {
+                                    if (mounted) {
+                                      context.read<BookingBloc>().add(
+                                            BookingStatusUpdateRequested(
+                                              bookingId: booking.id,
+                                              status: 'REJECTED',
+                                            ),
+                                          );
+                                    }
+                                  } catch (e) {
+                                    // //debugPrint('❌ Error adding booking event: $e');
+                                    Navigator.of(context).pop(); // Close dialog
+                                    _showErrorSnackBar('Unable to cancel booking. Please try again.');
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                  );
-                },
+                          child: isLoading
+                              ? SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  'Cancel Booking',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
-      ));
+            ));
   }
 
   // Helper methods for showing feedback
   void _showSuccessSnackBar(String message) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -3062,7 +3061,7 @@ void _onNavItemTapped(int index) {
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),

@@ -39,7 +39,7 @@ android {
         applicationId = "com.pearlnest.mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23 // Required for awesome_notifications package
+        minSdk = flutter.minSdkVersion // Required for awesome_notifications package
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

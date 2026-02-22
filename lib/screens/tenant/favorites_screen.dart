@@ -1,5 +1,10 @@
+import 'package:add_comma/add_comma.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+// import 'package:pearlnest/bloc/booking_bloc.dart';
+import 'package:pearlnest/blocs/booking/booking_bloc.dart';
+import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
@@ -93,15 +98,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   void _loadFavoriteProperties() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
     });
     try {
       final favorites = await FavoritesService.fetchFavorites();
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _favoriteProperties = favorites;
         _filteredProperties = List.from(_favoriteProperties);
@@ -110,7 +115,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
       _animationController.forward();
     } catch (e) {
       if (!mounted) return;
-      
+
       setState(() {
         _isLoading = false;
       });
@@ -203,7 +208,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           // Remove from favorites list since it was toggled off
           _favoriteProperties.removeWhere((prop) => prop.id == property.id);
         });
-        
+
         // Filter properties after state update
         _filterProperties();
 
@@ -295,7 +300,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
   void _filterProperties() {
     if (!mounted) return;
-    
+
     setState(() {
       List<Property> filtered = _favoriteProperties;
       if (_selectedCategory != 'All') {
@@ -803,12 +808,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
   }
 }
 
-class PropertyCard extends StatelessWidget {
+class PropertyCard extends StatefulWidget {
   final Property property;
+  final String? bookingId;
   final VoidCallback onTap;
   final VoidCallback onFavorite;
   final bool isFavorite;
   final bool isHorizontal;
+  final bool isBooking;
+  final int balance;
+  final int paid;
 
   const PropertyCard({
     super.key,
@@ -816,7 +825,11 @@ class PropertyCard extends StatelessWidget {
     required this.onTap,
     required this.onFavorite,
     required this.isFavorite,
+    this.bookingId,
     this.isHorizontal = false,
+    this.isBooking = false,
+    this.balance = 0,
+    this.paid = 0,
   });
 
   static String _getFullImageUrl(String url) {
@@ -827,6 +840,13 @@ class PropertyCard extends StatelessWidget {
     String cleanUrl = url.replaceFirst(RegExp(r'^(\/|\./)'), '');
     return '$baseUrl/$cleanUrl';
   }
+
+  @override
+  State<PropertyCard> createState() => _PropertyCardState();
+}
+
+class _PropertyCardState extends State<PropertyCard> {
+  final putCommas = addCommas();
 
   Map<String, dynamic> _getResponsiveCardValues(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -845,16 +865,16 @@ class PropertyCard extends StatelessWidget {
       'borderRadius': isSmallScreen ? 12.0 : 16.0,
       'padding': isSmallScreen ? 10.0 : 12.0,
       'smallPadding': isSmallScreen ? 8.0 : 10.0,
-      'imageHeight': isHorizontal
+      'imageHeight': widget.isHorizontal
           ? (isSmallScreen ? 100.0 : 120.0)
           : (isVerySmallScreen
               ? 120.0
               : isSmallScreen
                   ? 140.0
                   : 150.0),
-      'imageWidth': isHorizontal ? (isSmallScreen ? 100.0 : 120.0) : double.infinity,
-      'titleFontSize': isHorizontal ? (isSmallScreen ? 13.0 : 14.0) : (isSmallScreen ? 13.0 : 14.0),
-      'priceFontSize': isHorizontal ? (isSmallScreen ? 11.0 : 12.0) : (isSmallScreen ? 14.0 : 16.0),
+      'imageWidth': widget.isHorizontal ? (isSmallScreen ? 100.0 : 120.0) : double.infinity,
+      'titleFontSize': widget.isHorizontal ? (isSmallScreen ? 13.0 : 14.0) : (isSmallScreen ? 13.0 : 14.0),
+      'priceFontSize': widget.isHorizontal ? (isSmallScreen ? 11.0 : 12.0) : (isSmallScreen ? 14.0 : 16.0),
       'subtitleFontSize': isSmallScreen ? 10.0 : 11.0,
       'iconSize': isSmallScreen ? 12.0 : 13.0,
       'favIconSize': isSmallScreen ? 18.0 : 20.0,
@@ -862,12 +882,115 @@ class PropertyCard extends StatelessWidget {
     };
   }
 
+  void showPaymentSheet(BuildContext context, int totalAmount) {
+    double? customAmount;
+    bool isFullPayment = true;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Allows keyboard to push the sheet up
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        // Use StatefulBuilder so we can update the UI inside the bottom sheet
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Choose Payment Amount",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Option 1: Pay Full Amount
+                  RadioListTile<bool>(
+                    title: Text("Pay Full Amount (UGX ${putCommas(totalAmount)})"),
+                    value: true,
+                    groupValue: isFullPayment,
+                    onChanged: (val) => setModalState(() => isFullPayment = val!),
+                  ),
+
+                  // Option 2: Custom Amount
+                  RadioListTile<bool>(
+                    title: const Text("Pay Custom Amount"),
+                    value: false,
+                    groupValue: isFullPayment,
+                    onChanged: (val) => setModalState(() => isFullPayment = val!),
+                  ),
+
+                  if (!isFullPayment)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      child: TextField(
+                        keyboardType: TextInputType.number,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          prefixText: "UGX ",
+                          hintText: "Enter amount",
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (value) {
+                          customAmount = double.tryParse(value);
+                        },
+                      ),
+                    ),
+
+                  const SizedBox(height: 20),
+
+                  // Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                      onPressed: () {
+                        final finalPay = isFullPayment ? totalAmount : customAmount;
+                        if (finalPay == null || finalPay <= 0) {
+                          // You could call your showErrorDialog here!
+                          return;
+                        } else {
+                          if (widget.bookingId != null) {
+                            context.read<BookingBloc>().add(
+                                  CreatePayment(
+                                    propertyId: widget.property.id,
+                                    bookingId: widget.bookingId!,
+                                    amount: finalPay.toInt(),
+                                  ),
+                                );
+                          }
+                          Navigator.pop(context, finalPay);
+                        }
+                      },
+                      child: const Text("Continue to Payment"),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final responsive = _getResponsiveCardValues(context);
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         decoration: BoxDecoration(
           color: AppTheme.getCardColor(context),
@@ -880,7 +1003,7 @@ class PropertyCard extends StatelessWidget {
             ),
           ],
         ),
-        child: isHorizontal ? _buildHorizontalLayout() : _buildVerticalLayout(),
+        child: widget.isHorizontal ? _buildHorizontalLayout() : _buildVerticalLayout(),
       ),
     );
   }
@@ -938,21 +1061,21 @@ class PropertyCard extends StatelessWidget {
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(responsive['borderRadius']),
                 topRight: Radius.circular(responsive['borderRadius']),
-                bottomLeft: isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
-                bottomRight: isHorizontal ? Radius.zero : Radius.zero,
+                bottomLeft: widget.isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
+                bottomRight: widget.isHorizontal ? Radius.zero : Radius.zero,
               ),
               color: AppTheme.lightGreyColor,
             ),
-            child: property.images.isNotEmpty
+            child: widget.property.images.isNotEmpty
                 ? ClipRRect(
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(responsive['borderRadius']),
                       topRight: Radius.circular(responsive['borderRadius']),
-                      bottomLeft: isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
-                      bottomRight: isHorizontal ? Radius.zero : Radius.zero,
+                      bottomLeft: widget.isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
+                      bottomRight: widget.isHorizontal ? Radius.zero : Radius.zero,
                     ),
                     child: Image.network(
-                      _getFullImageUrl(property.images.first),
+                      PropertyCard._getFullImageUrl(widget.property.images.first),
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
@@ -991,7 +1114,7 @@ class PropertyCard extends StatelessWidget {
             top: responsive['isSmallScreen'] ? 8 : 12,
             right: responsive['isSmallScreen'] ? 8 : 12,
             child: GestureDetector(
-              onTap: onFavorite,
+              onTap: widget.onFavorite,
               child: Container(
                 padding: EdgeInsets.all(responsive['isSmallScreen'] ? 6 : 8),
                 decoration: BoxDecoration(
@@ -1006,8 +1129,8 @@ class PropertyCard extends StatelessWidget {
                   ],
                 ),
                 child: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_outline,
-                  color: isFavorite ? Colors.red : AppTheme.greyColor,
+                  widget.isFavorite ? Icons.favorite : Icons.favorite_outline,
+                  color: widget.isFavorite ? Colors.red : AppTheme.greyColor,
                   size: responsive['favIconSize'],
                 ),
               ),
@@ -1015,7 +1138,7 @@ class PropertyCard extends StatelessWidget {
           ),
 
           // Featured badge
-          if (property.isFeatured)
+          if (widget.property.isFeatured)
             Positioned(
               top: responsive['isSmallScreen'] ? 8 : 12,
               left: responsive['isSmallScreen'] ? 8 : 12,
@@ -1040,9 +1163,9 @@ class PropertyCard extends StatelessWidget {
             ),
 
           // Verified badge
-          if (property.isVerified)
+          if (widget.property.isVerified)
             Positioned(
-              bottom: isHorizontal ? (responsive['isSmallScreen'] ? 8 : 12) : -8,
+              bottom: widget.isHorizontal ? (responsive['isSmallScreen'] ? 8 : 12) : -8,
               left: responsive['isSmallScreen'] ? 8 : 12,
               child: Container(
                 padding: EdgeInsets.all(responsive['isSmallScreen'] ? 3 : 4),
@@ -1073,7 +1196,7 @@ class PropertyCard extends StatelessWidget {
         children: [
           // Title - single line only
           Text(
-            property.title,
+            widget.property.title,
             style: TextStyle(
               fontSize: responsive['titleFontSize'],
               fontWeight: FontWeight.bold,
@@ -1096,7 +1219,7 @@ class PropertyCard extends StatelessWidget {
               SizedBox(width: 2),
               Expanded(
                 child: Text(
-                  property.location,
+                  widget.property.location,
                   style: TextStyle(
                     fontSize: responsive['subtitleFontSize'],
                     color: AppTheme.getSecondaryTextColor(context),
@@ -1112,7 +1235,7 @@ class PropertyCard extends StatelessWidget {
 
           // Price - single line
           Text(
-            'UGX ${NumberFormat('#,###').format(property.price)}',
+            'UGX ${NumberFormat('#,###').format(widget.property.price)}',
             style: TextStyle(
               fontSize: responsive['priceFontSize'],
               fontWeight: FontWeight.bold,
@@ -1124,7 +1247,7 @@ class PropertyCard extends StatelessWidget {
 
           // Price type - single line
           Text(
-            property.priceType,
+            widget.property.priceType,
             style: TextStyle(
               fontSize: responsive['badgeFontSize'],
               color: AppTheme.getSecondaryTextColor(context),
@@ -1134,17 +1257,55 @@ class PropertyCard extends StatelessWidget {
           ),
 
           // Features - only show if not horizontal and enough space
-          if (!isHorizontal) ...[
+          if (!widget.isHorizontal) ...[
             SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildCompactFeature(Icons.bed_outlined, '${property.bedrooms}', context, responsive),
-                _buildCompactFeature(Icons.bathroom_outlined, '${property.bathrooms}', context, responsive),
-                _buildCompactFeature(Icons.square_foot, '${property.area.toInt()}m²', context, responsive),
+                _buildCompactFeature(Icons.bed_outlined, '${widget.property.bedrooms}', context, responsive),
+                _buildCompactFeature(Icons.bathroom_outlined, '${widget.property.bathrooms}', context, responsive),
+                _buildCompactFeature(Icons.square_foot, '${widget.property.area.toInt()}m²', context, responsive),
               ],
             ),
           ],
+
+          //Booking Button
+          SizedBox(height: 15),
+          widget.isBooking
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Amount Paid: UGX ${putCommas(widget.paid)}"),
+                    SizedBox(height: 10),
+                    Text("Pending Balance: UGX ${putCommas(widget.balance)}"),
+                    SizedBox(height: 10),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          showPaymentSheet(context, widget.balance);
+                        },
+                        child: Text("Continue Payment"),
+                      ),
+                    ),
+                  ],
+                )
+              : SizedBox(
+                  child: Row(
+                    children: [
+                      Text(
+                        "Completed",
+                        style: TextStyle(color: AppTheme.accentGreen),
+                      ),
+                      SizedBox(width: 5),
+                      Icon(
+                        Icons.check_circle_outlined,
+                        color: AppTheme.accentGreen,
+                      ),
+                    ],
+                  ),
+                ),
         ],
       );
     });

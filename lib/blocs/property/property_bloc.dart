@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/blocs/property/property_event.dart';
@@ -41,9 +40,9 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
         filters: event.filters,
       );
 
-      if (result['success'] == true) {
-        final properties = result['properties'] as List<Property>;
-        final totalCount = result['totalCount'] as int;
+      if (result.isNotEmpty) {
+        final properties = result as List<Property>;
+        final totalCount = 10;
 
         _allProperties = properties;
         _currentPage = event.page;
@@ -62,7 +61,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
         ));
       } else {
         //debugPrint('PropertyBloc: Failed to fetch properties - ${result['message']}');
-        emit(PropertyError(message: result['message'] ?? 'Failed to fetch properties'));
+        emit(PropertyError(message: 'Failed to fetch properties'));
       }
     } catch (e, stackTrace) {
       //debugPrint('PropertyBloc: Error fetching properties - $e');
@@ -89,9 +88,9 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
         filters: event.filters,
       );
 
-      if (result['success'] == true) {
-        final properties = result['properties'] as List<Property>;
-        final totalCount = result['totalCount'] as int;
+      if (result.isNotEmpty) {
+        final properties = result as List<Property>;
+        final totalCount = 10;
 
         _allProperties = properties;
         _currentPage = event.page;
@@ -111,7 +110,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
         ));
       } else {
         //debugPrint('PropertyBloc: Property search failed - ${result['message']}');
-        emit(PropertyError(message: result['message'] ?? 'Search failed'));
+        emit(PropertyError(message: 'Search failed'));
       }
     } catch (e, stackTrace) {
       //debugPrint('PropertyBloc: Error searching properties - $e');
@@ -180,9 +179,9 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
                 filters: _currentFilters,
               );
 
-        if (result['success'] == true) {
-          final newProperties = result['properties'] as List<Property>;
-          final totalCount = result['totalCount'] as int;
+        if (result.isNotEmpty) {
+          final newProperties = result as List<Property>;
+          final totalCount = 10;
 
           _allProperties.addAll(newProperties);
           _currentPage++;
@@ -200,7 +199,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
           ));
         } else {
           //debugPrint('PropertyBloc: Failed to load more properties - ${result['message']}');
-          emit(PropertyError(message: result['message'] ?? 'Failed to load more properties'));
+          emit(PropertyError(message: 'Failed to load more properties'));
         }
       } catch (e, stackTrace) {
         //debugPrint('PropertyBloc: Error loading more properties - $e');
