@@ -118,7 +118,11 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     _logState('FETCH_BOOKINGS', state);
     try {
       final bookings = await BookingService.fetchBookings();
-      emit(BookingLoaded(bookings: bookings));
+      if (bookings.isNotEmpty) {
+        emit(BookingLoaded(bookings: bookings));
+      } else {
+        emit(BookingEmpty());
+      }
       _logState('LOADED', state);
     } catch (e) {
       emit(BookingError(message: 'Failed to fetch bookings: $e'));

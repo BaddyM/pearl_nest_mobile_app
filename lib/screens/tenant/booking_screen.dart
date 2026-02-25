@@ -89,8 +89,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.location_on, 
-                             color: AppTheme.primaryblue, size: 16),
+                        Icon(Icons.location_on, color: AppTheme.primaryblue, size: 16),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -114,9 +113,9 @@ class _BookingScreenState extends State<BookingScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               Text(
                 'Select Your Dates',
                 style: TextStyle(
@@ -125,9 +124,9 @@ class _BookingScreenState extends State<BookingScreen> {
                   color: AppTheme.getTextColor(context),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Check-in date
               _buildDateSelector(
                 context,
@@ -135,9 +134,9 @@ class _BookingScreenState extends State<BookingScreen> {
                 date: _checkInDate,
                 onTap: () => _selectCheckInDate(context),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Check-out date
               _buildDateSelector(
                 context,
@@ -145,7 +144,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 date: _checkOutDate,
                 onTap: () => _selectCheckOutDate(context),
               ),
-              
+
               if (_checkInDate != null && _checkOutDate != null) ...[
                 const SizedBox(height: 16),
                 Container(
@@ -175,17 +174,15 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                 ),
               ],
-              
+
               const Spacer(),
-              
+
               // Book button
               BlocBuilder<BookingBloc, BookingState>(
                 builder: (context, state) {
                   final isLoading = state is BookingLoading;
-                  final canBook = _checkInDate != null && 
-                                  _checkOutDate != null && 
-                                  !isLoading;
-                  
+                  final canBook = _checkInDate != null && _checkOutDate != null && !isLoading;
+
                   return SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -199,22 +196,22 @@ class _BookingScreenState extends State<BookingScreen> {
                         elevation: 0,
                       ),
                       child: isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Book Now',
+                              style: TextStyle(
+                                color: AppTheme.whiteColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          )
-                        : Text(
-                            'Book Now',
-                            style: TextStyle(
-                              color: AppTheme.whiteColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                     ),
                   );
                 },
@@ -243,8 +240,7 @@ class _BookingScreenState extends State<BookingScreen> {
         ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today, 
-                 color: AppTheme.primaryblue, size: 20),
+            Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -259,22 +255,17 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    date != null 
-                      ? DateFormat('MMM dd, yyyy').format(date)
-                      : 'Select date',
+                    date != null ? DateFormat('MMM dd, yyyy').format(date) : 'Select date',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: date != null 
-                        ? AppTheme.getTextColor(context)
-                        : AppTheme.getSecondaryTextColor(context),
+                      color: date != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, 
-                 color: AppTheme.getSecondaryTextColor(context), size: 16),
+            Icon(Icons.arrow_forward_ios, color: AppTheme.getSecondaryTextColor(context), size: 16),
           ],
         ),
       ),
@@ -301,7 +292,7 @@ class _BookingScreenState extends State<BookingScreen> {
         );
       },
     );
-    
+
     if (picked != null && picked != _checkInDate) {
       setState(() {
         _checkInDate = picked;
@@ -314,9 +305,8 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _selectCheckOutDate(BuildContext context) async {
-    final DateTime minDate = _checkInDate?.add(const Duration(days: 1)) ?? 
-                            DateTime.now().add(const Duration(days: 2));
-    
+    final DateTime minDate = _checkInDate?.add(const Duration(days: 1)) ?? DateTime.now().add(const Duration(days: 2));
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _checkOutDate ?? minDate,
@@ -336,7 +326,7 @@ class _BookingScreenState extends State<BookingScreen> {
         );
       },
     );
-    
+
     if (picked != null && picked != _checkOutDate) {
       setState(() {
         _checkOutDate = picked;
@@ -354,10 +344,11 @@ class _BookingScreenState extends State<BookingScreen> {
     final checkOutFormatted = DateFormat('yyyy-MM-dd').format(_checkOutDate!);
 
     context.read<BookingBloc>().add(BookingCreateRequested(
-      propertyId: widget.property.id,
-      checkInDate: checkInFormatted,
-      checkOutDate: checkOutFormatted,
-    ));
+          propertyId: widget.property.id,
+          checkInDate: checkInFormatted,
+          checkOutDate: checkOutFormatted,
+          deposit: widget.property.deposit.toInt(),
+        ));
   }
 
   void _showSuccessDialog(String message) {
@@ -404,7 +395,7 @@ class _BookingScreenState extends State<BookingScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            
+
             // Add payment reminder container
             Container(
               padding: const EdgeInsets.all(12),
@@ -438,7 +429,7 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             if (_checkInDate != null && _checkOutDate != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),

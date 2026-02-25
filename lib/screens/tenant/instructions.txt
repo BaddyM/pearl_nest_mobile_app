@@ -1,1 +1,0 @@
--Use the CustomSnackBar widget to for showing snackbar messages

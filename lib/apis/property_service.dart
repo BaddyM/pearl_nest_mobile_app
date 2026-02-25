@@ -149,6 +149,7 @@ class PropertyService {
     String? sortOrder,
     Map<String, dynamic>? filters,
     String? token,
+    String? userId,
   }) async {
     try {
       final queryParams = <String, dynamic>{
@@ -156,6 +157,7 @@ class PropertyService {
         'limit': limit,
       };
 
+      if (userId != null) queryParams['userId'] = userId;
       if (sortBy != null) queryParams['sortBy'] = sortBy;
       if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
       if (filters != null) queryParams.addAll(filters);
@@ -406,6 +408,7 @@ class PropertyService {
     int page = 1,
     int limit = 20,
     String? token,
+    String? userId,
   }) async {
     try {
       //debugPrint('');
@@ -416,6 +419,8 @@ class PropertyService {
         'page': page,
         'limit': limit,
       };
+
+      if (userId != null) queryParams['userId'] = userId;
 
       //debugPrint('🔍 Request parameters:');
       //debugPrint('   - Page: $page');
@@ -727,6 +732,7 @@ class PropertyService {
     required String propertyType,
     required String location,
     required double price,
+    required double deposit,
     required String amenities,
     required String safetyAndSecurity,
     required String description,
@@ -738,6 +744,10 @@ class PropertyService {
     required String fullAddress,
     required String propertyMap,
     required String period,
+    required bool isSale,
+    required bool isRent,
+    required bool parking,
+    required String distance,
     //required bool availability, // true for "Available Now", false for "Available Later"
     DateTime? availableFrom, // Only needed when availability is false
     List<File>? images,
@@ -749,7 +759,12 @@ class PropertyService {
         'propertyType': propertyType,
         'location': location,
         'price': price.round(),
+        'deposit': deposit.round(),
         'amenities': amenities,
+        'distance': distance,
+        'isRent': isRent,
+        'isSale': isSale,
+        'parking': parking,
         'safetyAndSecurity': safetyAndSecurity,
         'description': description,
         'nearbyPlaces': nearbyPlaces,
@@ -762,12 +777,6 @@ class PropertyService {
         'period': period,
         // 'availability': availability,
       };
-
-      // Add availableFrom date if provided (only for "Available Later")
-      // if (!availability && availableFrom != null) {
-      //   // Format date as YYYY-MM-DD for API
-      //   fields['availableFrom'] = availableFrom.toIso8601String().split('T')[0];
-      // }
 
       // Prepare files map
       Map<String, File> filesMap = {};
@@ -928,6 +937,11 @@ class PropertyService {
     String? propertyType,
     String? location,
     double? price,
+    double? deposit,
+    bool? parking,
+    String? distance,
+    bool? isRent,
+    bool? isSale,
     String? amenities,
     String? safetyAndSecurity,
     String? description,
@@ -952,6 +966,11 @@ class PropertyService {
       if (propertyType != null) requestBody['propertyType'] = propertyType;
       if (location != null) requestBody['location'] = location;
       if (price != null) requestBody['price'] = price;
+      if (deposit != null) requestBody['deposit'] = deposit;
+      if (distance != null) requestBody['distance'] = distance;
+      if (parking != null) requestBody['parking'] = parking;
+      if (isRent != null) requestBody['isRent'] = isRent;
+      if (isSale != null) requestBody['isSale'] = isSale;
       if (amenities != null) requestBody['amenities'] = amenities;
       if (safetyAndSecurity != null) requestBody['safetyAndSecurity'] = safetyAndSecurity;
       if (description != null) requestBody['description'] = description;

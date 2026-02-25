@@ -34,6 +34,11 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
         propertyType: event.propertyType,
         location: event.location,
         price: event.price,
+        deposit: event.deposit,
+        distance: event.distance,
+        parking: event.parking,
+        isRent: event.isRent,
+        isSale: event.isSale,
         amenities: event.amenities,
         safetyAndSecurity: event.safetyAndSecurity,
         description: event.description,
@@ -122,6 +127,11 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
         propertyType: event.propertyType,
         location: event.location,
         price: event.price,
+        deposit: event.deposit,
+        distance: event.distance,
+        parking: event.parking,
+        isSale: event.isSale,
+        isRent: event.isRent,
         amenities: event.amenities,
         safetyAndSecurity: event.safetyAndSecurity,
         description: event.description,
@@ -198,28 +208,16 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
       errors['location'] = 'Location is required';
     }
 
+    if (event.distance.trim().isEmpty) {
+      errors['distance'] = 'Distance is required';
+    }
+
     if (event.price <= 0) {
       errors['price'] = 'Price must be greater than 0';
     }
 
     if (event.description.trim().isEmpty) {
       errors['description'] = 'Description is required';
-    }
-
-    if (event.numberOfBeds < 0) {
-      errors['numberOfBeds'] = 'Number of bedrooms cannot be negative';
-    }
-
-    if (event.numberOfBathrooms < 0) {
-      errors['numberOfBathrooms'] = 'Number of bathrooms cannot be negative';
-    }
-
-    if (event.areaMeasurement.trim().isEmpty) {
-      errors['areaMeasurement'] = 'Area measurement is required';
-    }
-
-    if (event.neighborhood.trim().isEmpty) {
-      errors['neighborhood'] = 'Neighborhood is required';
     }
 
     if (event.fullAddress.trim().isEmpty) {
@@ -267,28 +265,8 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
       errors['description'] = 'Description is required';
     }
 
-    if (event.numberOfBeds < 0) {
-      errors['numberOfBeds'] = 'Number of bedrooms cannot be negative';
-    }
-
-    if (event.numberOfBathrooms < 0) {
-      errors['numberOfBathrooms'] = 'Number of bathrooms cannot be negative';
-    }
-
-    if (event.areaMeasurement.trim().isEmpty) {
-      errors['areaMeasurement'] = 'Area measurement is required';
-    }
-
-    if (event.neighborhood.trim().isEmpty) {
-      errors['neighborhood'] = 'Neighborhood is required';
-    }
-
     if (event.fullAddress.trim().isEmpty) {
       errors['fullAddress'] = 'Full address is required';
-    }
-
-    if (event.period.trim().isEmpty) {
-      errors['period'] = 'Period is required';
     }
 
     // Validate property map iframe if provided

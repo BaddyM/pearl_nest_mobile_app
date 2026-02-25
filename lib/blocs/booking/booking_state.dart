@@ -69,6 +69,8 @@ class BookingError extends BookingState {
   List<Object?> get props => [message];
 }
 
+class BookingEmpty extends BookingState {}
+
 class PaymentLink extends BookingState {
   final String paymentLink;
   const PaymentLink({required this.paymentLink});

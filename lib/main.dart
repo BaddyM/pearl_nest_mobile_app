@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:pearlnest/blocs/profile_bloc/profile_bloc.dart';
 import 'firebase_options.dart'; // Add this import
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
@@ -23,12 +24,10 @@ import 'package:pearlnest/services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-
   // Initialize Firebase with platform-specific options
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
 
   // Initialize notification service
   await NotificationService.initialize();
@@ -40,13 +39,13 @@ void main() async {
     //debugPrint('Warning: Could not load .env file: $e');
     // Continue without .env file - app should still work with default values
   }
-  
+
   // Initialize API client
   await ApiClient.initialize();
-  
+
   // Initialize deep link service
   DeepLinkService.initialize();
-  
+
   runApp(MyApp());
 }
 
@@ -75,6 +74,9 @@ class MyApp extends StatelessWidget {
         BlocProvider<ChatBloc>(
           create: (context) => ChatBloc(),
         ),
+        BlocProvider<ProfileBloc>(
+          create: (context) => ProfileBloc(),
+        ),
       ],
       child: MultiProvider(
         providers: [
@@ -85,7 +87,7 @@ class MyApp extends StatelessWidget {
             return BlocListener<AuthBloc, AuthState>(
               listener: (context, state) {
                 //debugPrint('🔄 BlocListener received state: ${state.runtimeType}');
-                
+
                 if (state is AuthSuccess) {
                   //debugPrint('🏠 Navigating to HomeScreen for user: ${state.user.name}');
                   // Use navigatorKey to access navigator

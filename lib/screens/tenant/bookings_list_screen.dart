@@ -4,12 +4,17 @@ import "package:pearlnest/blocs/booking/booking_bloc.dart";
 import "package:pearlnest/blocs/booking/booking_event.dart";
 import "package:pearlnest/blocs/booking/booking_state.dart";
 import "package:pearlnest/models/property.dart";
+import "package:pearlnest/models/user.dart";
 import "package:pearlnest/screens/tenant/favorites_screen.dart";
+import "package:pearlnest/screens/tenant/home_screen.dart";
 import "package:pearlnest/widgets/app_theme.dart";
+import "package:pearlnest/widgets/empty_properties.dart";
+import "package:pearlnest/widgets/loading_widget.dart";
 import "package:url_launcher/url_launcher.dart";
 
 class BookingsListScreen extends StatefulWidget {
-  const BookingsListScreen({super.key});
+  const BookingsListScreen({super.key, required this.user});
+  final User user;
 
   @override
   State<BookingsListScreen> createState() => _BookingsListScreenState();
@@ -95,13 +100,7 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
             child: SingleChildScrollView(
               child: BlocConsumer<BookingBloc, BookingState>(builder: (context, state) {
                 if (state is BookingLoading) {
-                  return Container(
-                    height: MediaQuery.of(context).size.height * 0.8,
-                    alignment: Alignment.center,
-                    child: CircularProgressIndicator(
-                      color: AppTheme.accentGreen,
-                    ),
-                  );
+                  return LoadingWidget();
                 } else if (state is BookingLoaded) {
                   return Padding(
                     padding: const EdgeInsets.all(16),
@@ -153,6 +152,15 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                         ],
                       ),
                     ),
+                  );
+                } else if (state is BookingEmpty) {
+                  return EmptyPropertiesWidget(
+                    title: "No recent bookings found",
+                    message: "We couldn't find any recent bookings, kindly go to the properties page and book a property.",
+                    buttonText: "Home",
+                    onButtonPressed: () {
+                      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => HomeScreen(user: widget.user)), (route) => false);
+                    },
                   );
                 } else {
                   return SizedBox();

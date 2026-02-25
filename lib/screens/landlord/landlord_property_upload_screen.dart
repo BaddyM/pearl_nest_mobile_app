@@ -37,6 +37,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
+  final _depositController = TextEditingController();
   final _locationController = TextEditingController();
   final _addressController = TextEditingController();
   final _areaController = TextEditingController();
@@ -46,6 +47,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   final _safetySecurityController = TextEditingController();
   final _nearbyPlacesController = TextEditingController();
   final _propertyMapController = TextEditingController();
+  final _distanceController = TextEditingController();
 
   PropertyType _selectedType = PropertyType.apartment;
   String _selectedPriceType = 'per month';
@@ -94,6 +96,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     PropertyType.hostel,
     PropertyType.fullHouse,
   ];
+
+  bool _isRent = false;
+  bool _isSale = false;
+  bool _parking = false;
 
   @override
   void dispose() {
@@ -201,7 +207,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     setState(() {
       _titleController.text = propertyData['propertyName'] ?? '';
       _descriptionController.text = propertyData['description'] ?? '';
-      _priceController.text = propertyData['price']?.toString() ?? '';
+      _priceController.text = propertyData['price']?.toString() ?? '0';
       _locationController.text = propertyData['location'] ?? '';
       _addressController.text = propertyData['fullAddress'] ?? '';
       _neighborhoodController.text = propertyData['neighborhood'] ?? '';
@@ -211,13 +217,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _safetySecurityController.text = propertyData['safetyAndSecurity'] ?? '';
       _nearbyPlacesController.text = propertyData['nearbyPlaces'] ?? '';
       _propertyMapController.text = propertyData['propertyMap'] ?? '';
-      //debugPrint('🔍 API period: "${propertyData['period']}"');
+      _distanceController.text = propertyData['distance'] ?? '';
+      _depositController.text = propertyData['deposit']?.toString() ?? '0';
+      _isSale = propertyData['isSale'] ?? false;
+      _isRent = propertyData['isRent'] ?? false;
+      _parking = propertyData['parking'] ?? false;
       _selectedPriceType = _priceTypes.contains(propertyData['period']) ? propertyData['period'] : 'per month';
-      //debugPrint('🔍 Selected priceType from API: "$_selectedPriceType"');
-
-      //debugPrint('📝 Populated propertyMap: ${_propertyMapController.text}');
-      //debugPrint('📝 Populated safetyAndSecurity: ${_safetySecurityController.text}');
-      //debugPrint('📝 Populated nearbyPlaces: ${_nearbyPlacesController.text}');
 
       // Parse amenities string to list
       if (propertyData['amenities'] != null && propertyData['amenities'].toString().isNotEmpty) {
@@ -579,6 +584,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             ),
             SizedBox(height: 20),
             _buildSectionCard(
+              'Others',
+              Icons.other_houses,
+              _otherSection(),
+            ),
+            SizedBox(height: 20),
+            _buildSectionCard(
               'Nearby Places',
               Icons.place_outlined,
               _buildNearbyPlacesSection(),
@@ -676,6 +687,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     setState(() {
       _titleController.clear();
       _priceController.clear();
+      _depositController.clear();
       _locationController.clear();
       _bedroomsController.clear();
       _descriptionController.clear();
@@ -733,12 +745,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           hint: '0',
           icon: Icons.bed,
           keyboardType: TextInputType.number,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Required';
-            }
-            return null;
-          },
         ),
         SizedBox(height: 16),
         _buildTextField(
@@ -747,12 +753,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           hint: '0',
           icon: Icons.bathtub,
           keyboardType: TextInputType.number,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Required';
-            }
-            return null;
-          },
         ),
         SizedBox(height: 20),
         _buildTextField(
@@ -761,12 +761,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           hint: 'Enter property area',
           icon: Icons.square_foot,
           keyboardType: TextInputType.number,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter the area';
-            }
-            return null;
-          },
         ),
       ],
     );
@@ -789,16 +783,23 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         ),
         SizedBox(height: 20),
         _buildTextField(
+          controller: _distanceController,
+          label: 'Distance',
+          hint: 'e.g., 123miles from kampala',
+          icon: Icons.roundabout_left,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter the distance';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: 20),
+        _buildTextField(
           controller: _neighborhoodController,
           label: 'Neighborhood',
           hint: 'Specific neighborhood name',
           icon: Icons.location_on,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter the neighborhood';
-            }
-            return null;
-          },
         ),
         SizedBox(height: 20),
         _buildTextField(
@@ -834,88 +835,25 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             return null;
           },
         ),
+        _buildTextField(
+          controller: _depositController,
+          label: 'Initial Deposit',
+          hint: '0',
+          icon: Icons.attach_money,
+          keyboardType: TextInputType.number,
+          prefixText: 'UGX',
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter the deposit';
+            }
+            return null;
+          },
+        ),
         SizedBox(height: 16),
         _buildPriceTypeDropdown(),
       ],
     );
   }
-
-//disabled for now
-
-  // Widget _buildAvailabilitySection() {
-  //   return Column(
-  //     children: [
-  //       Container(
-  //         decoration: BoxDecoration(
-  //           color: AppTheme.getCardColor(context).withValues(alpha: -3),
-  //           borderRadius: BorderRadius.circular(12),
-  //           border: Border.all(color: Colors.grey[300]!),
-  //         ),
-  //         child: Column(
-  //           children: [
-  //             _buildRadioTile(
-  //               'Available Now',
-  //               AvailabilityStatus.availableNow,
-  //               Icons.check_circle_outline,
-  //             ),
-  //             Divider(height: 1, color: Colors.grey[300]),
-  //             _buildRadioTile(
-  //               'Available Later',
-  //               AvailabilityStatus.availableLater,
-  //               Icons.schedule,
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //       if (_availabilityStatus == AvailabilityStatus.availableLater) ...[
-  //         SizedBox(height: 16),
-  //         GestureDetector(
-  //           onTap: _selectAvailableDate,
-  //           child: Container(
-  //             padding: EdgeInsets.all(16),
-  //             decoration: BoxDecoration(
-  //               color: AppTheme.getCardColor(context),
-  //               borderRadius: BorderRadius.circular(12),
-  //               border: Border.all(color: Colors.grey[300]!),
-  //             ),
-  //             child: Row(
-  //               children: [
-  //                 Container(
-  //                   padding: EdgeInsets.all(8),
-  //                   decoration: BoxDecoration(
-  //                     color: AppTheme.primaryblue.withOpacity(0.1),
-  //                     borderRadius: BorderRadius.circular(8),
-  //                   ),
-  //                   child: Icon(
-  //                     Icons.calendar_today,
-  //                     color: AppTheme.primaryblue,
-  //                     size: 20,
-  //                   ),
-  //                 ),
-  //                 SizedBox(width: 12),
-  //                 Expanded(
-  //                   child: Text(
-  //                     _availableFrom != null ? 'Available from: ${_availableFrom!.day}/${_availableFrom!.month}/${_availableFrom!.year}' : 'Select available date',
-  //                     style: TextStyle(
-  //                       color: _availableFrom != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
-  //                       fontSize: 16,
-  //                       fontWeight: FontWeight.w500,
-  //                     ),
-  //                   ),
-  //                 ),
-  //                 Icon(
-  //                   Icons.arrow_forward_ios,
-  //                   color: Colors.grey[400],
-  //                   size: 16,
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ],
-  //   );
-  // }
 
   Widget _buildRadioTile(String title, bool value, IconData icon) {
     return Theme(
@@ -1936,20 +1874,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       return;
     }
 
-    if (_availabilityStatus == false && _availableFrom == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please select an available date', style: TextStyle(color: Colors.white)),
-          duration: Duration(milliseconds: 1500),
-          backgroundColor: AppTheme.primaryblue,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
-      return;
-    }
-
     // Convert PropertyType enum to string
     String propertyTypeString = _getPropertyTypeDisplayName(_selectedType);
 
@@ -1975,7 +1899,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               propertyType: propertyTypeString,
               location: _locationController.text.trim(),
               price: double.parse(_priceController.text),
+              deposit: double.parse(_depositController.text),
               amenities: amenitiesString,
+              isRent: _isRent,
+              isSale: _isSale,
+              parking: _parking,
+              distance: _distanceController.text.trim(),
               safetyAndSecurity: _safetySecurityController.text.trim(),
               description: _descriptionController.text.trim(),
               nearbyPlaces: _nearbyPlacesController.text.trim(),
@@ -1996,9 +1925,14 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             PropertyUploadRequested(
               propertyName: _titleController.text.trim(),
               propertyType: propertyTypeString,
+              deposit: double.parse(_depositController.text),
+              amenities: amenitiesString,
+              isRent: _isRent,
+              isSale: _isSale,
+              parking: _parking,
+              distance: _distanceController.text.trim(),
               location: _locationController.text.trim(),
               price: double.parse(_priceController.text),
-              amenities: amenitiesString,
               safetyAndSecurity: _safetySecurityController.text.trim(),
               description: _descriptionController.text.trim(),
               nearbyPlaces: _nearbyPlacesController.text.trim(),
@@ -2009,8 +1943,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               fullAddress: _addressController.text.trim(),
               propertyMap: _propertyMapController.text.trim(),
               period: _selectedPriceType,
-              // availability: _availabilityStatus == AvailabilityStatus.availableNow,
-              // availableFrom: _availabilityStatus == AvailabilityStatus.availableLater ? _availableFrom : null,
               images: _selectedImages,
             ),
           );
@@ -2111,6 +2043,51 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           hint: 'e.g., 24/7 Security, CCTV, Gated compound, Security lights, etc.',
           icon: Icons.security,
           maxLines: 3,
+        ),
+      ],
+    );
+  }
+
+  Widget _otherSection() {
+    return Column(
+      children: [
+        SwitchListTile(
+          title: const Text("Rent"),
+          subtitle: const Text("Is this property for rent?"),
+          value: _isRent,
+          activeColor: Colors.green,
+          onChanged: (bool value) {
+            setState(() {
+              _isRent = value;
+            });
+          },
+          secondary: const Icon(Icons.house_rounded),
+        ),
+        SizedBox(height: 16),
+        SwitchListTile(
+          title: const Text("Sale"),
+          subtitle: const Text("Is this property for sale?"),
+          value: _isSale,
+          activeColor: Colors.green,
+          onChanged: (bool value) {
+            setState(() {
+              _isSale = value;
+            });
+          },
+          secondary: const Icon(Icons.house_rounded),
+        ),
+        SizedBox(height: 16),
+        SwitchListTile(
+          title: const Text("Parking"),
+          subtitle: const Text("Does this property have a parking?"),
+          value: _parking,
+          activeColor: Colors.green,
+          onChanged: (bool value) {
+            setState(() {
+              _parking = value;
+            });
+          },
+          secondary: const Icon(Icons.garage_sharp),
         ),
       ],
     );

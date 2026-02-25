@@ -281,8 +281,16 @@ class _HomeScreenState extends State<HomeScreen> {
       //   PropertyService.getFeaturedProperties(page: 1, limit: _pageLimit),
       // ]);
 
-      final List<Property> propertiesResult = await PropertyService.getProperties(page: page, limit: _pageLimit);
-      final featuredResult = await PropertyService.getFeaturedProperties(page: 1, limit: _pageLimit);
+      final List<Property> propertiesResult = await PropertyService.getProperties(
+        page: page,
+        limit: _pageLimit,
+        userId: widget.user.userType == UserType.landlord ? widget.user.id : null,
+      );
+      final featuredResult = await PropertyService.getFeaturedProperties(
+        page: 1,
+        limit: _pageLimit,
+        userId: widget.user.userType == UserType.landlord ? widget.user.id : null,
+      );
 
       if (propertiesResult.isNotEmpty) {
         final filteredProperties = List<Property>.from(propertiesResult);
@@ -329,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         if (mounted) {
           setState(() {
-            _errorMessage = 'Failed to load properties.';
+            // _errorMessage = 'There are no properties to show.';
             _categoryProperties = []; // Initialize empty category properties
             _pendingBookings = []; // Initialize empty pending bookings
             _pendingProperties = []; // Initialize empty pending properties
@@ -596,19 +604,26 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         switch (_currentIndex) {
           0 => _buildHomeContent(),
-          1 => SearchScreen(
-              user: widget.user,
-              allProperties: _properties.where((property) => property.availabilityStatus == true).toList(),
-            ),
-          2 => FavoritesScreen(
-              user: widget.user,
-              onNavigateToExplore: () {
-                setState(() {
-                  _currentIndex = 0; // Navigate to home/explore tab
-                });
-              },
-            ),
-          3 => BookingsListScreen(),
+          1 => (widget.user.userType != UserType.landlord)
+              ? SearchScreen(
+                  user: widget.user,
+                  allProperties: _properties.where((property) => property.availabilityStatus == true).toList(),
+                )
+              : BookingsListScreen(user: widget.user),
+          2 => (widget.user.userType != UserType.landlord)
+              ? FavoritesScreen(
+                  user: widget.user,
+                  onNavigateToExplore: () {
+                    setState(() {
+                      _currentIndex = 0; // Navigate to home/explore tab
+                    });
+                  },
+                )
+              : ProfileScreen(
+                  user: widget.user,
+                  landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
+                ),
+          3 => BookingsListScreen(user: widget.user),
           4 => ProfileScreen(
               user: widget.user,
               landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
@@ -661,9 +676,9 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-              _buildCategories(),
+              widget.user.userType == UserType.landlord ? SizedBox() : _buildCategories(),
               // _buildPendingBookingsSection(),
-              _buildFeaturedSection(),
+              widget.user.userType == UserType.landlord ? SizedBox() : _buildFeaturedSection(),
               _buildRecentProperties(),
               SizedBox(height: 100),
             ],
@@ -771,7 +786,7 @@ class _HomeScreenState extends State<HomeScreen> {
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    _currentIndex = 3;
+                    _currentIndex = 4;
                   });
                 },
                 child: Container(
@@ -827,66 +842,67 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           SizedBox(height: 20),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _currentIndex = 1;
-              });
-            },
-            child: Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.getCardColor(context),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+          if (widget.user.userType != UserType.landlord)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _currentIndex = 1;
+                });
+              },
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.getCardColor(context),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
                     ),
-                    child: Icon(
-                      Icons.search,
-                      color: AppTheme.primaryblue,
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Search properties, locations...',
-                      style: TextStyle(
-                        color: AppTheme.getSecondaryTextColor(context),
-                        fontSize: 16,
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.search,
+                        color: AppTheme.primaryblue,
+                        size: 20,
                       ),
                     ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Search properties, locations...',
+                        style: TextStyle(
+                          color: AppTheme.getSecondaryTextColor(context),
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      Icons.tune,
-                      color: AppTheme.primaryblue,
-                      size: 20,
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.tune,
+                        color: AppTheme.primaryblue,
+                        size: 20,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -1235,7 +1251,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return Container(
                 width: 280,
                 margin: EdgeInsets.only(right: 16),
-                child: _buildPropertyCard(property),
+                child: _buildPropertyCard(property, widget.user),
               );
             },
           ),
@@ -1260,7 +1276,11 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _selectedCategory == 'All' ? 'Recent Properties' : '$_selectedCategory Properties',
+                _selectedCategory == 'All'
+                    ? widget.user.userType != UserType.landlord
+                        ? 'Recent Properties'
+                        : 'Uploaded properties'
+                    : '$_selectedCategory Properties',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -1391,7 +1411,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final property = filteredProperties[index];
                     return Container(
                       margin: EdgeInsets.only(bottom: 16),
-                      child: _buildPropertyCard(property),
+                      child: _buildPropertyCard(property, widget.user),
                     );
                   },
                 )
@@ -1458,7 +1478,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildPropertyCard(Property property) {
+  Widget _buildPropertyCard(Property property, User user) {
     final formattedPrice = _formatLargePrice(property.price);
 
     return GestureDetector(
@@ -2760,18 +2780,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: 'Home',
                 index: 0,
               ),
-              _buildNavItem(
-                icon: Icons.explore_outlined,
-                activeIcon: Icons.explore,
-                label: 'Explore',
-                index: 1,
-              ),
-              _buildNavItem(
-                icon: Icons.favorite_outline,
-                activeIcon: Icons.favorite,
-                label: 'Favorites',
-                index: 2,
-              ),
+              if (widget.user.userType != UserType.landlord)
+                _buildNavItem(
+                  icon: Icons.explore_outlined,
+                  activeIcon: Icons.explore,
+                  label: 'Explore',
+                  index: 1,
+                ),
+              if (widget.user.userType != UserType.landlord)
+                _buildNavItem(
+                  icon: Icons.favorite_outline,
+                  activeIcon: Icons.favorite,
+                  label: 'Favorites',
+                  index: 2,
+                ),
               _buildNavItem(
                 icon: Icons.book_outlined,
                 activeIcon: Icons.book_rounded,

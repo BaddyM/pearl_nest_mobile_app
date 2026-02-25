@@ -2,6 +2,7 @@ import 'package:add_comma/add_comma.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -3274,51 +3275,52 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             ],
           ),
           SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _callLandlord,
-                  icon: Icon(Icons.phone, size: 18),
-                  label: Text('Call'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryblue,
-                    foregroundColor: AppTheme.whiteColor,
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+          if (widget.user.userType != UserType.landlord)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _callLandlord,
+                    icon: Icon(Icons.phone, size: 18),
+                    label: Text('Call'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryblue,
+                      foregroundColor: AppTheme.whiteColor,
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(width: 12),
-              FutureBuilder(
-                  future: fetchRole(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
-                    }
-                    if (snapshot.hasData && snapshot.data == "TENANT") {
-                      return Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _messageAdmin,
-                          icon: Icon(Icons.message, size: 18),
-                          label: Text('Message'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppTheme.primaryblue,
-                            side: BorderSide(color: AppTheme.primaryblue),
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                SizedBox(width: 12),
+                FutureBuilder(
+                    future: fetchRole(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+                      if (snapshot.hasData && snapshot.data == "TENANT") {
+                        return Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _messageAdmin,
+                            icon: Icon(Icons.message, size: 18),
+                            label: Text('Message'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryblue,
+                              side: BorderSide(color: AppTheme.primaryblue),
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    }
-                    return SizedBox();
-                  }),
-            ],
-          ),
+                        );
+                      }
+                      return SizedBox();
+                    }),
+              ],
+            ),
         ],
       ),
     );
@@ -3552,73 +3554,75 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     // Check if property is available for booking
     final isPropertyAvailable = widget.property.status == PropertyStatus.available;
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: AppTheme.primaryblue),
-              borderRadius: BorderRadius.circular(12),
-              color: AppTheme.getCardColor(context),
-            ),
-            child: IconButton(
-              onPressed: _showContactDialog,
-              icon: Icon(
-                Icons.phone,
-                color: AppTheme.primaryblue,
-                size: 24,
-              ),
-            ),
-          ),
-          SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoadingPendingBookings || !isPropertyAvailable
-                  ? null
-                  : hasPendingBooking
-                      ? _initiatePayment
-                      : () => _showBookingConfirmationDialog(deposit: widget.property.deposit.toInt()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isLoadingPendingBookings || !isPropertyAvailable
-                    ? Colors.grey
-                    : hasPendingBooking
-                        ? AppTheme.primaryblue
-                        : AppTheme.primaryblue,
-                foregroundColor: AppTheme.whiteColor,
-                padding: EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-                shadowColor: (hasPendingBooking ? AppTheme.primaryblue : AppTheme.primaryblue).withValues(alpha: 0.3),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    hasPendingBooking ? Icons.payment : Icons.book_online,
-                    size: 20,
+    return (widget.user.userType != UserType.landlord)
+        ? Container(
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppTheme.primaryblue),
+                    borderRadius: BorderRadius.circular(12),
+                    color: AppTheme.getCardColor(context),
                   ),
-                  SizedBox(width: 8),
-                  Text(
-                    hasPendingBooking
-                        ? 'Complete Payment'
-                        : isPropertyAvailable
-                            ? 'Book Now'
-                            : 'Unavailable',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  child: IconButton(
+                    onPressed: _showContactDialog,
+                    icon: Icon(
+                      Icons.phone,
+                      color: AppTheme.primaryblue,
+                      size: 24,
                     ),
                   ),
-                ],
-              ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoadingPendingBookings || !isPropertyAvailable
+                        ? null
+                        : hasPendingBooking
+                            ? _initiatePayment
+                            : () => _showBookingConfirmationDialog(deposit: widget.property.deposit.toInt()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isLoadingPendingBookings || !isPropertyAvailable
+                          ? Colors.grey
+                          : hasPendingBooking
+                              ? AppTheme.primaryblue
+                              : AppTheme.primaryblue,
+                      foregroundColor: AppTheme.whiteColor,
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                      shadowColor: (hasPendingBooking ? AppTheme.primaryblue : AppTheme.primaryblue).withValues(alpha: 0.3),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          hasPendingBooking ? Icons.payment : Icons.book_online,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          hasPendingBooking
+                              ? 'Complete Payment'
+                              : isPropertyAvailable
+                                  ? 'Book Now'
+                                  : 'Unavailable',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
+          )
+        : SizedBox();
   }
 
   void _openMap() {

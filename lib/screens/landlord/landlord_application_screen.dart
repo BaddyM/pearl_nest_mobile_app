@@ -1,5 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/apis/landlord_service.dart';
@@ -22,7 +23,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
   final _descriptionController = TextEditingController();
   final _zoneController = TextEditingController();
   final _villageController = TextEditingController();
-  
+
   final List<String> _selectedSpecializations = [];
   final Map<String, String?> _uploadedDocuments = {
     'Business Registration Certificate': null,
@@ -106,33 +107,32 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                 child: Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.whiteColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Image.asset(
-                        "assets/icon.png",
-                        height: 48,
-                        width: 48,
-                      )
-                    ),
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.whiteColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Image.asset(
+                          "assets/icon.png",
+                          height: 48,
+                          width: 48,
+                        )),
                     const SizedBox(height: 20),
                     Text(
                       'Join PearlNest as a Landlord',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppTheme.whiteColor,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: AppTheme.whiteColor,
+                            fontWeight: FontWeight.bold,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Fill out this application to start listing your properties and grow your business with us',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.whiteColor.withOpacity(0.9),
-                        height: 1.5,
-                      ),
+                            color: AppTheme.whiteColor.withOpacity(0.9),
+                            height: 1.5,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -198,9 +198,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                                 value: _selectedParish,
                                 label: 'Parish',
                                 icon: Icons.location_city,
-                                items: _selectedDistrict != null
-                                    ? _parishes[_selectedDistrict!] ?? []
-                                    : [],
+                                items: _selectedDistrict != null ? _parishes[_selectedDistrict!] ?? [] : [],
                                 onChanged: (value) {
                                   setState(() {
                                     _selectedParish = value;
@@ -368,9 +366,9 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppTheme.getTextColor(context),
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: AppTheme.getTextColor(context),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ],
           ),
@@ -495,22 +493,20 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppTheme.primaryblue
-                      : AppTheme.getBackgroundColor(context).withOpacity(0.5),
+                  color: isSelected ? AppTheme.primaryblue : AppTheme.getBackgroundColor(context).withOpacity(0.5),
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
-                    color: isSelected
-                        ? AppTheme.primaryblue
-                        : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
+                    color: isSelected ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                   ),
-                  boxShadow: isSelected ? [
-                    BoxShadow(
-                      color: AppTheme.primaryblue.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ] : null,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.primaryblue.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -588,14 +584,10 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isUploaded
-                  ? AppTheme.primaryblue.withOpacity(0.05)
-                  : AppTheme.getBackgroundColor(context).withOpacity(0.5),
+              color: isUploaded ? AppTheme.primaryblue.withOpacity(0.05) : AppTheme.getBackgroundColor(context).withOpacity(0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isUploaded
-                    ? AppTheme.primaryblue.withOpacity(0.3)
-                    : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
+                color: isUploaded ? AppTheme.primaryblue.withOpacity(0.3) : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
               ),
             ),
             child: Row(
@@ -603,9 +595,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isUploaded
-                        ? AppTheme.primaryblue
-                        : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
+                    color: isUploaded ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -630,7 +620,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                         const SizedBox(height: 4),
                         Text(
                           fileName,
-                          style:TextStyle(
+                          style: TextStyle(
                             color: AppTheme.getSecondaryTextColor(context),
                             fontSize: 12,
                           ),
@@ -682,13 +672,13 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         final file = File(result.files.single.path!);
         final fileName = result.files.single.name;
         final fileExtension = fileName.split('.').last.toLowerCase();
-        
+
         // Double-check file extension (extra validation)
         if (!['pdf', 'doc', 'docx'].contains(fileExtension)) {
           _showErrorSnackBar('Invalid file type. Please select a PDF, DOC, or DOCX file.');
           return;
         }
-        
+
         // Check file size (10MB limit)
         final fileSize = await file.length();
         final fileSizeMB = fileSize / (1024 * 1024);
@@ -696,7 +686,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           _showErrorSnackBar('File too large. Maximum size is 10MB. Your file is ${fileSizeMB.toStringAsFixed(1)}MB.');
           return;
         }
-        
+
         // Store the file path for later upload
         setState(() {
           _uploadedDocuments[documentType] = fileName;
@@ -729,7 +719,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       }
     } catch (e) {
       String errorMessage = 'Failed to select file';
-      
+
       // Handle specific file picker errors
       if (e.toString().contains('User canceled')) {
         return; // Don't show error for user cancellation
@@ -738,7 +728,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       } else if (e.toString().contains('No application found')) {
         errorMessage = 'No file manager app found. Please install one.';
       }
-      
+
       _showErrorSnackBar('$errorMessage: ${e.toString()}');
     }
   }
@@ -764,7 +754,10 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       });
 
       try {
-        // Step 1: Upload documents first
+        // Step 1: Submit landlord application
+        String? registrationId = await _proceedWithApplication();
+
+        // Step 2: Upload documents first
         final documentsToUpload = <String, String>{};
         _documentFilePaths.forEach((key, value) {
           if (value != null) {
@@ -772,11 +765,11 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           }
         });
 
-        if (documentsToUpload.isEmpty) {
+        if (documentsToUpload.isEmpty || registrationId == null) {
           setState(() {
             _isSubmittingApplication = false;
           });
-          _showErrorSnackBar('No documents selected for upload');
+          _showErrorSnackBar('Failed to complete registraion, please try again later');
           return;
         }
 
@@ -786,8 +779,9 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         }
 
         _showProgressSnackBar('Starting document upload...');
-        
+
         final documentUploadResult = await LandlordService.uploadMultipleDocuments(
+          registrationId: registrationId,
           documents: documentsToUpload,
           onDocumentStartUpload: (documentType, current, total) {
             final shortName = _shortenDocumentName(documentType);
@@ -808,7 +802,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         // Show final upload summary
         final uploadedCount = documentUploadResult['uploadedDocuments']?.length ?? 0;
         final totalCount = documentsToUpload.length;
-        
+
         if (uploadedCount == totalCount) {
           _showSuccessSnackBar('🎉 All $totalCount documents uploaded successfully!');
         } else if (uploadedCount > 0) {
@@ -821,18 +815,18 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           setState(() {
             _isSubmittingApplication = false;
           });
-          
+
           // Show specific error message with retry information
           String errorMessage = documentUploadResult['message'] ?? 'Document upload failed';
-          
+
           // If there are failed documents, show which ones failed with more specific guidance
           if (documentUploadResult['failedDocuments'] != null) {
             final failedDocs = documentUploadResult['failedDocuments'] as List<String>;
             final uploadedDocs = documentUploadResult['uploadedDocuments'] as List<String>? ?? [];
-            
+
             if (uploadedDocs.isNotEmpty) {
               errorMessage = '✅ Successfully uploaded: ${uploadedDocs.join(', ')}\n\n❌ Failed to upload: ${failedDocs.join(', ')}\n\nYou can continue with the uploaded documents or retry uploading the failed ones. The most common causes are:\n• Network connection issues\n• File format (must be PDF, DOC, or DOCX)\n• File size (maximum 10MB)';
-              
+
               // Allow user to proceed with partial uploads if at least 2 documents were uploaded
               if (uploadedDocs.length >= 2) {
                 _showPartialUploadDialog(uploadedDocs, failedDocs);
@@ -842,14 +836,10 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
               errorMessage = 'Failed to upload: ${failedDocs.join(', ')}\n\nPlease check:\n• Internet connection\n• File format (PDF, DOC, or DOCX only)\n• File size (maximum 10MB)\n• Try uploading smaller files or retry';
             }
           }
-          
+
           _showErrorSnackBar(errorMessage);
           return;
         }
-
-        // Step 2: Submit landlord application
-        _proceedWithApplication();
-
       } catch (e) {
         setState(() {
           _isSubmittingApplication = false;
@@ -906,15 +896,15 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
             ),
             const SizedBox(height: 8),
             ...uploadedDocs.map((doc) => Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 4),
-              child: Text(
-                '• $doc',
-                style: TextStyle(
-                  color: AppTheme.getTextColor(context),
-                  fontSize: 14,
-                ),
-              ),
-            )),
+                  padding: const EdgeInsets.only(left: 16, bottom: 4),
+                  child: Text(
+                    '• $doc',
+                    style: TextStyle(
+                      color: AppTheme.getTextColor(context),
+                      fontSize: 14,
+                    ),
+                  ),
+                )),
             const SizedBox(height: 16),
             Text(
               '❌ Failed to upload (${failedDocs.length}):',
@@ -925,15 +915,15 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
             ),
             const SizedBox(height: 8),
             ...failedDocs.map((doc) => Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 4),
-              child: Text(
-                '• $doc',
-                style: TextStyle(
-                  color: AppTheme.getTextColor(context),
-                  fontSize: 14,
-                ),
-              ),
-            )),
+                  padding: const EdgeInsets.only(left: 16, bottom: 4),
+                  child: Text(
+                    '• $doc',
+                    style: TextStyle(
+                      color: AppTheme.getTextColor(context),
+                      fontSize: 14,
+                    ),
+                  ),
+                )),
             const SizedBox(height: 16),
             Text(
               'You have uploaded ${uploadedDocs.length} documents successfully. You can proceed with your application or retry uploading the failed documents.',
@@ -969,8 +959,6 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    // Proceed with application submission
-                    _proceedWithApplication();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryblue,
@@ -990,16 +978,16 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
     );
   }
 
-  void _proceedWithApplication() async {
+  Future<String?> _proceedWithApplication() async {
     setState(() {
       _isSubmittingApplication = true;
     });
 
     try {
       _showProgressSnackBar('Submitting application...');
-      
+
       final fullAddress = '${_selectedDistrict ?? ''}, ${_selectedParish ?? ''}';
-      
+
       final applicationResult = await LandlordService.submitLandlordApplication(
         businessName: _businessNameController.text.trim(),
         regNo: _registrationNumberController.text.trim(),
@@ -1015,10 +1003,11 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
 
       if (applicationResult['success']) {
         _showSuccessDialog();
+        return applicationResult["data"]["data"]["id"];
       } else {
         _showErrorSnackBar(applicationResult['message'] ?? 'Application submission failed');
+        return null;
       }
-
     } catch (e) {
       setState(() {
         _isSubmittingApplication = false;
@@ -1026,6 +1015,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       _showErrorSnackBar('An error occurred. Please try again.');
       // //print('Application submission error: $e');
     }
+    return null;
   }
 
   // Helper method to shorten document names for snackbar display
@@ -1040,9 +1030,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
       case 'Tax Registration':
         return 'Tax Registration';
       default:
-        return documentType.length > 20 
-            ? '${documentType.substring(0, 20)}...' 
-            : documentType;
+        return documentType.length > 20 ? '${documentType.substring(0, 20)}...' : documentType;
     }
   }
 
@@ -1056,7 +1044,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                message, 
+                message,
                 style: const TextStyle(color: AppTheme.whiteColor),
                 maxLines: 5,
                 overflow: TextOverflow.ellipsis,
@@ -1191,7 +1179,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).popUntil((route) => route.isFirst);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryblue,

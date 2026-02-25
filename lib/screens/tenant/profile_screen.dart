@@ -3,10 +3,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:intl/intl.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
+import 'package:pearlnest/blocs/profile_bloc/profile_bloc.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
@@ -24,6 +26,9 @@ import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
 import 'package:pearlnest/screens/tenant/settings_screen.dart';
 import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/widgets/error_widget.dart';
+import 'package:pearlnest/widgets/loading_widget.dart';
+import 'package:pearlnest/widgets/registration_status_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   final User user;
@@ -41,6 +46,12 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<ProfileBloc>().add(FetchProfileEvent());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,7 +82,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               _buildProfileHeader(),
               _buildProfileInfo(),
-              if (widget.user.userType == UserType.tenant) _buildBecomeLandlordCard(),
+              if (widget.user.userType == UserType.tenant)
+                BlocBuilder<ProfileBloc, ProfileState>(builder: (context, state) {
+                  if (state is ProfileLoadingState) {
+                    return LoadingWidget(height: MediaQuery.of(context).size.height * 0.1);
+                  } else if (state is ProfileLoadedState) {
+                    List<Map<String, dynamic>> reg = List<Map<String, dynamic>>.from(state.data["LandLordRegistration"]);
+                    if (reg.isNotEmpty) {
+                      return ListView.builder(
+                          itemCount: reg.length,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            RegistrationStatus status = RegistrationStatus.fromString((reg[index]["status"]).toString().toLowerCase());
+                            String registrationId = reg[index]["id"].toString();
+                            String dateSubmitted = reg[index]["createdAt"].toString();
+                            return RegistrationStatusCard(status: status, registrationId: registrationId, dateSubmitted: DateFormat("dd-MMM-yyyy").format(DateTime.parse(dateSubmitted)));
+                          });
+                    } else {
+                      return _buildBecomeLandlordCard();
+                    }
+                  } else if (state is ProfileErrorState) {
+                    return CustomErrorWidget(message: state.msg ?? "Sorry, failed to fetch profile.\nPlease try again later.");
+                  } else {
+                    return SizedBox();
+                  }
+                }),
               _buildMenuItems(),
             ],
           ),
@@ -133,20 +169,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: 100,
                         height: 100,
                         fit: BoxFit.cover,
-                         placeholder: (context, url) => Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                        placeholder: (context, url) => Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                          ),
                         ),
-                      ),
                         errorWidget: (context, url, error) => Icon(
-                        Icons.person,
-                        size: 50,
-                        color: AppTheme.primaryblue,
-                      ),
-                      cacheManager: DefaultCacheManager(),
-                      fadeInDuration: Duration(milliseconds: 300),
-                      fadeOutDuration: Duration(milliseconds: 300),
+                          Icons.person,
+                          size: 50,
+                          color: AppTheme.primaryblue,
+                        ),
+                        cacheManager: DefaultCacheManager(),
+                        fadeInDuration: Duration(milliseconds: 300),
+                        fadeOutDuration: Duration(milliseconds: 300),
                       ),
                     )
                   : Icon(
@@ -418,32 +454,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
         ],
-        if(widget.user.userType == UserType.tenant || widget.user.userType == UserType.landlord)
-        _buildMenuItem(
-          Icons.calendar_today,
-          'Bookings',
-          () {
-            if (widget.user.userType == UserType.landlord) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LandlordBookingRequestsScreen(
-                    user: widget.user,
+        if (widget.user.userType == UserType.tenant || widget.user.userType == UserType.landlord)
+          _buildMenuItem(
+            Icons.calendar_today,
+            'Bookings',
+            () {
+              if (widget.user.userType == UserType.landlord) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LandlordBookingRequestsScreen(
+                      user: widget.user,
+                    ),
                   ),
-                ),
-              );
-            } else if (widget.user.userType == UserType.tenant) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TenantBookingHistoryScreen(
-                    user: widget.user,
+                );
+              } else if (widget.user.userType == UserType.tenant) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TenantBookingHistoryScreen(
+                      user: widget.user,
+                    ),
                   ),
-                ),
-              );
-            } else {}
-          },
-        ),
+                );
+              } else {}
+            },
+          ),
         _buildMenuItem(
           Icons.settings,
           'Settings',

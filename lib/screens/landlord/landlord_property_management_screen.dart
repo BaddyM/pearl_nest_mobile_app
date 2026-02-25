@@ -1166,7 +1166,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    return DateFormat("dd-MMM-yyyy").format(date);
   }
 
   Widget _buildPropertyImage(String imagePath, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
@@ -1292,19 +1292,28 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (property.images.isNotEmpty)
-                    Container(
-                      height: 200,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: AppTheme.lightGreyColor,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: _buildPropertyImage(
-                          property.images.first,
-                          fit: BoxFit.cover,
-                        ),
+                    SizedBox(
+                      height: 300,
+                      child: CarouselView(
+                        itemExtent: 300, // The fixed size of each item
+                        shrinkExtent: 200, // The minimum size items shrink to as they scroll away
+                        children: List.generate(property.images.length, (int index) {
+                          return Container(
+                            height: 200,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: AppTheme.lightGreyColor,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: _buildPropertyImage(
+                                property.images[index],
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        }),
                       ),
                     ),
                   SizedBox(height: 16),
@@ -1415,6 +1424,10 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
+                              "Property Price",
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            Text(
                               'UGX ${NumberFormat('#,###').format(property.price.toInt())}',
                               style: TextStyle(
                                 fontSize: 24,
@@ -1427,6 +1440,37 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                               style: TextStyle(
                                 fontSize: 14,
                                 color: AppTheme.greyColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.monetization_on, color: AppTheme.primaryblue),
+                        SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Initial Deposit",
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              'UGX ${NumberFormat('#,###').format(property.deposit.toInt())}',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryblue,
                               ),
                             ),
                           ],
@@ -1455,6 +1499,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         _buildDetailRow('Bedrooms', '${property.bedrooms}', Icons.bed),
                         _buildDetailRow('Bathrooms', '${property.bathrooms}', Icons.bathtub),
                         _buildDetailRow('Area', '${property.area.toInt()} m²', Icons.square_foot),
+                        _buildDetailRow('For Rent', property.isRent ? 'yes' : 'no', Icons.house_rounded),
+                        _buildDetailRow('For Sale', property.isSale ? 'yes' : 'no', Icons.house_rounded),
+                        _buildDetailRow('Has parking', property.parking ? 'yes' : 'no', Icons.garage),
                         if (property.rating > 0) _buildDetailRow('Rating', '${property.rating.toStringAsFixed(1)} (${property.reviewCount} reviews)', Icons.star),
                       ],
                     ),

@@ -5,7 +5,6 @@ import 'api_client.dart';
 
 class LandlordService {
   static const String _landlordRegistrationEndpoint = '/user/landlordRegistration';
-  static const String _uploadDocumentEndpoint = '/property/uploadDocument';
 
   /// Submit landlord registration application
   static Future<Map<String, dynamic>> submitLandlordApplication({
@@ -70,6 +69,7 @@ class LandlordService {
   static Future<Map<String, dynamic>> uploadDocument({
     required String filePath,
     required String title,
+    required String registrationId,
   }) async {
     try {
       if (kDebugMode) {
@@ -102,7 +102,7 @@ class LandlordService {
         'title': title,
       });
 
-      final response = await ApiClient.postMultipart(_uploadDocumentEndpoint, formData);
+      final response = await ApiClient.postMultipart('/property/uploadDocument/$registrationId', formData);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
@@ -116,8 +116,8 @@ class LandlordService {
         };
       } else {
         if (kDebugMode) {
-          //debugPrint('❌ Document upload failed with status: ${response.statusCode}');
-          //debugPrint('📋 Response data: ${response.data}');
+          debugPrint('❌ Document upload failed with status: ${response.statusCode}');
+          debugPrint('📋 Response data: ${response.data}');
         }
 
         return {
@@ -129,7 +129,7 @@ class LandlordService {
       }
     } catch (e) {
       if (kDebugMode) {
-        //debugPrint('💥 Document upload error: $e');
+        debugPrint('💥 Document upload error: $e');
       }
 
       // Extract more specific error messages
@@ -164,10 +164,12 @@ class LandlordService {
     required Map<String, String> documents,
     Function(String documentType, bool success)? onDocumentUploaded,
     Function(String documentType, int current, int total)? onDocumentStartUpload,
+    required String registrationId,
   }) async {
     try {
       if (kDebugMode) {
-        //debugPrint('📤 Uploading ${documents.length} documents');
+        debugPrint('registrationId: ${registrationId}');
+        debugPrint('📤 Uploading ${documents.length} documents');
       }
 
       final List<String> uploadedDocuments = [];
@@ -185,6 +187,7 @@ class LandlordService {
         final result = await uploadDocument(
           filePath: filePath,
           title: documentType,
+          registrationId: registrationId,
         );
 
         if (result['success'] == true) {
