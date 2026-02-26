@@ -1,3 +1,4 @@
+import 'package:add_comma/add_comma.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,12 +8,13 @@ import 'package:pearlnest/blocs/booking/booking_state.dart';
 import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class LandlordBookingRequestsScreen extends StatefulWidget {
   final User user;
- 
+
   const LandlordBookingRequestsScreen({
     super.key,
     required this.user,
@@ -22,8 +24,7 @@ class LandlordBookingRequestsScreen extends StatefulWidget {
   State<LandlordBookingRequestsScreen> createState() => _LandlordBookingRequestsScreenState();
 }
 
-class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsScreen>
-    with TickerProviderStateMixin {
+class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   String _searchQuery = '';
   bool _isLoading = false;
@@ -36,7 +37,6 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     _tabController = TabController(length: 4, vsync: this);
     // Fetch bookings in didChangeDependencies to ensure context is available
     _tabController.addListener(_onTabChanged);
-    
   }
 
   @override
@@ -47,6 +47,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
       context.read<BookingBloc>().add(const FetchLandlordBookings());
     }
   }
+
   void _onTabChanged() {
     setState(() {
       switch (_tabController.index) {
@@ -70,9 +71,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
   List<Booking> _getFilteredBookings() {
     return _allBookings.where((booking) {
       final matchesStatus = booking.status == _selectedStatus;
-      final matchesSearch = _searchQuery.isEmpty ||
-          booking.tenantName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          booking.propertyTitle.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch = _searchQuery.isEmpty || booking.tenantName.toLowerCase().contains(_searchQuery.toLowerCase()) || booking.propertyTitle.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     }).toList();
   }
@@ -144,9 +143,10 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
   void _handleBookingAction(Booking booking, BookingStatus newStatus) {
     setState(() {
       _isLoading = true;
-    });      Future.delayed(Duration(seconds: 1), () {
+    });
+    Future.delayed(Duration(seconds: 1), () {
       if (!mounted) return;
-      
+
       setState(() {
         _isLoading = false;
       });
@@ -154,10 +154,11 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
       final actionText = newStatus == BookingStatus.confirmed ? 'accepted' : 'rejected';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Booking request $actionText successfully!', style: TextStyle(color: AppTheme.lightGreyColor),),
-          backgroundColor: newStatus == BookingStatus.confirmed 
-              ? AppTheme.primaryblue
-              : Colors.red,
+          content: Text(
+            'Booking request $actionText successfully!',
+            style: TextStyle(color: AppTheme.lightGreyColor),
+          ),
+          backgroundColor: newStatus == BookingStatus.confirmed ? AppTheme.primaryblue : Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           duration: Duration(milliseconds: 500),
@@ -191,7 +192,10 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Calling $tenantPhone...', style: TextStyle(color: AppTheme.lightGreyColor),),
+        content: Text(
+          'Calling $tenantPhone...',
+          style: TextStyle(color: AppTheme.lightGreyColor),
+        ),
         backgroundColor: AppTheme.primaryblue,
         behavior: SnackBarBehavior.floating,
         duration: Duration(milliseconds: 500),
@@ -200,7 +204,6 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
       ),
     );
   }
-
 
   Widget _buildHeader() {
     return Container(
@@ -266,8 +269,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  onPressed: () {
-                  },
+                  onPressed: () {},
                   icon: Icon(
                     Icons.calendar_today,
                     color: AppTheme.primaryblue,
@@ -439,9 +441,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
           ),
           SizedBox(height: 8),
           Text(
-            _searchQuery.isNotEmpty 
-                ? 'Try adjusting your search terms'
-                : 'New requests will appear here',
+            _searchQuery.isNotEmpty ? 'Try adjusting your search terms' : 'New requests will appear here',
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.getSecondaryTextColor(context),
@@ -460,141 +460,54 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     final formattedAmount = booking.amount != null ? NumberFormat('#,##0').format(booking.amount) : '0';
 
     return GestureDetector(
-      onTap: () => _showBookingDetails(booking),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppTheme.primaryblue.withValues(alpha: 0.1),
-                    child: Text(
-                      tenantName.substring(0, 1).toUpperCase(),
-                      style: TextStyle(
-                        color: AppTheme.primaryblue,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tenantName,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.getTextColor(context),
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          _getBookingTypeText(booking.type),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.getSecondaryTextColor(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _getStatusText(booking.status),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: statusColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+        onTap: () => _showBookingDetails(booking),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppTheme.getCardColor(context),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: Offset(0, 4),
               ),
-              SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.getCardColor(context),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ],
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.home, size: 16, color: AppTheme.getSecondaryTextColor(context)),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            propertyTitle,
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppTheme.primaryblue.withValues(alpha: 0.1),
+                      child: Text(
+                        tenantName.substring(0, 1).toUpperCase(),
+                        style: TextStyle(
+                          color: AppTheme.primaryblue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tenantName,
                             style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                               color: AppTheme.getTextColor(context),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Icon(Icons.calendar_today, size: 14, color: AppTheme.getSecondaryTextColor(context)),
-                              SizedBox(width: 6),
-                              Text(
-                                'Check-in: ${_formatDate(booking.startDate ?? booking.requestedDate)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.getSecondaryTextColor(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (booking.startDate != null && booking.endDate != null)
+                          SizedBox(height: 2),
                           Text(
-                            '${(booking.endDate!.difference(booking.startDate!).inDays)} days',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.getSecondaryTextColor(context),
-                            ),
-                          ),
-                      ],
-                    ),
-                    if (booking.endDate != null) ...[
-                      SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.event, size: 14, color: AppTheme.getSecondaryTextColor(context)),
-                          SizedBox(width: 6),
-                          Text(
-                            'Check-out: ${_formatDate(booking.endDate!)}',
+                            _getBookingTypeText(booking.type),
                             style: TextStyle(
                               fontSize: 12,
                               color: AppTheme.getSecondaryTextColor(context),
@@ -602,29 +515,86 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                           ),
                         ],
                       ),
-                    ],
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _getStatusText(booking.status),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Column(
-                          children: [
-                            Text(
-                              'UGX$formattedAmount',
+                SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.getCardColor(context),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.home, size: 16, color: AppTheme.getSecondaryTextColor(context)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              propertyTitle,
                               style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.primaryblue,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.getTextColor(context),
                               ),
                             ),
-                            SizedBox(width: 8),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(Icons.calendar_today, size: 14, color: AppTheme.getSecondaryTextColor(context)),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Check-in: ${_formatDate(booking.startDate ?? booking.requestedDate)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.getSecondaryTextColor(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (booking.startDate != null && booking.endDate != null)
                             Text(
-                              '• ${_getTimeAgo(booking.createdAt)}',
+                              '${(booking.endDate!.difference(booking.startDate!).inDays)} days',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.getSecondaryTextColor(context),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (booking.endDate != null) ...[
+                        SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.event, size: 14, color: AppTheme.getSecondaryTextColor(context)),
+                            SizedBox(width: 6),
+                            Text(
+                              'Check-out: ${_formatDate(booking.endDate!)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppTheme.getSecondaryTextColor(context),
@@ -633,68 +603,98 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                           ],
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                  if (booking.status == BookingStatus.pending) ...[
-                    SizedBox(width: 8),
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => _handleBookingAction(booking, BookingStatus.cancelled),
-                          child: Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              color: Colors.red,
-                              size: 20,
-                            ),
+                ),
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                'UGX$formattedAmount',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryblue,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                '• ${_getTimeAgo(booking.createdAt)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.getSecondaryTextColor(context),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => _handleBookingAction(booking, BookingStatus.confirmed),
-                          child: Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.check,
-                              color: Colors.green,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ] else ...[
-                    GestureDetector(
-                      onTap: () => _contactTenant(booking.tenantId),
-                      child: Container(
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryblue.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.phone,
-                          color: AppTheme.primaryblue,
-                          size: 20,
-                        ),
+                        ],
                       ),
                     ),
+                    // if (booking.status == BookingStatus.pending) ...[
+                    //   SizedBox(width: 8),
+                    //   Row(
+                    //     children: [
+                    //       GestureDetector(
+                    //         onTap: () => _handleBookingAction(booking, BookingStatus.cancelled),
+                    //         child: Container(
+                    //           padding: EdgeInsets.all(8),
+                    //           decoration: BoxDecoration(
+                    //             color: Colors.red.withOpacity(0.1),
+                    //             shape: BoxShape.circle,
+                    //           ),
+                    //           child: Icon(
+                    //             Icons.close,
+                    //             color: Colors.red,
+                    //             size: 20,
+                    //           ),
+                    //         ),
+                    //       ),
+                    //       SizedBox(width: 8),
+                    //       GestureDetector(
+                    //         onTap: () => _handleBookingAction(booking, BookingStatus.confirmed),
+                    //         child: Container(
+                    //           padding: EdgeInsets.all(8),
+                    //           decoration: BoxDecoration(
+                    //             color: Colors.green.withOpacity(0.1),
+                    //             shape: BoxShape.circle,
+                    //           ),
+                    //           child: Icon(
+                    //             Icons.check,
+                    //             color: Colors.green,
+                    //             size: 20,
+                    //           ),
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ] else ...[
+                    //   GestureDetector(
+                    //     onTap: () => _contactTenant(booking.tenantId),
+                    //     child: Container(
+                    //       padding: EdgeInsets.all(8),
+                    //       decoration: BoxDecoration(
+                    //         color: AppTheme.primaryblue.withOpacity(0.1),
+                    //         shape: BoxShape.circle,
+                    //       ),
+                    //       child: Icon(
+                    //         Icons.phone,
+                    //         color: AppTheme.primaryblue,
+                    //         size: 20,
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ],
                   ],
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ));
+        ));
   }
 
   Widget _buildBookingDetailsModal(Booking booking) {
@@ -703,6 +703,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     final tenantPhone = booking.tenantPhone;
     final propertyTitle = booking.propertyTitle;
     final statusColor = _getStatusColor(booking.status);
+    final putCommas = addCommas();
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -760,7 +761,6 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                     ],
                   ),
                   SizedBox(height: 24),
-                  
                   _buildDetailSection(
                     'Tenant Information',
                     Icons.person,
@@ -770,9 +770,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                       _buildDetailRow('Phone', tenantPhone),
                     ],
                   ),
-                  
                   SizedBox(height: 24),
-                  
                   _buildDetailSection(
                     'Property Information',
                     Icons.home,
@@ -781,25 +779,22 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                       _buildDetailRow('Booking Type', _getBookingTypeText(booking.type)),
                     ],
                   ),
-                  
                   SizedBox(height: 24),
-                  
                   _buildDetailSection(
                     'Booking Information',
                     Icons.calendar_today,
                     [
                       _buildDetailRow('Requested Date', _formatDate(booking.requestedDate)),
-                      if (booking.startDate != null)
-                        _buildDetailRow('Check-in Date', _formatDate(booking.startDate!)),
-                      if (booking.endDate != null)
-                        _buildDetailRow('Check-out Date', _formatDate(booking.endDate!)),
-                      if (booking.startDate != null && booking.endDate != null)
-                        _buildDetailRow('Duration', '${booking.endDate!.difference(booking.startDate!).inDays} days'),
-                      _buildDetailRow('Amount', 'UGX${(booking.amount ?? 0).toStringAsFixed(2)}'),
+                      if (booking.startDate != null) _buildDetailRow('Check-in Date', _formatDate(booking.startDate!)),
+                      if (booking.endDate != null) _buildDetailRow('Check-out Date', _formatDate(booking.endDate!)),
+                      if (booking.startDate != null && booking.endDate != null) _buildDetailRow('Duration', '${booking.endDate!.difference(booking.startDate!).inDays} days'),
+                      _buildDetailRow(
+                        'Amount',
+                        '${ProfileService().currencyConverter(price: (booking.amount ?? 0).toInt())}',
+                      ),
                       _buildDetailRow('Created', '${_formatDate(booking.createdAt)} at ${_formatTime(booking.createdAt)}'),
                     ],
                   ),
-                  
                   if (booking.message != null && booking.message!.isNotEmpty) ...[
                     SizedBox(height: 24),
                     _buildDetailSection(
@@ -825,109 +820,106 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                       ],
                     ),
                   ],
-                  
-                  SizedBox(height: 32),
-                  
-                  if (booking.status == BookingStatus.pending) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _handleBookingAction(booking, BookingStatus.cancelled);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: AppTheme.whiteColor,
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.close, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Reject',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _handleBookingAction(booking, BookingStatus.confirmed);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryblue,
-                              foregroundColor: AppTheme.whiteColor,
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.check, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Accept',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12),
-                  ],
-                  
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _contactTenant(booking.tenantId),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.getCardColor(context).withValues(alpha: 1.5),
-                        foregroundColor: AppTheme.getTextColor(context),
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.phone, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Contact Tenant',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // SizedBox(height: 32),
+                  // if (booking.status == BookingStatus.pending) ...[
+                  //   Row(
+                  //     children: [
+                  //       Expanded(
+                  //         child: ElevatedButton(
+                  //           onPressed: () {
+                  //             Navigator.pop(context);
+                  //             _handleBookingAction(booking, BookingStatus.cancelled);
+                  //           },
+                  //           style: ElevatedButton.styleFrom(
+                  //             backgroundColor: Colors.red,
+                  //             foregroundColor: AppTheme.whiteColor,
+                  //             padding: EdgeInsets.symmetric(vertical: 16),
+                  //             shape: RoundedRectangleBorder(
+                  //               borderRadius: BorderRadius.circular(12),
+                  //             ),
+                  //             elevation: 0,
+                  //           ),
+                  //           child: Row(
+                  //             mainAxisAlignment: MainAxisAlignment.center,
+                  //             children: [
+                  //               Icon(Icons.close, size: 20),
+                  //               SizedBox(width: 8),
+                  //               Text(
+                  //                 'Reject',
+                  //                 style: TextStyle(
+                  //                   fontSize: 16,
+                  //                   fontWeight: FontWeight.w600,
+                  //                 ),
+                  //               ),
+                  //             ],
+                  //           ),
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 16),
+                  //       Expanded(
+                  //         child: ElevatedButton(
+                  //           onPressed: () {
+                  //             Navigator.pop(context);
+                  //             _handleBookingAction(booking, BookingStatus.confirmed);
+                  //           },
+                  //           style: ElevatedButton.styleFrom(
+                  //             backgroundColor: AppTheme.primaryblue,
+                  //             foregroundColor: AppTheme.whiteColor,
+                  //             padding: EdgeInsets.symmetric(vertical: 16),
+                  //             shape: RoundedRectangleBorder(
+                  //               borderRadius: BorderRadius.circular(12),
+                  //             ),
+                  //             elevation: 0,
+                  //           ),
+                  //           child: Row(
+                  //             mainAxisAlignment: MainAxisAlignment.center,
+                  //             children: [
+                  //               Icon(Icons.check, size: 20),
+                  //               SizedBox(width: 8),
+                  //               Text(
+                  //                 'Accept',
+                  //                 style: TextStyle(
+                  //                   fontSize: 16,
+                  //                   fontWeight: FontWeight.w600,
+                  //                 ),
+                  //               ),
+                  //             ],
+                  //           ),
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  //   SizedBox(height: 12),
+                  // ],
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   child: ElevatedButton(
+                  //     onPressed: () => _contactTenant(booking.tenantId),
+                  //     style: ElevatedButton.styleFrom(
+                  //       backgroundColor: AppTheme.getCardColor(context).withValues(alpha: 1.5),
+                  //       foregroundColor: AppTheme.getTextColor(context),
+                  //       padding: EdgeInsets.symmetric(vertical: 16),
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(12),
+                  //       ),
+                  //       elevation: 0,
+                  //     ),
+                  //     child: Row(
+                  //       mainAxisAlignment: MainAxisAlignment.center,
+                  //       children: [
+                  //         Icon(Icons.phone, size: 20),
+                  //         SizedBox(width: 8),
+                  //         Text(
+                  //           'Contact Tenant',
+                  //           style: TextStyle(
+                  //             fontSize: 16,
+                  //             fontWeight: FontWeight.w600,
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -1083,7 +1075,6 @@ class LandlordProfileScreen extends StatelessWidget {
               ),
             ),
             SizedBox(height: 24),
-            
             Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -1118,9 +1109,7 @@ class LandlordProfileScreen extends StatelessWidget {
                                   if (loadingProgress == null) return child;
                                   return Center(
                                     child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                          : null,
+                                      value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
                                       strokeWidth: 2,
                                       valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
                                     ),
@@ -1184,11 +1173,14 @@ class LandlordProfileScreen extends StatelessWidget {
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Edit profile coming soon!', style: TextStyle(color: AppTheme.lightGreyColor),),
-                        duration: Duration(milliseconds: 500),
-                        backgroundColor: AppTheme.primaryblue,
-                        behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.all(16),
+                          content: Text(
+                            'Edit profile coming soon!',
+                            style: TextStyle(color: AppTheme.lightGreyColor),
+                          ),
+                          duration: Duration(milliseconds: 500),
+                          backgroundColor: AppTheme.primaryblue,
+                          behavior: SnackBarBehavior.floating,
+                          margin: EdgeInsets.all(16),
                         ),
                       );
                     },
@@ -1197,9 +1189,7 @@ class LandlordProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
             SizedBox(height: 24),
-            
             _buildProfileOption(
               context,
               'Personal Information',
@@ -1242,9 +1232,7 @@ class LandlordProfileScreen extends StatelessWidget {
               Icons.description_outlined,
               () => _showComingSoon(context),
             ),
-            
             SizedBox(height: 24),
-            
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -1275,7 +1263,6 @@ class LandlordProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
-            
             SizedBox(height: 40),
           ],
         ),
@@ -1321,7 +1308,10 @@ class LandlordProfileScreen extends StatelessWidget {
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('This feature is coming soon!', style: TextStyle(color: AppTheme.lightGreyColor),),
+        content: Text(
+          'This feature is coming soon!',
+          style: TextStyle(color: AppTheme.lightGreyColor),
+        ),
         backgroundColor: AppTheme.primaryblue,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1368,7 +1358,10 @@ class LandlordProfileScreen extends StatelessWidget {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Logged out successfully', style: TextStyle(color: AppTheme.lightGreyColor),),
+                    content: Text(
+                      'Logged out successfully',
+                      style: TextStyle(color: AppTheme.lightGreyColor),
+                    ),
                     backgroundColor: AppTheme.primaryblue,
                     duration: Duration(milliseconds: 500),
                     behavior: SnackBarBehavior.floating,

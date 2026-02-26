@@ -25,6 +25,7 @@ import 'package:pearlnest/screens/tenant/profile_screen.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/screens/tenant/search_screen.dart';
 import 'package:pearlnest/screens/tenant/payment_screen.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
@@ -609,7 +610,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   user: widget.user,
                   allProperties: _properties.where((property) => property.availabilityStatus == true).toList(),
                 )
-              : BookingsListScreen(user: widget.user),
+              : ProfileScreen(
+                  user: widget.user,
+                  landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
+                ),
           2 => (widget.user.userType != UserType.landlord)
               ? FavoritesScreen(
                   user: widget.user,
@@ -1479,8 +1483,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPropertyCard(Property property, User user) {
-    final formattedPrice = _formatLargePrice(property.price);
-
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1888,7 +1890,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  'UGX$formattedPrice',
+                                  '${ProfileService().currencyConverter(price: property.price.toInt())}',
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
@@ -2178,7 +2180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'UGX $formattedPrice',
+                        '${ProfileService().currencyConverter(price: property.price.toInt())}',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -2276,16 +2278,6 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       );
-
-      //debugPrint('💳 Initiating payment for booking: ${booking.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
-
-      // Debug user ID to identify the issue
-      //debugPrint('🔍 User ID validation:');
-      //debugPrint('   - widget.user.id: "${widget.user.id}"');
-      //debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
-      //debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
-      //debugPrint('   - widget.user.name: "${widget.user.name}"');
-      //debugPrint('   - widget.user.email: "${widget.user.email}"');
 
       // Validate user ID before making payment request
       if (widget.user.id.isEmpty) {
@@ -2540,7 +2532,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Show dialog to get payment amount from user
   Future<double?> _showPaymentAmountDialog(Property property) async {
     final TextEditingController amountController = TextEditingController();
-    final formattedPropertyPrice = NumberFormat('#,##0').format(property.price);
+    final formattedPropertyPrice = ProfileService().currencyConverter(price: property.price.toInt());
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     return await showDialog<double>(
@@ -2594,7 +2586,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Full Price: UGX $formattedPropertyPrice',
+                  'Full Price: $formattedPropertyPrice',
                   style: TextStyle(
                     fontSize: 14,
                     color: AppTheme.getSecondaryTextColor(context),
@@ -2653,7 +2645,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
 
                     if (amount > property.price) {
-                      return 'Amount cannot exceed UGX $formattedPropertyPrice';
+                      return 'Amount cannot exceed $formattedPropertyPrice';
                     }
 
                     return null;
@@ -2794,12 +2786,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: 'Favorites',
                   index: 2,
                 ),
-              _buildNavItem(
-                icon: Icons.book_outlined,
-                activeIcon: Icons.book_rounded,
-                label: 'Bookings',
-                index: 3,
-              ),
+              if (widget.user.userType != UserType.landlord)
+                _buildNavItem(
+                  icon: Icons.book_outlined,
+                  activeIcon: Icons.book_rounded,
+                  label: 'Bookings',
+                  index: 3,
+                ),
               _buildNavItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,

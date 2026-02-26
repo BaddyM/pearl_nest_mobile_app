@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pearlnest/blocs/profile_bloc/profile_bloc.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'firebase_options.dart'; // Add this import
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
@@ -45,6 +46,9 @@ void main() async {
 
   // Initialize deep link service
   DeepLinkService.initialize();
+
+  //Initialize Shared preferences
+  ProfileService().init();
 
   runApp(MyApp());
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/models/user.dart';
@@ -255,7 +256,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ),
                         ),
                         Text(
-                          'UGX ${NumberFormat('#,##0').format(widget.amount)}',
+                          '${ProfileService().currencyConverter(price: widget.amount.toInt())}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppTheme.primaryblue,

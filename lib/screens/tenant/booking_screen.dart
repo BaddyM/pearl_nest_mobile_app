@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
@@ -103,7 +104,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'UGX ${widget.property.price.toStringAsFixed(0)} ${widget.property.priceType}',
+                      '${ProfileService().currencyConverter(price: widget.property.price.toInt())} ${widget.property.priceType}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

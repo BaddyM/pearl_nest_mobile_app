@@ -8,6 +8,7 @@ import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/app_config.dart';
@@ -1235,7 +1236,7 @@ class _PropertyCardState extends State<PropertyCard> {
 
           // Price - single line
           Text(
-            'UGX ${NumberFormat('#,###').format(widget.property.price)}',
+            '${ProfileService().currencyConverter(price: widget.property.price.toInt())}',
             style: TextStyle(
               fontSize: responsive['priceFontSize'],
               fontWeight: FontWeight.bold,
@@ -1276,9 +1277,9 @@ class _PropertyCardState extends State<PropertyCard> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Amount Paid: UGX ${putCommas(widget.paid)}"),
+                    Text("Amount Paid: ${ProfileService().currencyConverter(price: widget.paid)}"),
                     SizedBox(height: 10),
-                    Text("Pending Balance: UGX ${putCommas(widget.balance)}"),
+                    Text("Pending Balance: ${ProfileService().currencyConverter(price: widget.balance)}"),
                     SizedBox(height: 10),
                     SizedBox(
                       width: MediaQuery.of(context).size.width,

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/screens/tenant/search_screen.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class FiltersScreen extends StatefulWidget {
@@ -197,7 +198,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'UGX${_filters.priceRange.start.round()}',
+                    '${ProfileService().currencyConverter(price: _filters.priceRange.start.round())}',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -212,7 +213,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                     ),
                   ),
                   Text(
-                    'UGX${_filters.priceRange.end.round()}',
+                    '${ProfileService().currencyConverter(price: _filters.priceRange.end.round())}',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -350,14 +351,10 @@ class _FiltersScreenState extends State<FiltersScreen> {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isSelected 
-                          ? AppTheme.primaryblue.withOpacity(0.1) 
-                          : AppTheme.getCardColor(context),
+                      color: isSelected ? AppTheme.primaryblue.withOpacity(0.1) : AppTheme.getCardColor(context),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isSelected
-                            ? AppTheme.primaryblue 
-                            : AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
+                        color: isSelected ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
                       ),
                     ),
                     child: Row(
@@ -369,9 +366,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                             color: isSelected ? AppTheme.primaryblue : AppTheme.whiteColor,
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
-                              color: isSelected 
-                                  ? AppTheme.primaryblue 
-                                  : AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
+                              color: isSelected ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
                               width: 2,
                             ),
                           ),
@@ -414,7 +409,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
 
   Widget _buildBottomActions() {
     final matchingProperties = _getMatchingPropertiesCount();
-    
+
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -499,18 +494,13 @@ class _FiltersScreenState extends State<FiltersScreen> {
 
   int _getMatchingPropertiesCount() {
     return widget.allProperties.where((property) {
-      final matchesType = _filters.propertyType == 'All' ||
-          property.propertyTypeString == _filters.propertyType;
+      final matchesType = _filters.propertyType == 'All' || property.propertyTypeString == _filters.propertyType;
 
-      final matchesPrice = property.price >= _filters.priceRange.start &&
-          property.price <= _filters.priceRange.end;
+      final matchesPrice = property.price >= _filters.priceRange.start && property.price <= _filters.priceRange.end;
 
-      final matchesBedrooms = _filters.bedrooms == null ||
-          (_filters.bedrooms == 6 ? property.bedrooms >= 5 : property.bedrooms == _filters.bedrooms);
+      final matchesBedrooms = _filters.bedrooms == null || (_filters.bedrooms == 6 ? property.bedrooms >= 5 : property.bedrooms == _filters.bedrooms);
 
-      final matchesAmenities = _filters.selectedAmenities.isEmpty ||
-          _filters.selectedAmenities.every((amenity) =>
-              property.amenities.contains(amenity));
+      final matchesAmenities = _filters.selectedAmenities.isEmpty || _filters.selectedAmenities.every((amenity) => property.amenities.contains(amenity));
 
       return matchesType && matchesPrice && matchesBedrooms && matchesAmenities;
     }).length;

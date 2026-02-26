@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -925,7 +926,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   // Show dialog to get payment amount from user
   Future<double?> _showPaymentAmountDialog() async {
     final TextEditingController amountController = TextEditingController();
-    final formattedPropertyPrice = NumberFormat('#,##0').format(widget.property.price);
+    final formattedPropertyPrice = ProfileService().currencyConverter(price: widget.property.price.toInt());
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     return await showDialog<double>(
@@ -980,7 +981,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Full Price: UGX $formattedPropertyPrice',
+                  'Full Price: $formattedPropertyPrice',
                   style: TextStyle(
                     fontSize: 14,
                     color: AppTheme.getSecondaryTextColor(context),
@@ -1039,7 +1040,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     }
 
                     if (amount > widget.property.price) {
-                      return 'Amount cannot exceed UGX $formattedPropertyPrice';
+                      return 'Amount cannot exceed $formattedPropertyPrice';
                     }
 
                     return null;
@@ -1874,7 +1875,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        'UGX${NumberFormat('#,##0').format(widget.property.price)}',
+                        '${ProfileService().currencyConverter(price: widget.property.price.toInt())}',
                         style: TextStyle(
                           fontSize: priceFontSize,
                           fontWeight: FontWeight.bold,

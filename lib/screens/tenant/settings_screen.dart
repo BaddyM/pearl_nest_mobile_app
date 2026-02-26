@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
 import 'package:pearlnest/apis/auth_service.dart';
@@ -12,6 +14,7 @@ import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
 import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   final User user;
@@ -30,7 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _emailNotifications;
   late bool _pushNotifications;
   late bool _smsNotifications;
-  String _selectedCurrency = 'UGX'; // Default to UGX for Uganda
+  String _selectedCurrency = ''; // Default to UGX for Uganda
   bool _isUpdatingNotifications = false;
 
   @override
@@ -40,6 +43,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _emailNotifications = widget.user.emailNotifications;
     _pushNotifications = widget.user.pushNotifications;
     _smsNotifications = widget.user.smsNotifications;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _selectedCurrency = prefs.getString("currency") ?? "UGX";
+      });
+    });
   }
 
   @override
@@ -126,7 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Change Password',
           'Update your account password',
           () => _navigateToChangePassword(),
-        ),        
+        ),
       ],
     );
   }
@@ -174,18 +183,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             themeProvider.toggleTheme();
           },
         ),
-        _buildDropdownItem(
-          Icons.attach_money_outlined,
-          'Currency',
-          'Only UGX available for now',
-          _selectedCurrency,
-          ['UGX']
-        ),
+        _buildDropdownItem(Icons.attach_money_outlined, 'Currency', '$_selectedCurrency is active', _selectedCurrency, ['UGX', 'USD'], (value) async {
+          final SharedPreferences prefs = await SharedPreferences.getInstance();
+          Response response = await ApiClient.get("/currency");
+          if (response.statusCode == 200 || response.statusCode == 201) {
+            if (response.data["data"] != null) {
+              int currencyValue = response.data["data"]["value"];
+              await prefs.setInt("currencyValue", currencyValue);
+              await prefs.setString("currency", value ?? "UGX");
+              setState(() {
+                _selectedCurrency = value ?? "UGX";
+              });
+            } else {
+              CustomSnackBar.showInfo(context, "Sorr, failed to update the currency.\nCurrency hasn't been set yet by Pearl Nest Estates.");
+            }
+          } else {
+            CustomSnackBar.showError(context, "Sorr, failed to update the currency.\nPlease try again later");
+          }
+        }),
       ],
     );
   }
-
- 
 
   Widget _buildSupportSection() {
     return _buildSection(
@@ -229,7 +247,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Learn about our privacy practices',
           () => _navigateToPrivacyPolicy(),
         ),
-        
       ],
     );
   }
@@ -371,7 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String subtitle,
     String value,
     List<String> options,
-    //ValueChanged<String?> onChanged,
+    ValueChanged<String?> onChanged,
   ) {
     return ListTile(
       leading: Container(
@@ -411,13 +428,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: value,
-
             //disabled updating currency
-            onChanged: (value) {},
+            onChanged: onChanged,
             dropdownColor: AppTheme.getCardColor(context),
             style: TextStyle(color: AppTheme.getTextColor(context)),
             iconEnabledColor: AppTheme.primaryblue,
-            items: options.map((String option) {
+            items: options.toSet().map((String option) {
               return DropdownMenuItem<String>(
                 value: option,
                 child: Text(option),
@@ -539,7 +555,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Method to update currency preference
   // Future<void> _updateCurrencyPreference(String currency) async {
-   
+
   //   // Update local state first for immediate UI feedback
   //   final previousCurrency = _selectedCurrency;
   //   setState(() {
@@ -549,8 +565,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   //   try {
   //     // Call the updateCurrency method
   //     final result = await AuthService.updateCurrency(currency: currency);
-      
-     
+
   //     if (result['success'] == true) {
   //       //print('✅ SettingsScreen: Currency update successful');
   //       // Show success feedback
@@ -559,7 +574,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   //         'Currency updated to $currency',
   //       );
   //     } else {
-        
+
   //       // Revert the local change if update failed
   //       setState(() {
   //         _selectedCurrency = previousCurrency;
@@ -582,8 +597,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   //     );
   //   }
   // }
-
- 
 
   void _navigateToHelpCenter() {
     Navigator.push(
@@ -627,8 +640,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
- 
 
   void _navigateToChangePassword() {
     Navigator.push(

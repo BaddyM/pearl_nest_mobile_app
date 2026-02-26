@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class BookingConfirmationScreen extends StatelessWidget {
@@ -96,7 +97,7 @@ class BookingConfirmationScreen extends StatelessWidget {
             SizedBox(height: 16),
             _buildDetailRow('Property', property.title),
             _buildDetailRow('Location', property.address),
-            _buildDetailRow('Price', 'UGX${property.price.toStringAsFixed(0)} ${property.priceType}'),
+            _buildDetailRow('Price', '${ProfileService().currencyConverter(price: property.price.toInt())} ${property.priceType}'),
             _buildDetailRow('Landlord', property.landlordName),
             _buildDetailRow('Contact', property.landlordPhone),
             SizedBox(height: 32),
@@ -130,45 +131,43 @@ class BookingConfirmationScreen extends StatelessWidget {
   }
 
   Widget _buildDetailRow(String label, String value) {
-    return Builder(
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: 16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 100,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.getSecondaryTextColor(context),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Text(
-                ': ',
+    return Builder(builder: (context) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 100,
+              child: Text(
+                label,
                 style: TextStyle(
                   fontSize: 16,
                   color: AppTheme.getSecondaryTextColor(context),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              Expanded(
-                child: Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.getTextColor(context),
-                    fontWeight: FontWeight.w600,
-                  ),
+            ),
+            Text(
+              ': ',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppTheme.getSecondaryTextColor(context),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.getTextColor(context),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
-        );
-      }
-    );
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
