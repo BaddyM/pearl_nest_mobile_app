@@ -46,8 +46,8 @@ class BookingService {
   /// Create a new booking
   static Future<Map<String, dynamic>> createBooking({
     required String propertyId,
-    required String checkInDate,
-    required String checkOutDate,
+    String? checkInDate,
+    String? checkOutDate,
     required int deposit,
   }) async {
     try {
@@ -138,12 +138,12 @@ class BookingService {
 
       _logDioResponse(endpoint, response);
 
+      print("statusCode: ${response.statusCode}");
+
       if (response.statusCode == 200) {
         final data = response.data;
         if (data['success'] == true && data['data'] != null) {
           final bookings = (data['data'] as List).map((json) => Booking.fromApiJson(json)).toList();
-
-          //debugPrint('🏨 Successfully fetched ${bookings.length} bookings');
           return bookings;
         } else {
           //debugPrint('🏨 API returned success: false or no data');
@@ -159,8 +159,9 @@ class BookingService {
           statusCode: response.statusCode,
         );
       }
-    } catch (e) {
-      _logError('fetch bookings', e);
+    } catch (e, trace) {
+      print("Error:$e");
+      print("Location:$trace");
       if (e is BookingException) {
         rethrow;
       }
@@ -170,7 +171,7 @@ class BookingService {
 
   /// Fetch only pending bookings
   static Future<List<Booking>> fetchPendingBookings() async {
-    final bookings = await fetchBookings(status: 'PENDING');
+    final bookings = await fetchBookings();
     // Additional client-side filter to ensure only pending bookings are returned
     final pendingOnly = bookings.where((booking) => booking.status == BookingStatus.pending).toList();
 

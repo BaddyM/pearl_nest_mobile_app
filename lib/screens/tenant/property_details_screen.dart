@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -634,240 +635,236 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
   // Initiate payment for a pending booking
   Future<void> _initiatePayment() async {
-    if (_pendingBookingForProperty == null) {
-      CustomSnackBar.showWarning(context, "No pending booking found for this property.");
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BookingsListScreen(
+          user: widget.user,
+        ),
+      ),
+    );
+    // if (_pendingBookingForProperty == null) {
+    //   CustomSnackBar.showWarning(context, "No pending booking found for this property.");
+    //   return;
+    // }
 
-      return;
-    }
+    // // First show dialog to get payment amount
+    // final double? paymentAmount = await _showPaymentAmountDialog();
 
-    // First show dialog to get payment amount
-    final double? paymentAmount = await _showPaymentAmountDialog();
+    // if (paymentAmount == null) {
+    //   // User cancelled the dialog
+    //   return;
+    // }
 
-    if (paymentAmount == null) {
-      // User cancelled the dialog
-      return;
-    }
+    // try {
+    //   // Show loading dialog
+    //   showDialog(
+    //     context: context,
+    //     barrierDismissible: false,
+    //     builder: (BuildContext context) {
+    //       return AlertDialog(
+    //         backgroundColor: AppTheme.getCardColor(context),
+    //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    //         content: Column(
+    //           mainAxisSize: MainAxisSize.min,
+    //           children: [
+    //             CircularProgressIndicator(color: AppTheme.primaryblue),
+    //             SizedBox(height: 20),
+    //             Text(
+    //               'Setting up payment...',
+    //               style: TextStyle(
+    //                 color: AppTheme.getTextColor(context),
+    //                 fontSize: 16,
+    //               ),
+    //             ),
+    //           ],
+    //         ),
+    //       );
+    //     },
+    //   );
 
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            backgroundColor: AppTheme.getCardColor(context),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: AppTheme.primaryblue),
-                SizedBox(height: 20),
-                Text(
-                  'Setting up payment...',
-                  style: TextStyle(
-                    color: AppTheme.getTextColor(context),
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      );
+    //   // Validate user ID before making payment request
+    //   if (widget.user.id.isEmpty) {
+    //     // Close loading dialog
+    //     if (mounted) {
+    //       Navigator.of(context).pop();
+    //     }
 
-      //debugPrint('💳 Initiating payment for booking: ${_pendingBookingForProperty!.id} with amount: UGX ${NumberFormat('#,##0').format(paymentAmount)}');
+    //     //debugPrint('❌ User ID is empty - attempting to get from AuthService');
 
-      // Debug user ID to identify the issue
-      //debugPrint('🔍 User ID validation:');
-      //debugPrint('   - widget.user.id: "${widget.user.id}"');
-      //debugPrint('   - widget.user.id.isEmpty: ${widget.user.id.isEmpty}');
-      //debugPrint('   - widget.user.id.length: ${widget.user.id.length}');
-      //debugPrint('   - widget.user.name: "${widget.user.name}"');
-      //debugPrint('   - widget.user.email: "${widget.user.email}"');
+    //     // Try to get user ID from AuthService as fallback
+    //     final currentUserId = await AuthService.getUserId();
+    //     //debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
 
-      // Validate user ID before making payment request
-      if (widget.user.id.isEmpty) {
-        // Close loading dialog
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
+    //     if (currentUserId == null || currentUserId.isEmpty) {
+    //       _showPaymentError('User session invalid. Please logout and login again.');
+    //       return;
+    //     }
 
-        //debugPrint('❌ User ID is empty - attempting to get from AuthService');
+    //     //debugPrint('✅ Using fallback user ID: $currentUserId');
 
-        // Try to get user ID from AuthService as fallback
-        final currentUserId = await AuthService.getUserId();
-        //debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
+    //     // Show loading dialog again
+    //     showDialog(
+    //       context: context,
+    //       barrierDismissible: false,
+    //       builder: (BuildContext context) {
+    //         return AlertDialog(
+    //           backgroundColor: AppTheme.getCardColor(context),
+    //           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    //           content: Column(
+    //             mainAxisSize: MainAxisSize.min,
+    //             children: [
+    //               CircularProgressIndicator(color: AppTheme.primaryblue),
+    //               SizedBox(height: 20),
+    //               Text(
+    //                 'Setting up payment...',
+    //                 style: TextStyle(
+    //                   color: AppTheme.getTextColor(context),
+    //                   fontSize: 16,
+    //                 ),
+    //               ),
+    //             ],
+    //           ),
+    //         );
+    //       },
+    //     );
 
-        if (currentUserId == null || currentUserId.isEmpty) {
-          _showPaymentError('User session invalid. Please logout and login again.');
-          return;
-        }
+    //     // Create payment with the fallback user ID
+    //     final paymentResult = await PaymentService.createPayment(
+    //       userId: currentUserId,
+    //       bookingId: _pendingBookingForProperty!.id,
+    //       propertyId: widget.property.id,
+    //       amount: paymentAmount,
+    //     );
 
-        //debugPrint('✅ Using fallback user ID: $currentUserId');
+    //     // Close loading dialog
+    //     if (mounted) {
+    //       Navigator.of(context).pop();
+    //     }
 
-        // Show loading dialog again
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              backgroundColor: AppTheme.getCardColor(context),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(color: AppTheme.primaryblue),
-                  SizedBox(height: 20),
-                  Text(
-                    'Setting up payment...',
-                    style: TextStyle(
-                      color: AppTheme.getTextColor(context),
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+    //     if (paymentResult['success'] == true) {
+    //       final String? redirectUrl = paymentResult['redirectUrl'];
+    //       final String? orderTrackingId = paymentResult['orderTrackingId'];
+    //       final String? merchantReference = paymentResult['merchantReference'];
 
-        // Create payment with the fallback user ID
-        final paymentResult = await PaymentService.createPayment(
-          userId: currentUserId,
-          bookingId: _pendingBookingForProperty!.id,
-          propertyId: widget.property.id,
-          amount: paymentAmount,
-        );
+    //       if (redirectUrl != null && orderTrackingId != null && merchantReference != null) {
+    //         // Navigate to payment screen
+    //         final bool? paymentSuccess = await Navigator.push<bool>(
+    //           context,
+    //           MaterialPageRoute(
+    //             builder: (context) => PaymentScreen(
+    //               redirectUrl: redirectUrl,
+    //               orderTrackingId: orderTrackingId,
+    //               merchantReference: merchantReference,
+    //               propertyTitle: widget.property.title,
+    //               amount: paymentAmount,
+    //               user: widget.user,
+    //             ),
+    //           ),
+    //         );
 
-        // Close loading dialog
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
+    //         if (paymentSuccess == true) {
+    //           // Payment completed successfully, reload pending bookings
+    //           _loadPendingBookings();
 
-        if (paymentResult['success'] == true) {
-          final String? redirectUrl = paymentResult['redirectUrl'];
-          final String? orderTrackingId = paymentResult['orderTrackingId'];
-          final String? merchantReference = paymentResult['merchantReference'];
+    //           // Show success message and navigate to home screen
+    //           ScaffoldMessenger.of(context).showSnackBar(
+    //             SnackBar(
+    //               content: Text('Payment completed successfully!', style: TextStyle(color: AppTheme.whiteColor)),
+    //               backgroundColor: Colors.green,
+    //               behavior: SnackBarBehavior.floating,
+    //               margin: EdgeInsets.all(16),
+    //               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    //             ),
+    //           );
 
-          if (redirectUrl != null && orderTrackingId != null && merchantReference != null) {
-            // Navigate to payment screen
-            final bool? paymentSuccess = await Navigator.push<bool>(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PaymentScreen(
-                  redirectUrl: redirectUrl,
-                  orderTrackingId: orderTrackingId,
-                  merchantReference: merchantReference,
-                  propertyTitle: widget.property.title,
-                  amount: paymentAmount,
-                  user: widget.user,
-                ),
-              ),
-            );
+    //           // Navigate back to home screen after a brief delay
+    //           Future.delayed(Duration(seconds: 2), () {
+    //             if (mounted) {
+    //               Navigator.of(context).popUntil((route) => route.isFirst);
+    //             }
+    //           });
+    //         }
+    //       } else {
+    //         _showPaymentError('Payment setup incomplete. Please try again.');
+    //       }
+    //     } else {
+    //       _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
+    //     }
 
-            if (paymentSuccess == true) {
-              // Payment completed successfully, reload pending bookings
-              _loadPendingBookings();
+    //     return; // Return early since we handled the payment with fallback ID
+    //   }
 
-              // Show success message and navigate to home screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Payment completed successfully!', style: TextStyle(color: AppTheme.whiteColor)),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              );
+    //   // Create payment with the user-specified amount
+    //   final paymentResult = await PaymentService.createPayment(
+    //     userId: widget.user.id,
+    //     bookingId: _pendingBookingForProperty!.id,
+    //     propertyId: widget.property.id,
+    //     amount: paymentAmount, // Use the user-specified amount instead of widget.property.price
+    //   );
 
-              // Navigate back to home screen after a brief delay
-              Future.delayed(Duration(seconds: 2), () {
-                if (mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
-              });
-            }
-          } else {
-            _showPaymentError('Payment setup incomplete. Please try again.');
-          }
-        } else {
-          _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
-        }
+    //   // Close loading dialog
+    //   if (mounted) {
+    //     Navigator.of(context).pop();
+    //   }
 
-        return; // Return early since we handled the payment with fallback ID
-      }
+    //   if (paymentResult['success'] == true) {
+    //     final String? redirectUrl = paymentResult['redirectUrl'];
+    //     final String? orderTrackingId = paymentResult['orderTrackingId'];
+    //     final String? merchantReference = paymentResult['merchantReference'];
 
-      // Create payment with the user-specified amount
-      final paymentResult = await PaymentService.createPayment(
-        userId: widget.user.id,
-        bookingId: _pendingBookingForProperty!.id,
-        propertyId: widget.property.id,
-        amount: paymentAmount, // Use the user-specified amount instead of widget.property.price
-      );
+    //     if (redirectUrl != null && orderTrackingId != null && merchantReference != null) {
+    //       // Navigate to payment screen
+    //       final bool? paymentSuccess = await Navigator.push<bool>(
+    //         context,
+    //         MaterialPageRoute(
+    //           builder: (context) => PaymentScreen(
+    //             redirectUrl: redirectUrl,
+    //             orderTrackingId: orderTrackingId,
+    //             merchantReference: merchantReference,
+    //             propertyTitle: widget.property.title,
+    //             amount: paymentAmount, // Use the user-specified amount
+    //             user: widget.user,
+    //           ),
+    //         ),
+    //       );
 
-      // Close loading dialog
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+    //       if (paymentSuccess == true) {
+    //         // Payment completed successfully, reload pending bookings
+    //         _loadPendingBookings();
 
-      if (paymentResult['success'] == true) {
-        final String? redirectUrl = paymentResult['redirectUrl'];
-        final String? orderTrackingId = paymentResult['orderTrackingId'];
-        final String? merchantReference = paymentResult['merchantReference'];
+    //         // Show success message and navigate to home screen
+    //         ScaffoldMessenger.of(context).showSnackBar(
+    //           SnackBar(
+    //             content: Text('Payment completed successfully!', style: TextStyle(color: AppTheme.whiteColor)),
+    //             backgroundColor: Colors.green,
+    //             behavior: SnackBarBehavior.floating,
+    //             margin: EdgeInsets.all(16),
+    //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    //           ),
+    //         );
 
-        if (redirectUrl != null && orderTrackingId != null && merchantReference != null) {
-          // Navigate to payment screen
-          final bool? paymentSuccess = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PaymentScreen(
-                redirectUrl: redirectUrl,
-                orderTrackingId: orderTrackingId,
-                merchantReference: merchantReference,
-                propertyTitle: widget.property.title,
-                amount: paymentAmount, // Use the user-specified amount
-                user: widget.user,
-              ),
-            ),
-          );
+    //         // Navigate back to home screen after a brief delay
+    //         Future.delayed(Duration(seconds: 2), () {
+    //           if (mounted) {
+    //             Navigator.of(context).popUntil((route) => route.isFirst);
+    //           }
+    //         });
+    //       }
+    //     } else {
+    //       _showPaymentError('Payment setup incomplete. Please try again.');
+    //     }
+    //   } else {
+    //     _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
+    //   }
+    // } catch (e) {
+    //   // Close loading dialog if still showing
+    //   if (mounted) {
+    //     Navigator.of(context).pop();
+    //   }
 
-          if (paymentSuccess == true) {
-            // Payment completed successfully, reload pending bookings
-            _loadPendingBookings();
-
-            // Show success message and navigate to home screen
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Payment completed successfully!', style: TextStyle(color: AppTheme.whiteColor)),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            );
-
-            // Navigate back to home screen after a brief delay
-            Future.delayed(Duration(seconds: 2), () {
-              if (mounted) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              }
-            });
-          }
-        } else {
-          _showPaymentError('Payment setup incomplete. Please try again.');
-        }
-      } else {
-        _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
-      }
-    } catch (e) {
-      // Close loading dialog if still showing
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-
-      //debugPrint('❌ Payment initiation error: $e');
-      _showPaymentError('An error occurred while setting up payment. Please try again.');
-    }
+    //   //debugPrint('❌ Payment initiation error: $e');
+    //   _showPaymentError('An error occurred while setting up payment. Please try again.');
+    // }
   }
 
   // Show payment error dialog
@@ -1134,7 +1131,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     );
   }
 
-  void _showBookingConfirmationDialog({final bool? isSale, final int deposit = 0}) {
+  void _showBookingConfirmationDialog({final bool isRent = false, final int deposit = 0}) {
     // Local state for the dialog
     DateTime? localCheckInDate = _checkInDate;
     DateTime? localCheckOutDate = _checkOutDate;
@@ -1230,7 +1227,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                               Row(
                                 children: [
                                   Text(
-                                    'UGX${NumberFormat('#,##0').format(widget.property.price)} ${widget.property.priceType}',
+                                    '${ProfileService().currencyConverter(price: widget.property.price.toInt())} ${widget.property.priceType}',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -1244,147 +1241,151 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         ),
                         SizedBox(height: 16),
 
-                        // Date selection
-                        Text(
-                          'Select Dates',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.getTextColor(context),
-                          ),
-                        ),
-                        SizedBox(height: 12),
+                        if (isRent)
+                          Column(
+                            children: [
+                              // Date selection
+                              Text(
+                                'Select Dates',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.getTextColor(context),
+                                ),
+                              ),
+                              SizedBox(height: 12),
 
-                        // Check-in date
-                        GestureDetector(
-                          onTap: () async {
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: localCheckInDate ?? DateTime.now().add(Duration(days: 1)),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(Duration(days: 365)),
-                              builder: (context, child) {
-                                return Theme(
-                                  data: Theme.of(context).copyWith(
-                                    colorScheme: ColorScheme.light(
-                                      primary: AppTheme.primaryblue,
-                                      onPrimary: AppTheme.whiteColor,
-                                      surface: AppTheme.getCardColor(context),
-                                      onSurface: AppTheme.getTextColor(context),
-                                    ),
+                              // Check-in date
+                              GestureDetector(
+                                onTap: () async {
+                                  final DateTime? picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: localCheckInDate ?? DateTime.now().add(Duration(days: 1)),
+                                    firstDate: DateTime.now(),
+                                    lastDate: DateTime.now().add(Duration(days: 365)),
+                                    builder: (context, child) {
+                                      return Theme(
+                                        data: Theme.of(context).copyWith(
+                                          colorScheme: ColorScheme.light(
+                                            primary: AppTheme.primaryblue,
+                                            onPrimary: AppTheme.whiteColor,
+                                            surface: AppTheme.getCardColor(context),
+                                            onSurface: AppTheme.getTextColor(context),
+                                          ),
+                                        ),
+                                        child: child!,
+                                      );
+                                    },
+                                  );
+
+                                  if (picked != null) {
+                                    setDialogState(() {
+                                      localCheckInDate = picked;
+                                      // Reset checkout date if it's before the new checkin date
+                                      if (localCheckOutDate != null && localCheckOutDate!.isBefore(picked)) {
+                                        localCheckOutDate = null;
+                                      }
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: AppTheme.lightGreyColor),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: child!,
-                                );
-                              },
-                            );
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        localCheckInDate != null ? 'Check-in: ${DateFormat('MMM dd, yyyy').format(localCheckInDate!)}' : 'Select check-in date',
+                                        style: TextStyle(
+                                          color: localCheckInDate != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 8),
 
-                            if (picked != null) {
-                              setDialogState(() {
-                                localCheckInDate = picked;
-                                // Reset checkout date if it's before the new checkin date
-                                if (localCheckOutDate != null && localCheckOutDate!.isBefore(picked)) {
-                                  localCheckOutDate = null;
-                                }
-                              });
-                            }
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: AppTheme.lightGreyColor),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  localCheckInDate != null ? 'Check-in: ${DateFormat('MMM dd, yyyy').format(localCheckInDate!)}' : 'Select check-in date',
-                                  style: TextStyle(
-                                    color: localCheckInDate != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
+                              // Check-out date
+                              GestureDetector(
+                                onTap: () async {
+                                  final DateTime minDate = localCheckInDate?.add(Duration(days: 1)) ?? DateTime.now().add(Duration(days: 2));
+
+                                  final DateTime? picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: localCheckOutDate ?? minDate,
+                                    firstDate: minDate,
+                                    lastDate: DateTime.now().add(Duration(days: 365)),
+                                    builder: (context, child) {
+                                      return Theme(
+                                        data: Theme.of(context).copyWith(
+                                          colorScheme: ColorScheme.light(
+                                            primary: AppTheme.primaryblue,
+                                            onPrimary: AppTheme.whiteColor,
+                                            surface: AppTheme.getCardColor(context),
+                                            onSurface: AppTheme.getTextColor(context),
+                                          ),
+                                        ),
+                                        child: child!,
+                                      );
+                                    },
+                                  );
+
+                                  if (picked != null) {
+                                    setDialogState(() {
+                                      localCheckOutDate = picked;
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: AppTheme.lightGreyColor),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        localCheckOutDate != null ? 'Check-out: ${DateFormat('MMM dd, yyyy').format(localCheckOutDate!)}' : 'Select check-out date',
+                                        style: TextStyle(
+                                          color: localCheckOutDate != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (localCheckInDate != null && localCheckOutDate != null) ...[
+                                SizedBox(height: 12),
+                                Container(
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        '${localCheckOutDate!.difference(localCheckInDate!).inDays} nights',
+                                        style: TextStyle(
+                                          color: AppTheme.primaryblue,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
-                            ),
+                            ],
                           ),
-                        ),
-                        SizedBox(height: 8),
-
-                        // Check-out date
-                        GestureDetector(
-                          onTap: () async {
-                            final DateTime minDate = localCheckInDate?.add(Duration(days: 1)) ?? DateTime.now().add(Duration(days: 2));
-
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: localCheckOutDate ?? minDate,
-                              firstDate: minDate,
-                              lastDate: DateTime.now().add(Duration(days: 365)),
-                              builder: (context, child) {
-                                return Theme(
-                                  data: Theme.of(context).copyWith(
-                                    colorScheme: ColorScheme.light(
-                                      primary: AppTheme.primaryblue,
-                                      onPrimary: AppTheme.whiteColor,
-                                      surface: AppTheme.getCardColor(context),
-                                      onSurface: AppTheme.getTextColor(context),
-                                    ),
-                                  ),
-                                  child: child!,
-                                );
-                              },
-                            );
-
-                            if (picked != null) {
-                              setDialogState(() {
-                                localCheckOutDate = picked;
-                              });
-                            }
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: AppTheme.lightGreyColor),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  localCheckOutDate != null ? 'Check-out: ${DateFormat('MMM dd, yyyy').format(localCheckOutDate!)}' : 'Select check-out date',
-                                  style: TextStyle(
-                                    color: localCheckOutDate != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        if (localCheckInDate != null && localCheckOutDate != null) ...[
-                          SizedBox(height: 12),
-                          Container(
-                            padding: EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
-                                SizedBox(width: 8),
-                                Text(
-                                  '${localCheckOutDate!.difference(localCheckInDate!).inDays} nights',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryblue,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
 
                         SizedBox(height: 16),
                         Text(
@@ -3582,7 +3583,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         ? null
                         : hasPendingBooking
                             ? _initiatePayment
-                            : () => _showBookingConfirmationDialog(deposit: widget.property.deposit.toInt()),
+                            : () => _showBookingConfirmationDialog(isRent: widget.property.isRent, deposit: widget.property.deposit.toInt()),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isLoadingPendingBookings || !isPropertyAvailable
                           ? Colors.grey
@@ -3717,8 +3718,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     // }
 
     // Format dates as ISO 8601 strings for API
-    final checkInFormatted = DateFormat('yyyy-MM-dd').format(_checkInDate!);
-    final checkOutFormatted = DateFormat('yyyy-MM-dd').format(_checkOutDate!);
+    final checkInFormatted = _checkInDate != null ? DateFormat('yyyy-MM-dd').format(_checkInDate!) : null;
+    final checkOutFormatted = _checkOutDate != null ? DateFormat('yyyy-MM-dd').format(_checkOutDate!) : null;
 
     _bookingBloc.add(BookingCreateRequested(
       propertyId: widget.property.id,

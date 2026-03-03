@@ -4,6 +4,7 @@ import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/screens/landlord/landlord_property_upload_screen.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/auth_service.dart';
@@ -512,7 +513,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
     if (price >= 1000000) {
       return '${(price / 1000000).toStringAsFixed(1)}M';
     } else {
-      return NumberFormat('#,##0').format(price);
+      return ProfileService().currencyConverter(price: price.toInt());
     }
   }
 
@@ -669,7 +670,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       Row(
                         children: [
                           Text(
-                            "UGX ${_formatLargePrice(property.price)}",
+                            "${_formatLargePrice(property.price)}",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -999,7 +1000,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'UGX ${NumberFormat('#,###').format(property.price.toInt())}',
+                              '${ProfileService().currencyConverter(price: property.price.toInt())}',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -1428,7 +1429,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                             Text(
-                              'UGX ${NumberFormat('#,###').format(property.price.toInt())}',
+                              '${ProfileService().currencyConverter(price: property.price.toInt())}',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -1466,7 +1467,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                             Text(
-                              'UGX ${NumberFormat('#,###').format(property.deposit.toInt())}',
+                              '${ProfileService().currencyConverter(price: property.deposit.toInt())}',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,

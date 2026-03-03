@@ -50,7 +50,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       _isConnected = ChatService.isConnected;
 
-      //debugPrint('🔍 ChatBloc: Chat initialized successfully, connected: $_isConnected');
+      debugPrint('🔍 ChatBloc: Chat initialized successfully, connected: $_isConnected');
 
       emit(ChatConnected(
         messages: List.from(_messages),

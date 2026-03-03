@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/booking_service.dart';
+import 'package:pearlnest/models/booking.dart';
 import '../../apis/api_client.dart';
 import 'booking_event.dart';
 import 'booking_state.dart';
@@ -50,7 +51,6 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     Emitter<BookingState> emit,
   ) async {
     emit(const BookingLoading());
-    _logState('CREATE_REQUESTED', state);
 
     try {
       // Validate input data
@@ -117,14 +117,16 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     emit(const BookingLoading());
     _logState('FETCH_BOOKINGS', state);
     try {
-      final bookings = await BookingService.fetchBookings();
+      List<Booking> bookings = await BookingService.fetchBookings();
       if (bookings.isNotEmpty) {
         emit(BookingLoaded(bookings: bookings));
       } else {
         emit(BookingEmpty());
       }
       _logState('LOADED', state);
-    } catch (e) {
+    } catch (e, trace) {
+      print("Error: $e");
+      print("Location: $trace");
       emit(BookingError(message: 'Failed to fetch bookings: $e'));
       _logState('ERROR', state);
     }
@@ -174,8 +176,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   /// Validate booking data before sending to API
   Map<String, String> _validateBookingData(
     String propertyId,
-    String checkInDate,
-    String checkOutDate,
+    String? checkInDate,
+    String? checkOutDate,
   ) {
     final errors = <String, String>{};
 
@@ -185,9 +187,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     }
 
     // Validate check-in date
-    if (checkInDate.trim().isEmpty) {
-      errors['checkInDate'] = 'Check-in date is required';
-    } else {
+    if (checkInDate != null && checkOutDate != null) {
       try {
         final checkIn = DateTime.parse(checkInDate);
         final now = DateTime.now();
@@ -197,18 +197,14 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       } catch (e) {
         errors['checkInDate'] = 'Invalid check-in date format';
       }
-    }
 
-    // Validate check-out date
-    if (checkOutDate.trim().isEmpty) {
-      errors['checkOutDate'] = 'Check-out date is required';
-    } else {
+      // Validate check-out date
       try {
         final checkOut = DateTime.parse(checkOutDate);
 
         // If check-in date is valid, compare with check-out
         if (!errors.containsKey('checkInDate')) {
-          final checkIn = DateTime.parse(checkInDate);
+          final checkIn = DateTime.parse(checkInDate!);
           if (checkOut.isBefore(checkIn) || checkOut.isAtSameMomentAs(checkIn)) {
             errors['checkOutDate'] = 'Check-out date must be after check-in date';
           }

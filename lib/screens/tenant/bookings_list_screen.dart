@@ -94,7 +94,7 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
       children: [
         _buildHeader(),
         SizedBox(
-          height: MediaQuery.of(context).size.height * 0.73,
+          height: MediaQuery.of(context).size.height * 0.85,
           child: RefreshIndicator(
             onRefresh: onRefresh,
             child: SingleChildScrollView(
@@ -228,6 +228,7 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
         children: [
           Row(
             children: [
+              BackButton(),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,24 +245,6 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                       ),
                     ),
                   ],
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(responsive['borderRadius'] - 4),
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _isGridView = !_isGridView;
-                    });
-                  },
-                  icon: Icon(
-                    _isGridView ? Icons.view_list : Icons.grid_view,
-                    color: AppTheme.primaryblue,
-                    size: responsive['isSmallScreen'] ? 20 : 24,
-                  ),
                 ),
               ),
             ],

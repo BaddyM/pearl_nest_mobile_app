@@ -73,7 +73,7 @@ class ChatService {
 
       // Socket configuration
       final socketUrl = AppConfig.getCurrentBaseUrl();
-      //print("Socket URL = ${socketUrl}");
+      // print("Socket URL = ${socketUrl}");
 
       // Create socket instance
       //debugPrint('🔧 Creating socket instance...');
@@ -153,11 +153,11 @@ class ChatService {
     });
 
     _socket!.onConnectError((error) {
-      //debugPrint('');
-      //debugPrint('❌ === SOCKET CONNECTION ERROR ===');
-      //debugPrint('   - Error: $error');
-      //debugPrint('   - Error type: ${error.runtimeType}');
-      //debugPrint('   - Connection attempt failed');
+      debugPrint('');
+      debugPrint('❌ === SOCKET CONNECTION ERROR ===');
+      debugPrint('   - Error: $error');
+      debugPrint('   - Error type: ${error.runtimeType}');
+      debugPrint('   - Connection attempt failed');
 
       _isConnected = false;
       _connectionStreamController.add(false);
@@ -175,11 +175,11 @@ class ChatService {
     });
 
     _socket!.onError((error) {
-      //debugPrint('');
-      //debugPrint('❌ === SOCKET GENERAL ERROR ===');
-      //debugPrint('   - Error: $error');
-      //debugPrint('   - Error type: ${error.runtimeType}');
-      //debugPrint('   - Error timestamp: ${DateTime.now()}');
+      debugPrint('');
+      debugPrint('❌ === SOCKET GENERAL ERROR ===');
+      debugPrint('   - Error: $error');
+      debugPrint('   - Error type: ${error.runtimeType}');
+      debugPrint('   - Error timestamp: ${DateTime.now()}');
     });
 
     // Listen for incoming messages with detailed debugging
@@ -200,12 +200,12 @@ class ChatService {
 
     // Listen for register acknowledgment
     _socket!.on('registered', (data) {
-      //debugPrint('');
-      //debugPrint('📝 === REGISTRATION ACKNOWLEDGMENT ===');
-      //debugPrint('   - Acknowledgment time: ${DateTime.now()}');
-      //debugPrint('   - Response data: $data');
-      //debugPrint('   - Data type: ${data.runtimeType}');
-      //debugPrint('   - User successfully registered with server');
+      debugPrint('');
+      debugPrint('📝 === REGISTRATION ACKNOWLEDGMENT ===');
+      debugPrint('   - Acknowledgment time: ${DateTime.now()}');
+      debugPrint('   - Response data: $data');
+      debugPrint('   - Data type: ${data.runtimeType}');
+      debugPrint('   - User successfully registered with server');
     });
 
     // Listen for reconnection events
@@ -217,19 +217,19 @@ class ChatService {
 
       // Re-register user after reconnection
       if (_currentUserId != null && _currentUserId!.isNotEmpty) {
-        //debugPrint('📤 Re-registering user after reconnection...');
-        //debugPrint('   - User ID to re-register: $_currentUserId');
+        debugPrint('📤 Re-registering user after reconnection...');
+        debugPrint('   - User ID to re-register: $_currentUserId');
 
         _socket!.emit('register', _currentUserId);
 
-        //debugPrint('✅ User re-registration event emitted');
-        //debugPrint('   - Event: "register"');
-        //debugPrint('   - Data: $_currentUserId');
+        debugPrint('✅ User re-registration event emitted');
+        debugPrint('   - Event: "register"');
+        debugPrint('   - Data: $_currentUserId');
       } else {
-        //debugPrint('❌ CANNOT RE-REGISTER USER:');
-        //debugPrint('   - User ID is null: ${_currentUserId == null}');
-        //debugPrint('   - User ID is empty: ${_currentUserId?.isEmpty ?? true}');
-        //debugPrint('   - Current user ID value: $_currentUserId');
+        debugPrint('❌ CANNOT RE-REGISTER USER:');
+        debugPrint('   - User ID is null: ${_currentUserId == null}');
+        debugPrint('   - User ID is empty: ${_currentUserId?.isEmpty ?? true}');
+        debugPrint('   - Current user ID value: $_currentUserId');
       }
     });
 
@@ -237,12 +237,12 @@ class ChatService {
     _socket!.onAny((event, data) {
       if (event != 'sendMessage' && event != 'registered') {
         // Don't duplicate already logged events
-        //debugPrint('');
-        //debugPrint('🔍 === UNKNOWN SOCKET EVENT ===');
-        //debugPrint('   - Event name: $event');
-        //debugPrint('   - Event data: $data');
-        //debugPrint('   - Event timestamp: ${DateTime.now()}');
-        //debugPrint('   - Data type: ${data.runtimeType}');
+        debugPrint('');
+        debugPrint('🔍 === UNKNOWN SOCKET EVENT ===');
+        debugPrint('   - Event name: $event');
+        debugPrint('   - Event data: $data');
+        debugPrint('   - Event timestamp: ${DateTime.now()}');
+        debugPrint('   - Data type: ${data.runtimeType}');
       }
     });
 
@@ -321,14 +321,6 @@ class ChatService {
         "type": isMedia != null ? "media" : "text",
       };
 
-      //debugPrint('� Message Data Package:');
-      //debugPrint('   - fromUserId: $_currentUserId');
-      //debugPrint('   - toUserId: $toUserId');
-      //debugPrint('   - text: "$text"');
-      //debugPrint('   - timestamp: $timestamp');
-      //debugPrint('   - timestamp as DateTime: ${DateTime.fromMillisecondsSinceEpoch(timestamp)}');
-      //debugPrint('   - full messageData: $messageData');
-
       //debugPrint('📡 Emitting "sendMessage" event to socket...');
       final emitStartTime = DateTime.now();
 
@@ -336,11 +328,6 @@ class ChatService {
 
       final emitEndTime = DateTime.now();
       final emitDuration = emitEndTime.difference(emitStartTime);
-
-      //debugPrint('✅ Message event emitted successfully');
-      //debugPrint('   - Emit duration: ${emitDuration.inMilliseconds}ms');
-      //debugPrint('   - Event: "sendMessage"');
-      //debugPrint('   - Socket ID used: ${_socket!.id}');
 
       // Create a local message for immediate UI update
       final localMessage = ChatMessage(
@@ -413,7 +400,7 @@ class ChatService {
     final userId = prefs.getString("user_id");
 
     try {
-      //debugPrint('📤 Making GET request to /chat/adminList...with role $role');
+      debugPrint('📤 Making GET request to /chat/adminList...with role $role');
       final response = (role == "ADMIN") ? await ApiClient.get('/chat/userList/$userId') : await ApiClient.get('/chat/adminList');
 
       stopwatch.stop();
@@ -545,7 +532,7 @@ class ChatService {
       //debugPrint('✅ Created conversation with admin: ${conversation.landlordName}');
       return conversation;
     } catch (e) {
-      //debugPrint('❌ Error creating conversation with admin: $e');
+      debugPrint('❌ Error creating conversation with admin: $e');
       return null;
     }
   }

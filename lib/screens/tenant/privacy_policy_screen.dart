@@ -9,8 +9,7 @@ class PrivacyPolicyScreen extends StatefulWidget {
   _PrivacyPolicyScreenState createState() => _PrivacyPolicyScreenState();
 }
 
-class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
-    with SingleTickerProviderStateMixin {
+class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -201,7 +200,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
           _buildSectionHeader('Privacy Policy'),
           // _buildLastUpdated('Last updated: December 2024'),
           SizedBox(height: 20),
-          
+
           _buildSection(
             'Information We Collect',
             [
@@ -212,7 +211,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Location Data: GPS coordinates when you use location-based features',
             ],
           ),
-          
+
           _buildSection(
             'How We Use Your Information',
             [
@@ -224,7 +223,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'To comply with legal obligations and resolve disputes',
             ],
           ),
-          
+
           _buildSection(
             'Information Sharing',
             [
@@ -235,7 +234,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'In connection with a business transfer or acquisition',
             ],
           ),
-          
+
           _buildSection(
             'Data Security',
             [
@@ -246,7 +245,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Incident response procedures for potential breaches',
             ],
           ),
-          
+
           _buildSection(
             'Your Rights',
             [
@@ -258,7 +257,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Restrict certain data processing activities',
             ],
           ),
-          
+
           _buildSection(
             'Cookies and Tracking',
             [
@@ -268,7 +267,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'You can manage cookie preferences in your device settings',
             ],
           ),
-          
+
           _buildSection(
             'Third-Party Services',
             [
@@ -279,7 +278,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Marketing and communication platforms',
             ],
           ),
-          
+
           _buildSection(
             'International Transfers',
             [
@@ -288,7 +287,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Data transfers comply with applicable privacy laws',
             ],
           ),
-          
+
           _buildSection(
             'Children\'s Privacy',
             [
@@ -297,7 +296,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Parents can contact us to remove any child\'s information',
             ],
           ),
-          
+
           _buildContactSection(),
         ],
       ),
@@ -313,7 +312,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
           _buildSectionHeader('Terms and Conditions'),
           // _buildLastUpdated('Last updated: December 2024'),
           SizedBox(height: 20),
-          
+
           _buildSection(
             'Acceptance of Terms',
             [
@@ -323,7 +322,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Continued use constitutes acceptance of updated terms',
             ],
           ),
-          
+
           _buildSection(
             'User Accounts',
             [
@@ -334,7 +333,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'One person may not maintain multiple accounts',
             ],
           ),
-          
+
           _buildSection(
             'Host Responsibilities',
             [
@@ -346,7 +345,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Maintain appropriate insurance coverage',
             ],
           ),
-          
+
           _buildSection(
             'Guest Responsibilities',
             [
@@ -358,7 +357,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Leave properties in clean condition',
             ],
           ),
-          
+
           _buildSection(
             'Booking and Payments',
             [
@@ -369,7 +368,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'We may charge additional fees for platform services',
             ],
           ),
-          
+
           _buildSection(
             'Prohibited Activities',
             [
@@ -381,7 +380,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Circumventing platform fees or policies',
             ],
           ),
-          
+
           _buildSection(
             'Intellectual Property',
             [
@@ -391,7 +390,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Respect the intellectual property rights of others',
             ],
           ),
-          
+
           _buildSection(
             'Limitation of Liability',
             [
@@ -402,7 +401,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'We do not guarantee the accuracy of user-generated content',
             ],
           ),
-          
+
           _buildSection(
             'Dispute Resolution',
             [
@@ -412,7 +411,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Legal action must be brought within one year',
             ],
           ),
-          
+
           _buildSection(
             'Termination',
             [
@@ -422,7 +421,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Some provisions survive termination of the agreement',
             ],
           ),
-          
+
           _buildContactSection(),
         ],
       ),
@@ -438,7 +437,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
           _buildSectionHeader('Cancellation Policy'),
           // _buildLastUpdated('Last updated: December 2024'),
           SizedBox(height: 20),
-          
+
           _buildSection(
             'Overview',
             [
@@ -448,7 +447,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Refund amounts depend on timing and policy type',
             ],
           ),
-          
+
           _buildPolicyTypeSection(
             'Flexible Policy',
             'Full refund 1 day prior to arrival',
@@ -460,7 +459,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
             ],
             Colors.green,
           ),
-          
+
           _buildPolicyTypeSection(
             'Moderate Policy',
             'Full refund 5 days prior to arrival',
@@ -472,7 +471,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
             ],
             Colors.orange,
           ),
-          
+
           _buildPolicyTypeSection(
             'Strict Policy',
             '50% refund up until 1 week prior to arrival',
@@ -484,7 +483,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
             ],
             Colors.red,
           ),
-          
+
           _buildSection(
             'Host Cancellations',
             [
@@ -494,7 +493,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'We will help find alternative accommodations when possible',
             ],
           ),
-          
+
           _buildSection(
             'Extenuating Circumstances',
             [
@@ -506,7 +505,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Documentation may be required for refund consideration',
             ],
           ),
-          
+
           _buildSection(
             'How to Cancel',
             [
@@ -518,7 +517,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Refunds are processed within 5-10 business days',
             ],
           ),
-          
+
           _buildSection(
             'Refund Processing',
             [
@@ -530,7 +529,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'You will receive email confirmation when refund is processed',
             ],
           ),
-          
+
           _buildSection(
             'Modification vs. Cancellation',
             [
@@ -541,7 +540,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'Our support team can assist with modifications',
             ],
           ),
-          
+
           _buildSection(
             'Travel Insurance',
             [
@@ -551,7 +550,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
               'PearlNest does not provide travel insurance directly',
             ],
           ),
-          
+
           _buildContactSection(),
         ],
       ),
@@ -613,33 +612,33 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
           ),
           SizedBox(height: 12),
           ...items.map((item) => Container(
-            margin: EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: EdgeInsets.only(top: 6),
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryblue,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: AppTheme.getTextColor(context),
-                      height: 1.5,
+                margin: EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: EdgeInsets.only(top: 6),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppTheme.getTextColor(context),
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          )),
+              )),
         ],
       ),
     );
@@ -688,33 +687,33 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
           ),
           SizedBox(height: 12),
           ...items.map((item) => Container(
-            margin: EdgeInsets.only(bottom: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: EdgeInsets.only(top: 6),
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.getSecondaryTextColor(context),
-                      height: 1.4,
+                margin: EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: EdgeInsets.only(top: 6),
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.getSecondaryTextColor(context),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          )),
+              )),
         ],
       ),
     );
@@ -760,12 +759,10 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen>
             ),
           ),
           SizedBox(height: 16),
-          _buildContactItem(Icons.email_outlined, 'Email', 'pearlestates@gmail.com'),
+          _buildContactItem(Icons.email_outlined, 'Email', 'pearlnestestates@gmail.com'),
           _buildContactItem(Icons.phone_outlined, 'Phone', '+256791597476'),
-          _buildContactItem(Icons.location_on_outlined, 'Address', 
-            'Kampala Uganda'),
-          _buildContactItem(Icons.access_time_outlined, 'Support Hours', 
-            'Monday - Friday: 9:00 AM - 5:00 PM PST\nWeekends: 10:00 AM - 4:00 PM PST'),
+          _buildContactItem(Icons.location_on_outlined, 'Address', 'Kampala Uganda'),
+          _buildContactItem(Icons.access_time_outlined, 'Support Hours', 'Monday - Friday: 9:00 AM - 5:00 PM PST\nWeekends: 10:00 AM - 4:00 PM PST'),
         ],
       ),
     );

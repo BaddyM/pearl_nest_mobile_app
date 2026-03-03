@@ -43,16 +43,16 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDeveloperCard(),
-            SizedBox(height: 24),
-            _buildContactMethods(context),
-            SizedBox(height: 24),
-            SizedBox(height: 24),
-            _buildFeedbackSection(context),
-          ],
-        ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDeveloperCard(),
+              SizedBox(height: 24),
+              _buildContactMethods(context),
+              SizedBox(height: 24),
+              SizedBox(height: 24),
+              _buildFeedbackSection(context),
+            ],
+          ),
         ),
       ),
     );
@@ -119,7 +119,7 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
             'Email Support',
             'info@developwitheffect.com',
             'Send us an email for detailed inquiries',
-            () => _launchEmail('info@developwitheffect.com'),
+            () => _launchEmail('developwitheffect@gmail.com'),
           ),
           SizedBox(height: 12),
           _buildContactItem(
@@ -128,7 +128,7 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
             'Report Bug',
             'info@developwitheffect.com',
             'Found a bug? Let us know!',
-            () => _launchEmail('info@developwitheffect.com'),
+            () => _launchEmail('developwitheffect@gmail.com'),
           ),
           SizedBox(height: 12),
           _buildContactItem(
@@ -137,7 +137,7 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
             'Feature Request',
             'info@developwitheffect.com',
             'Suggest new features or improvements',
-            () => _launchEmail('info@developwitheffect.com'),
+            () => _launchEmail('developwitheffect@gmail.com'),
           ),
           SizedBox(height: 12),
           _buildContactItem(
@@ -315,7 +315,7 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
       path: email,
       query: 'subject=PearlNest App Inquiry',
     );
-    
+
     if (await canLaunchUrl(emailUri)) {
       await launchUrl(emailUri);
     }
@@ -323,7 +323,7 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
 
   void _launchPhone(String phone) async {
     final Uri phoneUri = Uri(scheme: 'tel', path: phone);
-    
+
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);
     }
@@ -331,7 +331,7 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
 
   void _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
-        
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
@@ -375,18 +375,18 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
     int index,
   ) {
     final random = Random();
-    
+
     // Calculate starting position (center of the button)
     final double startX = startPosition.dx + (buttonSize.width / 2) - 15; // Center horizontally
     final double startY = startPosition.dy + (buttonSize.height / 2) - 15; // Center vertically
-    
+
     // Random variations for more natural animation
     final double horizontalDrift = (random.nextDouble() - 0.5) * 100; // -50 to 50
     final double verticalDistance = 150 + random.nextDouble() * 50; // 150-200px up
     final int animationDelay = index * 100; // Stagger animations
-    
+
     late OverlayEntry overlayEntry;
-    
+
     overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
         return FloatingEmojiWidget(
@@ -408,7 +408,7 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
         );
       },
     );
-    
+
     overlay.insert(overlayEntry);
   }
 }
@@ -437,8 +437,7 @@ class FloatingEmojiWidget extends StatefulWidget {
   State<FloatingEmojiWidget> createState() => _FloatingEmojiWidgetState();
 }
 
-class _FloatingEmojiWidgetState extends State<FloatingEmojiWidget>
-    with SingleTickerProviderStateMixin {
+class _FloatingEmojiWidgetState extends State<FloatingEmojiWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _verticalAnimation;
   late Animation<double> _horizontalAnimation;
@@ -448,7 +447,7 @@ class _FloatingEmojiWidgetState extends State<FloatingEmojiWidget>
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       duration: Duration(milliseconds: 2000),
       vsync: this,

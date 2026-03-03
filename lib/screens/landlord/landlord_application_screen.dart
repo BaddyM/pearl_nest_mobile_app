@@ -563,7 +563,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Accepted formats: PDF, DOC, DOCX • Maximum size: 10MB',
+                      'Accepted formats: PDF, DOC, DOCX • Maximum size: 2MB',
                       style: TextStyle(
                         color: AppTheme.primaryblue.withOpacity(0.7),
                         fontSize: 12,
@@ -682,7 +682,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         // Check file size (10MB limit)
         final fileSize = await file.length();
         final fileSizeMB = fileSize / (1024 * 1024);
-        if (fileSize > 10 * 1024 * 1024) {
+        if (fileSize > 2 * 1024 * 1024) {
           _showErrorSnackBar('File too large. Maximum size is 10MB. Your file is ${fileSizeMB.toStringAsFixed(1)}MB.');
           return;
         }

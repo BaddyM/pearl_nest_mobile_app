@@ -43,6 +43,10 @@ dependencies:
   shorebird_code_push: ^1.1.4
   in_app_review: ^2.0.8
   add_comma: ^0.2.0
+  flutter_chat_core: ^2.0.0
+  flutter_chat_ui: ^2.0.0
+  flutter_chat_types:
+  uuid:
 
 dev_dependencies:
   flutter_test:

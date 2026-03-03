@@ -332,30 +332,30 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
           ],
         ),
       );
+    } else {
+      return ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: messages.length,
+        itemBuilder: (context, index) {
+          final message = messages[index];
+          final isFromCurrentUser = message.fromUserId == widget.currentUser.id.toString();
+          final showTimestamp = _shouldShowTimestamp(index, messages);
+
+          return Column(
+            children: [
+              if (showTimestamp) _buildTimestamp(message.timestamp),
+              MessageBubble(
+                message: _convertToMessage(message, message.messageType!),
+                isFromCurrentUser: isFromCurrentUser,
+                senderAvatar: isFromCurrentUser ? null : widget.conversation.landlordProfilePic,
+                senderName: widget.conversation.landlordName,
+              ),
+            ],
+          );
+        },
+      );
     }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: messages.length,
-      itemBuilder: (context, index) {
-        final message = messages[index];
-        final isFromCurrentUser = message.fromUserId == widget.currentUser.id.toString();
-        final showTimestamp = _shouldShowTimestamp(index, messages);
-
-        return Column(
-          children: [
-            if (showTimestamp) _buildTimestamp(message.timestamp),
-            MessageBubble(
-              message: _convertToMessage(message, message.messageType!),
-              isFromCurrentUser: isFromCurrentUser,
-              senderAvatar: isFromCurrentUser ? null : widget.conversation.landlordProfilePic,
-              senderName: widget.conversation.landlordName,
-            ),
-          ],
-        );
-      },
-    );
   }
 
   bool _shouldShowTimestamp(int index, List<ChatMessage> messages) {
@@ -395,8 +395,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
   }
 
   Widget _buildMessageInput(ChatState state) {
-    final isConnected = state is ChatConnected ? state.isConnected : false;
-    final isLoading = state is ChatLoading || state is ChatMessageSending;
+    final isConnected = state.runtimeType.toString() == "ChatConnected" ? true : false;
+    final isLoading = state.runtimeType.toString() == "ChatLoading" || state.runtimeType.toString() == "ChatMessageSending";
 
     return ChatInput(
       controller: _messageController,
@@ -573,10 +573,6 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     );
   }
 
-  
-
- 
-
   void _showBlockDialog() {
     showDialog(
       context: context,
@@ -690,7 +686,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
   }
 
   Widget _buildConnectionStatus(ChatState state) {
-    final isConnected = state is ChatConnected ? state.isConnected : false;
+    final bool isConnected = state.runtimeType.toString() == "ChatConnected" ? true : false;
 
     if (isConnected) return const SizedBox.shrink();
 

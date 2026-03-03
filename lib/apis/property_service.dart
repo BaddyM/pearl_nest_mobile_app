@@ -170,7 +170,10 @@ class PropertyService {
         ApiClient.setAuthToken(token);
       }
 
-      final response = await ApiClient.get('/property/list', queryParameters: queryParams);
+      final response = await ApiClient.get(
+        '/property/list',
+        queryParameters: queryParams,
+      );
 
       // Restore original token
       if (token != null) {
@@ -217,11 +220,6 @@ class PropertyService {
     String? token,
   }) async {
     try {
-      // Input validation
-      if (searchString.trim().isEmpty) {
-        throw ValidationException('Search string cannot be empty');
-      }
-
       final queryParams = <String, dynamic>{
         'page': page,
         'limit': limit,
@@ -231,7 +229,7 @@ class PropertyService {
       if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
       if (filters != null) queryParams.addAll(filters);
 
-      final endpoint = '/property/list?search=${Uri.encodeComponent(searchString.trim())}';
+      final endpoint = '/property/list?search=${Uri.encodeComponent(searchString.trim())}&sortOrder=$sortOrder&minBeds=${filters?["bedrooms"] ?? 0}&minBathrooms=${filters?["bathrooms"] ?? 0}&minPrice=0&maxPrice=${filters?["priceRange"] == 5000 ? '' : filters?["priceRange"]}';
       _logRequest(endpoint, queryParams, token: token);
 
       // Set token temporarily if provided
@@ -411,10 +409,6 @@ class PropertyService {
     String? userId,
   }) async {
     try {
-      //debugPrint('');
-      //debugPrint('🚀 === FETCH FEATURED PROPERTIES START ===');
-      //debugPrint('🏠 Fetching featured properties from /property/featured endpoint...');
-
       final queryParams = <String, dynamic>{
         'page': page,
         'limit': limit,
@@ -422,12 +416,7 @@ class PropertyService {
 
       if (userId != null) queryParams['userId'] = userId;
 
-      //debugPrint('🔍 Request parameters:');
-      //debugPrint('   - Page: $page');
-      //debugPrint('   - Limit: $limit');
-      //debugPrint('   - Auth token available: ${ApiClient.currentAuthToken != null || token != null}');
-
-      _logRequest('/property/featured', queryParams, token: token);
+      _logRequest('/property/list/featured', queryParams, token: token);
 
       // Set token temporarily if provided
       final originalToken = ApiClient.currentAuthToken;
@@ -435,43 +424,25 @@ class PropertyService {
         ApiClient.setAuthToken(token);
       }
 
-      final stopwatch = Stopwatch()..start();
-      final response = await ApiClient.get('/property/featured', queryParameters: queryParams);
-      stopwatch.stop();
+      final response = await ApiClient.get('/property/list/featured', queryParameters: queryParams);
 
       // Restore original token
       if (token != null) {
         ApiClient.setAuthToken(originalToken);
       }
 
-      //debugPrint('📥 === FEATURED PROPERTIES API RESPONSE ===');
-      //debugPrint('   - Response time: ${stopwatch.elapsedMilliseconds}ms');
-      //debugPrint('   - Status code: ${response.statusCode}');
-      //debugPrint('   - Response data type: ${response.data.runtimeType}');
-      //debugPrint('   - Raw response: ${response.data}');
-
-      _logResponse('/property/featured', response);
+      _logResponse('/property/list/featured', response);
 
       if (response.statusCode == 200) {
         //debugPrint('✅ HTTP 200 - Processing featured properties response...');
 
         final responseData = response.data as Map<String, dynamic>;
 
-        //debugPrint('🔍 Response analysis:');
-        //debugPrint('   - Success field: ${responseData['success']}');
-        //debugPrint('   - Data field: ${responseData['data']}');
-        //debugPrint('   - Data is null: ${responseData['data'] == null}');
-        //debugPrint('   - Data type: ${responseData['data'].runtimeType}');
-
         // Handle the case where data can be null
         List<Property> featuredProperties = [];
 
         if (responseData['data'] != null) {
           final propertiesData = responseData['data'];
-
-          //debugPrint('📊 Processing properties data:');
-          //debugPrint('   - Properties data type: ${propertiesData.runtimeType}');
-          //debugPrint('   - Is List: ${propertiesData is List}');
 
           if (propertiesData is List) {
             //debugPrint('   - Properties count: ${propertiesData.length}');
@@ -505,31 +476,15 @@ class PropertyService {
           'statusCode': response.statusCode,
         };
 
-        //debugPrint('✅ === FEATURED PROPERTIES RESULT ===');
-        //debugPrint('   - Success: ${result['success']}');
-        //debugPrint('   - Properties count: ${featuredProperties.length}');
-        //debugPrint('   - Has data: ${result['hasData']}');
-        //debugPrint('   - Message: ${result['message']}');
-
         return result;
       } else {
-        //debugPrint('❌ HTTP Error - Featured properties request failed:');
-        //debugPrint('   - Status code: ${response.statusCode}');
-        //debugPrint('   - Response data: ${response.data}');
-
         final errorData = response.data;
         throw PropertyException(
           errorData['message'] ?? 'Failed to fetch featured properties',
           statusCode: response.statusCode,
         );
       }
-    } catch (e, stackTrace) {
-      //debugPrint('');
-      //debugPrint('❌ === FEATURED PROPERTIES ERROR ===');
-      //debugPrint('   - Error: $e');
-      //debugPrint('   - Error type: ${e.runtimeType}');
-      //debugPrint('   - Stack trace: $stackTrace');
-
+    } catch (e) {
       return _handleError(e, 'get featured properties');
     } finally {
       //debugPrint('🏁 === FETCH FEATURED PROPERTIES END ===');

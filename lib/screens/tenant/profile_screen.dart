@@ -14,6 +14,7 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/screens/common/onboarding_screen.dart';
+import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/screens/tenant/tenant_booking_history_screen.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_application_screen.dart';
@@ -97,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             RegistrationStatus status = RegistrationStatus.fromString((reg[index]["status"]).toString().toLowerCase());
                             String registrationId = reg[index]["id"].toString();
                             String dateSubmitted = reg[index]["createdAt"].toString();
-                            return RegistrationStatusCard(status: status, registrationId: registrationId, dateSubmitted: DateFormat("dd-MMM-yyyy").format(DateTime.parse(dateSubmitted)));
+                            return status == RegistrationStatus.rejected ? _buildBecomeLandlordCard() : RegistrationStatusCard(status: status, registrationId: registrationId, dateSubmitted: DateFormat("dd-MMM-yyyy").format(DateTime.parse(dateSubmitted)));
                           });
                     } else {
                       return _buildBecomeLandlordCard();
@@ -472,7 +473,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => TenantBookingHistoryScreen(
+                    builder: (context) => BookingsListScreen(
                       user: widget.user,
                     ),
                   ),
@@ -1180,7 +1181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => LoginScreen()), (route) => false);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryblue,

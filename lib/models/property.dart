@@ -234,6 +234,11 @@ class Property {
     final images = json['images'] ?? json['media'];
     final user = json['user'] as Map<String, dynamic>?;
 
+    double calculateRating(double sumOfItems, int numberOfItems) {
+      double result = (sumOfItems / numberOfItems.toDouble());
+      return result;
+    }
+
     return Property(
       id: json['id'] ?? json['_id'] ?? '',
       title: json['title'] ?? json['propertyName'] ?? '',
@@ -265,8 +270,8 @@ class Property {
       isRent: json['isRent'],
       parking: json['parking'],
       isSale: json['isSale'],
-      rating: (json['rating'] ?? 0.0).toDouble(),
-      reviewCount: json['reviewCount'] ?? 0,
+      rating: json['reviews'] != null ? calculateRating(List<Map<String, dynamic>>.from(json['reviews']).fold<double>(0, (value, element) => value + element["stars"]), List<Map<String, dynamic>>.from(json['reviews']).length != 0 ? List<Map<String, dynamic>>.from(json['reviews']).length : 1) : 0,
+      reviewCount: (json['reviews'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList().length ?? [].length,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
       isFeatured: json['featured'] ?? false,

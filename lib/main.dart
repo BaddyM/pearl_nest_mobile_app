@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
 import 'package:pearlnest/blocs/profile_bloc/profile_bloc.dart';
+import 'package:pearlnest/providers/notification_cubit.dart';
+import 'package:pearlnest/services/new_chat_service.dart';
 import 'package:pearlnest/services/profile_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart'; // Add this import
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
@@ -50,11 +54,17 @@ void main() async {
   //Initialize Shared preferences
   ProfileService().init();
 
-  runApp(MyApp());
+  final prefs = await SharedPreferences.getInstance();
+  final String? userId = prefs.getString('user_id');
+
+  runApp(MyApp(
+    userId: userId!,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.userId});
+  final String userId;
 
   // Add a global navigator key
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -80,6 +90,15 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<ProfileBloc>(
           create: (context) => ProfileBloc(),
+        ),
+        BlocProvider<NewChatBloc>(
+          create: (context) => NewChatBloc(NewChatService(), userId),
+        ),
+        BlocProvider(
+          create: (context) => NotificationCubit()..initSocket(),
+          child: MyApp(
+            userId: userId,
+          ),
         ),
       ],
       child: MultiProvider(

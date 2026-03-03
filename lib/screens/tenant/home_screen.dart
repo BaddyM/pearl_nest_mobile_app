@@ -9,6 +9,8 @@ import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/apis/auth_service.dart';
+import 'package:pearlnest/blocs/auth/auth_bloc.dart';
+import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
@@ -17,7 +19,10 @@ import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/providers/notification_cubit.dart';
 import 'package:pearlnest/screens/chat/admin_list_screen.dart';
+import 'package:pearlnest/screens/chat/new_chat_list.dart';
+import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/screens/tenant/favorites_screen.dart';
 import 'package:pearlnest/screens/tenant/notification_screen.dart';
@@ -129,9 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AdminListScreen(
+        builder: (context) => NewChatList(
           user: widget.user,
-          propertyTitle: 'General Support & Inquiries',
         ),
       ),
     );
@@ -207,8 +211,6 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
 
-        // //debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -276,39 +278,27 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final page = loadMore ? _currentPage + 1 : 1;
 
-      // Load general properties, featured properties, and pending bookings in parallel
-      // final [propertiesResult, featuredResult] = await Future.wait([
-      //   PropertyService.getProperties(page: page, limit: _pageLimit),
-      //   PropertyService.getFeaturedProperties(page: 1, limit: _pageLimit),
-      // ]);
-
       final List<Property> propertiesResult = await PropertyService.getProperties(
         page: page,
         limit: _pageLimit,
-        userId: widget.user.userType == UserType.landlord ? widget.user.id : null,
       );
       final featuredResult = await PropertyService.getFeaturedProperties(
         page: 1,
         limit: _pageLimit,
-        userId: widget.user.userType == UserType.landlord ? widget.user.id : null,
       );
 
       if (propertiesResult.isNotEmpty) {
         final filteredProperties = List<Property>.from(propertiesResult);
-        final newProperties = filteredProperties.where((property) => property.availabilityStatus == true).toList();
+        final newProperties = filteredProperties.toList();
 
         // Update pagination metadata
-        // _currentPage = propertiesResult['page'] ?? page;
-        // _totalPages = propertiesResult['totalPages'] ?? 1;
         _totalProperties = newProperties.length;
-        // _hasNextPage = propertiesResult['hasNextPage'] ?? false;
-        // _hasPrevPage = propertiesResult['hasPrevPage'] ?? false;
 
         List<Property> featuredProperties = [];
         if (featuredResult['success'] == true) {
           // Use dedicated featured properties if available
           final filterFeaturedProperties = List<Property>.from(featuredResult['properties'] ?? []);
-          featuredProperties = filterFeaturedProperties.where((property) => property.availabilityStatus == true).toList();
+          featuredProperties = filterFeaturedProperties.toList();
           // //debugPrint('🏠 Loaded ${featuredProperties.length} featured properties from dedicated API');
         } else {
           // Fallback to filtering general properties if featured API fails
@@ -330,11 +320,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _isLoadingMore = false;
           });
         }
-
-        // //debugPrint('🏠 Properties loaded - General: ${_properties.length}, Featured: ${featuredProperties.length}, Page: $_currentPage/$_totalPages');
-
-        // Load pending bookings after properties are loaded
-        await _loadPendingBookings();
       } else {
         if (mounted) {
           setState(() {
@@ -349,6 +334,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       debugPrint('❌ Error loading properties: $e');
       if (mounted) {
+        context.read<AuthBloc>().add(AuthLogoutRequested());
+        Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => LoginScreen()), (route) => false);
         setState(() {
           _errorMessage = 'An error occurred while loading properties.';
           _categoryProperties = []; // Initialize empty category properties
@@ -495,43 +482,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Load pending bookings and extract their properties
-  Future<void> _loadPendingBookings() async {
-    try {
-      // //debugPrint('📚 Loading pending bookings...');
-      final pendingBookings = await BookingService.fetchPendingBookings();
-
-      // //debugPrint('📚 API returned ${pendingBookings.length} pending bookings');
-
-      // Log each booking for debugging
-      for (var booking in pendingBookings) {
-        // //debugPrint('📚 Booking ID: ${booking.id}, Status: ${booking.status}, Property: ${booking.propertyId}');
-      }
-
-      // Extract properties from pending bookings
-      final pendingPropertyIds = pendingBookings.map((b) => b.propertyId).toSet();
-      final pendingProps = _properties.where((property) => pendingPropertyIds.contains(property.id)).toList();
-
-      if (mounted) {
-        setState(() {
-          _pendingBookings = pendingBookings;
-          _pendingProperties = pendingProps;
-        });
-      }
-
-      // //debugPrint('📚 Extracted ${pendingProps.length} properties with pending bookings');
-    } catch (e) {
-      // //debugPrint('❌ Error loading pending bookings: $e');
-      // Don't show error to user, just continue without pending bookings
-      if (mounted) {
-        setState(() {
-          _pendingBookings = [];
-          _pendingProperties = [];
-        });
-      }
-    }
-  }
-
   // Prioritize properties with pending bookings in the list
   List<Property> _prioritizePropertiesWithPendingBookings(List<Property> properties) {
     if (_pendingProperties.isEmpty) {
@@ -605,30 +555,20 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         switch (_currentIndex) {
           0 => _buildHomeContent(),
-          1 => (widget.user.userType != UserType.landlord)
-              ? SearchScreen(
-                  user: widget.user,
-                  allProperties: _properties.where((property) => property.availabilityStatus == true).toList(),
-                )
-              : ProfileScreen(
-                  user: widget.user,
-                  landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
-                ),
-          2 => (widget.user.userType != UserType.landlord)
-              ? FavoritesScreen(
-                  user: widget.user,
-                  onNavigateToExplore: () {
-                    setState(() {
-                      _currentIndex = 0; // Navigate to home/explore tab
-                    });
-                  },
-                )
-              : ProfileScreen(
-                  user: widget.user,
-                  landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
-                ),
-          3 => BookingsListScreen(user: widget.user),
-          4 => ProfileScreen(
+          1 => SearchScreen(
+              user: widget.user,
+              allProperties: _properties.where((property) => property.availabilityStatus == true).toList(),
+            ),
+          2 => FavoritesScreen(
+              user: widget.user,
+              onNavigateToExplore: () {
+                setState(() {
+                  _currentIndex = 0; // Navigate to home/explore tab
+                });
+              },
+            ),
+          // 3 => BookingsListScreen(user: widget.user),
+          3 => ProfileScreen(
               user: widget.user,
               landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
             ),
@@ -650,7 +590,6 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await Future.wait([
         _loadProperties(),
-        _loadPendingBookings(),
       ]);
 
       // //debugPrint('✅ HomeScreen: Refresh completed');
@@ -790,7 +729,7 @@ class _HomeScreenState extends State<HomeScreen> {
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    _currentIndex = 4;
+                    _currentIndex = 3;
                   });
                 },
                 child: Container(
@@ -1011,20 +950,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppTheme.getTextColor(context),
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 1;
-                  });
-                },
-                child: Text(
-                  'See All',
-                  style: TextStyle(
-                    color: AppTheme.primaryblue,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              SizedBox(
+                width: 100,
               ),
+              // TextButton(
+              //   onPressed: () {
+              //     setState(() {
+              //       _currentIndex = 1;
+              //     });
+              //   },
+              //   child: Text(
+              //     'See All',
+              //     style: TextStyle(
+              //       color: AppTheme.primaryblue,
+              //       fontWeight: FontWeight.w600,
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -1117,20 +1059,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppTheme.getTextColor(context),
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentIndex = 1;
-                    });
-                  },
-                  child: Text(
-                    'See All',
-                    style: TextStyle(
-                      color: AppTheme.primaryblue,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                SizedBox(
+                  width: 100,
                 ),
+                // TextButton(
+                //   onPressed: () {
+                //     setState(() {
+                //       _currentIndex = 1;
+                //     });
+                //   },
+                //   child: Text(
+                //     'See All',
+                //     style: TextStyle(
+                //       color: AppTheme.primaryblue,
+                //       fontWeight: FontWeight.w600,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -1226,26 +1171,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               // Only show "See All" when there are featured properties
-              if (_featuredProperties.isNotEmpty)
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentIndex = 1;
-                    });
-                  },
-                  child: Text(
-                    'See All',
-                    style: TextStyle(
-                      color: AppTheme.primaryblue,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+              SizedBox(width: 100),
+              // if (_featuredProperties.isNotEmpty)
+              //   TextButton(
+              //     onPressed: () {
+              //       setState(() {
+              //         _currentIndex = 1;
+              //       });
+              //     },
+              //     child: Text(
+              //       'See All',
+              //       style: TextStyle(
+              //         color: AppTheme.primaryblue,
+              //         fontWeight: FontWeight.w600,
+              //       ),
+              //     ),
+              //   ),
             ],
           ),
         ),
         SizedBox(
-          height: 480, // Reduced from 473 to prevent overflow
+          height: 425, // Reduced from 473 to prevent overflow
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 20),
@@ -1255,7 +1201,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return Container(
                 width: 280,
                 margin: EdgeInsets.only(right: 16),
-                child: _buildPropertyCard(property, widget.user),
+                child: _buildPropertyCard(property, widget.user, featured: true),
               );
             },
           ),
@@ -1482,7 +1428,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildPropertyCard(Property property, User user) {
+  Widget _buildPropertyCard(Property property, User user, {bool featured = false}) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1864,6 +1810,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   Container(
+                    width: double.maxFinite,
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -1889,12 +1836,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(
-                                  '${ProfileService().currencyConverter(price: property.price.toInt())}',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryblue,
+                                SizedBox(
+                                  width: featured ? MediaQuery.of(context).size.width * 0.33 : MediaQuery.of(context).size.width * 0.55,
+                                  child: FittedBox(
+                                    fit: BoxFit.contain,
+                                    child: Text(
+                                      '${ProfileService().currencyConverter(price: property.price.toInt())}',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        overflow: TextOverflow.visible,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.primaryblue,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 SizedBox(width: 4),
@@ -2772,38 +2726,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: 'Home',
                 index: 0,
               ),
-              if (widget.user.userType != UserType.landlord)
-                _buildNavItem(
-                  icon: Icons.explore_outlined,
-                  activeIcon: Icons.explore,
-                  label: 'Explore',
-                  index: 1,
-                ),
-              if (widget.user.userType != UserType.landlord)
-                _buildNavItem(
-                  icon: Icons.favorite_outline,
-                  activeIcon: Icons.favorite,
-                  label: 'Favorites',
-                  index: 2,
-                ),
-              if (widget.user.userType != UserType.landlord)
-                _buildNavItem(
-                  icon: Icons.book_outlined,
-                  activeIcon: Icons.book_rounded,
-                  label: 'Bookings',
-                  index: 3,
-                ),
+              _buildNavItem(
+                icon: Icons.explore_outlined,
+                activeIcon: Icons.explore,
+                label: 'Explore',
+                index: 1,
+              ),
+              _buildNavItem(
+                icon: Icons.favorite_outline,
+                activeIcon: Icons.favorite,
+                label: 'Favorites',
+                index: 2,
+              ),
               _buildNavItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
                 label: 'Profile',
-                index: 4,
+                index: 3,
               ),
               _buildNavItem(
                 icon: Icons.chat_bubble_outline,
-                activeIcon: Icons.chat_bubble,
+                activeIcon: Icons.mail,
                 label: 'Chat',
-                index: 5,
+                index: 4,
                 onTap: () => _navigateToPearlNestChat(),
               ),
             ],
@@ -2814,7 +2759,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    if (index == 5) return;
+    if (index == 4) return;
 
     if (index == 0 && _currentIndex == 0) {
       // //debugPrint('🏠 HomeScreen: Home icon tapped while on home - triggering refresh');
@@ -2857,11 +2802,21 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
-              size: 24,
-            ),
+            label == "Chat"
+                ? BlocBuilder<NotificationCubit, int>(
+                    builder: (context, unreadCount) {
+                      return Badge(
+                        label: Text('$unreadCount'),
+                        isLabelVisible: unreadCount > 0,
+                        child: Icon(Icons.chat_outlined),
+                      );
+                    },
+                  )
+                : Icon(
+                    isActive ? activeIcon : icon,
+                    color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+                    size: 24,
+                  ),
             SizedBox(height: 4),
             Text(
               label,

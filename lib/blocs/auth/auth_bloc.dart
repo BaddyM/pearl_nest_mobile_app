@@ -45,7 +45,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       //debugPrint('AuthBloc: Login result received: $result');
       if (result['success'] == true) {
         //for app review process. remove afterwards
-        if (event.email == "arnoldhenry958@gmail.com") {
+        if (event.email == "arnoldhenry958@gmail.com" || event.email == "bulyeraliarnold@gmail.com") {
           final adminResult = await AuthService.verifyOtp(event.email, 'gid2023', '000000', result['tempToken']);
           //debugPrint('AuthBloc: Admin login result received: $adminResult');
           _currentUser = adminResult['user'];
@@ -85,8 +85,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthFailure(message: errorMessage));
       }
     } catch (e, stackTrace) {
-      ////debugPrint('AuthBloc: Login error - $e');
-      // Provide more specific error messages based on error type
+      print("Error:Bloc = $e");
+      print("Location:Bloc = $stackTrace");
       String errorMessage;
       if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
         errorMessage = 'Connection timeout. Please check your internet connection and try again.';

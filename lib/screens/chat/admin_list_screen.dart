@@ -35,9 +35,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
     _loadAdmins();
 
     // Initialize chat service
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatBloc>().add(const ChatInitialize());
-    });
+    context.read<ChatBloc>().add(const ChatInitialize());
   }
 
   Future<void> _loadAdmins() async {
@@ -109,8 +107,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
       CustomSnackBar.showError(
         context,
         message,
-      );  
-      
+      );
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
@@ -486,9 +487,13 @@ class _BookingScreenState extends State<BookingScreen> {
             ],
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(true); // Go back to previous screen with success result
-                context.read<BookingBloc>().add(const BookingReset());
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => BookingsListScreen(
+                      user: widget.user,
+                    ),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange, // Changed to orange to indicate next action is payment

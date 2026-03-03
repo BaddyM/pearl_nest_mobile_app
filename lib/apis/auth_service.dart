@@ -93,8 +93,6 @@ class AuthService {
 
   // Private method for consistent error handling
   static Map<String, dynamic> _handleError(dynamic error, String operation) {
-    _logError(operation, error);
-
     String message;
     String? code;
     int? statusCode;
@@ -135,13 +133,12 @@ class AuthService {
       message = 'Unable to connect to server. Please try again later.';
       code = 'CONNECTION_REFUSED';
     } else if (error.toString().contains('Server error') || error.toString().contains('500 Internal Server Error')) {
-      print(error);
       message = 'Server error. Please try again later.';
       code = 'SERVER_ERROR';
     } else {
       // Generic fallback with operation-specific messages
       if (operation == 'login') {
-        message = 'Login failed. Please check your credentials and try again.';
+        message = error.toString().split(":")[1].trim();
       } else if (operation == 'registration') {
         message = 'Registration failed. Please try again.';
       } else if (operation == 'password change') {
@@ -339,7 +336,7 @@ class AuthService {
 
       _logRequest('/user/login', requestData);
 
-      final response = await ApiClient.post('/user/login', requestData);
+      Response response = await ApiClient.post('/user/login', requestData);
 
       if (response.statusCode == 200) {
         final responseData = _validateResponse(response, requiredFields: ['accessToken']);
@@ -373,7 +370,7 @@ class AuthService {
 
         // Fetch user profile data after successful login
         try {
-          final profileResponse = await ApiClient.get('/user/userProfile/fetch');
+          Response profileResponse = await ApiClient.get('/user/userProfile/fetch');
           _logResponse('/user/userProfile/fetch', profileResponse);
 
           if (profileResponse.statusCode == 200) {
@@ -440,7 +437,6 @@ class AuthService {
         );
       }
     } catch (e) {
-      // //debugPrint('AuthService: Login error - $e');
       return _handleError(e, 'login');
     }
   }
@@ -1273,10 +1269,6 @@ class AuthService {
     String? reason,
   }) async {
     try {
-      _logRequest('/user/delete/$userId', {
-        'reason': reason,
-      });
-
       final token = await getCurrentToken();
       if (token == null) {
         throw AuthException('No authentication token found');
@@ -1285,9 +1277,11 @@ class AuthService {
       // Set the auth token for the request
       ApiClient.setAuthToken(token);
 
-      final response = await ApiClient.delete('/user/delete/$userId');
-
-      _logResponse('/user/delete/$userId', response);
+      final response = await ApiClient.patch("/user/userProfile/update", {
+        "userId": userId,
+        "isVerified": false,
+        "isActive": false,
+      });
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         // Account deleted successfully, clear all local data

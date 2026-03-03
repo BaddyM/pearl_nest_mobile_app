@@ -60,7 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
           CustomSnackBar.showError(
             context,
             state.message,
-            duration: Duration(milliseconds: 2000),
             onRetry: () => _handleLogin(), // Add retry functionality
           );
         }

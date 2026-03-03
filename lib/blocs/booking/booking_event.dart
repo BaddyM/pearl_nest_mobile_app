@@ -9,14 +9,14 @@ abstract class BookingEvent extends Equatable {
 
 class BookingCreateRequested extends BookingEvent {
   final String propertyId;
-  final String checkInDate;
-  final String checkOutDate;
+  final String? checkInDate;
+  final String? checkOutDate;
   final int deposit;
 
   const BookingCreateRequested({
     required this.propertyId,
-    required this.checkInDate,
-    required this.checkOutDate,
+    this.checkInDate,
+    this.checkOutDate,
     required this.deposit,
   });
 

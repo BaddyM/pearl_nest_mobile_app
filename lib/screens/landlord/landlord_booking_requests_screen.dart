@@ -457,7 +457,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     final tenantName = booking.tenantName;
     final propertyTitle = booking.propertyTitle;
     final statusColor = _getStatusColor(booking.status);
-    final formattedAmount = booking.amount != null ? NumberFormat('#,##0').format(booking.amount) : '0';
+    final formattedAmount = booking.amount != null ? ProfileService().currencyConverter(price: booking.amount!.toInt()) : '0';
 
     return GestureDetector(
         onTap: () => _showBookingDetails(booking),
@@ -615,7 +615,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                           Column(
                             children: [
                               Text(
-                                'UGX$formattedAmount',
+                                '$formattedAmount',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,

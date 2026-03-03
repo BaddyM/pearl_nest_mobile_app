@@ -109,17 +109,13 @@ class _SearchScreenState extends State<SearchScreen> {
     try {
       List<Property> result;
 
-      if (searchQuery.isNotEmpty) {
-        // Text search takes priority - use text search API with filters
-        result = await PropertyService.searchProperties(
-          searchString: searchQuery,
-          sortBy: _getSortField(_sortBy),
-          sortOrder: _getSortOrder(_sortBy),
-          filters: _buildApiFilters(),
-        );
-      } else {
-        result = [];
-      }
+      // Text search takes priority - use text search API with filters
+      result = await PropertyService.searchProperties(
+        searchString: searchQuery,
+        sortBy: _getSortField(_sortBy),
+        sortOrder: _getSortOrder(_sortBy),
+        filters: _buildApiFilters(),
+      );
 
       List<Property> apiProperties = List<Property>.from(result);
       List<Property> properties = apiProperties.where((property) => property.availabilityStatus == true).toList();
@@ -184,22 +180,24 @@ class _SearchScreenState extends State<SearchScreen> {
 
     // Only add filters that the API supports
     // Property type filter - let's handle this locally for now
-    // if (_filters.propertyType != 'All') {
-    //   filters['propertyType'] = _filters.propertyType;
-    // }
+    if (_filters.propertyType != 'All') {
+      filters['propertyType'] = _filters.propertyType;
+    }
 
     // Bedrooms filter - let's handle this locally for now
-    // if (_filters.bedrooms != null) {
-    //   filters['bedrooms'] = _filters.bedrooms;
-    // }
+    if (_filters.bedrooms != null) {
+      filters['bedrooms'] = _filters.bedrooms;
+    }
 
     // Price range is handled by the price search API, not as a filter
     // For text search, we'll apply price filtering locally
 
+    filters['priceRange'] = _filters.priceRange.end.toInt();
+
     // Amenities filter - let's handle this locally for now
-    // if (_filters.selectedAmenities.isNotEmpty) {
-    //   filters['amenities'] = _filters.selectedAmenities;
-    // }
+    if (_filters.selectedAmenities.isNotEmpty) {
+      filters['amenities'] = _filters.selectedAmenities;
+    }
 
     return filters;
   }
