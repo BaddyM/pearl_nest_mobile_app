@@ -58,13 +58,13 @@ void main() async {
   final String? userId = prefs.getString('user_id');
 
   runApp(MyApp(
-    userId: userId!,
+    userId: userId,
   ));
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key, required this.userId});
-  final String userId;
+  final String? userId;
 
   // Add a global navigator key
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -92,7 +92,7 @@ class MyApp extends StatelessWidget {
           create: (context) => ProfileBloc(),
         ),
         BlocProvider<NewChatBloc>(
-          create: (context) => NewChatBloc(NewChatService(), userId),
+          create: (context) => NewChatBloc(NewChatService(), userId ?? ""),
         ),
         BlocProvider(
           create: (context) => NotificationCubit()..initSocket(),
