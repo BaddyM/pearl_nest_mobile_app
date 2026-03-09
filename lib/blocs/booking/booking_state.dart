@@ -71,6 +71,8 @@ class BookingError extends BookingState {
 
 class BookingEmpty extends BookingState {}
 
+class BookingCancelled extends BookingState {}
+
 class PaymentLink extends BookingState {
   final String paymentLink;
   const PaymentLink({required this.paymentLink});

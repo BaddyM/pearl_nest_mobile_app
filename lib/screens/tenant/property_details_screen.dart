@@ -5,7 +5,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
-import 'package:pearlnest/utils/custom_snackbar.dart';
+import 'package:pearlnest/widgets/app_note_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,8 +14,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_interactions_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
-import 'package:pearlnest/apis/payment_service.dart';
-import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/booking.dart';
@@ -26,7 +24,6 @@ import 'package:pearlnest/blocs/booking/booking_state.dart';
 import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/screens/chat/admin_list_screen.dart';
-import 'package:pearlnest/screens/tenant/payment_screen.dart';
 
 class Review {
   final String id;
@@ -1386,6 +1383,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                               ],
                             ],
                           ),
+
+                        AppNoteWidget(note: "Check out date is optional"),
 
                         SizedBox(height: 16),
                         Text(
@@ -3554,7 +3553,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     final hasPendingBooking = _pendingBookingForProperty != null;
 
     // Check if property is available for booking
-    final isPropertyAvailable = widget.property.status == PropertyStatus.available;
+    final isPropertyAvailable = widget.property.status == PropertyStatus.approved;
 
     return (widget.user.userType != UserType.landlord)
         ? Container(
@@ -3583,7 +3582,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         ? null
                         : hasPendingBooking
                             ? _initiatePayment
-                            : () => _showBookingConfirmationDialog(isRent: widget.property.isRent, deposit: widget.property.deposit.toInt()),
+                            : () => _showBookingConfirmationDialog(
+                                  isRent: widget.property.isRent,
+                                  deposit: widget.property.deposit.toInt(),
+                                ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isLoadingPendingBookings || !isPropertyAvailable
                           ? Colors.grey
@@ -3778,6 +3780,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     ),
                   ),
                   SizedBox(height: 16),
+                  AppNoteWidget(note: "If a payment for a booked property hasn't been made within 24 hours, the booking is revoked and property made available."),
+                  SizedBox(height: 16),
 
                   // Add payment reminder container
                   Container(
@@ -3870,15 +3874,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop(); // Close bottom sheet
-                      setState(() {
-                        _checkInDate = null;
-                        _checkOutDate = null;
-                      });
-                      _bookingBloc.add(BookingReset());
-
-                      // Refresh pending bookings to update the UI
-                      _loadPendingBookings();
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => BookingsListScreen(
+                            user: widget.user,
+                          ),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.getCardColor(context), // Changed to orange to indicate next action is payment

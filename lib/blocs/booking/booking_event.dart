@@ -53,6 +53,13 @@ class CreatePayment extends BookingEvent {
   final String propertyId;
   final String bookingId;
   final int amount;
+  final int paid;
 
-  const CreatePayment({required this.propertyId, required this.bookingId, required this.amount});
+  const CreatePayment({required this.propertyId, this.paid = 0, required this.bookingId, required this.amount});
+}
+
+class CancelBooking extends BookingEvent {
+  final String bookingId;
+
+  const CancelBooking({required this.bookingId});
 }

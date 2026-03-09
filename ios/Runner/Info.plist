@@ -142,7 +142,6 @@
 		<array>
 			<string>fetch</string>
 			<string>remote-notification</string>
-			<string>background-processing</string>
 			<string>location</string>
 		</array>
 		

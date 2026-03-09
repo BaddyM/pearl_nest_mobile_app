@@ -16,6 +16,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     on<FetchBookings>(_onFetchBookings);
     on<FetchLandlordBookings>(_onFetchLandlordBookings);
     on<BookingStatusUpdateRequested>(_onBookingStatusUpdateRequested);
+    on<CancelBooking>(_onCancelBooking);
     on<CreatePayment>((event, emit) async {
       emit(BookingLoading());
       try {
@@ -93,7 +94,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         emit(BookingFailure(error: e.message, errorCode: 'API_ERROR'));
       }
       _logState('ERROR', state);
-    } catch (e) {
+    } catch (e, trace) {
+      debugPrint("Error: $e");
+      debugPrint("Location: $trace");
       emit(BookingFailure(
         error: 'An unexpected error occurred: $e',
         errorCode: 'UNKNOWN_ERROR',
@@ -129,6 +132,23 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       print("Location: $trace");
       emit(BookingError(message: 'Failed to fetch bookings: $e'));
       _logState('ERROR', state);
+    }
+  }
+
+  Future<void> _onCancelBooking(
+    CancelBooking event,
+    Emitter<BookingState> emit,
+  ) async {
+    emit(const BookingLoading());
+    try {
+      Response response = await ApiClient.delete("/booking/cancel/${event.bookingId}");
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        emit(BookingCancelled());
+      }
+    } catch (e, trace) {
+      debugPrint("Error: $e");
+      debugPrint("Location: $trace");
+      emit(BookingError(message: "Sorry, failed to cancel the booking\nPlease try again later"));
     }
   }
 

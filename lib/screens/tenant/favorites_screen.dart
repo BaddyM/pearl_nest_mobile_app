@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 // import 'package:pearlnest/bloc/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
+import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
@@ -12,6 +13,9 @@ import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/app_config.dart';
+import 'package:pearlnest/widgets/cancellation_status_widget.dart';
+import 'package:pearlnest/widgets/payment_summary_card.dart';
+import 'package:pearlnest/widgets/refund_policy.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final User user;
@@ -819,6 +823,8 @@ class PropertyCard extends StatefulWidget {
   final bool isBooking;
   final int balance;
   final int paid;
+  final BookingStatus? status;
+  final Booking? booking;
 
   const PropertyCard({
     super.key,
@@ -831,6 +837,8 @@ class PropertyCard extends StatefulWidget {
     this.isBooking = false,
     this.balance = 0,
     this.paid = 0,
+    this.status,
+    this.booking,
   });
 
   static String _getFullImageUrl(String url) {
@@ -883,9 +891,18 @@ class _PropertyCardState extends State<PropertyCard> {
     };
   }
 
+  int calculateGrandTotal({required int totalAmount, required double vat, required double transactionFee}) {
+    double vatAmount = ((vat / 100) * totalAmount);
+    double transactionFeeAmount = ((transactionFee / 100) * totalAmount);
+    int grandTotal = (totalAmount + vatAmount + transactionFeeAmount).toInt();
+    return grandTotal;
+  }
+
   void showPaymentSheet(BuildContext context, int totalAmount) {
     double? customAmount;
     bool isFullPayment = true;
+    double vat = 2;
+    double transactionFee = 1.4;
 
     showModalBottomSheet(
       context: context,
@@ -913,22 +930,30 @@ class _PropertyCardState extends State<PropertyCard> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 15),
+                  PaymentSummaryCard(
+                    subtotal: totalAmount.toDouble(),
+                    vatRate: vat,
+                    transactionFee: transactionFee,
+                  ),
+                  const SizedBox(height: 15),
 
                   // Option 1: Pay Full Amount
                   RadioListTile<bool>(
-                    title: Text("Pay Full Amount (UGX ${putCommas(totalAmount)})"),
+                    title: Text("Pay Full Amount (UGX ${putCommas(calculateGrandTotal(totalAmount: totalAmount, vat: vat, transactionFee: transactionFee))})"),
                     value: true,
                     groupValue: isFullPayment,
                     onChanged: (val) => setModalState(() => isFullPayment = val!),
                   ),
 
                   // Option 2: Custom Amount
-                  RadioListTile<bool>(
-                    title: const Text("Pay Custom Amount"),
-                    value: false,
-                    groupValue: isFullPayment,
-                    onChanged: (val) => setModalState(() => isFullPayment = val!),
-                  ),
+                  widget.property.deposit == 0
+                      ? RadioListTile<bool>(
+                          title: const Text("Pay Custom Amount"),
+                          value: false,
+                          groupValue: isFullPayment,
+                          onChanged: (val) => setModalState(() => isFullPayment = val!),
+                        )
+                      : SizedBox(),
 
                   if (!isFullPayment)
                     Padding(
@@ -947,6 +972,8 @@ class _PropertyCardState extends State<PropertyCard> {
                       ),
                     ),
 
+                  const SizedBox(height: 10),
+                  RefundPolicyNotice(),
                   const SizedBox(height: 20),
 
                   // Action Button
@@ -968,6 +995,7 @@ class _PropertyCardState extends State<PropertyCard> {
                                     propertyId: widget.property.id,
                                     bookingId: widget.bookingId!,
                                     amount: finalPay.toInt(),
+                                    paid: widget.paid,
                                   ),
                                 );
                           }
@@ -975,6 +1003,61 @@ class _PropertyCardState extends State<PropertyCard> {
                         }
                       },
                       child: const Text("Continue to Payment"),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void showCancelBookingSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Allows keyboard to push the sheet up
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        // Use StatefulBuilder so we can update the UI inside the bottom sheet
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Cancel Booking",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 15),
+                  Text("Do you still wish to continue with this action?\nThis action is irreversible."),
+                  const SizedBox(height: 20),
+                  // Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                      onPressed: () {
+                        if (widget.bookingId != null) {
+                          context.read<BookingBloc>().add(CancelBooking(bookingId: widget.bookingId!));
+                        }
+                        Navigator.pop(context);
+                      },
+                      child: const Text("Cancel"),
                     ),
                   ),
                 ],
@@ -1273,25 +1356,45 @@ class _PropertyCardState extends State<PropertyCard> {
           //Booking Button
           SizedBox(height: 15),
           widget.isBooking
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Amount Paid: ${ProfileService().currencyConverter(price: widget.paid)}"),
-                    SizedBox(height: 10),
-                    Text("Pending Balance: ${ProfileService().currencyConverter(price: widget.balance)}"),
-                    SizedBox(height: 10),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          showPaymentSheet(context, widget.balance);
-                        },
-                        child: Text("Continue Payment"),
-                      ),
-                    ),
-                  ],
-                )
+              ? widget.status == BookingStatus.cancelled
+                  ? CompactCancellationBadge(bookingRef: widget.bookingId!)
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Amount Paid: ${ProfileService().currencyConverter(price: widget.paid)}"),
+                        SizedBox(height: 10),
+                        Text("Pending Balance: ${ProfileService().currencyConverter(price: widget.balance)}"),
+                        SizedBox(height: 10),
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ButtonStyle(
+                                    backgroundColor: WidgetStatePropertyAll(Colors.red),
+                                  ),
+                                  onPressed: () {
+                                    showCancelBookingSheet(context);
+                                  },
+                                  child: Text("Cancel"),
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    showPaymentSheet(context, widget.balance);
+                                  },
+                                  child: Text("Go to Payment"),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
               : SizedBox(
                   child: Row(
                     children: [

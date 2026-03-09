@@ -155,7 +155,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
           filtered = filtered.where((p) => p.status == PropertyStatus.booked).toList();
           break;
         case 'Under Review':
-          filtered = filtered.where((p) => !p.isVerified).toList();
+          filtered = filtered.where((p) => p.status == PropertyStatus.pending).toList();
           break;
         case 'Featured':
           filtered = filtered.where((p) => p.isFeatured).toList();
@@ -396,7 +396,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   }
 
   Widget _buildStatsRow() {
-    final availableCount = _properties.where((p) => p.status == PropertyStatus.available).length;
+    final availableCount = _properties.where((p) => p.availabilityStatus == true).length;
     final bookedCount = _properties.where((p) => p.status == PropertyStatus.booked).length;
     final underReviewCount = _properties.where((p) => p.status == PropertyStatus.pending).length;
     final featuredCount = _properties.where((p) => p.isFeatured).length;
@@ -1070,9 +1070,8 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   Widget _buildStatusChip(PropertyStatus status) {
     Color color;
     String text;
-
     switch (status) {
-      case PropertyStatus.available:
+      case PropertyStatus.available || PropertyStatus.approved:
         color = Colors.green;
         text = 'Available';
         break;
@@ -1084,7 +1083,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         color = Colors.blue;
         text = 'Pending';
         break;
-      case PropertyStatus.unavailable:
+      case PropertyStatus.unavailable || PropertyStatus.rejected:
         color = Colors.red;
         text = 'Unavailable';
         break;

@@ -1,6 +1,5 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 import 'package:flutter/material.dart';
-import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/apis/landlord_service.dart';
@@ -106,6 +105,15 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                 ),
                 child: Column(
                   children: [
+                    Container(
+                      width: double.maxFinite,
+                      alignment: Alignment.centerLeft,
+                      child: CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.grey.withOpacity(0.5),
+                        child: BackButton(),
+                      ),
+                    ),
                     Container(
                         padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -563,7 +571,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Accepted formats: PDF, DOC, DOCX • Maximum size: 2MB',
+                      'Accepted formats: PDF, DOC, DOCX, JPEG, JPG or PNG • Maximum size: 2MB',
                       style: TextStyle(
                         color: AppTheme.primaryblue.withOpacity(0.7),
                         fontSize: 12,
@@ -664,7 +672,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx'], // Only allow supported formats
+        allowedExtensions: ['pdf', 'doc', 'docx', 'jpeg', 'jpg', 'png'], // Only allow supported formats
         allowMultiple: false,
       );
 
@@ -674,8 +682,8 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         final fileExtension = fileName.split('.').last.toLowerCase();
 
         // Double-check file extension (extra validation)
-        if (!['pdf', 'doc', 'docx'].contains(fileExtension)) {
-          _showErrorSnackBar('Invalid file type. Please select a PDF, DOC, or DOCX file.');
+        if (!['pdf', 'doc', 'docx', 'jpeg', 'jpg', 'png'].contains(fileExtension)) {
+          _showErrorSnackBar('Invalid file type. Please select a PDF, DOC, JPEG, JPG, PNG or DOCX file.');
           return;
         }
 

@@ -3,6 +3,7 @@ import "package:flutter_bloc/flutter_bloc.dart";
 import "package:pearlnest/blocs/booking/booking_bloc.dart";
 import "package:pearlnest/blocs/booking/booking_event.dart";
 import "package:pearlnest/blocs/booking/booking_state.dart";
+import "package:pearlnest/models/booking.dart";
 import "package:pearlnest/models/property.dart";
 import "package:pearlnest/models/user.dart";
 import "package:pearlnest/screens/tenant/favorites_screen.dart";
@@ -111,9 +112,10 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                         itemBuilder: (context, index) {
                           Property? property = state.bookings[index].property;
                           String? bookingId = state.bookings[index].id;
+                          Booking booking = state.bookings[index];
                           if (property != null) {
                             final amount = state.bookings[index].payments.fold(0 as num, (sum, item) => item["paymentStatus"] == "APPROVED" ? sum + item["amount"] : sum + 0);
-                            double propertyPrice = property.price;
+                            double propertyPrice = property.deposit != 0 ? property.deposit : property.price;
                             double balance = propertyPrice - amount.toDouble();
                             return Container(
                               margin: EdgeInsets.only(bottom: 20),
@@ -126,6 +128,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                 onTap: () {},
                                 onFavorite: () {},
                                 isFavorite: false,
+                                status: booking.status,
+                                booking: booking,
                               ),
                             );
                           } else {
@@ -186,6 +190,51 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                   );
                 } else if (state is PaymentLink) {
                   launchMyUrl(state.paymentLink.trim());
+                } else if (state is BookingCancelled) {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return Dialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
+                              const SizedBox(height: 16),
+                              const Text(
+                                "Booking Cancelled",
+                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                "Your booking has been successfully cancelled. A confirmation email has been sent to you.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey, fontSize: 16),
+                              ),
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryblue,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                  ),
+                                  onPressed: () {
+                                    context.read<BookingBloc>().add(FetchBookings());
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text("Got it", style: TextStyle(color: Colors.white)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
                 }
               }),
             ),

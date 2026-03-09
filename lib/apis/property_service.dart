@@ -502,14 +502,24 @@ class PropertyService {
     }
   }
 
+  static PropertyStatus _parsePropertyStatus(String status) {
+    switch (status) {
+      case "BOOKED":
+        return PropertyStatus.booked;
+      case 'APPROVED':
+        return PropertyStatus.approved;
+      case 'REJECTED':
+        return PropertyStatus.rejected;
+      case 'PENDING':
+        return PropertyStatus.pending;
+      default:
+        return PropertyStatus.pending;
+    }
+  }
+
   /// Get properties by landlord/user ID
   static Future<Map<String, dynamic>> getPropertiesByLandlord(String userId, {String? token}) async {
     try {
-      //debugPrint('');
-      //debugPrint('🏠 === FETCH LANDLORD PROPERTIES START ===');
-      //debugPrint('   - User ID: $userId');
-      //debugPrint('   - Endpoint: /property/landlord/$userId');
-
       // Validate inputs
       if (userId.isEmpty) {
         //debugPrint('❌ User ID is empty');
@@ -573,7 +583,7 @@ class PropertyService {
                     landlordEmail: '', // Not provided in API response
                     rating: 0.0, // Not provided in API response
                     reviewCount: 0, // Not provided in API response
-                    status: propertyData['availability'] == true ? PropertyStatus.available : PropertyStatus.unavailable,
+                    status: _parsePropertyStatus(propertyData['status']),
                     availabilityStatus: propertyData['availability'],
                     createdAt: DateTime.tryParse(propertyData['createdAt'] ?? '') ?? DateTime.now(),
                     updatedAt: DateTime.tryParse(propertyData['updatedAt'] ?? '') ?? DateTime.now(),

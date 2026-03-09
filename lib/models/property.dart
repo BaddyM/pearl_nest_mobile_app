@@ -17,6 +17,8 @@ enum PropertyStatus {
   booked,
   pending,
   unavailable,
+  approved,
+  rejected,
 }
 
 class Property {
@@ -262,11 +264,7 @@ class Property {
       landlordPhone: json['landlordPhone'] ?? json['ownerPhone'] ?? user?['contact'] ?? '',
       landlordEmail: json['landlordEmail'] ?? json['ownerEmail'] ?? user?['email'] ?? '',
       profilePicture: json['profilePicture'] ?? user?['profilePicture'] ?? '',
-      status: json['status'] != null
-          ? _parsePropertyStatus(json['status'])
-          : json['availability'] == false
-              ? PropertyStatus.unavailable
-              : PropertyStatus.available,
+      status: _parsePropertyStatus(json['status']),
       isRent: json['isRent'],
       parking: json['parking'],
       isSale: json['isSale'],
@@ -321,18 +319,18 @@ class Property {
   }
 
   // Helper method to parse PropertyStatus from string
-  static PropertyStatus _parsePropertyStatus(String statusString) {
-    switch (statusString.toLowerCase()) {
-      case 'available':
-        return PropertyStatus.available;
-      case 'booked':
+  static PropertyStatus _parsePropertyStatus(String status) {
+    switch (status) {
+      case "BOOKED":
         return PropertyStatus.booked;
-      case 'pending':
+      case 'APPROVED':
+        return PropertyStatus.approved;
+      case 'REJECTED':
+        return PropertyStatus.rejected;
+      case 'PENDING':
         return PropertyStatus.pending;
-      case 'unavailable':
-        return PropertyStatus.unavailable;
       default:
-        return PropertyStatus.available;
+        return PropertyStatus.pending;
     }
   }
 

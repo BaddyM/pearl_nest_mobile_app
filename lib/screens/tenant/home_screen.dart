@@ -5,7 +5,6 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:async';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_service.dart';
-import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/apis/auth_service.dart';
@@ -20,10 +19,8 @@ import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/providers/notification_cubit.dart';
-import 'package:pearlnest/screens/chat/admin_list_screen.dart';
 import 'package:pearlnest/screens/chat/new_chat_list.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
-import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/screens/tenant/favorites_screen.dart';
 import 'package:pearlnest/screens/tenant/notification_screen.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
@@ -619,9 +616,8 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-              widget.user.userType == UserType.landlord ? SizedBox() : _buildCategories(),
-              // _buildPendingBookingsSection(),
-              widget.user.userType == UserType.landlord ? SizedBox() : _buildFeaturedSection(),
+              _buildCategories(),
+              _buildFeaturedSection(),
               _buildRecentProperties(),
               SizedBox(height: 100),
             ],
@@ -673,7 +669,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      widget.user.userType == UserType.tenant ? 'Find your perfect home' : 'Manage your properties',
+                      'Find your perfect home',
                       style: TextStyle(
                         fontSize: 16,
                         color: AppTheme.getSecondaryTextColor(context),
@@ -785,67 +781,66 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           SizedBox(height: 20),
-          if (widget.user.userType != UserType.landlord)
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _currentIndex = 1;
-                });
-              },
-              child: Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.getCardColor(context),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _currentIndex = 1;
+              });
+            },
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.getCardColor(context),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.search,
-                        color: AppTheme.primaryblue,
-                        size: 20,
-                      ),
+                    child: Icon(
+                      Icons.search,
+                      color: AppTheme.primaryblue,
+                      size: 20,
                     ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Search properties, locations...',
-                        style: TextStyle(
-                          color: AppTheme.getSecondaryTextColor(context),
-                          fontSize: 16,
-                        ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Search properties, locations...',
+                      style: TextStyle(
+                        color: AppTheme.getSecondaryTextColor(context),
+                        fontSize: 16,
                       ),
                     ),
-                    Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.tune,
-                        color: AppTheme.primaryblue,
-                        size: 20,
-                      ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
-                ),
+                    child: Icon(
+                      Icons.tune,
+                      color: AppTheme.primaryblue,
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
         ],
       ),
     );
@@ -1191,7 +1186,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         SizedBox(
-          height: 425, // Reduced from 473 to prevent overflow
+          height: 444,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 20),
@@ -1712,35 +1707,32 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       SizedBox(width: 12),
-
-                      //rating wigdet
-
-                      // Container(
-                      //   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      //   decoration: BoxDecoration(
-                      //     color: Colors.amber.withValues(alpha: 0.1),
-                      //     borderRadius: BorderRadius.circular(12),
-                      //   ),
-                      //   child: Row(
-                      //     mainAxisSize: MainAxisSize.min,
-                      //     children: [
-                      //       Icon(
-                      //         Icons.star,
-                      //         size: 14,
-                      //         color: Colors.amber,
-                      //       ),
-                      //       SizedBox(width: 4),
-                      //       Text(
-                      //         '${property.rating}',
-                      //         style: TextStyle(
-                      //           fontSize: 12,
-                      //           fontWeight: FontWeight.bold,
-                      //           color: AppTheme.getTextColor(context),
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.star,
+                              size: 14,
+                              color: Colors.amber,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              '${property.rating}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.getTextColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
 
@@ -1833,35 +1825,60 @@ class _HomeScreenState extends State<HomeScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                SizedBox(
-                                  width: featured ? MediaQuery.of(context).size.width * 0.33 : MediaQuery.of(context).size.width * 0.55,
-                                  child: FittedBox(
-                                    fit: BoxFit.contain,
-                                    child: Text(
-                                      '${ProfileService().currencyConverter(price: property.price.toInt())}',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        overflow: TextOverflow.visible,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.primaryblue,
+                            !featured
+                                ? Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      SizedBox(
+                                        width: featured ? MediaQuery.of(context).size.width * 0.45 : MediaQuery.of(context).size.width * 0.54,
+                                        child: Text(
+                                          ProfileService().currencyConverter(price: property.price.toInt()),
+                                          style: TextStyle(
+                                            fontSize: featured ? 18 : 20,
+                                            overflow: TextOverflow.ellipsis,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.primaryblue,
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        property.priceType != "undefined" ? property.priceType : "",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: AppTheme.getSecondaryTextColor(context),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(
+                                        width: featured ? MediaQuery.of(context).size.width * 0.45 : MediaQuery.of(context).size.width * 0.55,
+                                        child: Text(
+                                          ProfileService().currencyConverter(price: property.price.toInt()),
+                                          style: TextStyle(
+                                            fontSize: featured ? 18 : 20,
+                                            overflow: TextOverflow.ellipsis,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.primaryblue,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        property.priceType != "undefined" ? property.priceType : "",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: AppTheme.getSecondaryTextColor(context),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  property.priceType,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: AppTheme.getSecondaryTextColor(context),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
                             SizedBox(height: 4),
                             Text(
                               '${property.reviewCount} reviews',
@@ -2802,21 +2819,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            label == "Chat"
-                ? BlocBuilder<NotificationCubit, int>(
-                    builder: (context, unreadCount) {
-                      return Badge(
-                        label: Text('$unreadCount'),
-                        isLabelVisible: unreadCount > 0,
-                        child: Icon(Icons.chat_outlined),
-                      );
-                    },
-                  )
-                : Icon(
-                    isActive ? activeIcon : icon,
-                    color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
-                    size: 24,
-                  ),
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+              size: 24,
+            ),
             SizedBox(height: 4),
             Text(
               label,

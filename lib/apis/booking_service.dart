@@ -56,6 +56,7 @@ class BookingService {
         'checkInDate': checkInDate,
         'checkOutDate': checkOutDate,
         'deposit': deposit,
+        'amount': deposit,
       };
 
       _logRequest('/booking/create', requestData);
@@ -137,8 +138,6 @@ class BookingService {
       final response = await ApiClient.get(endpoint);
 
       _logDioResponse(endpoint, response);
-
-      print("statusCode: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = response.data;
