@@ -143,7 +143,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
     List<Property> filtered = _properties;
 
     if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((property) => property.title.toLowerCase().contains(_searchQuery.toLowerCase()) || property.location.toLowerCase().contains(_searchQuery.toLowerCase()) || property.propertyTypeString.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+      filtered = filtered.where((property) => property.title.toLowerCase().contains(_searchQuery.toLowerCase()) || property.location.toLowerCase().contains(_searchQuery.toLowerCase()) || property.type.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
     }
 
     if (_selectedFilter != 'All') {
@@ -631,7 +631,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                       ),
                       SizedBox(height: 4),
                       Text(
-                        property.propertyTypeString,
+                        property.type,
                         style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.primaryblue,
@@ -956,7 +956,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                   ),
                   SizedBox(height: 2),
                   Text(
-                    property.propertyTypeString,
+                    property.type,
                     style: TextStyle(
                       fontSize: 10,
                       color: AppTheme.primaryblue,
@@ -1369,7 +1369,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                   Row(
                     children: [
                       Text(
-                        property.propertyTypeString,
+                        property.type,
                         style: TextStyle(
                           fontSize: 16,
                           color: AppTheme.primaryblue,

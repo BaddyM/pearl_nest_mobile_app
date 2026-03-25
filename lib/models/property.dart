@@ -1,17 +1,3 @@
-enum PropertyType {
-  airbnb,
-  hostel,
-  apartment,
-  fullHouse,
-  land,
-  incompleteHouse,
-  house,
-  studio,
-  condo,
-  townhouse,
-  room,
-}
-
 enum PropertyStatus {
   available,
   booked,
@@ -25,7 +11,7 @@ class Property {
   final String id;
   final String title;
   final String description;
-  final PropertyType type;
+  final String type;
   final double price;
   final double deposit;
   final String priceType;
@@ -112,7 +98,7 @@ class Property {
     String? id,
     String? title,
     String? description,
-    PropertyType? type,
+    String? type,
     double? price,
     String? priceType,
     String? location,
@@ -193,32 +179,32 @@ class Property {
   }
 
   // Getter to convert PropertyType enum to string for UI display
-  String get propertyTypeString {
-    switch (type) {
-      case PropertyType.airbnb:
-        return 'Airbnb';
-      case PropertyType.hostel:
-        return 'Hostel';
-      case PropertyType.apartment:
-        return 'Apartment';
-      case PropertyType.fullHouse:
-        return 'Full House';
-      case PropertyType.land:
-        return 'Land';
-      case PropertyType.incompleteHouse:
-        return 'Incomplete House';
-      case PropertyType.house:
-        return 'House';
-      case PropertyType.studio:
-        return 'Studio';
-      case PropertyType.condo:
-        return 'Condo';
-      case PropertyType.townhouse:
-        return 'Townhouse';
-      case PropertyType.room:
-        return 'Room';
-    }
-  }
+  // String get propertyTypeString {
+  //   switch (type) {
+  //     case PropertyType.airbnb:
+  //       return 'Airbnb';
+  //     case PropertyType.hostel:
+  //       return 'Hostel';
+  //     case PropertyType.apartment:
+  //       return 'Apartment';
+  //     case PropertyType.fullHouse:
+  //       return 'Full House';
+  //     case PropertyType.land:
+  //       return 'Land';
+  //     case PropertyType.incompleteHouse:
+  //       return 'Incomplete House';
+  //     case PropertyType.house:
+  //       return 'House';
+  //     case PropertyType.studio:
+  //       return 'Studio';
+  //     case PropertyType.condo:
+  //       return 'Condo';
+  //     case PropertyType.townhouse:
+  //       return 'Townhouse';
+  //     case PropertyType.room:
+  //       return 'Room';
+  //   }
+  // }
 
   // Factory constructor for creating Property from JSON
   factory Property.fromJson(Map<String, dynamic> json) {
@@ -245,7 +231,7 @@ class Property {
       id: json['id'] ?? json['_id'] ?? '',
       title: json['title'] ?? json['propertyName'] ?? '',
       description: json['description'] ?? '',
-      type: _parsePropertyType(json['type'] ?? json['propertyType'] ?? 'apartment'),
+      type: json['propertyType'],
       price: (json['price'] ?? 0).toDouble(),
       deposit: (json['deposit'] ?? 0).toDouble(),
       priceType: json['priceType'] ?? json['period'] ?? 'monthly',
@@ -287,36 +273,36 @@ class Property {
   }
 
   // Helper method to parse PropertyType from string
-  static PropertyType _parsePropertyType(String typeString) {
-    switch (typeString.toLowerCase()) {
-      case 'airbnb':
-        return PropertyType.airbnb;
-      case 'hostel':
-        return PropertyType.hostel;
-      case 'apartment':
-        return PropertyType.apartment;
-      case 'fullhouse':
-      case 'full_house':
-        return PropertyType.fullHouse;
-      case 'land':
-        return PropertyType.land;
-      case 'incompletehouse':
-      case 'incomplete_house':
-        return PropertyType.incompleteHouse;
-      case 'house':
-        return PropertyType.house;
-      case 'studio':
-        return PropertyType.studio;
-      case 'condo':
-        return PropertyType.condo;
-      case 'townhouse':
-        return PropertyType.townhouse;
-      case 'room':
-        return PropertyType.room;
-      default:
-        return PropertyType.apartment;
-    }
-  }
+  // static PropertyType _parsePropertyType(String typeString) {
+  //   switch (typeString.toLowerCase()) {
+  //     case 'airbnb':
+  //       return PropertyType.airbnb;
+  //     case 'hostel':
+  //       return PropertyType.hostel;
+  //     case 'apartment':
+  //       return PropertyType.apartment;
+  //     case 'fullhouse':
+  //     case 'full_house':
+  //       return PropertyType.fullHouse;
+  //     case 'land':
+  //       return PropertyType.land;
+  //     case 'incompletehouse':
+  //     case 'incomplete_house':
+  //       return PropertyType.incompleteHouse;
+  //     case 'house':
+  //       return PropertyType.house;
+  //     case 'studio':
+  //       return PropertyType.studio;
+  //     case 'condo':
+  //       return PropertyType.condo;
+  //     case 'townhouse':
+  //       return PropertyType.townhouse;
+  //     case 'room':
+  //       return PropertyType.room;
+  //     default:
+  //       return PropertyType.apartment;
+  //   }
+  // }
 
   // Helper method to parse PropertyStatus from string
   static PropertyStatus _parsePropertyStatus(String status) {
@@ -340,7 +326,7 @@ class Property {
       'id': id,
       'propertyName': title,
       'description': description,
-      'propertyType': propertyTypeString,
+      'propertyType': type,
       'price': price,
       'period': priceType,
       'location': location,

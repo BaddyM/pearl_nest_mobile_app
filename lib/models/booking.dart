@@ -5,6 +5,7 @@ enum BookingStatus {
   confirmed,
   cancelled,
   completed,
+  expired,
 }
 
 enum BookingType {
@@ -93,6 +94,8 @@ class Booking {
           return BookingStatus.cancelled;
         case 'COMPLETED':
           return BookingStatus.completed;
+        case 'EXPIRED':
+          return BookingStatus.expired;
         default:
           return BookingStatus.pending; // default to pending
       }

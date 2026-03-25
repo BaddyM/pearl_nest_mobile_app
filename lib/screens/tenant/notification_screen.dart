@@ -189,7 +189,8 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       case 'Unread':
       default:
         // For 'All' and 'Unread', the API already handles the filtering
-        return _notifications.where((notification) => notification.isRead == false).toList();
+        // return _notifications.where((notification) => notification.isRead == false).toList();
+        return _notifications;
     }
   }
 
@@ -206,7 +207,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     }
   }
 
-  void _markAsRead(NotificationItem notification) async {
+  void _markAsRead(NotificationItem notification, {bool isDeleted = false}) async {
     if (notification.isRead) return;
 
     try {
@@ -221,7 +222,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
             _unreadCount--;
           }
         });
-        _showSuccessSnackBar('Notification marked as read');
+        _showSuccessSnackBar(isDeleted ? 'Notification deleted successfully' : 'Notification marked as read');
       } else {
         // _showErrorSnackBar(result['message'] ?? 'Failed to mark as read');
       }
@@ -317,6 +318,42 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     } catch (e) {
       //_showErrorSnackBar('An error occurred while deleting notification');
     }
+  }
+
+  void _showNotificationModal(BuildContext context, {required String title, required String data, required NotificationItem notification}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min, // Constrains height to content
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(data),
+              const SizedBox(height: 20),
+              const Divider(),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(), // Closes the modal
+              child: const Text("Close"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // Handle "Mark as Read" logic here
+                Navigator.of(context).pop();
+                _markAsRead(notification);
+              },
+              child: const Text("Mark as Read"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildErrorState() {
@@ -582,21 +619,11 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       ),
       onDismissed: (direction) {
         _deleteNotification(notification.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Notification deleted',
-              style: TextStyle(color: AppTheme.lightGreyColor),
-            ),
-            duration: Duration(milliseconds: 500),
-            backgroundColor: AppTheme.primaryblue,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
+        _markAsRead(notification, isDeleted: true);
       },
       child: GestureDetector(
         onTap: () {
+          _showNotificationModal(context, data: notification.message, title: notification.title, notification: notification);
           if (!notification.isRead) {
             _markAsRead(notification);
           }

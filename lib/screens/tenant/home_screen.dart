@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:async';
 import 'package:pearlnest/apis/app_config.dart';
+import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
@@ -18,9 +19,9 @@ import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
-import 'package:pearlnest/providers/notification_cubit.dart';
 import 'package:pearlnest/screens/chat/new_chat_list.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
+import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/screens/tenant/favorites_screen.dart';
 import 'package:pearlnest/screens/tenant/notification_screen.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
@@ -75,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {'name': 'Apartment', 'icon': Icons.apartment},
     {'name': 'Full House', 'icon': Icons.home},
     {'name': 'Land', 'icon': Icons.landscape},
-    {'name': 'Incomplete House', 'icon': Icons.construction},
+    {'name': 'Rental', 'icon': Icons.construction},
   ];
 
   String _formatDate(DateTime date) {
@@ -180,16 +181,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // Show success feedback
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: AppTheme.primaryblue,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 2),
-              margin: EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   SnackBar(
+          //     content: Text(message),
+          //     backgroundColor: AppTheme.primaryblue,
+          //     behavior: SnackBarBehavior.floating,
+          //     duration: Duration(seconds: 2),
+          //     margin: EdgeInsets.all(16),
+          //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          //   ),
+          // );
         }
       } else {
         // API call failed, revert the optimistic update
@@ -209,16 +210,16 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to update favorites. Please try again.'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 3),
-              margin: EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   SnackBar(
+          //     content: Text('Failed to update favorites. Please try again.'),
+          //     backgroundColor: Colors.red,
+          //     behavior: SnackBarBehavior.floating,
+          //     duration: Duration(seconds: 3),
+          //     margin: EdgeInsets.all(16),
+          //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          //   ),
+          // );
         }
       }
     } catch (e) {
@@ -242,16 +243,16 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('An error occurred. Please try again.'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 3),
-            margin: EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text('An error occurred. Please try again.'),
+        //     backgroundColor: Colors.red,
+        //     behavior: SnackBarBehavior.floating,
+        //     duration: Duration(seconds: 3),
+        //     margin: EdgeInsets.all(16),
+        //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        //   ),
+        // );
       }
     }
   }
@@ -284,9 +285,14 @@ class _HomeScreenState extends State<HomeScreen> {
         limit: _pageLimit,
       );
 
+      //Get pending bookings
+      final pendingBookings = await BookingService.fetchBookings();
+
       if (propertiesResult.isNotEmpty) {
         final filteredProperties = List<Property>.from(propertiesResult);
         final newProperties = filteredProperties.toList();
+        _pendingBookings = pendingBookings.where((b) => b.status == BookingStatus.pending).toList();
+        newProperties.shuffle();
 
         // Update pagination metadata
         _totalProperties = newProperties.length;
@@ -296,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // Use dedicated featured properties if available
           final filterFeaturedProperties = List<Property>.from(featuredResult['properties'] ?? []);
           featuredProperties = filterFeaturedProperties.toList();
-          // //debugPrint('🏠 Loaded ${featuredProperties.length} featured properties from dedicated API');
+          featuredProperties.shuffle();
         } else {
           // Fallback to filtering general properties if featured API fails
           featuredProperties = newProperties.where((p) => p.isFeatured && p.availabilityStatus == true).toList();
@@ -465,16 +471,16 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load $categoryName properties'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 3),
-            margin: EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text('Failed to load $categoryName properties'),
+        //     backgroundColor: Colors.red,
+        //     behavior: SnackBarBehavior.floating,
+        //     duration: Duration(seconds: 3),
+        //     margin: EdgeInsets.all(16),
+        //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        //   ),
+        // );
       }
     }
   }
@@ -593,12 +599,12 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       // //debugPrint('❌ HomeScreen: Refresh failed - $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to refresh data'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text('Failed to refresh data'),
+        //     backgroundColor: Colors.red,
+        //   ),
+        // );
       }
     }
   }
@@ -618,6 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildHeader(),
               _buildCategories(),
               _buildFeaturedSection(),
+              _buildPendingBookingsSection(),
               _buildRecentProperties(),
               SizedBox(height: 100),
             ],
@@ -1322,7 +1329,7 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else
           // Show properties list
-          filteredProperties.length > 0
+          filteredProperties.isNotEmpty
               ? ListView.builder(
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
@@ -1413,14 +1420,6 @@ class _HomeScreenState extends State<HomeScreen> {
         SizedBox(height: 20),
       ],
     );
-  }
-
-  String _formatLargePrice(double price) {
-    if (price >= 1000000) {
-      return '${(price / 1000000).toStringAsFixed(1)}M';
-    } else {
-      return NumberFormat('#,##0').format(price);
-    }
   }
 
   Widget _buildPropertyCard(Property property, User user, {bool featured = false}) {
@@ -1570,7 +1569,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                             child: Text(
-                              property.propertyTypeString,
+                              property.type,
                               style: TextStyle(
                                 color: AppTheme.whiteColor,
                                 fontSize: 11,
@@ -1961,16 +1960,17 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 20),
-            itemCount: _pendingProperties.length,
+            itemCount: _pendingBookings.length,
             itemBuilder: (context, index) {
-              final property = _pendingProperties[index];
-              final booking = _getPendingBookingForProperty(property.id);
-
-              return Container(
-                width: 280,
-                margin: EdgeInsets.only(right: 16),
-                child: _buildPendingPropertyCard(property, booking),
-              );
+              if (_pendingBookings.isNotEmpty) {
+                final property = _pendingBookings[index].property;
+                final booking = _getPendingBookingForProperty(property!.id);
+                return Container(
+                  width: 280,
+                  margin: EdgeInsets.only(right: 16),
+                  child: _buildPendingPropertyCard(property, booking),
+                );
+              }
             },
           ),
         ),
@@ -1990,15 +1990,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPendingPropertyCard(Property property, Booking? booking) {
-    final formattedPrice = NumberFormat('#,##0').format(property.price);
-
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PropertyDetailsScreen(
-              property: property,
+            builder: (context) => BookingsListScreen(
               user: widget.user,
             ),
           ),
@@ -2348,16 +2345,16 @@ class _HomeScreenState extends State<HomeScreen> {
               _loadProperties();
 
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Payment completed successfully!'),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
-                    duration: Duration(seconds: 3),
-                    margin: EdgeInsets.all(16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                );
+                // ScaffoldMessenger.of(context).showSnackBar(
+                //   SnackBar(
+                //     content: Text('Payment completed successfully!'),
+                //     backgroundColor: Colors.green,
+                //     behavior: SnackBarBehavior.floating,
+                //     duration: Duration(seconds: 3),
+                //     margin: EdgeInsets.all(16),
+                //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                //   ),
+                // );
               }
             }
           } else {
@@ -2409,16 +2406,16 @@ class _HomeScreenState extends State<HomeScreen> {
             _loadProperties();
 
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Payment completed successfully!'),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 3),
-                  margin: EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              );
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(
+              //     content: Text('Payment completed successfully!'),
+              //     backgroundColor: Colors.green,
+              //     behavior: SnackBarBehavior.floating,
+              //     duration: Duration(seconds: 3),
+              //     margin: EdgeInsets.all(16),
+              //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              //   ),
+              // );
             }
           }
         } else {
@@ -2842,198 +2839,199 @@ class _HomeScreenState extends State<HomeScreen> {
   // Show confirmation dialog for canceling a booking
   void _showCancelBookingDialog(Booking booking) {
     showDialog(
-        context: context,
-        builder: (context) => BlocProvider.value(
-              value: context.read<BookingBloc>(),
-              child: BlocListener<BookingBloc, BookingState>(
-                listener: (context, state) {
-                  if (!mounted) return; // Safety check
+      context: context,
+      builder: (context) => BlocProvider.value(
+        value: context.read<BookingBloc>(),
+        child: BlocListener<BookingBloc, BookingState>(
+          listener: (context, state) {
+            if (!mounted) return; // Safety check
 
-                  if (state is BookingSuccess) {
-                    Navigator.of(context).pop(); // Close dialog
-                    _showSuccessSnackBar('Booking cancelled successfully');
-                    // //debugPrint('✅ Booking cancellation successful, refreshing all data...');
-                    // Add slight delay to ensure server has processed the update
-                    Future.delayed(Duration(milliseconds: 1000), () {
-                      if (mounted) {
-                        _onRefresh(); // Use full refresh instead of just pending bookings
-                      }
-                    });
-                  } else if (state is BookingFailure) {
-                    Navigator.of(context).pop(); // Close dialog
-                    // //debugPrint('❌ Booking cancellation failed: ${state.error}');
-                    _showErrorSnackBar(state.error);
-                  }
-                },
-                child: AlertDialog(
-                  backgroundColor: AppTheme.getCardColor(context),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+            if (state is BookingSuccess) {
+              Navigator.of(context).pop(); // Close dialog
+              _showSuccessSnackBar('Booking cancelled successfully');
+              // //debugPrint('✅ Booking cancellation successful, refreshing all data...');
+              // Add slight delay to ensure server has processed the update
+              Future.delayed(Duration(milliseconds: 1000), () {
+                if (mounted) {
+                  _onRefresh(); // Use full refresh instead of just pending bookings
+                }
+              });
+            } else if (state is BookingFailure) {
+              Navigator.of(context).pop(); // Close dialog
+              // //debugPrint('❌ Booking cancellation failed: ${state.error}');
+              _showErrorSnackBar(state.error);
+            }
+          },
+          child: AlertDialog(
+            backgroundColor: AppTheme.getCardColor(context),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  title: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.cancel_outlined,
-                          color: Colors.red,
-                          size: 24,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Cancel Booking',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.getTextColor(context),
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: Icon(
+                    Icons.cancel_outlined,
+                    color: Colors.red,
+                    size: 24,
                   ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Cancel Booking',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Are you sure you want to cancel this booking?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Are you sure you want to cancel this booking?',
+                        'Booking ID: ${booking.id}',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                           color: AppTheme.getTextColor(context),
                         ),
                       ),
-                      SizedBox(height: 12),
-                      Container(
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Booking ID: ${booking.id}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.getTextColor(context),
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Check-in: ${booking.checkInDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkInDate!) : 'N/A'}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.getSecondaryTextColor(context),
-                              ),
-                            ),
-                            Text(
-                              'Check-out: ${booking.checkOutDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkOutDate!) : 'N/A'}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.getSecondaryTextColor(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 12),
+                      SizedBox(height: 4),
                       Text(
-                        'This action cannot be undone.',
+                        'Check-in: ${booking.checkInDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkInDate!) : 'N/A'}',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.red,
-                          fontStyle: FontStyle.italic,
+                          color: AppTheme.getSecondaryTextColor(context),
+                        ),
+                      ),
+                      Text(
+                        'Check-out: ${booking.checkOutDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkOutDate!) : 'N/A'}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.getSecondaryTextColor(context),
                         ),
                       ),
                     ],
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        'Keep Booking',
-                        style: TextStyle(
-                          color: AppTheme.getSecondaryTextColor(context),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    BlocBuilder<BookingBloc, BookingState>(
-                      builder: (context, state) {
-                        final isLoading = state is BookingLoading;
-                        return ElevatedButton(
-                          onPressed: isLoading
-                              ? null
-                              : () {
-                                  try {
-                                    if (mounted) {
-                                      context.read<BookingBloc>().add(
-                                            BookingStatusUpdateRequested(
-                                              bookingId: booking.id,
-                                              status: 'REJECTED',
-                                            ),
-                                          );
-                                    }
-                                  } catch (e) {
-                                    // //debugPrint('❌ Error adding booking event: $e');
-                                    Navigator.of(context).pop(); // Close dialog
-                                    _showErrorSnackBar('Unable to cancel booking. Please try again.');
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: isLoading
-                              ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Text(
-                                  'Cancel Booking',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        );
-                      },
-                    ),
-                  ],
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'This action cannot be undone.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.red,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Keep Booking',
+                  style: TextStyle(
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ));
+              BlocBuilder<BookingBloc, BookingState>(
+                builder: (context, state) {
+                  final isLoading = state is BookingLoading;
+                  return ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            try {
+                              if (mounted) {
+                                context.read<BookingBloc>().add(
+                                      BookingStatusUpdateRequested(
+                                        bookingId: booking.id,
+                                        status: 'REJECTED',
+                                      ),
+                                    );
+                              }
+                            } catch (e) {
+                              // //debugPrint('❌ Error adding booking event: $e');
+                              Navigator.of(context).pop(); // Close dialog
+                              _showErrorSnackBar('Unable to cancel booking. Please try again.');
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: isLoading
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'Cancel Booking',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // Helper methods for showing feedback
   void _showSuccessSnackBar(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        margin: EdgeInsets.all(16),
-      ),
-    );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(
+    //     content: Text(message),
+    //     backgroundColor: Colors.green,
+    //     behavior: SnackBarBehavior.floating,
+    //     shape: RoundedRectangleBorder(
+    //       borderRadius: BorderRadius.circular(8),
+    //     ),
+    //     margin: EdgeInsets.all(16),
+    //   ),
+    // );
   }
 
   void _showErrorSnackBar(String message) {

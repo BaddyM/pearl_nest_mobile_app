@@ -260,20 +260,6 @@ class _SearchScreenState extends State<SearchScreen> {
         // Success - UI is already updated optimistically
         final message = wasLiked ? 'Removed from favorites' : 'Added to favorites';
         //debugPrint('✅ $message for property: ${property.id}');
-
-        // Show success feedback
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: AppTheme.primaryblue,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 2),
-              margin: EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        }
       } else {
         // API call failed, revert the optimistic update
         setState(() {
@@ -956,7 +942,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              property.propertyTypeString,
+                              property.type,
                               style: TextStyle(
                                 color: AppTheme.whiteColor,
                                 fontSize: 10,

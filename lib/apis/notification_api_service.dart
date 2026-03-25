@@ -90,13 +90,13 @@ class NotificationApiService {
 
       if (response.statusCode == 200) {
         final responseData = response.data as Map<String, dynamic>;
-        
+
         // Extract notifications data
         final notificationsData = responseData['data'] as List<dynamic>? ?? [];
         final totalCount = responseData['total'] ?? 0;
         final currentPage = responseData['page'] ?? page;
         final totalPages = responseData['totalPages'] ?? 1;
-        
+
         return {
           'success': true,
           'notifications': notificationsData,
@@ -126,10 +126,10 @@ class NotificationApiService {
       }
     } catch (e) {
       _logError('fetchNotifications', e);
-      
+
       String message;
       String code;
-      
+
       if (e.toString().contains('SocketException') || e.toString().contains('Please check your internet connection')) {
         message = 'No internet connection. Please check your network.';
         code = 'NO_INTERNET';
@@ -140,7 +140,7 @@ class NotificationApiService {
         message = 'An unexpected error occurred. Please try again.';
         code = 'UNKNOWN_ERROR';
       }
-      
+
       return {
         'success': false,
         'message': message,
@@ -165,7 +165,7 @@ class NotificationApiService {
       _logRequest('/notifications/read/$notificationId', {}, token: token);
 
       ApiClient.setAuthToken(token);
-      
+
       final response = await ApiClient.patch('/notifications/read/$notificationId', {});
       _logResponse('/notifications/read/$notificationId', response);
 
@@ -208,7 +208,7 @@ class NotificationApiService {
       _logRequest('/notifications/mark-all-read', {}, token: token);
 
       ApiClient.setAuthToken(token);
-      
+
       final response = await ApiClient.patch('/notifications/mark-all-read', {});
       _logResponse('/notifications/mark-all-read', response);
 
@@ -251,8 +251,8 @@ class NotificationApiService {
       _logRequest('/notifications/$notificationId', {}, token: token);
 
       ApiClient.setAuthToken(token);
-      
-      final response = await ApiClient.delete('/notifications/$notificationId');
+
+      final response = await ApiClient.delete('/notifications/delete/$notificationId');
       _logResponse('/notifications/$notificationId', response);
 
       if (response.statusCode == 200 || response.statusCode == 204) {
@@ -277,6 +277,4 @@ class NotificationApiService {
       };
     }
   }
-
-
 }

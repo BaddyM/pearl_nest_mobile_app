@@ -20,8 +20,7 @@ class TenantBookingHistoryScreen extends StatefulWidget {
   State<TenantBookingHistoryScreen> createState() => _TenantBookingHistoryScreenState();
 }
 
-class _TenantBookingHistoryScreenState extends State<TenantBookingHistoryScreen>
-    with TickerProviderStateMixin {
+class _TenantBookingHistoryScreenState extends State<TenantBookingHistoryScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   String _searchQuery = '';
   List<Booking> _allBookings = [];
@@ -71,9 +70,7 @@ class _TenantBookingHistoryScreenState extends State<TenantBookingHistoryScreen>
   List<Booking> _getFilteredBookings() {
     return _allBookings.where((booking) {
       final matchesStatus = booking.status == _selectedStatus;
-      final matchesSearch = _searchQuery.isEmpty ||
-          booking.propertyTitle.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          booking.propertyTitle.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch = _searchQuery.isEmpty || booking.propertyTitle.toLowerCase().contains(_searchQuery.toLowerCase()) || booking.propertyTitle.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     }).toList();
   }
@@ -111,6 +108,8 @@ class _TenantBookingHistoryScreenState extends State<TenantBookingHistoryScreen>
         return Colors.red;
       case BookingStatus.completed:
         return Colors.blue;
+      case BookingStatus.expired:
+        return Colors.purple;
     }
   }
 
@@ -124,6 +123,8 @@ class _TenantBookingHistoryScreenState extends State<TenantBookingHistoryScreen>
         return 'Cancelled';
       case BookingStatus.completed:
         return 'Completed';
+      case BookingStatus.expired:
+        return 'Expired';
     }
   }
 
@@ -438,6 +439,10 @@ class _TenantBookingHistoryScreenState extends State<TenantBookingHistoryScreen>
         message = 'No completed bookings';
         icon = Icons.task_alt;
         break;
+      case BookingStatus.expired:
+        message = 'No expired bookings';
+        icon = Icons.task_alt;
+        break;
     }
 
     return Center(
@@ -467,9 +472,7 @@ class _TenantBookingHistoryScreenState extends State<TenantBookingHistoryScreen>
           ),
           SizedBox(height: 8),
           Text(
-            _searchQuery.isNotEmpty 
-                ? 'Try adjusting your search terms'
-                : 'Your bookings will appear here',
+            _searchQuery.isNotEmpty ? 'Try adjusting your search terms' : 'Your bookings will appear here',
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.getSecondaryTextColor(context),
@@ -690,8 +693,7 @@ class _TenantBookingHistoryScreenState extends State<TenantBookingHistoryScreen>
                   _buildDetailRow('Type', _getBookingTypeText(booking.type)),
                   _buildDetailRow('Status', _getStatusText(booking.status)),
                   _buildDetailRow('Booking Date', _formatDate(booking.requestedDate)),
-                  if (booking.type == BookingType.viewing)
-                    _buildDetailRow('Time', _formatTime(booking.requestedDate)),
+                  if (booking.type == BookingType.viewing) _buildDetailRow('Time', _formatTime(booking.requestedDate)),
                   _buildDetailRow('Created', _formatDate(booking.createdAt)),
                   if (booking.message != null && booking.message!.isNotEmpty) ...[
                     SizedBox(height: 16),

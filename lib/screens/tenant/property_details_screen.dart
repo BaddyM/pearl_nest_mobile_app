@@ -2,10 +2,13 @@ import 'package:add_comma/add_comma.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:pearlnest/blocs/shares/share_bloc.dart';
+import 'package:pearlnest/blocs/views/views_bloc.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_note_widget.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -87,6 +90,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   // Booking-related state
   DateTime? _checkInDate;
   DateTime? _checkOutDate;
+  int grandTotal = 0;
   late BookingBloc _bookingBloc;
 
   // Pending booking state
@@ -107,9 +111,18 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     return role;
   }
 
+  void viewCounter() {
+    context.read<ViewsBloc>().add(CreateViewEvent(propertyId: widget.property.id));
+  }
+
   @override
   void initState() {
     super.initState();
+    viewCounter();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Initialize stats from embedded data
+      _initializeStatsFromEmbeddedData();
+    });
     _pageController = PageController();
     _tabController = TabController(length: 3, vsync: this);
     _isFavorite = _isPropertyFavorited();
@@ -131,9 +144,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
     // Initialize booking bloc
     _bookingBloc = context.read<BookingBloc>();
-
-    // Initialize stats from embedded data
-    _initializeStatsFromEmbeddedData();
 
     // Load data from APIs
     _loadPropertyData();
@@ -268,21 +278,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         widget.user.favoriteProperties.remove(widget.property.id);
       }
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isFavorite ? 'Added to favorites' : 'Removed from favorites',
-          style: TextStyle(color: AppTheme.whiteColor),
-        ),
-        backgroundColor: AppTheme.primaryblue,
-        duration: Duration(milliseconds: 500),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
   }
 
   void _showContactDialog() {
@@ -1371,8 +1366,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                       Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
                                       SizedBox(width: 8),
                                       Text(
-                                        '${localCheckOutDate!.difference(localCheckInDate!).inDays} nights',
+                                        '${localCheckOutDate!.difference(localCheckInDate!).inDays} nights\nTotal ${ProfileService().currencyConverter(price: (localCheckOutDate!.difference(localCheckInDate!).inDays * widget.property.price).toInt())}',
+                                        overflow: TextOverflow.visible,
                                         style: TextStyle(
+                                          overflow: TextOverflow.visible,
                                           color: AppTheme.primaryblue,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -1384,7 +1381,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                             ],
                           ),
 
-                        AppNoteWidget(note: "Check out date is optional"),
+                        if (widget.property.isRent) AppNoteWidget(note: "Check out date is optional"),
 
                         SizedBox(height: 16),
                         Text(
@@ -1491,6 +1488,42 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       Expanded(
                         // Added Expanded to prevent overflow
                         child: _buildPropertyHeader(),
+                      ),
+                      BlocListener<ShareBloc, ShareState>(
+                        listener: (context, state) {
+                          if (state is ShareError) {
+                            ScaffoldMessenger(
+                              child: SnackBar(
+                                backgroundColor: AppTheme.accentGreen,
+                                content: Text(
+                                  state.error,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: SizedBox(),
+                      ),
+                      BlocListener<ViewsBloc, ViewsState>(
+                        listener: (context, state) {
+                          if (state is ViewsError) {
+                            ScaffoldMessenger(
+                              child: SnackBar(
+                                backgroundColor: AppTheme.accentGreen,
+                                content: Text(
+                                  state.error,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: SizedBox(),
                       ),
                     ],
                   ),
@@ -1796,7 +1829,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
                   ),
                   child: Text(
-                    widget.property.propertyTypeString,
+                    widget.property.type.replaceAll("_", " "),
                     style: TextStyle(
                       fontSize: tagFontSize,
                       color: AppTheme.primaryblue,
@@ -3723,18 +3756,27 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     final checkInFormatted = _checkInDate != null ? DateFormat('yyyy-MM-dd').format(_checkInDate!) : null;
     final checkOutFormatted = _checkOutDate != null ? DateFormat('yyyy-MM-dd').format(_checkOutDate!) : null;
 
+    setState(() {
+      if (_checkInDate != null && _checkOutDate != null) {
+        grandTotal = (_checkOutDate!.difference(_checkInDate!).inDays * widget.property.price).toInt();
+      } else {
+        grandTotal == deposit;
+      }
+    });
+
     _bookingBloc.add(BookingCreateRequested(
       propertyId: widget.property.id,
       checkInDate: checkInFormatted,
       checkOutDate: checkOutFormatted,
       deposit: deposit,
+      total: grandTotal,
     ));
   }
 
   void _showBookingSuccessBottomSheet(Map<String, dynamic> bookingData, String message) {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (context) {
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -3866,6 +3908,26 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                               ),
                             ],
                           ),
+                          SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.getTextColor(context),
+                                ),
+                              ),
+                              Text(
+                                ProfileService().currencyConverter(price: grandTotal),
+                                style: TextStyle(
+                                  color: AppTheme.primaryblue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -3917,27 +3979,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   // Handle property sharing
   void _shareProperty() async {
     try {
-      // Increment share counter
-      await PropertyInteractionsService.incrementShareCounter(widget.property.id);
-
-      // Update local count
-      setState(() {
-        _sharesCount++;
-      });
-
-      // Share the property using the system share functionality
-      // You can add share functionality here if needed
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Property shared successfully!', style: TextStyle(color: AppTheme.whiteColor)),
-          backgroundColor: AppTheme.primaryblue,
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-          margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      SharePlus.instance.share(ShareParams(text: 'https://pearlnestestates.com/PropertyDetails/${widget.property.id}'));
+      //Share api counter
+      context.read<ShareBloc>().add(SharePropertyEvent(propertyId: widget.property.id));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

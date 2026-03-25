@@ -277,7 +277,14 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
         children: [
           Row(
             children: [
-              BackButton(),
+              BackButton(
+                onPressed: () {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => HomeScreen(user: widget.user)),
+                    (route) => false,
+                  );
+                },
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

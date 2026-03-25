@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, library_private_types_in_public_api
-
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/screens/tenant/search_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
@@ -22,15 +23,21 @@ class FiltersScreen extends StatefulWidget {
 
 class _FiltersScreenState extends State<FiltersScreen> {
   late SearchFilters _filters;
+  late Future<Map<String, dynamic>> summary;
 
   final List<String> _propertyTypes = [
-    'All',
-    'Airbnb',
-    'Hostel',
-    'Apartment',
-    'Full House',
-    'Land',
-    'Incomplete House',
+    'all',
+    'air_bnb',
+    'hostel',
+    'apartment',
+    'full_house',
+    'land',
+    "rentals",
+    "condominium",
+    "villa",
+    "office_space",
+    "showroom",
+    "warehouse",
   ];
 
   final List<String> _availableAmenities = [
@@ -49,6 +56,21 @@ class _FiltersScreenState extends State<FiltersScreen> {
     'Utilities Available',
   ];
 
+  void _clearAllFilters() {
+    setState(() {
+      _filters.clear();
+    });
+  }
+
+  void _applyFilters() {
+    Navigator.pop(context, _filters);
+  }
+
+  Future<Map<String, dynamic>> fetchFilterSummary() async {
+    Response response = await ApiClient.get("/property/filter/summary");
+    return response.data;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -58,16 +80,8 @@ class _FiltersScreenState extends State<FiltersScreen> {
       bedrooms: widget.currentFilters.bedrooms,
       selectedAmenities: List.from(widget.currentFilters.selectedAmenities),
     );
-  }
 
-  void _clearAllFilters() {
-    setState(() {
-      _filters.clear();
-    });
-  }
-
-  void _applyFilters() {
-    Navigator.pop(context, _filters);
+    summary = fetchFilterSummary();
   }
 
   @override
@@ -108,7 +122,27 @@ class _FiltersScreenState extends State<FiltersScreen> {
                 children: [
                   _buildPropertyTypeFilter(),
                   SizedBox(height: 24),
-                  _buildPriceRangeFilter(),
+                  FutureBuilder(
+                      future: summary,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.accentGreen,
+                            ),
+                          );
+                        }
+                        if (snapshot.hasData) {
+                          int minPrice = snapshot.data?["minPrice"];
+                          int maxPrice = snapshot.data?["maxPrice"];
+                          return _buildPriceRangeFilter(minPrice: 0, maxPrice: maxPrice);
+                        } else {
+                          return Text(
+                            "Sorry, failed to get price range",
+                            style: TextStyle(color: Colors.red),
+                          );
+                        }
+                      }),
                   SizedBox(height: 24),
                   _buildBedroomsFilter(),
                   SizedBox(height: 24),
@@ -157,7 +191,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                   ),
                 ),
                 child: Text(
-                  type,
+                  ProfileService().stringCapitalize(type),
                   style: TextStyle(
                     color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
                     fontWeight: FontWeight.w500,
@@ -172,7 +206,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
     );
   }
 
-  Widget _buildPriceRangeFilter() {
+  Widget _buildPriceRangeFilter({required int minPrice, required int maxPrice}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -226,8 +260,8 @@ class _FiltersScreenState extends State<FiltersScreen> {
               RangeSlider(
                 values: _filters.priceRange,
                 min: 0,
-                max: 50000000,
-                divisions: 100,
+                max: maxPrice.toDouble(),
+                divisions: 5000,
                 activeColor: AppTheme.primaryblue,
                 inactiveColor: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                 onChanged: (RangeValues values) {
@@ -494,7 +528,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
 
   int _getMatchingPropertiesCount() {
     return widget.allProperties.where((property) {
-      final matchesType = _filters.propertyType == 'All' || property.propertyTypeString == _filters.propertyType;
+      final matchesType = _filters.propertyType == 'All' || property.type == _filters.propertyType;
 
       final matchesPrice = property.price >= _filters.priceRange.start && property.price <= _filters.priceRange.end;
 

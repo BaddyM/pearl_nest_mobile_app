@@ -111,6 +111,8 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         return Colors.red;
       case BookingStatus.completed:
         return Colors.blue;
+      case BookingStatus.expired:
+        return Colors.purple;
     }
   }
 
@@ -124,6 +126,8 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         return 'Cancelled';
       case BookingStatus.completed:
         return 'Completed';
+      case BookingStatus.expired:
+        return 'Expired';
     }
   }
 
@@ -411,6 +415,10 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         break;
       case BookingStatus.completed:
         message = 'No completed bookings';
+        icon = Icons.task_alt;
+        break;
+      case BookingStatus.expired:
+        message = 'No expired bookings';
         icon = Icons.task_alt;
         break;
     }

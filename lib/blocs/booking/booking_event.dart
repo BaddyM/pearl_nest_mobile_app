@@ -12,12 +12,14 @@ class BookingCreateRequested extends BookingEvent {
   final String? checkInDate;
   final String? checkOutDate;
   final int deposit;
+  final int total;
 
   const BookingCreateRequested({
     required this.propertyId,
     this.checkInDate,
     this.checkOutDate,
     required this.deposit,
+    this.total = 0,
   });
 
   @override

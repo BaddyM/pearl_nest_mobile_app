@@ -157,6 +157,7 @@ class PropertyService {
         'limit': limit,
       };
 
+      queryParams['isMobile'] = true;
       if (userId != null) queryParams['userId'] = userId;
       if (sortBy != null) queryParams['sortBy'] = sortBy;
       if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
@@ -550,67 +551,56 @@ class PropertyService {
         if (responseData['data'] != null) {
           final data = responseData['data'];
 
-          //debugPrint('📝 Processing properties data...');
+          for (var propertyData in data) {
+            try {
+              if (propertyData is Map<String, dynamic>) {
+                // Convert API response format to Property model format
+                final property = Property(
+                  id: propertyData['id'] ?? '',
+                  title: propertyData['propertyName'] ?? '',
+                  description: propertyData['description'] ?? '',
+                  price: (propertyData['price'] ?? 0).toDouble(),
+                  deposit: (propertyData['deposit'] ?? 0).toDouble(),
+                  isRent: propertyData['isRent'],
+                  isSale: propertyData['isSale'],
+                  parking: propertyData['parking'],
+                  priceType: propertyData['period'] ?? 'per month',
+                  location: propertyData['location'] ?? '',
+                  address: propertyData['fullAddress'] ?? '',
+                  type: propertyData['propertyType'],
+                  bedrooms: propertyData['numberOfBeds'] ?? 0,
+                  bathrooms: propertyData['numberOfBathrooms'] ?? 0,
+                  area: _parseArea(propertyData['areaMeasurement'] ?? ''),
+                  amenities: _parseAmenities(propertyData['amenities'] ?? ''),
+                  images: _parseImages(propertyData['media'] ?? ''),
+                  landlordId: propertyData['userId'] ?? '',
+                  landlordName: '', // Not provided in API response
+                  landlordPhone: '', // Not provided in API response
+                  landlordEmail: '', // Not provided in API response
+                  rating: 0.0, // Not provided in API response
+                  reviewCount: 0, // Not provided in API response
+                  status: _parsePropertyStatus(propertyData['status']),
+                  availabilityStatus: propertyData['availability'],
+                  createdAt: DateTime.tryParse(propertyData['createdAt'] ?? '') ?? DateTime.now(),
+                  updatedAt: DateTime.tryParse(propertyData['updatedAt'] ?? '') ?? DateTime.now(),
+                  latitude: 0.0, // Not provided in API response
+                  longitude: 0.0, // Not provided in API response
+                  isFeatured: propertyData['featured'] ?? false,
+                  isVerified: propertyData['isVerified'] ?? false,
+                  views: (propertyData['views'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList(),
+                  shares: (propertyData['shares'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList(),
+                  favourites: (propertyData['favourites'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList(),
+                );
 
-          if (data is List) {
-            //debugPrint('   - Data is List with ${data.length} items');
-
-            for (var propertyData in data) {
-              try {
-                if (propertyData is Map<String, dynamic>) {
-                  // Convert API response format to Property model format
-                  final property = Property(
-                    id: propertyData['id'] ?? '',
-                    title: propertyData['propertyName'] ?? '',
-                    description: propertyData['description'] ?? '',
-                    price: (propertyData['price'] ?? 0).toDouble(),
-                    deposit: (propertyData['deposit'] ?? 0).toDouble(),
-                    isRent: propertyData['isRent'],
-                    isSale: propertyData['isSale'],
-                    parking: propertyData['parking'],
-                    priceType: propertyData['period'] ?? 'per month',
-                    location: propertyData['location'] ?? '',
-                    address: propertyData['fullAddress'] ?? '',
-                    type: _parsePropertyType(propertyData['propertyType'] ?? ''),
-                    bedrooms: propertyData['numberOfBeds'] ?? 0,
-                    bathrooms: propertyData['numberOfBathrooms'] ?? 0,
-                    area: _parseArea(propertyData['areaMeasurement'] ?? ''),
-                    amenities: _parseAmenities(propertyData['amenities'] ?? ''),
-                    images: _parseImages(propertyData['media'] ?? ''),
-                    landlordId: propertyData['userId'] ?? '',
-                    landlordName: '', // Not provided in API response
-                    landlordPhone: '', // Not provided in API response
-                    landlordEmail: '', // Not provided in API response
-                    rating: 0.0, // Not provided in API response
-                    reviewCount: 0, // Not provided in API response
-                    status: _parsePropertyStatus(propertyData['status']),
-                    availabilityStatus: propertyData['availability'],
-                    createdAt: DateTime.tryParse(propertyData['createdAt'] ?? '') ?? DateTime.now(),
-                    updatedAt: DateTime.tryParse(propertyData['updatedAt'] ?? '') ?? DateTime.now(),
-                    latitude: 0.0, // Not provided in API response
-                    longitude: 0.0, // Not provided in API response
-                    isFeatured: propertyData['featured'] ?? false,
-                    isVerified: propertyData['isVerified'] ?? false,
-                    views: [], // Not provided in API response
-                    shares: [], // Not provided in API response
-                    favourites: [], // Not provided in API response
-                  );
-                  properties.add(property);
-
-                  //debugPrint('   ✓ Processed property: ${property.title}');
-                }
-              } catch (e) {
-                //debugPrint('   ⚠️ Error processing property item: $e');
-                // Continue processing other properties
+                properties.add(property);
               }
+            } catch (e) {
+              print('   ⚠️ Error processing property item: $e');
+              // Continue processing other properties
             }
-
-            //debugPrint('✅ Successfully processed ${properties.length} properties');
-          } else {
-            //debugPrint('⚠️ Properties data is not a List, treating as no properties');
           }
         } else {
-          //debugPrint('ℹ️ No properties available (data is null)');
+          print('ℹ️ No properties available (data is null)');
         }
 
         final result = {
@@ -621,19 +611,8 @@ class PropertyService {
           'message': properties.isEmpty ? 'No properties found for this landlord' : 'Properties loaded successfully',
           'statusCode': response.statusCode,
         };
-
-        //debugPrint('✅ === LANDLORD PROPERTIES RESULT ===');
-        //debugPrint('   - Success: ${result['success']}');
-        //debugPrint('   - Properties count: ${properties.length}');
-        //debugPrint('   - Has data: ${result['hasData']}');
-        //debugPrint('   - Message: ${result['message']}');
-
         return result;
       } else {
-        //debugPrint('❌ HTTP Error - Properties request failed:');
-        //debugPrint('   - Status code: ${response.statusCode}');
-        //debugPrint('   - Response data: ${response.data}');
-
         final errorData = response.data;
         throw PropertyException(
           errorData['message'] ?? 'Failed to fetch landlord properties',
@@ -641,35 +620,8 @@ class PropertyService {
         );
       }
     } catch (e, stackTrace) {
-      //debugPrint('');
-      //debugPrint('❌ === LANDLORD PROPERTIES ERROR ===');
-      //debugPrint('   - Error: $e');
-      //debugPrint('   - Error type: ${e.runtimeType}');
-      //debugPrint('   - Stack trace: $stackTrace');
-
       return _handleError(e, 'get landlord properties');
-    } finally {
-      //debugPrint('🏁 === FETCH LANDLORD PROPERTIES END ===');
-      //debugPrint('');
-    }
-  }
-
-  // Helper methods for parsing API response data
-  static PropertyType _parsePropertyType(String type) {
-    switch (type.toLowerCase()) {
-      case 'apartment':
-        return PropertyType.apartment;
-      case 'house':
-        return PropertyType.house;
-      case 'studio':
-        return PropertyType.studio;
-      case 'condo':
-        return PropertyType.condo;
-      case 'hostel':
-        return PropertyType.hostel;
-      default:
-        return PropertyType.apartment;
-    }
+    } finally {}
   }
 
   static double _parseArea(String areaMeasurement) {

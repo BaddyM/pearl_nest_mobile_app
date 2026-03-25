@@ -3,6 +3,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pearlnest/models/property.dart';
@@ -49,7 +50,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   final _propertyMapController = TextEditingController();
   final _distanceController = TextEditingController();
 
-  PropertyType _selectedType = PropertyType.apartment;
+  String _selectedType = "apartment";
   String _selectedPriceType = 'per month';
   bool _availabilityStatus = false;
   DateTime? _availableFrom;
@@ -85,16 +86,16 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
   final ImagePicker _picker = ImagePicker();
 
-  final List<PropertyType> _availablePropertyTypes = [
-    PropertyType.apartment,
-    PropertyType.house,
-    PropertyType.studio,
-    PropertyType.condo,
-    PropertyType.townhouse,
-    PropertyType.room,
-    PropertyType.airbnb,
-    PropertyType.hostel,
-    PropertyType.fullHouse,
+  final List<String> _availablePropertyTypes = [
+    "apartment",
+    "house",
+    "studio",
+    "condo",
+    "townhouse",
+    "room",
+    "airbnb",
+    "hostel",
+    "fullHouse",
   ];
 
   bool _isRent = false;
@@ -150,54 +151,16 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       // Fetch property details from API
       final result = await PropertyService.getPropertyForEdit(widget.property!.id, token: token);
 
-      //debugPrint('📋 API Result keys: ${result.keys}');
-      //debugPrint('📋 API Result success: ${result['success']}');
-      //debugPrint('📋 API Result property type: ${result['property']?.runtimeType}');
-      //debugPrint('📋 API Result property is null: ${result['property'] == null}');
-
       if (result['success'] == true && result['property'] != null) {
         //debugPrint('✅ API call successful, populating form with API data...');
         _populateFormWithApiData(result['property']);
       } else {
-        //debugPrint('⚠️ API call failed or no data, falling back to existing property data...');
-        //debugPrint('⚠️ Success: ${result['success']}, Property: ${result['property']}');
-        // Fallback to existing property data
         _populateFormForEditing();
       }
     } catch (e) {
       //debugPrint('❌ Error loading property for editing: $e');
       // Fallback to existing property data
       _populateFormForEditing();
-    }
-  }
-
-  PropertyType _getPropertyTypeFromString(String typeString) {
-    switch (typeString.toLowerCase()) {
-      case 'house':
-        return PropertyType.house;
-      case 'fullhouse':
-      case 'full house':
-        return PropertyType.fullHouse;
-      case 'studio':
-        return PropertyType.studio;
-      case 'condo':
-        return PropertyType.condo;
-      case 'townhouse':
-        return PropertyType.townhouse;
-      case 'land':
-        return PropertyType.land;
-      case 'room':
-        return PropertyType.room;
-      case 'airbnb':
-        return PropertyType.airbnb;
-      case 'hostel':
-        return PropertyType.hostel;
-      case 'incomplete house':
-      case 'incompletehouse':
-        return PropertyType.incompleteHouse;
-      case 'apartment':
-      default:
-        return PropertyType.apartment;
     }
   }
 
@@ -232,7 +195,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
       // Set property type
       String propertyTypeString = propertyData['propertyType'] ?? 'Apartment';
-      _selectedType = _getPropertyTypeFromString(propertyTypeString);
+      _selectedType = (propertyTypeString);
 
       // Handle existing images - store URLs for display and deletion
       if (propertyData['media'] != null && propertyData['media'].toString().isNotEmpty) {
@@ -1155,7 +1118,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!, width: 1.5),
       ),
-      child: DropdownButtonFormField<PropertyType>(
+      child: DropdownButtonFormField<String>(
         value: _selectedType,
         style: TextStyle(color: AppTheme.getTextColor(context), fontWeight: FontWeight.w500),
         decoration: InputDecoration(
@@ -1180,7 +1143,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           return DropdownMenuItem(
             value: type,
             child: Text(
-              _getPropertyTypeDisplayName(type),
+              (type),
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
           );
@@ -1803,33 +1766,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     }
   }
 
-  String _getPropertyTypeDisplayName(PropertyType type) {
-    switch (type) {
-      case PropertyType.apartment:
-        return 'Apartment';
-      case PropertyType.house:
-        return 'House';
-      case PropertyType.studio:
-        return 'Studio';
-      case PropertyType.room:
-        return 'Room';
-      case PropertyType.condo:
-        return 'Condo';
-      case PropertyType.townhouse:
-        return 'Townhouse';
-      case PropertyType.airbnb:
-        return 'Airbnb';
-      case PropertyType.hostel:
-        return 'Hostel';
-      case PropertyType.fullHouse:
-        return 'Full House';
-      case PropertyType.land:
-        return 'Land';
-      case PropertyType.incompleteHouse:
-        return 'Incomplete House';
-    }
-  }
-
   void _submitProperty() {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1875,7 +1811,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     }
 
     // Convert PropertyType enum to string
-    String propertyTypeString = _getPropertyTypeDisplayName(_selectedType);
+    String propertyTypeString = _selectedType;
 
     // Convert amenities array to comma-separated string
     String amenitiesString = _selectedAmenities.join(', ');

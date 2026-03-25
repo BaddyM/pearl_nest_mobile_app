@@ -216,52 +216,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
         // Filter properties after state update
         _filterProperties();
-
-        // Show success feedback with undo option
-        if (mounted) {
-          final snackBar = SnackBar(
-            content: Text(
-              'Removed from favorites',
-              style: TextStyle(
-                color: AppTheme.lightGreyColor,
-                fontSize: responsive['subtitleFontSize'],
-              ),
-            ),
-            backgroundColor: AppTheme.primaryblue,
-            duration: Duration(milliseconds: 1500),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(responsive['horizontalPadding']),
-            action: SnackBarAction(
-              label: 'UNDO',
-              textColor: AppTheme.whiteColor,
-              onPressed: () async {
-                try {
-                  // Toggle back to add to favorites
-                  final undoResult = await FavoritesService.toggleFavorite(property.id);
-                  if (undoResult['success'] == true) {
-                    // Reload favorites to restore the item
-                    _loadFavoriteProperties();
-                  } else {
-                    throw Exception('Failed to restore favorite');
-                  }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Failed to restore favorite: ${e.toString()}',
-                        style: TextStyle(color: AppTheme.lightGreyColor),
-                      ),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.all(responsive['horizontalPadding']),
-                    ),
-                  );
-                }
-              },
-            ),
-          );
-          ScaffoldMessenger.of(context).showSnackBar(snackBar);
-        }
       } else {
         // API call failed, show error
         //debugPrint('❌ Failed to toggle favorite for property: ${property.id}');
@@ -309,7 +263,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
     setState(() {
       List<Property> filtered = _favoriteProperties;
       if (_selectedCategory != 'All') {
-        filtered = filtered.where((property) => property.propertyTypeString == _selectedCategory).toList();
+        filtered = filtered.where((property) => property.type == _selectedCategory).toList();
       }
 
       if (_searchQuery.isNotEmpty) {
@@ -608,7 +562,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           itemBuilder: (context, index) {
             final category = _categories[index];
             final isSelected = _selectedCategory == category;
-            final count = category == 'All' ? _favoriteProperties.length : _favoriteProperties.where((p) => p.propertyTypeString == category).length;
+            final count = category == 'All' ? _favoriteProperties.length : _favoriteProperties.where((p) => p.type == category).length;
 
             return GestureDetector(
               onTap: () {
@@ -856,6 +810,8 @@ class PropertyCard extends StatefulWidget {
 
 class _PropertyCardState extends State<PropertyCard> {
   final putCommas = addCommas();
+  int _pendingBalance = 0;
+  int _nights = 0;
 
   Map<String, dynamic> _getResponsiveCardValues(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -891,17 +847,15 @@ class _PropertyCardState extends State<PropertyCard> {
     };
   }
 
-  int calculateGrandTotal({required int totalAmount, required double vat, required double transactionFee}) {
-    double vatAmount = ((vat / 100) * totalAmount);
+  int calculateGrandTotal({required int totalAmount, required double transactionFee}) {
     double transactionFeeAmount = ((transactionFee / 100) * totalAmount);
-    int grandTotal = (totalAmount + vatAmount + transactionFeeAmount).toInt();
+    int grandTotal = (totalAmount + transactionFeeAmount).toInt();
     return grandTotal;
   }
 
   void showPaymentSheet(BuildContext context, int totalAmount) {
     double? customAmount;
     bool isFullPayment = true;
-    double vat = 2;
     double transactionFee = 1.4;
 
     showModalBottomSheet(
@@ -932,21 +886,20 @@ class _PropertyCardState extends State<PropertyCard> {
                   const SizedBox(height: 15),
                   PaymentSummaryCard(
                     subtotal: totalAmount.toDouble(),
-                    vatRate: vat,
                     transactionFee: transactionFee,
                   ),
                   const SizedBox(height: 15),
 
                   // Option 1: Pay Full Amount
                   RadioListTile<bool>(
-                    title: Text("Pay Full Amount (UGX ${putCommas(calculateGrandTotal(totalAmount: totalAmount, vat: vat, transactionFee: transactionFee))})"),
+                    title: Text("Pay Full Amount (UGX ${putCommas(calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee))})"),
                     value: true,
                     groupValue: isFullPayment,
                     onChanged: (val) => setModalState(() => isFullPayment = val!),
                   ),
 
                   // Option 2: Custom Amount
-                  widget.property.deposit == 0
+                  widget.property.isRent
                       ? RadioListTile<bool>(
                           title: const Text("Pay Custom Amount"),
                           value: false,
@@ -984,7 +937,7 @@ class _PropertyCardState extends State<PropertyCard> {
                         padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
                       onPressed: () {
-                        final finalPay = isFullPayment ? totalAmount : customAmount;
+                        final finalPay = isFullPayment ? calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee) : customAmount;
                         if (finalPay == null || finalPay <= 0) {
                           // You could call your showErrorDialog here!
                           return;
@@ -1067,6 +1020,25 @@ class _PropertyCardState extends State<PropertyCard> {
         );
       },
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        if (widget.property.isRent) {
+          if (widget.booking != null) {
+            if (widget.booking!.checkInDate != null && widget.booking!.checkOutDate != null) {
+              _nights = widget.booking!.checkOutDate!.difference(widget.booking!.checkInDate!).inDays;
+              _pendingBalance = (_nights * widget.property.price).toInt();
+            }
+          }
+        } else {
+          _pendingBalance = widget.balance;
+        }
+      });
+    });
   }
 
   @override
@@ -1364,34 +1336,18 @@ class _PropertyCardState extends State<PropertyCard> {
                       children: [
                         Text("Amount Paid: ${ProfileService().currencyConverter(price: widget.paid)}"),
                         SizedBox(height: 10),
-                        Text("Pending Balance: ${ProfileService().currencyConverter(price: widget.balance)}"),
+                        Text("Pending Balance: ${ProfileService().currencyConverter(price: _pendingBalance)}"),
                         SizedBox(height: 10),
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width,
-                          child: Row(
+                        if (_nights != 0)
+                          Column(
                             children: [
-                              Expanded(
-                                child: ElevatedButton(
-                                  style: ButtonStyle(
-                                    backgroundColor: WidgetStatePropertyAll(Colors.red),
-                                  ),
-                                  onPressed: () {
-                                    showCancelBookingSheet(context);
-                                  },
-                                  child: Text("Cancel"),
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    showPaymentSheet(context, widget.balance);
-                                  },
-                                  child: Text("Go to Payment"),
-                                ),
-                              ),
+                              Text("Nights: $_nights"),
+                              SizedBox(height: 10),
                             ],
                           ),
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: _buttonToShow(widget.status ?? BookingStatus.pending),
                         ),
                       ],
                     )
@@ -1413,6 +1369,69 @@ class _PropertyCardState extends State<PropertyCard> {
         ],
       );
     });
+  }
+
+  Widget _buttonToShow(BookingStatus status) {
+    switch (status) {
+      case BookingStatus.pending:
+        return _buildCompletePayment();
+      case BookingStatus.expired:
+        return _buildBookingExpired();
+      default:
+        return _buildCompletePayment();
+    }
+  }
+
+  Widget _buildBookingExpired() {
+    return Container(
+      width: 100,
+      alignment: Alignment.center,
+      padding: EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.3),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.cancel, color: Colors.red),
+          SizedBox(width: 2),
+          Text(
+            "Booking Expired",
+            style: TextStyle(color: Colors.red),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletePayment() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            style: ButtonStyle(
+              backgroundColor: WidgetStatePropertyAll(Colors.red),
+            ),
+            onPressed: () {
+              showCancelBookingSheet(context);
+            },
+            child: Text("Cancel"),
+          ),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () {
+              showPaymentSheet(context, _pendingBalance);
+            },
+            child: Text("Go to Payment"),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildCompactFeature(

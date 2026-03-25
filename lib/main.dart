@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
 import 'package:pearlnest/blocs/profile_bloc/profile_bloc.dart';
+import 'package:pearlnest/blocs/shares/share_bloc.dart';
+import 'package:pearlnest/blocs/views/views_bloc.dart';
 import 'package:pearlnest/providers/notification_cubit.dart';
 import 'package:pearlnest/services/new_chat_service.dart';
 import 'package:pearlnest/services/profile_service.dart';
@@ -90,6 +92,12 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<ProfileBloc>(
           create: (context) => ProfileBloc(),
+        ),
+        BlocProvider<ShareBloc>(
+          create: (context) => ShareBloc(),
+        ),
+        BlocProvider<ViewsBloc>(
+          create: (context) => ViewsBloc(),
         ),
         BlocProvider<NewChatBloc>(
           create: (context) => NewChatBloc(NewChatService(), userId ?? ""),

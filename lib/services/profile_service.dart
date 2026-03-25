@@ -31,4 +31,12 @@ class ProfileService {
     }
     return "UGX ${putCommas(price)}";
   }
+
+  //Capitalize the first letter
+  String stringCapitalize(String text) {
+    String capitalized = text[0].toUpperCase() + text.substring(1);
+    String cleanString = capitalized.replaceAll("_", " ");
+
+    return (cleanString); // Result: "Hello world"
+  }
 }
