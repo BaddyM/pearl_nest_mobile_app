@@ -1,4 +1,3 @@
-// ignore_for_file: deprecated_member_use
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,9 +12,7 @@ import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
-import 'package:pearlnest/screens/common/onboarding_screen.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
-import 'package:pearlnest/screens/tenant/tenant_booking_history_screen.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_application_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
@@ -29,6 +26,7 @@ import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/widgets/error_widget.dart';
 import 'package:pearlnest/widgets/loading_widget.dart';
+import 'package:pearlnest/widgets/login_required_widget.dart';
 import 'package:pearlnest/widgets/registration_status_card.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -50,7 +48,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<ProfileBloc>().add(FetchProfileEvent());
+    if (widget.user.id != "") {
+      context.read<ProfileBloc>().add(FetchProfileEvent());
+    }
   }
 
   @override
@@ -63,55 +63,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
         elevation: 0,
         automaticallyImplyLeading: true,
         actions: [
-          IconButton(
-            icon: Icon(Icons.edit),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditProfileScreen(user: widget.user),
-                ),
-              );
-            },
-          ),
+          widget.user.id != ""
+              ? IconButton(
+                  icon: Icon(Icons.edit),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditProfileScreen(user: widget.user),
+                      ),
+                    );
+                  },
+                )
+              : SizedBox(),
         ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.only(bottom: 100),
-          child: Column(
-            children: [
-              _buildProfileHeader(),
-              _buildProfileInfo(),
-              if (widget.user.userType == UserType.tenant)
-                BlocBuilder<ProfileBloc, ProfileState>(builder: (context, state) {
-                  if (state is ProfileLoadingState) {
-                    return LoadingWidget(height: MediaQuery.of(context).size.height * 0.1);
-                  } else if (state is ProfileLoadedState) {
-                    List<Map<String, dynamic>> reg = List<Map<String, dynamic>>.from(state.data["LandLordRegistration"]);
-                    if (reg.isNotEmpty) {
-                      return ListView.builder(
-                          itemCount: reg.length,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            RegistrationStatus status = RegistrationStatus.fromString((reg[index]["status"]).toString().toLowerCase());
-                            String registrationId = reg[index]["id"].toString();
-                            String dateSubmitted = reg[index]["createdAt"].toString();
-                            return status == RegistrationStatus.rejected ? _buildBecomeLandlordCard() : RegistrationStatusCard(status: status, registrationId: registrationId, dateSubmitted: DateFormat("dd-MMM-yyyy").format(DateTime.parse(dateSubmitted)));
-                          });
-                    } else {
-                      return _buildBecomeLandlordCard();
-                    }
-                  } else if (state is ProfileErrorState) {
-                    return CustomErrorWidget(message: state.msg ?? "Sorry, failed to fetch profile.\nPlease try again later.");
-                  } else {
-                    return SizedBox();
-                  }
-                }),
-              _buildMenuItems(),
-            ],
-          ),
+          child: widget.user.id != ""
+              ? Column(
+                  children: [
+                    _buildProfileHeader(),
+                    _buildProfileInfo(),
+                    if (widget.user.userType == UserType.tenant)
+                      BlocBuilder<ProfileBloc, ProfileState>(builder: (context, state) {
+                        if (state is ProfileLoadingState) {
+                          return LoadingWidget(height: MediaQuery.of(context).size.height * 0.1);
+                        } else if (state is ProfileLoadedState) {
+                          List<Map<String, dynamic>> reg = List<Map<String, dynamic>>.from(state.data["LandLordRegistration"]);
+                          if (reg.isNotEmpty) {
+                            return ListView.builder(
+                                itemCount: reg.length,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemBuilder: (context, index) {
+                                  RegistrationStatus status = RegistrationStatus.fromString((reg[index]["status"]).toString().toLowerCase());
+                                  String registrationId = reg[index]["id"].toString();
+                                  String dateSubmitted = reg[index]["createdAt"].toString();
+                                  return status == RegistrationStatus.rejected ? _buildBecomeLandlordCard() : RegistrationStatusCard(status: status, registrationId: registrationId, dateSubmitted: DateFormat("dd-MMM-yyyy").format(DateTime.parse(dateSubmitted)));
+                                });
+                          } else {
+                            return _buildBecomeLandlordCard();
+                          }
+                        } else if (state is ProfileErrorState) {
+                          return CustomErrorWidget(message: state.msg ?? "Sorry, failed to fetch profile.\nPlease try again later.");
+                        } else {
+                          return SizedBox();
+                        }
+                      }),
+                    _buildMenuItems(),
+                  ],
+                )
+              : Container(
+                  height: MediaQuery.of(context).size.height * 0.8,
+                  width: double.maxFinite,
+                  alignment: Alignment.center,
+                  child: LoginRequiredWidget(),
+                ),
         ),
       ),
     );

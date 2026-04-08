@@ -76,6 +76,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     Container(
+                      width: double.maxFinite,
+                      alignment: Alignment.centerLeft,
+                      child: CircleAvatar(backgroundColor: Colors.white.withOpacity(0.2), radius: 20, child: BackButton()),
+                    ),
+                    Container(
                         padding: EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),

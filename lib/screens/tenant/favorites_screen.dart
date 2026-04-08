@@ -1,8 +1,6 @@
 import 'package:add_comma/add_comma.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-// import 'package:pearlnest/bloc/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/models/booking.dart';
@@ -14,6 +12,7 @@ import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/widgets/cancellation_status_widget.dart';
+import 'package:pearlnest/widgets/login_required_widget.dart';
 import 'package:pearlnest/widgets/payment_summary_card.dart';
 import 'package:pearlnest/widgets/refund_policy.dart';
 
@@ -61,7 +60,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    _loadFavoriteProperties();
+
+    if (widget.user.id != "") {
+      _loadFavoriteProperties();
+    }
   }
 
   @override
@@ -282,13 +284,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         child: Column(
           children: [
             _buildHeader(),
-            Expanded(
-              child: _isLoading
-                  ? _buildLoadingState()
-                  : _favoriteProperties.isEmpty
-                      ? _buildEmptyState()
-                      : _buildFavoritesContent(),
-            ),
+            widget.user.id != ""
+                ? Expanded(
+                    child: _isLoading
+                        ? _buildLoadingState()
+                        : _favoriteProperties.isEmpty
+                            ? _buildEmptyState()
+                            : _buildFavoritesContent(),
+                  )
+                : LoginRequiredWidget(),
           ],
         ),
       ),

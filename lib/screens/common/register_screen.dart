@@ -2,6 +2,7 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/common/complete_registration_screen.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
@@ -22,13 +23,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
   bool _agreeToTerms = false;
   final UserType _selectedUserType = UserType.tenant;
-  
+
   // Auto-validation flags
   bool _nameAutoValidate = false;
   bool _emailAutoValidate = false;
@@ -38,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Add listeners to start validation once user starts typing
     _nameController.addListener(() {
       if (!_nameAutoValidate && _nameController.text.isNotEmpty) {
@@ -47,7 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
       }
     });
-    
+
     _emailController.addListener(() {
       if (!_emailAutoValidate && _emailController.text.isNotEmpty) {
         setState(() {
@@ -55,7 +56,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
       }
     });
-    
+
     _passwordController.addListener(() {
       if (!_passwordAutoValidate && _passwordController.text.isNotEmpty) {
         setState(() {
@@ -63,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
       }
     });
-    
+
     _confirmPasswordController.addListener(() {
       if (!_confirmPasswordAutoValidate && _confirmPasswordController.text.isNotEmpty) {
         setState(() {
@@ -83,32 +84,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             children: [
               Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Image.asset(
-                  "assets/icon.png",
-                  height: 150,
-                  width: 150,
-                )
+                width: double.maxFinite,
+                alignment: Alignment.centerLeft,
+                child: CircleAvatar(backgroundColor: Colors.white.withOpacity(0.2), radius: 20, child: BackButton()),
               ),
+              Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Image.asset(
+                    "assets/icon.png",
+                    height: 150,
+                    width: 150,
+                  )),
               Text(
                 'Join PearlNest',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: AppTheme.getTextColor(context),
-                ),
+                      color: AppTheme.getTextColor(context),
+                    ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 8),
               Text(
                 'Create your account to get started',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.getSecondaryTextColor(context),
-                ),
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 40),
-              
               Form(
                 key: _formKey,
                 child: Column(
@@ -116,10 +120,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     TextFormField(
                       controller: _nameController,
-                      style: TextStyle(color: AppTheme.getTextColor(context),),
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(context),
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Full Name',
-                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context),),
+                        labelStyle: TextStyle(
+                          color: AppTheme.getSecondaryTextColor(context),
+                        ),
                         prefixIcon: Icon(Icons.person_outline, color: AppTheme.primaryblue),
                         filled: true,
                         fillColor: AppTheme.getCardColor(context),
@@ -157,13 +165,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                     ),
                     SizedBox(height: 16),
-
                     TextFormField(
                       controller: _emailController,
-                      style: TextStyle(color: AppTheme.getTextColor(context),),
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(context),
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Email Address',
-                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context),),
+                        labelStyle: TextStyle(
+                          color: AppTheme.getSecondaryTextColor(context),
+                        ),
                         prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryblue),
                         filled: true,
                         fillColor: AppTheme.getCardColor(context),
@@ -190,6 +201,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                      ],
                       autocorrect: false,
                       enableSuggestions: false,
                       autovalidateMode: _emailAutoValidate ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
@@ -217,13 +231,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                     ),
                     SizedBox(height: 16),
-
                     TextFormField(
                       controller: _passwordController,
-                      style: TextStyle(color: AppTheme.getTextColor(context),),
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(context),
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context),),
+                        labelStyle: TextStyle(
+                          color: AppTheme.getSecondaryTextColor(context),
+                        ),
                         prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primaryblue),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -276,13 +293,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                     ),
                     SizedBox(height: 16),
-
                     TextFormField(
                       controller: _confirmPasswordController,
-                      style: TextStyle(color: AppTheme.getTextColor(context),),
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(context),
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Confirm Password',
-                        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context),),
+                        labelStyle: TextStyle(
+                          color: AppTheme.getSecondaryTextColor(context),
+                        ),
                         prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primaryblue),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -408,7 +428,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ],
                     ),
                     SizedBox(height: 24),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -430,7 +449,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     SizedBox(height: 20),
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -483,7 +501,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         MaterialPageRoute(
           builder: (context) => CompleteRegistrationScreen(
             name: _nameController.text,
-            email: _emailController.text,
+            email: _emailController.text.trim(),
             password: _passwordController.text,
             userType: _selectedUserType,
           ),

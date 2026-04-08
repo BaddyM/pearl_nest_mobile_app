@@ -37,6 +37,8 @@ class AuthFailure extends AuthState {
 
 class AuthUnauthenticated extends AuthState {}
 
+class AuthLogOut extends AuthState {}
+
 class AuthOtpRequired extends AuthState {
   final String? role;
   final String email;
@@ -76,5 +78,5 @@ class AuthProfileUpdated extends AuthState {
   @override
   List<Object?> get props => [user];
 }
-class AdminMode extends AuthState {
-}
+
+class AdminMode extends AuthState {}

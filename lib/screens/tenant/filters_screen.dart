@@ -26,7 +26,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
   late Future<Map<String, dynamic>> summary;
 
   final List<String> _propertyTypes = [
-    'all',
+    'All',
     'air_bnb',
     'hostel',
     'apartment',
@@ -133,9 +133,9 @@ class _FiltersScreenState extends State<FiltersScreen> {
                           );
                         }
                         if (snapshot.hasData) {
-                          int minPrice = snapshot.data?["minPrice"];
-                          int maxPrice = snapshot.data?["maxPrice"];
-                          return _buildPriceRangeFilter(minPrice: 0, maxPrice: maxPrice);
+                          int? minPrice = snapshot.data?["minPrice"];
+                          int? maxPrice = snapshot.data?["maxPrice"];
+                          return _buildPriceRangeFilter(minPrice: 0, maxPrice: maxPrice ?? 0);
                         } else {
                           return Text(
                             "Sorry, failed to get price range",

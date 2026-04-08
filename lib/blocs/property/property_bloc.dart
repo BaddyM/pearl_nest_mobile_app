@@ -60,12 +60,9 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
           filters: _currentFilters,
         ));
       } else {
-        //debugPrint('PropertyBloc: Failed to fetch properties - ${result['message']}');
         emit(PropertyError(message: 'Failed to fetch properties'));
       }
     } catch (e, stackTrace) {
-      //debugPrint('PropertyBloc: Error fetching properties - $e');
-      //debugPrint('PropertyBloc: Stack trace - $stackTrace');
       emit(PropertyError(message: 'Network error. Please check your connection.'));
     }
   }

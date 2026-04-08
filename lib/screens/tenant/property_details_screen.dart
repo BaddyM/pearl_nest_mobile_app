@@ -5,6 +5,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:pearlnest/blocs/shares/share_bloc.dart';
 import 'package:pearlnest/blocs/views/views_bloc.dart';
 import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_note_widget.dart';
@@ -3611,14 +3612,20 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _isLoadingPendingBookings || !isPropertyAvailable
-                        ? null
-                        : hasPendingBooking
-                            ? _initiatePayment
-                            : () => _showBookingConfirmationDialog(
-                                  isRent: widget.property.isRent,
-                                  deposit: widget.property.deposit.toInt(),
-                                ),
+                    onPressed: () {
+                      if (widget.user.id != "") {
+                        _isLoadingPendingBookings || !isPropertyAvailable
+                            ? null
+                            : hasPendingBooking
+                                ? _initiatePayment()
+                                : _showBookingConfirmationDialog(
+                                    isRent: widget.property.isRent,
+                                    deposit: widget.property.deposit.toInt(),
+                                  );
+                      } else {
+                        Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isLoadingPendingBookings || !isPropertyAvailable
                           ? Colors.grey
@@ -3655,7 +3662,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       ],
                     ),
                   ),
-                ),
+                )
               ],
             ),
           )

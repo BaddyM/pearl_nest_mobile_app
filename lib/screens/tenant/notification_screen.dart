@@ -3,6 +3,7 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/notification.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/notification_api_service.dart';
+import 'package:pearlnest/widgets/login_required_widget.dart';
 
 import '../../utils/custom_snackbar.dart';
 
@@ -35,7 +36,9 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadNotifications();
+    if (widget.user.id != "") {
+      _loadNotifications();
+    }
   }
 
   @override
@@ -403,12 +406,18 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
-      appBar: _buildAppBar(),
-      body: _isLoading
-          ? _buildLoadingState()
-          : _hasError
-              ? _buildErrorState()
-              : _buildNotificationContent(),
+      appBar: widget.user.id != ""
+          ? _buildAppBar()
+          : AppBar(
+              title: Text("Notifications"),
+            ),
+      body: widget.user.id != ""
+          ? _isLoading
+              ? _buildLoadingState()
+              : _hasError
+                  ? _buildErrorState()
+                  : _buildNotificationContent()
+          : LoginRequiredWidget(),
     );
   }
 

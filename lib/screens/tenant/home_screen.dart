@@ -286,7 +286,8 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       //Get pending bookings
-      final pendingBookings = await BookingService.fetchBookings();
+      List<Booking> _emptybookings = [];
+      final pendingBookings = widget.user.id != "" ? await BookingService.fetchBookings() : _emptybookings;
 
       if (propertiesResult.isNotEmpty) {
         final filteredProperties = List<Property>.from(propertiesResult);
@@ -439,8 +440,8 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       } else {
         // Search for properties of the selected category
-        // //debugPrint('🔍 Searching for properties of type: $categoryName');
-        final searchResult = await PropertyService.searchPropertiesByType(categoryName);
+        debugPrint('🔍 Searching for properties of type: $categoryName');
+        final searchResult = await PropertyService.searchPropertiesByType(categoryName.toLowerCase(), 1, 100);
 
         if (searchResult['success'] == true) {
           final categoryProps = List<Property>.from(searchResult['properties'] ?? []);
@@ -1174,21 +1175,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               // Only show "See All" when there are featured properties
               SizedBox(width: 100),
-              // if (_featuredProperties.isNotEmpty)
-              //   TextButton(
-              //     onPressed: () {
-              //       setState(() {
-              //         _currentIndex = 1;
-              //       });
-              //     },
-              //     child: Text(
-              //       'See All',
-              //       style: TextStyle(
-              //         color: AppTheme.primaryblue,
-              //         fontWeight: FontWeight.w600,
-              //       ),
-              //     ),
-              //   ),
             ],
           ),
         ),

@@ -163,24 +163,10 @@ class PropertyService {
       if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
       if (filters != null) queryParams.addAll(filters);
 
-      _logRequest('/property/list', queryParams, token: token);
-
-      // Set token temporarily if provided
-      final originalToken = ApiClient.currentAuthToken;
-      if (token != null) {
-        ApiClient.setAuthToken(token);
-      }
-
       final response = await ApiClient.get(
         '/property/list',
         queryParameters: queryParams,
       );
-
-      // Restore original token
-      if (token != null) {
-        ApiClient.setAuthToken(originalToken);
-      }
-      _logResponse('/property/list', response);
 
       if (response.statusCode == 200) {
         // Parse properties list
@@ -231,7 +217,6 @@ class PropertyService {
       if (filters != null) queryParams.addAll(filters);
 
       final endpoint = '/property/list?search=${Uri.encodeComponent(searchString.trim())}&sortOrder=$sortOrder&minBeds=${filters?["bedrooms"] ?? 0}&minBathrooms=${filters?["bathrooms"] ?? 0}&minPrice=0&maxPrice=${filters?["priceRange"] == 5000 ? '' : filters?["priceRange"]}';
-      _logRequest(endpoint, queryParams, token: token);
 
       // Set token temporarily if provided
       final originalToken = ApiClient.currentAuthToken;
@@ -240,6 +225,7 @@ class PropertyService {
       }
 
       final response = await ApiClient.get(endpoint, queryParameters: queryParams);
+      print(response.data);
 
       // Restore original token
       if (token != null) {
@@ -792,13 +778,13 @@ class PropertyService {
   }
 
   // Search properties by type or criteria
-  static Future<Map<String, dynamic>> searchPropertiesByType(String searchString) async {
+  static Future<Map<String, dynamic>> searchPropertiesByType(String searchString, int page, int limit) async {
     try {
       if (searchString.trim().isEmpty) {
         throw ValidationException('Search string cannot be empty');
       }
 
-      final endpoint = '/property/search/${searchString.toLowerCase()}';
+      final endpoint = '/property/list?propertyType=${searchString.toLowerCase()}&page=$page&limit=$limit';
 
       _logRequest(endpoint, null);
 
@@ -808,33 +794,22 @@ class PropertyService {
       if (response.statusCode == 200) {
         final responseData = response.data;
 
-        if (responseData['success'] == true) {
-          final List<dynamic> propertiesData = responseData['data'] ?? [];
+        final List<dynamic> propertiesData = responseData ?? [];
 
-          // Convert the response data to Property objects
-          final List<Property> properties = propertiesData.map((propertyData) {
-            return Property.fromJson(propertyData);
-          }).toList();
+        // Convert the response data to Property objects
+        final List<Property> properties = propertiesData.map((propertyData) {
+          return Property.fromJson(propertyData);
+        }).toList();
 
-          //debugPrint('🔍 Search for "$searchString" returned ${properties.length} properties');
+        debugPrint('🔍 Search for "$searchString" returned ${properties.length} properties');
 
-          return {
-            'success': true,
-            'properties': properties,
-            'count': properties.length,
-            'searchTerm': searchString,
-            'statusCode': response.statusCode,
-          };
-        } else {
-          return {
-            'success': false,
-            'message': responseData['message'] ?? 'Search failed',
-            'properties': <Property>[],
-            'count': 0,
-            'searchTerm': searchString,
-            'statusCode': response.statusCode,
-          };
-        }
+        return {
+          'success': true,
+          'properties': properties,
+          'count': properties.length,
+          'searchTerm': searchString,
+          'statusCode': response.statusCode,
+        };
       } else {
         throw PropertyException(
           'Search request failed with status: ${response.statusCode}',

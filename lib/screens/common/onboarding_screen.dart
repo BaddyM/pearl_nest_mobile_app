@@ -1,6 +1,9 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -38,7 +41,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() {
       _currentPage = index;
     });
-    
+
     HapticFeedback.lightImpact();
   }
 
@@ -58,21 +61,55 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       //debugPrint('✅ Completing onboarding - marking first launch as complete');
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_first_launch', false);
-      
+
       if (mounted) {
-        //debugPrint('🔐 Navigating to login screen');
+        debugPrint('🔐 Navigating to home screen');
+        // Navigator.pushReplacement(
+        //   context,
+        //   MaterialPageRoute(builder: (context) => const LoginScreen()),
+        // );
+
+        final User user = User(
+          id: "",
+          name: "",
+          email: "",
+          phone: "",
+          userType: UserType.tenant,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              user: user,
+            ),
+          ),
         );
       }
     } catch (e) {
-      //debugPrint('❌ Error completing onboarding: $e');
-      // Navigate anyway if SharedPreferences fails
       if (mounted) {
+        // Navigator.pushReplacement(
+        //   context,
+        //   MaterialPageRoute(builder: (context) => const LoginScreen()),
+        // );
+
+        final User user = User(
+          id: "",
+          name: "",
+          email: "",
+          phone: "",
+          userType: UserType.tenant,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              user: user,
+            ),
+          ),
         );
       }
     }
@@ -89,11 +126,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              color: AppTheme.primaryblue
-            ),
+            decoration: const BoxDecoration(color: AppTheme.primaryblue),
           ),
-          
           SafeArea(
             child: Column(
               children: [
@@ -110,7 +144,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     },
                   ),
                 ),
-                
                 Container(
                   padding: EdgeInsets.fromLTRB(
                     horizontalPadding,
@@ -128,21 +161,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             duration: const Duration(milliseconds: 300),
                             margin: const EdgeInsets.only(right: 8),
                             height: isSmallScreen ? 6 : 8,
-                            width: _currentPage == index 
-                                ? (isSmallScreen ? 24 : 32) 
-                                : (isSmallScreen ? 6 : 8),
+                            width: _currentPage == index ? (isSmallScreen ? 24 : 32) : (isSmallScreen ? 6 : 8),
                             decoration: BoxDecoration(
-                              color: _currentPage == index
-                                  ? Colors.white
-                                  : Colors.white.withOpacity(0.4),
+                              color: _currentPage == index ? Colors.white : Colors.white.withOpacity(0.4),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                         ),
                       ),
-                      
                       SizedBox(height: isSmallScreen ? 20 : 32),
-                
                       SizedBox(
                         width: double.infinity,
                         height: isSmallScreen ? 48 : 56,
@@ -154,18 +181,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             elevation: 8,
                             shadowColor: Colors.black.withOpacity(0.3),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                isSmallScreen ? 24 : 28
-                              ),
+                              borderRadius: BorderRadius.circular(isSmallScreen ? 24 : 28),
                             ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                _currentPage == _items.length - 1
-                                    ? 'Get Started'
-                                    : 'Continue',
+                                _currentPage == _items.length - 1 ? 'Get Started' : 'Continue',
                                 style: TextStyle(
                                   fontSize: isSmallScreen ? 16 : 18,
                                   fontWeight: FontWeight.bold,
@@ -173,9 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               ),
                               const SizedBox(width: 8),
                               Icon(
-                                _currentPage == _items.length - 1
-                                    ? Icons.rocket_launch
-                                    : Icons.arrow_forward,
+                                _currentPage == _items.length - 1 ? Icons.rocket_launch : Icons.arrow_forward,
                                 size: isSmallScreen ? 18 : 20,
                               ),
                             ],
@@ -211,7 +232,7 @@ class OnboardingPage extends StatelessWidget {
   final Size screenSize;
 
   const OnboardingPage({
-    super.key, 
+    super.key,
     required this.item,
     required this.screenSize,
   });
@@ -221,19 +242,39 @@ class OnboardingPage extends StatelessWidget {
     final isSmallScreen = screenSize.height < 700;
     final isVerySmallScreen = screenSize.height < 600;
     final horizontalPadding = screenSize.width * 0.08;
-    
-    final imageHeight = isVerySmallScreen 
+
+    final imageHeight = isVerySmallScreen
         ? screenSize.height * 0.25
-        : isSmallScreen 
+        : isSmallScreen
             ? screenSize.height * 0.3
             : screenSize.height * 0.35;
-    
-    final titleFontSize = isVerySmallScreen ? 24.0 : isSmallScreen ? 28.0 : 32.0;
-    final descriptionFontSize = isVerySmallScreen ? 14.0 : isSmallScreen ? 16.0 : 18.0;
 
-    final spacingAfterImage = isVerySmallScreen ? 24.0 : isSmallScreen ? 32.0 : 48.0;
-    final spacingAfterTitle = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
-    final spacingAfterDescription = isVerySmallScreen ? 20.0 : isSmallScreen ? 30.0 : 40.0;
+    final titleFontSize = isVerySmallScreen
+        ? 24.0
+        : isSmallScreen
+            ? 28.0
+            : 32.0;
+    final descriptionFontSize = isVerySmallScreen
+        ? 14.0
+        : isSmallScreen
+            ? 16.0
+            : 18.0;
+
+    final spacingAfterImage = isVerySmallScreen
+        ? 24.0
+        : isSmallScreen
+            ? 32.0
+            : 48.0;
+    final spacingAfterTitle = isVerySmallScreen
+        ? 12.0
+        : isSmallScreen
+            ? 16.0
+            : 20.0;
+    final spacingAfterDescription = isVerySmallScreen
+        ? 20.0
+        : isSmallScreen
+            ? 30.0
+            : 40.0;
 
     return SingleChildScrollView(
       child: Padding(
@@ -242,7 +283,6 @@ class OnboardingPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(height: screenSize.height * 0.05),
-            
             Container(
               height: imageHeight,
               width: double.infinity,
@@ -268,9 +308,7 @@ class OnboardingPage extends StatelessWidget {
                 ),
               ),
             ),
-            
             SizedBox(height: spacingAfterImage),
-
             Text(
               item.title,
               style: TextStyle(
@@ -284,13 +322,9 @@ class OnboardingPage extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-            
             SizedBox(height: spacingAfterTitle),
-
             Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: isSmallScreen ? 8 : 16
-              ),
+              padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8 : 16),
               child: Text(
                 item.description,
                 style: TextStyle(
@@ -304,9 +338,7 @@ class OnboardingPage extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            
             SizedBox(height: spacingAfterDescription),
-
             Container(
               width: isSmallScreen ? 40 : 60,
               height: isSmallScreen ? 3 : 4,
@@ -315,7 +347,6 @@ class OnboardingPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
- 
             SizedBox(height: screenSize.height * 0.05),
           ],
         ),

@@ -5,6 +5,8 @@ import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
 import 'package:pearlnest/blocs/profile_bloc/profile_bloc.dart';
 import 'package:pearlnest/blocs/shares/share_bloc.dart';
 import 'package:pearlnest/blocs/views/views_bloc.dart';
+import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/providers/notification_cubit.dart';
 import 'package:pearlnest/services/new_chat_service.dart';
 import 'package:pearlnest/services/profile_service.dart';
@@ -117,11 +119,7 @@ class MyApp extends StatelessWidget {
           builder: (context, themeProvider, child) {
             return BlocListener<AuthBloc, AuthState>(
               listener: (context, state) {
-                //debugPrint('🔄 BlocListener received state: ${state.runtimeType}');
-
                 if (state is AuthSuccess) {
-                  //debugPrint('🏠 Navigating to HomeScreen for user: ${state.user.name}');
-                  // Use navigatorKey to access navigator
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     navigatorKey.currentState?.pushAndRemoveUntil(
                       MaterialPageRoute(
@@ -130,10 +128,30 @@ class MyApp extends StatelessWidget {
                       (route) => false,
                     );
                   });
+                } else if (state is AuthLogOut) {
+                  //Unknown user
+                  final User user = User(
+                    id: "",
+                    name: "",
+                    email: "",
+                    phone: "",
+                    userType: UserType.tenant,
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                  );
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    navigatorKey.currentState?.pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (_) => HomeScreen(user: user),
+                      ),
+                      (route) => false,
+                    );
+                  });
                 }
               },
               child: MaterialApp(
-                title: 'PearlNest Estates',
+                title: 'Pearl Nest Estates',
                 theme: AppTheme.lightTheme,
                 darkTheme: AppTheme.darkTheme,
                 themeMode: themeProvider.themeMode,
@@ -152,7 +170,6 @@ class MyApp extends StatelessWidget {
 
   Widget _getInitialScreen() {
     // Always start with SplashScreen - let each screen handle its own state management
-    //debugPrint('🏠 Starting with SplashScreen - screens will handle their own navigation');
     return const SplashScreen();
   }
 }

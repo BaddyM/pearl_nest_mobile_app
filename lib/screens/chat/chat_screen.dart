@@ -10,6 +10,7 @@ import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
+import 'package:pearlnest/widgets/login_required_widget.dart';
 
 class ChatScreen extends StatefulWidget {
   final User user;
@@ -33,13 +34,15 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _loadConversations();
-    _searchController.addListener(_onSearchChanged);
+    if (widget.user.id != "") {
+      _loadConversations();
+      _searchController.addListener(_onSearchChanged);
 
-    // Initialize chat service
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatBloc>().add(const ChatInitialize());
-    });
+      // Initialize chat service
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<ChatBloc>().add(const ChatInitialize());
+      });
+    }
   }
 
   @override
@@ -113,7 +116,6 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       if (mounted) {
-        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load conversations. ${_allConversations.isEmpty ? 'No admin available.' : 'Showing available chats.'}'),
@@ -173,7 +175,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         actions: [
           // Debug button for development (only show in debug mode)
-          if (kDebugMode)
+          if (kDebugMode && widget.user.id != "")
             PopupMenuButton<String>(
               icon: Icon(Icons.bug_report, color: AppTheme.blackColor),
               onSelected: (value) {
@@ -220,48 +222,55 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildSearchHeader(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                await _loadConversations();
-              },
-              color: AppTheme.primaryblue,
-              child: _isLoading
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            color: AppTheme.primaryblue,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Loading conversations...',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppTheme.greyColor,
+      body: widget.user.id != ""
+          ? Column(
+              children: [
+                _buildSearchHeader(),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      await _loadConversations();
+                    },
+                    color: AppTheme.primaryblue,
+                    child: _isLoading
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(
+                                  color: AppTheme.primaryblue,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Loading conversations...',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: AppTheme.greyColor,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : _filteredConversations.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          padding: EdgeInsets.symmetric(vertical: 8),
-                          itemCount: _filteredConversations.length,
-                          itemBuilder: (context, index) {
-                            final conversation = _filteredConversations[index];
-                            return _buildConversationTile(conversation);
-                          },
-                        ),
+                          )
+                        : _filteredConversations.isEmpty
+                            ? _buildEmptyState()
+                            : ListView.builder(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                itemCount: _filteredConversations.length,
+                                itemBuilder: (context, index) {
+                                  final conversation = _filteredConversations[index];
+                                  return _buildConversationTile(conversation);
+                                },
+                              ),
+                  ),
+                ),
+              ],
+            )
+          : Container(
+              height: MediaQuery.of(context).size.height * 0.8,
+              width: double.maxFinite,
+              alignment: Alignment.center,
+              child: LoginRequiredWidget(),
             ),
-          ),
-        ],
-      ),
     );
   }
 

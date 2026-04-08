@@ -217,6 +217,7 @@ class ApiClient {
       _logResponse(response);
       return response;
     } on DioException catch (e) {
+      debugPrint("Get-Error: ${e}");
       throw Exception(_handleError(e));
     }
   }

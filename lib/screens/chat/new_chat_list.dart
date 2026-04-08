@@ -7,6 +7,7 @@ import 'package:pearlnest/screens/chat/new_chat_conversation.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/widgets/loading_widget.dart';
+import 'package:pearlnest/widgets/login_required_widget.dart';
 
 class NewChatList extends StatefulWidget {
   const NewChatList({super.key, required this.user});
@@ -20,7 +21,9 @@ class _NewChatListState extends State<NewChatList> {
   @override
   void initState() {
     super.initState();
-    _fetchChatList();
+    if (widget.user.id != "") {
+      _fetchChatList();
+    }
   }
 
   void _fetchChatList() {
@@ -46,82 +49,90 @@ class _NewChatListState extends State<NewChatList> {
         title: Text("Chat"),
         centerTitle: false,
         actions: [
-          GestureDetector(
-            onTap: _fetchChatList,
-            child: Icon(
-              Icons.refresh,
-              color: Colors.white,
-              size: 30,
+          if (widget.user.id != "")
+            GestureDetector(
+              onTap: _fetchChatList,
+              child: Icon(
+                Icons.refresh,
+                color: Colors.white,
+                size: 30,
+              ),
             ),
-          ),
           SizedBox(width: 10),
         ],
       ),
-      body: Column(
-        children: [
-          BlocConsumer<NewChatBloc, NewChatState>(
-            builder: (context, state) {
-              if (state is NewChatListLoadingState) {
-                return LoadingWidget(
-                  height: MediaQuery.of(context).size.height * 0.8,
-                );
-              } else if (state is NewChatListLoadedState) {
-                return Container(
-                  height: MediaQuery.of(context).size.height * 0.875,
-                  padding: EdgeInsets.all(16),
-                  child: ListView.builder(
-                      physics: ScrollPhysics(),
-                      itemCount: state.data.length,
-                      itemBuilder: (context, index) {
-                        String name = state.data[index]["fromUser"]["name"];
-                        String role = state.data[index]["fromUser"]["role"];
-                        bool isOnline = state.data[index]["fromUser"]["isOnline"];
-                        String id = state.data[index]["fromUserId"];
-                        bool isRead = state.data[index]["isRead"];
-                        return _buildChatListCard(
-                          name,
-                          widget.user.id,
-                          role,
-                          id,
-                          isOnline: isOnline,
-                          unread: isRead,
-                        );
-                      }),
-                );
-              } else if (state is NewChatListInitState) {
-                return Container(
-                  height: MediaQuery.of(context).size.height * 0.875,
-                  padding: EdgeInsets.all(16),
-                  child: ListView.builder(
-                      physics: ScrollPhysics(),
-                      itemCount: state.data.length,
-                      itemBuilder: (context, index) {
-                        String name = state.data[index]["name"];
-                        String role = state.data[index]["role"];
-                        bool isOnline = state.data[index]["isOnline"];
-                        String id = state.data[index]["id"];
-                        return _buildChatListCard(
-                          name,
-                          widget.user.id,
-                          role,
-                          id,
-                          isOnline: isOnline,
-                          unread: false,
-                        );
-                      }),
-                );
-              } else {
-                return SizedBox();
-              }
-            },
-            listener: (context, state) {
-              if (state is NewChatListErrorState) {
-                CustomSnackBar.showError(context, state.error);
-              }
-            },
-          ),
-        ],
-      ),
+      body: widget.user.id != ""
+          ? Column(
+              children: [
+                BlocConsumer<NewChatBloc, NewChatState>(
+                  builder: (context, state) {
+                    if (state is NewChatListLoadingState) {
+                      return LoadingWidget(
+                        height: MediaQuery.of(context).size.height * 0.8,
+                      );
+                    } else if (state is NewChatListLoadedState) {
+                      return Container(
+                        height: MediaQuery.of(context).size.height * 0.875,
+                        padding: EdgeInsets.all(16),
+                        child: ListView.builder(
+                            physics: ScrollPhysics(),
+                            itemCount: state.data.length,
+                            itemBuilder: (context, index) {
+                              String name = state.data[index]["fromUser"]["name"];
+                              String role = state.data[index]["fromUser"]["role"];
+                              bool isOnline = state.data[index]["fromUser"]["isOnline"];
+                              String id = state.data[index]["fromUserId"];
+                              bool isRead = state.data[index]["isRead"];
+                              return _buildChatListCard(
+                                name,
+                                widget.user.id,
+                                role,
+                                id,
+                                isOnline: isOnline,
+                                unread: isRead,
+                              );
+                            }),
+                      );
+                    } else if (state is NewChatListInitState) {
+                      return Container(
+                        height: MediaQuery.of(context).size.height * 0.875,
+                        padding: EdgeInsets.all(16),
+                        child: ListView.builder(
+                            physics: ScrollPhysics(),
+                            itemCount: state.data.length,
+                            itemBuilder: (context, index) {
+                              String name = state.data[index]["name"];
+                              String role = state.data[index]["role"];
+                              bool isOnline = state.data[index]["isOnline"];
+                              String id = state.data[index]["id"];
+                              return _buildChatListCard(
+                                name,
+                                widget.user.id,
+                                role,
+                                id,
+                                isOnline: isOnline,
+                                unread: false,
+                              );
+                            }),
+                      );
+                    } else {
+                      return SizedBox();
+                    }
+                  },
+                  listener: (context, state) {
+                    if (state is NewChatListErrorState) {
+                      CustomSnackBar.showError(context, state.error);
+                    }
+                  },
+                ),
+              ],
+            )
+          : Container(
+              height: MediaQuery.of(context).size.height * 0.8,
+              width: double.maxFinite,
+              alignment: Alignment.center,
+              child: LoginRequiredWidget(),
+            ),
     );
   }
 
