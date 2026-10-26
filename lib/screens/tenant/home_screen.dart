@@ -118,8 +118,11 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
 
-      // Infinite scroll logic for pagination
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+      // Infinite scroll logic for pagination. Only paginate the unfiltered
+      // "All" list — category views are populated from a separate search call,
+      // so appending general-list pages to them would mix in wrong results.
+      if (_selectedCategory == 'All' &&
+          _scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
         if (_hasNextPage && !_isLoadingMore) {
           _loadProperties(loadMore: true);
         }
@@ -274,12 +277,44 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
+      // Page to fetch: next page when loading more, otherwise the first page.
       final page = loadMore ? _currentPage + 1 : 1;
 
       final List<Property> propertiesResult = await PropertyService.getProperties(
         page: page,
         limit: _pageLimit,
       );
+
+      // A full page implies there may be more results to fetch. A short/empty
+      // page means we've reached the end (the list API returns no pagination
+      // metadata, so we infer it from the returned count).
+      final bool hasMore = propertiesResult.length >= _pageLimit;
+
+      if (loadMore) {
+        // Append-only path: don't refetch featured properties or bookings.
+        final newProperties = List<Property>.from(propertiesResult)..shuffle();
+
+        if (mounted) {
+          setState(() {
+            // De-duplicate by id so unstable server ordering can't append the
+            // same property twice (which previously looked like a runaway loop).
+            final existingIds = _properties.map((p) => p.id).toSet();
+            final uniqueNew = newProperties.where((p) => existingIds.add(p.id)).toList();
+
+            _properties.addAll(uniqueNew);
+            _categoryProperties.addAll(uniqueNew);
+
+            _currentPage = page; // Advance only after a successful fetch.
+            _hasNextPage = hasMore && uniqueNew.isNotEmpty;
+            _totalProperties = _properties.length;
+            _totalPages = _currentPage + (_hasNextPage ? 1 : 0);
+            _isLoadingMore = false;
+          });
+        }
+        return;
+      }
+
+      // Initial / refresh load: also fetch featured properties and bookings.
       final featuredResult = await PropertyService.getFeaturedProperties(
         page: 1,
         limit: _pageLimit,
@@ -290,13 +325,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final pendingBookings = widget.user.id != "" ? await BookingService.fetchBookings() : _emptybookings;
 
       if (propertiesResult.isNotEmpty) {
-        final filteredProperties = List<Property>.from(propertiesResult);
-        final newProperties = filteredProperties.toList();
+        final newProperties = List<Property>.from(propertiesResult)..shuffle();
         _pendingBookings = pendingBookings.where((b) => b.status == BookingStatus.pending).toList();
-        newProperties.shuffle();
-
-        // Update pagination metadata
-        _totalProperties = newProperties.length;
 
         List<Property> featuredProperties = [];
         if (featuredResult['success'] == true) {
@@ -312,14 +342,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (mounted) {
           setState(() {
-            if (loadMore) {
-              _properties.addAll(newProperties);
-              _categoryProperties.addAll(newProperties);
-            } else {
-              _properties = newProperties;
-              _featuredProperties = featuredProperties;
-              _categoryProperties = List.from(newProperties); // Initialize with all properties
-            }
+            _properties = newProperties;
+            _featuredProperties = featuredProperties;
+            _categoryProperties = List.from(newProperties); // Initialize with all properties
+
+            // Reset pagination metadata for a fresh list.
+            _currentPage = 1;
+            _hasNextPage = hasMore;
+            _totalProperties = newProperties.length;
+            _totalPages = _currentPage + (_hasNextPage ? 1 : 0);
             _isLoading = false;
             _isLoadingMore = false;
           });
@@ -331,12 +362,25 @@ class _HomeScreenState extends State<HomeScreen> {
             _categoryProperties = []; // Initialize empty category properties
             _pendingBookings = []; // Initialize empty pending bookings
             _pendingProperties = []; // Initialize empty pending properties
+            _hasNextPage = false;
             _isLoading = false;
           });
         }
       }
     } catch (e) {
       debugPrint('❌ Error loading properties: $e');
+
+      // A failed "load more" should not destroy the session — just stop the
+      // spinner so the user can retry by scrolling again.
+      if (loadMore) {
+        if (mounted) {
+          setState(() {
+            _isLoadingMore = false;
+          });
+        }
+        return;
+      }
+
       if (mounted) {
         context.read<AuthBloc>().add(AuthLogoutRequested());
         Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => LoginScreen()), (route) => false);

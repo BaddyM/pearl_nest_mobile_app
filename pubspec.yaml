@@ -2,7 +2,7 @@ name: pearlnest
 description: "A new Flutter project."
 
 #Android
-version: 1.1.0+9
+version: 1.1.6+11
 
 #IOS
 #version: 1.1.4
