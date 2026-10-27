@@ -16,7 +16,7 @@ class AuthService {
 
   // Configuration constants
   static const int _passwordMinLength = 6;
-  static const int _maxSessionDays = 90; // 90 days as per requirement
+  static const int _maxSessionDays = 60;
 
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data, {String? token}) {
@@ -164,7 +164,7 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
 
-    // Calculate expiry time (default to 90 days if not provided)
+    // Calculate expiry time (default to 60 days if not provided)
     final expiryDuration = expiresIn != null ? Duration(seconds: expiresIn) : Duration(days: _maxSessionDays);
 
     final expiryTime = DateTime.now().add(expiryDuration);

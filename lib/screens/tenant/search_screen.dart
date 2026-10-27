@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, library_private_types_in_public_api
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
@@ -872,8 +873,10 @@ class _SearchScreenState extends State<SearchScreen> {
                             topLeft: Radius.circular(16),
                             topRight: Radius.circular(16),
                           ),
-                          child: Image.network(
-                            _getFullImageUrl(property.images.first),
+                          child:                           Image(
+                            image: CachedNetworkImageProvider(
+                              _getFullImageUrl(property.images.first),
+                            ),
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(

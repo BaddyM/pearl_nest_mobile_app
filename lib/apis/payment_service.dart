@@ -3,6 +3,24 @@ import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/api_client.dart';
 
 class PaymentService {
+  static Future<Map<String, dynamic>> getLandlordWallet() async {
+    try {
+      final response = await ApiClient.get('/payments/landlord/wallet');
+      final data = response.data;
+      if (response.statusCode != 200 || data is! Map || data['success'] != true || data['data'] is! Map) {
+        throw PaymentException('Wallet earnings could not be loaded. Please try again.');
+      }
+      return Map<String, dynamic>.from(data['data'] as Map);
+    } on DioException catch (error) {
+      final message = error.response?.data is Map
+          ? error.response?.data['message']?.toString()
+          : null;
+      throw PaymentException(message?.isNotEmpty == true
+          ? message!
+          : 'Unable to connect to the wallet service. Check your connection and try again.');
+    }
+  }
+
   static void _logRequest(String endpoint, Map<String, dynamic>? data) {
     if (kDebugMode) {
       //debugPrint('💳 PAYMENT REQUEST: $endpoint');
@@ -26,6 +44,14 @@ class PaymentService {
         //debugPrint('❌ Response status: ${error.response?.statusCode}');
         //debugPrint('❌ Response data: ${error.response?.data}');
       }
+    }
+
+    class PaymentException implements Exception {
+      final String message;
+      const PaymentException(this.message);
+
+      @override
+      String toString() => message;
     }
   }
 

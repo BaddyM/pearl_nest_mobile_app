@@ -1,4 +1,5 @@
 import 'package:add_comma/add_comma.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
@@ -890,20 +891,25 @@ class _PropertyCardState extends State<PropertyCard> {
                   const SizedBox(height: 15),
                   PaymentSummaryCard(
                     subtotal: totalAmount.toDouble(),
-                    transactionFee: transactionFee,
+                    transactionFee: widget.isBooking ? 0 : transactionFee,
                   ),
+                  if (widget.isBooking)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('The booking quote already includes transaction fees.'),
+                    ),
                   const SizedBox(height: 15),
 
                   // Option 1: Pay Full Amount
                   RadioListTile<bool>(
-                    title: Text("Pay Full Amount (UGX ${putCommas(calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee))})"),
+                    title: Text("Pay Full Amount (UGX ${putCommas(widget.isBooking ? totalAmount : calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee))})"),
                     value: true,
                     groupValue: isFullPayment,
                     onChanged: (val) => setModalState(() => isFullPayment = val!),
                   ),
 
                   // Option 2: Custom Amount
-                  widget.property.isRent
+                  widget.property.isRent && !widget.isBooking
                       ? RadioListTile<bool>(
                           title: const Text("Pay Custom Amount"),
                           value: false,
@@ -941,7 +947,9 @@ class _PropertyCardState extends State<PropertyCard> {
                         padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
                       onPressed: () {
-                        final finalPay = isFullPayment ? calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee) : customAmount;
+                        final finalPay = isFullPayment
+                            ? (widget.isBooking ? totalAmount : calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee))
+                            : customAmount;
                         if (finalPay == null || finalPay <= 0) {
                           // You could call your showErrorDialog here!
                           return;
@@ -1134,8 +1142,10 @@ class _PropertyCardState extends State<PropertyCard> {
                       bottomLeft: widget.isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
                       bottomRight: widget.isHorizontal ? Radius.zero : Radius.zero,
                     ),
-                    child: Image.network(
-                      PropertyCard._getFullImageUrl(widget.property.images.first),
+                    child:                     Image(
+                      image: CachedNetworkImageProvider(
+                        PropertyCard._getFullImageUrl(widget.property.images.first),
+                      ),
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;

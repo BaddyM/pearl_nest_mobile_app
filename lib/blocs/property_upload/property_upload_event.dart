@@ -105,6 +105,7 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
   final bool isSale;
   final bool parking;
   final String distance;
+  final List<File> images;
 
   const PropertyUpdateRequested({
     required this.propertyId,
@@ -130,6 +131,7 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
     this.isRent = false,
     this.parking = false,
     this.availableFrom,
+    this.images = const [],
   });
 
   @override
@@ -157,6 +159,7 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
         isSale,
         parking,
         distance,
+        images,
       ];
 }
 

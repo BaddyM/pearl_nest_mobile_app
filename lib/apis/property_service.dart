@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/models/property.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Custom exceptions for better error handling
 class PropertyException implements Exception {
@@ -25,6 +27,63 @@ class ValidationException extends PropertyException {
 }
 
 class PropertyService {
+  static const String _propertyTypeCacheKey = 'property_type_config';
+  static const String _propertyTypeCacheTimeKey = 'property_type_config_fetched_at';
+  static const Duration _propertyTypeCacheDuration = Duration(minutes: 10);
+
+  static Future<List<Map<String, dynamic>>> getPropertyTypeConfigs({
+    bool forceRefresh = false,
+  }) async {
+    final preferences = await SharedPreferences.getInstance();
+    final cachedAt = preferences.getInt(_propertyTypeCacheTimeKey);
+    final cachedJson = preferences.getString(_propertyTypeCacheKey);
+    if (!forceRefresh &&
+        cachedAt != null &&
+        cachedJson != null &&
+        DateTime.now().millisecondsSinceEpoch - cachedAt <
+            _propertyTypeCacheDuration.inMilliseconds) {
+      try {
+        final decoded = jsonDecode(cachedJson);
+        if (decoded is List) {
+          return decoded
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList();
+        }
+      } on FormatException {
+        await preferences.remove(_propertyTypeCacheKey);
+        await preferences.remove(_propertyTypeCacheTimeKey);
+      }
+    }
+
+    final response = await ApiClient.get('/configuration/property-types');
+    if (response.statusCode != 200) {
+      throw PropertyException(
+        'Could not load property categories.',
+        statusCode: response.statusCode,
+      );
+    }
+
+    final responseBody = response.data;
+    final rawTypes = responseBody is Map ? responseBody['data'] : responseBody;
+    if (rawTypes is! List) {
+      throw FormatException('Property categories returned an invalid response.');
+    }
+    final propertyTypes = rawTypes
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .where((item) => item['key'] is String && item['label'] is String)
+        .toList();
+    await preferences.setString(
+      _propertyTypeCacheKey,
+      jsonEncode(propertyTypes),
+    );
+    await preferences.setInt(
+      _propertyTypeCacheTimeKey,
+      DateTime.now().millisecondsSinceEpoch,
+    );
+    return propertyTypes;
+  }
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data, {String? token}) {
     if (kDebugMode) {
@@ -573,13 +632,17 @@ class PropertyService {
                   longitude: 0.0, // Not provided in API response
                   isFeatured: propertyData['featured'] ?? false,
                   isVerified: propertyData['isVerified'] ?? false,
-                  views: (propertyData['views'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList(),
-                  shares: (propertyData['shares'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList(),
-                  favourites: (propertyData['favourites'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList(),
+                  views: (propertyData['views'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList(),
+                  shares: (propertyData['shares'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList(),
+                  favourites: (propertyData['favourites'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList(),
+                  reviews: (propertyData['reviews'] as List<dynamic>? ?? [])
+                      .whereType<Map<String, dynamic>>()
+                      .toList(),
                 );
 
                 properties.add(property);
               }
+
             } catch (e) {
               print('   ⚠️ Error processing property item: $e');
               // Continue processing other properties
@@ -608,6 +671,16 @@ class PropertyService {
     } catch (e, stackTrace) {
       return _handleError(e, 'get landlord properties');
     } finally {}
+  }
+
+  static Future<List<Map<String, dynamic>>> getPropertyTypes() async {
+    final response = await ApiClient.get('/configuration/property-types');
+    if (response.statusCode != 200 || response.data?['success'] != true) {
+      throw PropertyException('Could not load property types.', statusCode: response.statusCode);
+    }
+    final data = response.data?['data'];
+    if (data is! List) throw PropertyException('Property type response was invalid.');
+    return data.whereType<Map<String, dynamic>>().toList();
   }
 
   static double _parseArea(String areaMeasurement) {
@@ -965,34 +1038,46 @@ class PropertyService {
     required String propertyId,
     required String token,
     required File imageFile,
+  }) =>
+      uploadPropertyImages(
+        propertyId: propertyId,
+        token: token,
+        imageFiles: [imageFile],
+      );
+
+  static Future<Map<String, dynamic>> uploadPropertyImages({
+    required String propertyId,
+    required String token,
+    required List<File> imageFiles,
   }) async {
+    if (imageFiles.isEmpty || imageFiles.length > 10) {
+      return {
+        'success': false,
+        'message': 'Select between 1 and 10 property photos.',
+      };
+    }
+    final originalToken = ApiClient.currentAuthToken;
     try {
-      _logRequest('/property/upload/image/$propertyId', {'image': 'File upload'}, token: token);
-
-      // Create form data for image upload
-      FormData formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(
-          imageFile.path,
-          filename: imageFile.path.split('/').last,
-        ),
-      });
-
-      // Set auth token
-      final originalToken = ApiClient.currentAuthToken;
+      _logRequest('/property/upload/image/$propertyId', {'images': imageFiles.length}, token: token);
+      final formData = FormData();
+      for (final imageFile in imageFiles) {
+        formData.files.add(
+          MapEntry(
+            'image',
+            await MultipartFile.fromFile(
+              imageFile.path,
+              filename: imageFile.path.split('/').last,
+            ),
+          ),
+        );
+      }
       if (token.isNotEmpty) {
         ApiClient.setAuthToken(token);
       }
-
       final response = await ApiClient.postMultipart(
         '/property/upload/image/$propertyId',
         formData,
       );
-
-      // Restore original token
-      if (token.isNotEmpty) {
-        ApiClient.setAuthToken(originalToken);
-      }
-
       _logResponse('/property/upload/image/$propertyId', response);
 
       if (response.statusCode == 200) {
@@ -1009,6 +1094,10 @@ class PropertyService {
       }
     } catch (e) {
       return _handleError(e, 'image upload for property ID: $propertyId');
+    } finally {
+      if (token.isNotEmpty) {
+        ApiClient.setAuthToken(originalToken);
+      }
     }
   }
 

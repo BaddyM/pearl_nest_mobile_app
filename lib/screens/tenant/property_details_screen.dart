@@ -1625,10 +1625,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(borderRadius),
                     child: widget.property.images.isNotEmpty
-                        ? Image.network(
-                            _getFullImageUrl(images[index]),
+                        ? CachedNetworkImage(
+                            imageUrl: _getFullImageUrl(images[index]),
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
+                            errorWidget: (context, url, error) {
                               return Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(borderRadius),
@@ -2468,8 +2468,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            imageUrl,
+                          child:                           Image(
+                            image: CachedNetworkImageProvider(imageUrl),
                             fit: BoxFit.cover,
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
@@ -2647,8 +2647,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
                   return Center(
                     child: InteractiveViewer(
-                      child: Image.network(
-                        imageUrl,
+                      child:                       Image(
+                        image: CachedNetworkImageProvider(imageUrl),
                         fit: BoxFit.contain,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;

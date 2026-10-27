@@ -8,6 +8,7 @@ import "package:pearlnest/models/property.dart";
 import "package:pearlnest/models/user.dart";
 import "package:pearlnest/screens/tenant/favorites_screen.dart";
 import "package:pearlnest/screens/tenant/home_screen.dart";
+import "package:pearlnest/screens/tenant/refund_request_screen.dart";
 import "package:pearlnest/widgets/app_theme.dart";
 import "package:pearlnest/widgets/empty_properties.dart";
 import "package:pearlnest/widgets/loading_widget.dart";
@@ -114,22 +115,48 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                           String? bookingId = state.bookings[index].id;
                           Booking booking = state.bookings[index];
                           if (property != null) {
-                            final amount = state.bookings[index].payments.fold(0 as num, (sum, item) => item["paymentStatus"] == "APPROVED" ? sum + item["amount"] : sum + 0);
-                            double propertyPrice = property.deposit != 0 ? property.deposit : property.price;
-                            double balance = propertyPrice - amount.toDouble();
+                            final successfulPayments = booking.payments.where((item) {
+                              final paymentStatus = item["paymentStatus"]?.toString().toUpperCase();
+                              return paymentStatus == "APPROVED" || paymentStatus == "BOOKED";
+                            }).toList();
+                            final amount = successfulPayments.fold<num>(0, (sum, item) => sum + ((item["amount"] as num?) ?? 0));
+                            final totalDue = booking.totalAmount ?? (property.deposit != 0 ? property.deposit : property.price);
+                            final initialDue = booking.amount ?? totalDue;
+                            final balance = amount == 0 ? initialDue - amount.toDouble() : totalDue - amount.toDouble();
                             return Container(
                               margin: EdgeInsets.only(bottom: 20),
-                              child: PropertyCard(
-                                bookingId: bookingId,
-                                isBooking: balance == 0.0 ? false : true,
-                                balance: balance.toInt(),
-                                paid: amount.toInt(),
-                                property: property,
-                                onTap: () {},
-                                onFavorite: () {},
-                                isFavorite: false,
-                                status: booking.status,
-                                booking: booking,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  PropertyCard(
+                                    bookingId: bookingId,
+                                    isBooking: balance == 0.0 ? false : true,
+                                    balance: balance.toInt(),
+                                    paid: amount.toInt(),
+                                    property: property,
+                                    onTap: () {},
+                                    onFavorite: () {},
+                                    isFavorite: false,
+                                    status: booking.status,
+                                    booking: booking,
+                                  ),
+                                  if (successfulPayments.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: OutlinedButton.icon(
+                                        icon: const Icon(Icons.currency_exchange),
+                                        label: const Text('Request a refund'),
+                                        onPressed: () {
+                                          Navigator.of(context).push(MaterialPageRoute(
+                                            builder: (_) => RefundRequestScreen(
+                                              propertyName: booking.propertyTitle,
+                                              payments: successfulPayments,
+                                            ),
+                                          ));
+                                        },
+                                      ),
+                                    ),
+                                ],
                               ),
                             );
                           } else {

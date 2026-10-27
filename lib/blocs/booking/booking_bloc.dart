@@ -73,6 +73,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         checkInDate: event.checkInDate,
         checkOutDate: event.checkOutDate,
         deposit: event.deposit,
+        paymentOption: event.paymentOption,
       );
 
       emit(BookingSuccess(

@@ -13,17 +13,19 @@ class BookingCreateRequested extends BookingEvent {
   final String? checkOutDate;
   final int deposit;
   final int total;
+  final String paymentOption;
 
   const BookingCreateRequested({
     required this.propertyId,
     this.checkInDate,
     this.checkOutDate,
     required this.deposit,
+    this.paymentOption = 'FULL',
     this.total = 0,
   });
 
   @override
-  List<Object?> get props => [propertyId, checkInDate, checkOutDate];
+  List<Object?> get props => [propertyId, checkInDate, checkOutDate, paymentOption];
 }
 
 class BookingReset extends BookingEvent {

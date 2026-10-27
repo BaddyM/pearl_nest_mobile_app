@@ -32,6 +32,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _hasError = false;
+  bool _completionDialogShown = false;
   String? _errorMessage;
 
   @override
@@ -53,7 +54,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
-            if (progress == 100) {
+            if (progress == 100 && mounted) {
               setState(() {
                 _isLoading = false;
               });
@@ -61,16 +62,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
           },
           onPageStarted: (String url) {
             //debugPrint('💳 Page started loading: $url');
-            setState(() {
-              _isLoading = true;
-              _hasError = false;
-            });
+            if (mounted) {
+              setState(() {
+                _isLoading = true;
+                _hasError = false;
+              });
+            }
           },
           onPageFinished: (String url) {
             //debugPrint('💳 Page finished loading: $url');
-            setState(() {
-              _isLoading = false;
-            });
+            if (mounted) setState(() => _isLoading = false);
 
             // Inject JavaScript to detect button clicks
             _injectJavaScript();
@@ -80,11 +81,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
           },
           onWebResourceError: (WebResourceError error) {
             //debugPrint('💳 WebView error: ${error.description}');
-            setState(() {
-              _isLoading = false;
-              _hasError = true;
-              _errorMessage = error.description;
-            });
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _hasError = true;
+                _errorMessage = error.description;
+              });
+            }
           },
           onNavigationRequest: (NavigationRequest request) {
             //debugPrint('💳 Navigation request: ${request.url}');
@@ -143,11 +146,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             var button = buttons[i];
             var buttonText = button.innerText.toLowerCase();
             
-            if (buttonText.includes('go to app') || 
-                buttonText.includes('return to app') || 
+            if (buttonText.includes('go to app') ||
+                buttonText.includes('return to app') ||
                 buttonText.includes('back to app') ||
                 buttonText.includes('continue')) {
-              
+
               button.addEventListener('click', function(e) {
                 e.preventDefault();
                 sendToFlutter('go_to_app_clicked');
@@ -196,6 +199,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _showPaymentCompletionDialog(bool isSuccess) {
+    if (!mounted || _completionDialogShown) return;
+    _completionDialogShown = true;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -298,6 +303,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             if (!isSuccess)
               TextButton(
                 onPressed: () {
+                  _completionDialogShown = false;
                   Navigator.of(context).pop();
                 },
                 child: Text(
@@ -363,98 +369,188 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          if (_hasError)
-            Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Payment Page Failed to Load',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.getTextColor(context),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      _errorMessage ?? 'Please check your internet connection and try again.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _hasError = false;
-                        });
-                        _controller.reload();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryblue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                      child: Text(
-                        'Retry',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            WebViewWidget(controller: _controller),
-          if (_isLoading && !_hasError)
-            Container(
-              color: Colors.white,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Loading Payment Page...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppTheme.getTextColor(context),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Please wait while we redirect you to the payment gateway.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            padding: const EdgeInsets.all(17),
+            decoration: BoxDecoration(
+              color: AppTheme.getCardColor(context),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppTheme.primaryblue.withValues(alpha: 0.2),
               ),
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: const Icon(
+                        Icons.home_work_outlined,
+                        color: AppTheme.primaryblue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.propertyTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppTheme.getTextColor(context),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Complete payment securely to continue',
+                            style: TextStyle(
+                              color: AppTheme.getSecondaryTextColor(context),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(height: 1),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Amount due',
+                            style: TextStyle(
+                              color: AppTheme.getSecondaryTextColor(context),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            ProfileService().currencyConverter(price: widget.amount.toInt()),
+                            style: const TextStyle(
+                              color: AppTheme.primaryblue,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 19,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.lock_outline, color: AppTheme.primaryblue, size: 18),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Secure checkout',
+                      style: TextStyle(
+                        color: AppTheme.getSecondaryTextColor(context),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                if (_hasError)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline, size: 58, color: Colors.red),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Payment page could not load',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.getTextColor(context),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _errorMessage ?? 'Check your connection and try again.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.getSecondaryTextColor(context),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _hasError = false;
+                                _isLoading = true;
+                              });
+                              _controller.reload();
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Try again'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  WebViewWidget(controller: _controller),
+                if (_isLoading && !_hasError)
+                  Container(
+                    color: AppTheme.getBackgroundColor(context),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Connecting to secure checkout',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.getTextColor(context),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Your booking details are being prepared.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.getSecondaryTextColor(context),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/models/landlord.dart';
+import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/landlord/landlord_property_management_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
@@ -10,6 +11,8 @@ import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
+import 'package:pearlnest/screens/landlord/landlord_refunds_screen.dart';
+import 'package:pearlnest/screens/landlord/landlord_wallet_screen.dart';
 
 class LandlordDashboardScreen extends StatefulWidget {
   final User user;
@@ -31,6 +34,9 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
   bool _isLoading = true;
   int _totalProperties = 0;
   int _totalBookings = 0;
+  int _totalViews = 0;
+  int _totalComments = 0;
+  int _totalInteractions = 0;
   String _error = '';
 
   @override
@@ -60,6 +66,9 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
       //debugPrint('🏠 Dashboard - Properties content: $properties');
 
       int propertyCount = 0;
+      int totalViews = 0;
+      int totalComments = 0;
+      int totalInteractions = 0;
       if (properties is Map<String, dynamic>) {
         // The getPropertiesByLandlord method returns {properties: [...]} not {data: [...]}
         final propertiesList = properties['properties'];
@@ -68,6 +77,13 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
 
         if (propertiesList is List) {
           propertyCount = propertiesList.length;
+          for (final property in propertiesList.whereType<dynamic>()) {
+            if (property is! Property) continue;
+            totalViews += property.views.length;
+            totalComments += property.reviews.length;
+            totalInteractions += property.views.length + property.shares.length +
+                property.favourites.length + property.reviews.length;
+          }
           //debugPrint('🏠 Dashboard - Property count: $propertyCount');
         }
       }
@@ -79,6 +95,9 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
         setState(() {
           _totalProperties = propertyCount;
           _totalBookings = bookings is List ? bookings.length : 0;
+          _totalViews = totalViews;
+          _totalComments = totalComments;
+          _totalInteractions = totalInteractions;
           _isLoading = false;
         });
 
@@ -100,6 +119,41 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: _buildBody(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: AppTheme.getCardColor(context),
+        selectedItemColor: AppTheme.primaryblue,
+        unselectedItemColor: AppTheme.getSecondaryTextColor(context),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: 'Overview',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_work_outlined),
+            activeIcon: Icon(Icons.home_work),
+            label: 'Properties',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today_outlined),
+            activeIcon: Icon(Icons.calendar_today),
+            label: 'Bookings',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Chats',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 
@@ -266,16 +320,18 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.star, color: Colors.amber, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  '${widget.landlord.rating} Rating',
-                  style: TextStyle(
-                    color: AppTheme.getTextColor(context),
-                    fontWeight: FontWeight.w600,
+                if (widget.landlord.rating > 0) ...[
+                  Icon(Icons.star, color: Colors.amber, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    '${widget.landlord.rating} Rating',
+                    style: TextStyle(
+                      color: AppTheme.getTextColor(context),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                Spacer(),
+                  Spacer(),
+                ],
                 if (widget.landlord.isVerified)
                   Row(
                     children: [
@@ -372,6 +428,29 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             ],
           ),
           SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _isLoading
+                    ? _buildLoadingStatCard('Property views', Icons.visibility, Colors.teal)
+                    : _buildStatCard('Property views', '$_totalViews', Icons.visibility, Colors.teal),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: _isLoading
+                    ? _buildLoadingStatCard('Comments', Icons.comment_outlined, Colors.deepPurple)
+                    : _buildStatCard('Comments', '$_totalComments', Icons.comment_outlined, Colors.deepPurple),
+              ),
+            ],
+          ),
+          if (!_isLoading)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '$_totalInteractions total interactions across your listings',
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context), fontSize: 12),
+              ),
+            ),
         ],
       ),
     );
@@ -532,6 +611,34 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                       _currentIndex = 2;
                     });
                   },
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionCard(
+                  'Wallet & Earnings',
+                  Icons.account_balance_wallet_outlined,
+                  AppTheme.primaryblue,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LandlordWalletScreen()),
+                  ),
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: _buildActionCard(
+                  'Refund Requests',
+                  Icons.currency_exchange,
+                  Colors.orange,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LandlordRefundsScreen()),
+                  ),
                 ),
               ),
             ],

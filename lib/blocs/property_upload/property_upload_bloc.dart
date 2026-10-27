@@ -120,9 +120,10 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
       }
 
       // Call the property service to update
+      final token = await _getAuthToken();
       final result = await PropertyService.updateProperty(
         propertyId: event.propertyId,
-        token: await _getAuthToken(),
+        token: token,
         propertyName: event.propertyName,
         propertyType: event.propertyType,
         location: event.location,
@@ -148,6 +149,21 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
       );
 
       if (result['success'] == true) {
+        if (event.images.isNotEmpty) {
+          final imageResult = await PropertyService.uploadPropertyImages(
+            propertyId: event.propertyId,
+            token: token,
+            imageFiles: event.images,
+          );
+          if (imageResult['success'] != true) {
+            emit(PropertyUploadError(
+              message: imageResult['message']?.toString() ??
+                  'Property details were saved, but photos could not be uploaded.',
+              errorCode: 'IMAGE_UPLOAD_FAILED',
+            ));
+            return;
+          }
+        }
         //debugPrint('PropertyUploadBloc: Update successful');
         emit(PropertyUploadSuccess(
           message: result['message'] ?? 'Property updated successfully!',

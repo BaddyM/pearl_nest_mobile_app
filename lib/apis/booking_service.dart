@@ -49,6 +49,7 @@ class BookingService {
     String? checkInDate,
     String? checkOutDate,
     required int deposit,
+    String paymentOption = 'FULL',
   }) async {
     try {
       final requestData = {
@@ -57,6 +58,7 @@ class BookingService {
         'checkOutDate': checkOutDate,
         'deposit': deposit,
         'amount': deposit,
+        'paymentOption': paymentOption,
       };
 
       _logRequest('/booking/create', requestData);
@@ -128,6 +130,32 @@ class BookingService {
       }
       throw BookingException('Unexpected error: $e');
     }
+  }
+
+  static Future<Map<String, dynamic>> getBookingQuote({
+    required String propertyId,
+    String? checkInDate,
+    String? checkOutDate,
+    String paymentOption = 'FULL',
+  }) async {
+    final params = <String, String>{
+      'propertyId': propertyId,
+      'paymentOption': paymentOption,
+      if (checkInDate != null) 'checkInDate': checkInDate,
+      if (checkOutDate != null) 'checkOutDate': checkOutDate,
+    };
+    final query = params.entries
+        .map((entry) => '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}')
+        .join('&');
+    final response = await ApiClient.get('/booking/quote?$query');
+    if (response.statusCode != 200 || response.data?['success'] != true) {
+      throw BookingException('Could not calculate the booking amount.', statusCode: response.statusCode);
+    }
+    final data = response.data?['data'];
+    if (data is! Map<String, dynamic>) {
+      throw BookingException('Booking quote response was invalid.');
+    }
+    return data;
   }
 
   static Future<List<Booking>> fetchBookings({String? status}) async {

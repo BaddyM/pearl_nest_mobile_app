@@ -2,6 +2,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:pearlnest/apis/api_client.dart';
+import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/screens/tenant/search_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
@@ -25,20 +26,8 @@ class _FiltersScreenState extends State<FiltersScreen> {
   late SearchFilters _filters;
   late Future<Map<String, dynamic>> summary;
 
-  final List<String> _propertyTypes = [
-    'All',
-    'air_bnb',
-    'hostel',
-    'apartment',
-    'full_house',
-    'land',
-    "rentals",
-    "condominium",
-    "villa",
-    "office_space",
-    "showroom",
-    "warehouse",
-  ];
+  List<String> _propertyTypes = ['All'];
+  Map<String, String> _propertyTypeLabels = {'All': 'All'};
 
   final List<String> _availableAmenities = [
     'WiFi',
@@ -82,6 +71,45 @@ class _FiltersScreenState extends State<FiltersScreen> {
     );
 
     summary = fetchFilterSummary();
+    _loadPropertyTypes();
+  }
+
+  Future<void> _loadPropertyTypes() async {
+    try {
+      final types = await PropertyService.getPropertyTypeConfigs();
+      if (!mounted) return;
+
+      final typeKeys = types.map((type) => type['key'] as String).toList();
+      final labels = <String, String>{
+        'All': 'All',
+        for (final type in types)
+          type['key'] as String: type['label'] as String,
+      };
+      final currentType = _filters.propertyType;
+      final matchingType = types.firstWhere((type) {
+        final key = type['key'] as String;
+        final label = type['label'] as String;
+        return key.toLowerCase() == currentType.toLowerCase() ||
+            label.toLowerCase() == currentType.toLowerCase();
+      }, orElse: () => <String, dynamic>{});
+
+      setState(() {
+        _propertyTypes = ['All', ...typeKeys];
+        _propertyTypeLabels = labels;
+        if (matchingType.isNotEmpty) {
+          _filters.propertyType = matchingType['key'] as String;
+        } else if (currentType != 'All' && currentType.isNotEmpty) {
+          _propertyTypes.add(currentType);
+          _propertyTypeLabels[currentType] = currentType;
+        }
+      });
+    } catch (error) {
+      if (!mounted) return;
+      debugPrint('Could not load property categories: $error');
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Property categories could not be refreshed.')),
+      );
+    }
   }
 
   @override
@@ -191,7 +219,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                   ),
                 ),
                 child: Text(
-                  ProfileService().stringCapitalize(type),
+                  _propertyTypeLabels[type] ?? ProfileService().stringCapitalize(type),
                   style: TextStyle(
                     color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
                     fontWeight: FontWeight.w500,

@@ -45,6 +45,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  DateTime? _lastBackPressTime;
   int _currentIndex = 0;
   String _selectedCategory = 'All';
   List<Property> _properties = [];
@@ -56,9 +57,12 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isCategoryLoading = false; // Loading state for category filtering
   String? _errorMessage;
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _categoryScrollController = ScrollController();
   bool _showBackToTop = false;
   int _unreadNotificationCount = 0; // Count of unread notifications
   Timer? _notificationTimer; // Timer for periodic notification refresh
+  Timer? _categoryAutoScrollTimer;
+  Timer? _categoryRefreshTimer;
 
   // Pagination state
   int _currentPage = 1;
@@ -70,13 +74,13 @@ class _HomeScreenState extends State<HomeScreen> {
   final int _pageLimit = 20;
 
   final List<Map<String, dynamic>> _categories = [
-    {'name': 'All', 'icon': Icons.apps},
-    {'name': 'Airbnb', 'icon': Icons.weekend},
-    {'name': 'Hostel', 'icon': Icons.hotel},
-    {'name': 'Apartment', 'icon': Icons.apartment},
-    {'name': 'Full House', 'icon': Icons.home},
-    {'name': 'Land', 'icon': Icons.landscape},
-    {'name': 'Rental', 'icon': Icons.construction},
+    {'name': 'All', 'key': 'All', 'icon': Icons.apps},
+    {'name': 'Airbnb', 'key': 'air_bnb', 'icon': Icons.weekend},
+    {'name': 'Hostel', 'key': 'hostel', 'icon': Icons.hotel},
+    {'name': 'Apartment', 'key': 'apartment', 'icon': Icons.apartment},
+    {'name': 'Full House', 'key': 'full_house', 'icon': Icons.home},
+    {'name': 'Land', 'key': 'land', 'icon': Icons.landscape},
+    {'name': 'Rental', 'key': 'rentals', 'icon': Icons.construction},
   ];
 
   String _formatDate(DateTime date) {
@@ -100,6 +104,12 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     // //debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
     _loadProperties();
+    _loadPropertyCategories();
+    _startCategoryAutoScroll();
+    _categoryRefreshTimer = Timer.periodic(
+      const Duration(minutes: 10),
+      (_) => _loadPropertyCategories(),
+    );
     // _loadNotificationCount(); // Load notification count on startup
     _setupNotificationRefresh(); // Setup periodic refresh for notifications
     _scrollController.addListener(() {
@@ -145,7 +155,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _categoryScrollController.dispose();
     _notificationTimer?.cancel(); // Cancel notification timer
+    _categoryAutoScrollTimer?.cancel();
+    _categoryRefreshTimer?.cancel();
     super.dispose();
   }
 
@@ -340,6 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // //debugPrint('🏠 Using ${featuredProperties.length} featured properties from general properties (fallback)');
         }
 
+        await _preloadFeaturedImages(featuredProperties);
         if (mounted) {
           setState(() {
             _properties = newProperties;
@@ -425,24 +439,24 @@ class _HomeScreenState extends State<HomeScreen> {
     return Landlord(
       id: widget.user.id,
       userId: widget.user.id,
-      businessName: '${widget.user.name} Properties',
-      businessDescription: 'Professional property management services',
-      businessAddress: '123 Business St, City',
+      businessName: widget.user.name,
+      businessDescription: '',
+      businessAddress: '',
       businessPhone: widget.user.phone,
       businessEmail: widget.user.email,
-      licenseNumber: 'LIC123456789',
-      taxId: 'TAX987654321',
-      bankAccountNumber: '1234567890',
-      bankName: 'Demo Bank',
-      rating: 4.5,
-      totalProperties: 2,
-      totalBookings: 15,
-      isVerified: true,
-      createdAt: DateTime.now().subtract(Duration(days: 30)),
+      licenseNumber: '',
+      taxId: '',
+      bankAccountNumber: '',
+      bankName: '',
+      rating: 0,
+      totalProperties: 0,
+      totalBookings: 0,
+      isVerified: false,
+      createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       businessRegistrationNumber: '',
       verificationDocuments: [],
-      applicationDate: DateTime.now().subtract(Duration(days: 30)),
+      applicationDate: DateTime.now(),
     );
   }
 
@@ -464,8 +478,101 @@ class _HomeScreenState extends State<HomeScreen> {
     return '$baseUrl/$cleanUrl';
   }
 
+  Future<void> _preloadFeaturedImages(List<Property> properties) async {
+    final urls = properties
+        .where((property) => property.images.isNotEmpty)
+        .map((property) => _getFullImageUrl(property.images.first))
+        .toSet();
+    final cacheManager = DefaultCacheManager();
+    await Future.wait(urls.map((url) async {
+      try {
+        await cacheManager
+            .downloadFile(url)
+            .timeout(const Duration(seconds: 8));
+      } catch (error) {
+        debugPrint('Could not cache featured property image: $error');
+      }
+    }));
+  }
+
   // Handle category selection and load properties for that category
-  Future<void> _onCategorySelected(String categoryName) async {
+  IconData _categoryIcon(String key, String label) {
+    final identity = '$key $label'.toLowerCase();
+    if (identity.contains('air_bnb') || identity.contains('airbnb') || identity.contains('stay')) {
+      return Icons.weekend;
+    }
+    if (identity.contains('hostel') || identity.contains('hotel')) {
+      return Icons.hotel;
+    }
+    if (identity.contains('land') || identity.contains('plot')) {
+      return Icons.landscape;
+    }
+    if (identity.contains('rental') ||
+        identity.contains('house') ||
+        identity.contains('home') ||
+        identity.contains('villa')) {
+      return Icons.home;
+    }
+    if (identity.contains('apartment') ||
+        identity.contains('condo') ||
+        identity.contains('office') ||
+        identity.contains('warehouse') ||
+        identity.contains('building')) {
+      return Icons.apartment;
+    }
+    return Icons.apartment;
+  }
+
+  Future<void> _loadPropertyCategories() async {
+    try {
+      final types = await PropertyService.getPropertyTypeConfigs();
+      if (!mounted) return;
+
+      final configuredCategories = types.map<Map<String, dynamic>>((type) {
+        final key = type['key'] as String;
+        final label = type['label'] as String;
+        return {
+          'name': label,
+          'key': key,
+          'icon': _categoryIcon(key, label),
+        };
+      }).toList();
+
+      setState(() {
+        _categories
+          ..clear()
+          ..add({'name': 'All', 'key': 'All', 'icon': Icons.apps})
+          ..addAll(configuredCategories);
+        if (!_categories.any((category) => category['name'] == _selectedCategory)) {
+          _selectedCategory = 'All';
+          _categoryProperties = List.from(_properties);
+        }
+      });
+    } catch (error) {
+      if (!mounted) return;
+      debugPrint('Could not load property categories: $error');
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Property categories could not be refreshed.')),
+      );
+    }
+  }
+
+  void _startCategoryAutoScroll() {
+    _categoryAutoScrollTimer = Timer.periodic(const Duration(seconds: 6), (_) {
+      if (!mounted || !_categoryScrollController.hasClients) return;
+      final position = _categoryScrollController.position;
+      if (position.maxScrollExtent <= 0 || position.isScrollingNotifier.value) return;
+
+      final nextOffset = position.pixels + MediaQuery.of(context).size.width * 0.7;
+      _categoryScrollController.animateTo(
+        nextOffset >= position.maxScrollExtent ? 0 : nextOffset,
+        duration: const Duration(milliseconds: 700),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  Future<void> _onCategorySelected(String categoryName, [String? categoryKey]) async {
     if (_selectedCategory == categoryName) return; // Already selected
 
     setState(() {
@@ -485,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         // Search for properties of the selected category
         debugPrint('🔍 Searching for properties of type: $categoryName');
-        final searchResult = await PropertyService.searchPropertiesByType(categoryName.toLowerCase(), 1, 100);
+        final searchResult = await PropertyService.searchPropertiesByType(categoryKey ?? categoryName.toLowerCase(), 1, 100);
 
         if (searchResult['success'] == true) {
           final categoryProps = List<Property>.from(searchResult['properties'] ?? []);
@@ -566,35 +673,58 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     // //debugPrint('🏠 HomeScreen: build() called for user: ${widget.user.name}');
-    return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      body: _buildBody(),
-      floatingActionButton: _currentIndex == 0 && _showBackToTop
-          ? AnimatedOpacity(
-              opacity: _showBackToTop ? 1.0 : 0.0,
-              duration: Duration(milliseconds: 300),
-              child: Container(
-                margin: EdgeInsets.only(bottom: 100),
-                child: FloatingActionButton(
-                  onPressed: () {
-                    _scrollController.animateTo(
-                      0,
-                      duration: Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  backgroundColor: AppTheme.primaryblue,
-                  // ignore: sort_child_properties_last
-                  child: Icon(
-                    Icons.arrow_upward_rounded,
-                    color: AppTheme.whiteColor,
-                    size: 28,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        final now = DateTime.now();
+        final lastPress = _lastBackPressTime;
+        if (lastPress != null && now.difference(lastPress) <= Duration(seconds: 2)) {
+          _lastBackPressTime = null;
+          SystemNavigator.pop();
+          return;
+        }
+        _lastBackPressTime = now;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Press back again to exit'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.getBackgroundColor(context),
+        body: _buildBody(),
+        floatingActionButton: _currentIndex == 0 && _showBackToTop
+            ? AnimatedOpacity(
+                opacity: _showBackToTop ? 1.0 : 0.0,
+                duration: Duration(milliseconds: 300),
+                child: Container(
+                  margin: EdgeInsets.only(bottom: 100),
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      _scrollController.animateTo(
+                        0,
+                        duration: Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    backgroundColor: AppTheme.primaryblue,
+                    // ignore: sort_child_properties_last
+                    child: Icon(
+                      Icons.arrow_upward_rounded,
+                      color: AppTheme.whiteColor,
+                      size: 28,
+                    ),
+                    mini: true,
                   ),
-                  mini: true,
                 ),
-              ),
-            )
-          : null,
+              )
+            : null,
+      ),
     );
   }
 
@@ -918,6 +1048,7 @@ class _HomeScreenState extends State<HomeScreen> {
           height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            controller: _categoryScrollController,
             padding: EdgeInsets.symmetric(horizontal: 20),
             itemCount: _categories.length,
             itemBuilder: (context, index) {
@@ -925,7 +1056,10 @@ class _HomeScreenState extends State<HomeScreen> {
               final isSelected = _selectedCategory == category['name'];
 
               return GestureDetector(
-                  onTap: () => _onCategorySelected(category['name']),
+                  onTap: () => _onCategorySelected(
+                    category['name'] as String,
+                    category['key'] as String,
+                  ),
                   child: Container(
                     width: 70,
                     margin: EdgeInsets.only(right: 16),
@@ -1505,10 +1639,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             topLeft: Radius.circular(20),
                             topRight: Radius.circular(20),
                           ),
-                          child: Image.network(
-                            _getFullImageUrl(property.images.first),
+                          child: CachedNetworkImage(
+                            imageUrl: _getFullImageUrl(property.images.first),
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
+                            errorWidget: (context, url, error) {
                               return Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.only(
@@ -2070,10 +2204,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             topLeft: Radius.circular(18),
                             topRight: Radius.circular(18),
                           ),
-                          child: Image.network(
-                            _getFullImageUrl(property.images.first),
+                          child: CachedNetworkImage(
+                            imageUrl: _getFullImageUrl(property.images.first),
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
+                            errorWidget: (context, url, error) {
                               return Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.only(

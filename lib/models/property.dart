@@ -44,6 +44,7 @@ class Property {
   final List<Map<String, dynamic>> views;
   final List<Map<String, dynamic>> shares;
   final List<Map<String, dynamic>> favourites;
+  final List<Map<String, dynamic>> reviews;
   final Map<String, dynamic>? user; // Landlord information
   final String? propertyMap; // Iframe HTML for embedded map
   final String? safetyAndSecurity; // Optional safety features
@@ -88,6 +89,7 @@ class Property {
     this.views = const [],
     this.shares = const [],
     this.favourites = const [],
+    this.reviews = const [],
     this.user,
     this.propertyMap,
     this.safetyAndSecurity,
@@ -127,6 +129,7 @@ class Property {
     List<Map<String, dynamic>>? views,
     List<Map<String, dynamic>>? shares,
     List<Map<String, dynamic>>? favourites,
+    List<Map<String, dynamic>>? reviews,
     Map<String, dynamic>? user,
     String? propertyMap,
     String? safetyAndSecurity,
@@ -170,6 +173,7 @@ class Property {
       views: views ?? this.views,
       shares: shares ?? this.shares,
       favourites: favourites ?? this.favourites,
+      reviews: reviews ?? this.reviews,
       user: user ?? this.user,
       propertyMap: propertyMap ?? this.propertyMap,
       safetyAndSecurity: safetyAndSecurity ?? this.safetyAndSecurity,
@@ -265,6 +269,7 @@ class Property {
       views: (json['views'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
       shares: (json['shares'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
       favourites: (json['favourites'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
+      reviews: (json['reviews'] as List<dynamic>?)?.whereType<Map<String, dynamic>>().toList() ?? [],
       user: user,
       propertyMap: json['propertyMap'] as String?,
       safetyAndSecurity: json['safetyAndSecurity'] as String?,

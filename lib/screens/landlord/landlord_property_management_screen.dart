@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
@@ -106,6 +107,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             views: property.views,
             shares: property.shares,
             favourites: property.favourites,
+            reviews: property.reviews,
             neighborhood: property.neighborhood,
             user: property.user,
             propertyMap: property.propertyMap,
@@ -707,6 +709,14 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                           ],
                         ],
                       ),
+                      SizedBox(height: 8),
+                      Wrap(
+                        spacing: 12,
+                        children: [
+                          _buildSpecItem(Icons.visibility, '${property.views.length} views'),
+                          _buildSpecItem(Icons.comment, '${property.reviews.length} comments'),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -1173,8 +1183,8 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
     // Use ImageHelper to get the full URL for both network and relative paths
     final fullImageUrl = ImageHelper.getFullImageUrl(imagePath);
 
-    return Image.network(
-      fullImageUrl,
+    return Image(
+      image: CachedNetworkImageProvider(fullImageUrl),
       fit: fit,
       width: width,
       height: height,
@@ -1502,10 +1512,51 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         _buildDetailRow('For Rent', property.isRent ? 'yes' : 'no', Icons.house_rounded),
                         _buildDetailRow('For Sale', property.isSale ? 'yes' : 'no', Icons.house_rounded),
                         _buildDetailRow('Has parking', property.parking ? 'yes' : 'no', Icons.garage),
+                        _buildDetailRow('Property views', '${property.views.length}', Icons.visibility),
+                        _buildDetailRow('Tenant comments', '${property.reviews.length}', Icons.comment),
                         if (property.rating > 0) _buildDetailRow('Rating', '${property.rating.toStringAsFixed(1)} (${property.reviewCount} reviews)', Icons.star),
                       ],
                     ),
                   ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Tenant comments (${property.reviews.length})',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getTextColor(context),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  if (property.reviews.isEmpty)
+                    Text(
+                      'No comments have been posted on this property yet.',
+                      style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                    )
+                  else
+                    ...property.reviews.map((review) => Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.only(bottom: 8),
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.lightGreyColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${review['user']?['name'] ?? 'Tenant'} · ${review['stars'] ?? 0}/5',
+                                style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.getTextColor(context)),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '${review['review'] ?? ''}',
+                                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                              ),
+                            ],
+                          ),
+                        )),
                   SizedBox(height: 20),
                   if (property.description.isNotEmpty) ...[
                     Text(

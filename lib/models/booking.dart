@@ -27,6 +27,9 @@ class Booking {
   final BookingStatus status;
   final String? message;
   final double? amount;
+  final double? totalAmountValue;
+  final String? paymentOption;
+  final String? bookingPurpose;
   final DateTime createdAt;
   final Property? property;
 
@@ -50,6 +53,9 @@ class Booking {
     required this.status,
     this.message,
     this.amount,
+    this.totalAmountValue,
+    this.paymentOption,
+    this.bookingPurpose,
     required this.createdAt,
     required this.tenantName,
     required this.tenantEmail,
@@ -113,7 +119,10 @@ class Booking {
       endDate: json['checkOutDate'] != null ? parseDate(json['checkOutDate']) : null,
       status: determineStatus(),
       message: json['message']?.toString(),
-      amount: property['price'] != null ? (property['price'] as num).toDouble() : null,
+      amount: json['amount'] is num ? (json['amount'] as num).toDouble() : null,
+      totalAmountValue: json['totalAmount'] is num ? (json['totalAmount'] as num).toDouble() : null,
+      paymentOption: json['paymentOption']?.toString(),
+      bookingPurpose: json['bookingPurpose']?.toString(),
       createdAt: parseDate(json['bookingDate']),
       tenantName: user['name']?.toString() ?? 'Unknown User',
       tenantEmail: user['email']?.toString() ?? 'No email provided',
@@ -136,6 +145,7 @@ class Booking {
       status: BookingStatus.pending,
       message: '',
       amount: 0.0,
+      totalAmountValue: 0.0,
       createdAt: DateTime.now(),
       tenantName: '',
       tenantEmail: '',
@@ -146,7 +156,7 @@ class Booking {
   }
 
   String? get userName => null;
-  double? get totalAmount => amount;
+  double? get totalAmount => totalAmountValue ?? amount;
   DateTime? get checkInDate => startDate;
   DateTime? get checkOutDate => endDate;
 

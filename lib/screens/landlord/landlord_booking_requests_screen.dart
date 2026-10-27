@@ -2,6 +2,7 @@ import 'package:add_comma/add_comma.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
@@ -144,14 +145,24 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     }
   }
 
-  void _handleBookingAction(Booking booking, BookingStatus newStatus) {
+  Future<void> _handleBookingAction(Booking booking, BookingStatus newStatus) async {
+    if (_isLoading || booking.status != BookingStatus.pending) return;
+
     setState(() {
       _isLoading = true;
     });
-    Future.delayed(Duration(seconds: 1), () {
-      if (!mounted) return;
 
+    var statusUpdated = false;
+    try {
+      await BookingService.updateBookingStatus(
+        bookingId: booking.id,
+        status: newStatus == BookingStatus.confirmed ? 'APPROVED' : 'REJECTED',
+      );
+      statusUpdated = true;
+      final bookings = await BookingService.fetchLandlordBookings();
+      if (!mounted) return;
       setState(() {
+        _allBookings = bookings;
         _isLoading = false;
       });
 
@@ -165,13 +176,41 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
           backgroundColor: newStatus == BookingStatus.confirmed ? AppTheme.primaryblue : Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          duration: Duration(milliseconds: 500),
+          duration: Duration(seconds: 3),
           margin: EdgeInsets.all(16),
         ),
       );
-
-      // Filtering will be handled automatically in build method
-    });
+    } on BookingException catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            statusUpdated
+                ? 'Booking updated, but the list could not be refreshed: ${error.message}'
+                : error.message,
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            statusUpdated
+                ? 'Booking updated, but the list could not be refreshed: $error'
+                : 'Could not update the booking: $error',
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    }
   }
 
   void _showBookingDetails(Booking booking) {
@@ -273,9 +312,12 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  onPressed: () {},
+                  tooltip: 'Refresh bookings',
+                  onPressed: () {
+                    context.read<BookingBloc>().add(const FetchLandlordBookings());
+                  },
                   icon: Icon(
-                    Icons.calendar_today,
+                    Icons.refresh,
                     color: AppTheme.primaryblue,
                   ),
                 ),
@@ -643,66 +685,52 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                         ],
                       ),
                     ),
-                    // if (booking.status == BookingStatus.pending) ...[
-                    //   SizedBox(width: 8),
-                    //   Row(
-                    //     children: [
-                    //       GestureDetector(
-                    //         onTap: () => _handleBookingAction(booking, BookingStatus.cancelled),
-                    //         child: Container(
-                    //           padding: EdgeInsets.all(8),
-                    //           decoration: BoxDecoration(
-                    //             color: Colors.red.withOpacity(0.1),
-                    //             shape: BoxShape.circle,
-                    //           ),
-                    //           child: Icon(
-                    //             Icons.close,
-                    //             color: Colors.red,
-                    //             size: 20,
-                    //           ),
-                    //         ),
-                    //       ),
-                    //       SizedBox(width: 8),
-                    //       GestureDetector(
-                    //         onTap: () => _handleBookingAction(booking, BookingStatus.confirmed),
-                    //         child: Container(
-                    //           padding: EdgeInsets.all(8),
-                    //           decoration: BoxDecoration(
-                    //             color: Colors.green.withOpacity(0.1),
-                    //             shape: BoxShape.circle,
-                    //           ),
-                    //           child: Icon(
-                    //             Icons.check,
-                    //             color: Colors.green,
-                    //             size: 20,
-                    //           ),
-                    //         ),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ] else ...[
-                    //   GestureDetector(
-                    //     onTap: () => _contactTenant(booking.tenantId),
-                    //     child: Container(
-                    //       padding: EdgeInsets.all(8),
-                    //       decoration: BoxDecoration(
-                    //         color: AppTheme.primaryblue.withOpacity(0.1),
-                    //         shape: BoxShape.circle,
-                    //       ),
-                    //       child: Icon(
-                    //         Icons.phone,
-                    //         color: AppTheme.primaryblue,
-                    //         size: 20,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ],
                   ],
                 ),
+                if (booking.status == BookingStatus.pending) ...[
+                  SizedBox(height: 16),
+                  _buildBookingActionButtons(booking),
+                ],
               ],
             ),
           ),
         ));
+  }
+
+  Widget _buildBookingActionButtons(Booking booking) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _isLoading
+                ? null
+                : () => _handleBookingAction(booking, BookingStatus.cancelled),
+            icon: const Icon(Icons.close),
+            label: const Text('Reject'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red,
+              side: const BorderSide(color: Colors.red),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isLoading
+                ? null
+                : () => _handleBookingAction(booking, BookingStatus.confirmed),
+            icon: const Icon(Icons.check),
+            label: const Text('Accept'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryblue,
+              foregroundColor: AppTheme.whiteColor,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildBookingDetailsModal(Booking booking) {

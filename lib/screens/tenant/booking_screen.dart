@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -27,6 +28,42 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   DateTime? _checkInDate;
   DateTime? _checkOutDate;
+  String _paymentOption = 'DEPOSIT';
+  Map<String, dynamic>? _bookingQuote;
+  bool _quoteLoading = false;
+
+  bool get _isSale => widget.property.isSale || widget.property.priceType.toLowerCase() == 'for_sale';
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isSale) _loadBookingQuote();
+  }
+
+  Future<void> _loadBookingQuote() async {
+    if (!_isSale && (_checkInDate == null || _checkOutDate == null)) return;
+    setState(() {
+      _quoteLoading = true;
+      _bookingQuote = null;
+    });
+    try {
+      final quote = await BookingService.getBookingQuote(
+        propertyId: widget.property.id,
+        checkInDate: _checkInDate == null ? null : DateFormat('yyyy-MM-dd').format(_checkInDate!),
+        checkOutDate: _isSale
+            ? null
+            : _checkOutDate == null
+                ? null
+                : DateFormat('yyyy-MM-dd').format(_checkOutDate!),
+        paymentOption: _paymentOption,
+      );
+      if (mounted) setState(() => _bookingQuote = quote);
+    } catch (error) {
+      if (mounted) _showErrorSnackBar(error.toString());
+    } finally {
+      if (mounted) setState(() => _quoteLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,57 +94,335 @@ class _BookingScreenState extends State<BookingScreen> {
             _showValidationErrors(state.fieldErrors);
           }
         },
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Property details card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.getCardColor(context),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryblue.withValues(alpha: 0.13),
+                        AppTheme.getCardColor(context),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.property.title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.getTextColor(context),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryblue.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          _isSale ? Icons.visibility_outlined : Icons.home_work_outlined,
+                          color: AppTheme.primaryblue,
+                          size: 28,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on, color: AppTheme.primaryblue, size: 16),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            widget.property.address,
-                            style: TextStyle(
-                              color: AppTheme.getSecondaryTextColor(context),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.property.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.getTextColor(context),
+                              ),
                             ),
+                            const SizedBox(height: 5),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on_outlined, size: 15, color: AppTheme.primaryblue),
+                                const SizedBox(width: 3),
+                                Expanded(
+                                  child: Text(
+                                    widget.property.address,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              '${ProfileService().currencyConverter(price: widget.property.price.toInt())} ${widget.property.priceType}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryblue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 26),
+                Text(
+                  _isSale ? 'Plan your property viewing' : 'Choose your stay',
+                  style: TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  _isSale
+                      ? 'Choose a convenient date to visit this property.'
+                      : 'Select arrival and departure dates to see your price.',
+                  style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                ),
+                const SizedBox(height: 18),
+                _buildDateSelector(
+                  context,
+                  title: _isSale ? 'Preferred viewing date' : 'Check-in',
+                  date: _checkInDate,
+                  onTap: () => _selectCheckInDate(context),
+                ),
+                if (!_isSale) ...[
+                  const SizedBox(height: 10),
+                  _buildDateSelector(
+                    context,
+                    title: 'Check-out',
+                    date: _checkOutDate,
+                    onTap: () => _selectCheckOutDate(context),
+                  ),
+                ],
+                if (_checkInDate != null && _checkOutDate != null && !_isSale) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.09),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.nights_stay_outlined, color: AppTheme.primaryblue),
+                        const SizedBox(width: 10),
+                        Text(
+                          '${_checkOutDate!.difference(_checkInDate!).inDays} nights selected',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.getTextColor(context),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                if (_bookingQuote != null)
+                  _buildQuoteSummary(context)
+                else if (_quoteLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 22),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else
+                  _buildQuotePrompt(context),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: BlocBuilder<BookingBloc, BookingState>(
+        builder: (context, state) {
+          final isLoading = state is BookingLoading;
+          final canBook = _checkInDate != null &&
+              (_isSale || _checkOutDate != null) &&
+              _bookingQuote != null &&
+              !isLoading &&
+              !_quoteLoading;
+          return SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              decoration: BoxDecoration(
+                color: AppTheme.getBackgroundColor(context),
+                border: Border(
+                  top: BorderSide(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.15)),
+                ),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: canBook ? _submitBooking : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryblue,
+                    disabledBackgroundColor: AppTheme.primaryblue.withValues(alpha: 0.35),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    padding: const EdgeInsets.symmetric(vertical: 17),
+                    elevation: 0,
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 21,
+                          height: 21,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          _isSale ? 'Request viewing' : 'Continue to booking',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuotePrompt(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.receipt_long_outlined, color: AppTheme.primaryblue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _isSale ? 'Your viewing fee will appear here.' : 'Choose your dates to see the booking total.',
+              style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuoteSummary(BuildContext context) {
+    final quote = _bookingQuote!;
+    final choices = (quote['paymentOptions'] as List<dynamic>? ?? []).cast<String>();
+    final amountDueNow = (quote['amountDueNow'] as num? ?? 0).toInt();
+    final bookingFee = (quote['bookingFeeAmount'] as num? ?? 0).toInt();
+    final transactionFee = (quote['transactionFeeAmount'] as num? ?? 0).toInt();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.primaryblue.withValues(alpha: 0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryblue.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _isSale ? 'Viewing fee estimate' : 'Your booking estimate',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.getTextColor(context),
+            ),
+          ),
+          if (choices.length > 1) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final option in const ['DEPOSIT', 'HALF', 'FULL'])
+                  if (choices.contains(option))
+                    ChoiceChip(
+                      label: Text(option == 'DEPOSIT' ? 'Deposit' : option == 'HALF' ? 'Half' : 'Full'),
+                      selected: _paymentOption == option,
+                      selectedColor: AppTheme.primaryblue.withValues(alpha: 0.16),
+                      labelStyle: TextStyle(
+                        color: _paymentOption == option
+                            ? AppTheme.primaryblue
+                            : AppTheme.getSecondaryTextColor(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      side: BorderSide(
+                        color: _paymentOption == option
+                            ? AppTheme.primaryblue
+                            : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2),
+                      ),
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => _paymentOption = option);
+                          _loadBookingQuote();
+                        }
+                      },
+                    ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 14),
+          _buildQuoteRow(
+            context,
+            _isSale ? 'Viewing fee' : 'Booking amount',
+            ProfileService().currencyConverter(price: bookingFee),
+          ),
+          const SizedBox(height: 7),
+          _buildQuoteRow(
+            context,
+            'Transaction fee',
+            ProfileService().currencyConverter(price: transactionFee),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      '${ProfileService().currencyConverter(price: widget.property.price.toInt())} ${widget.property.priceType}',
+                      'Due today',
                       style: TextStyle(
-                        fontSize: 16,
+                        color: AppTheme.getSecondaryTextColor(context),
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      ProfileService().currencyConverter(price: amountDueNow),
+                      style: const TextStyle(
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primaryblue,
                       ),
@@ -115,113 +430,36 @@ class _BookingScreenState extends State<BookingScreen> {
                   ],
                 ),
               ),
-
-              const SizedBox(height: 24),
-
+              const Icon(Icons.verified_user_outlined, color: AppTheme.primaryblue),
+              const SizedBox(width: 6),
               Text(
-                'Select Your Dates',
+                'Secure\ncheckout',
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextColor(context),
+                  fontSize: 11,
+                  height: 1.2,
+                  color: AppTheme.getSecondaryTextColor(context),
                 ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Check-in date
-              _buildDateSelector(
-                context,
-                title: 'Check-in Date',
-                date: _checkInDate,
-                onTap: () => _selectCheckInDate(context),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Check-out date
-              _buildDateSelector(
-                context,
-                title: 'Check-out Date',
-                date: _checkOutDate,
-                onTap: () => _selectCheckOutDate(context),
-              ),
-
-              if (_checkInDate != null && _checkOutDate != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryblue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Duration:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.getTextColor(context),
-                        ),
-                      ),
-                      Text(
-                        '${_checkOutDate!.difference(_checkInDate!).inDays} nights',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryblue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const Spacer(),
-
-              // Book button
-              BlocBuilder<BookingBloc, BookingState>(
-                builder: (context, state) {
-                  final isLoading = state is BookingLoading;
-                  final canBook = _checkInDate != null && _checkOutDate != null && !isLoading;
-
-                  return SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: canBook ? _submitBooking : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryblue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 0,
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Text(
-                              'Book Now',
-                              style: TextStyle(
-                                color: AppTheme.whiteColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  );
-                },
               ),
             ],
           ),
-        ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildQuoteRow(BuildContext context, String label, String amount) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(color: AppTheme.getSecondaryTextColor(context))),
+        Text(
+          amount,
+          style: TextStyle(
+            color: AppTheme.getTextColor(context),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 
@@ -234,16 +472,28 @@ class _BookingScreenState extends State<BookingScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(17),
         decoration: BoxDecoration(
-          border: Border.all(color: AppTheme.lightGreyColor),
-          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: date != null
+                ? AppTheme.primaryblue.withValues(alpha: 0.55)
+                : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2),
+          ),
+          borderRadius: BorderRadius.circular(16),
           color: AppTheme.getCardColor(context),
         ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
-            const SizedBox(width: 12),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryblue.withValues(alpha: 0.11),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.calendar_month_outlined, color: AppTheme.primaryblue, size: 21),
+            ),
+            const SizedBox(width: 13),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,7 +517,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: AppTheme.getSecondaryTextColor(context), size: 16),
+            Icon(Icons.chevron_right, color: AppTheme.getSecondaryTextColor(context), size: 22),
           ],
         ),
       ),
@@ -283,7 +533,7 @@ class _BookingScreenState extends State<BookingScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: AppTheme.primaryblue,
               onPrimary: AppTheme.whiteColor,
               surface: AppTheme.getCardColor(context),
@@ -303,6 +553,10 @@ class _BookingScreenState extends State<BookingScreen> {
           _checkOutDate = null;
         }
       });
+      if (_isSale) {
+        _checkOutDate = picked;
+      }
+      _loadBookingQuote();
     }
   }
 
@@ -317,7 +571,7 @@ class _BookingScreenState extends State<BookingScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: AppTheme.primaryblue,
               onPrimary: AppTheme.whiteColor,
               surface: AppTheme.getCardColor(context),
@@ -333,23 +587,25 @@ class _BookingScreenState extends State<BookingScreen> {
       setState(() {
         _checkOutDate = picked;
       });
+      _loadBookingQuote();
     }
   }
 
   void _submitBooking() {
-    if (_checkInDate == null || _checkOutDate == null) {
+    if (_checkInDate == null || (!_isSale && _checkOutDate == null)) {
       return;
     }
 
     // Format dates as ISO 8601 strings for API
     final checkInFormatted = DateFormat('yyyy-MM-dd').format(_checkInDate!);
-    final checkOutFormatted = DateFormat('yyyy-MM-dd').format(_checkOutDate!);
+    final checkOutFormatted = DateFormat('yyyy-MM-dd').format(_isSale ? _checkInDate! : _checkOutDate!);
 
     context.read<BookingBloc>().add(BookingCreateRequested(
           propertyId: widget.property.id,
           checkInDate: checkInFormatted,
           checkOutDate: checkOutFormatted,
           deposit: widget.property.deposit.toInt(),
+          paymentOption: _paymentOption,
         ));
   }
 
