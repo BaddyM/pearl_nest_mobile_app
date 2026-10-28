@@ -1,6 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/models/user.dart';
@@ -11,6 +12,7 @@ import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
 import 'package:pearlnest/widgets/login_required_widget.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 
 class ChatScreen extends StatefulWidget {
   final User user;
@@ -155,8 +157,9 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.getBackgroundColor(context),
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: true,
         title: Row(
           children: [
@@ -164,7 +167,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Text(
                 'Chat',
                 style: TextStyle(
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -177,7 +180,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // Debug button for development (only show in debug mode)
           if (kDebugMode && widget.user.id != "")
             PopupMenuButton<String>(
-              icon: Icon(Icons.bug_report, color: AppTheme.blackColor),
+              icon: Icon(Icons.bug_report, color: AppTheme.getTextColor(context)),
               onSelected: (value) {
                 if (value == 'debug_chat') {
                   _showDebugInfo();
@@ -276,16 +279,16 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildSearchHeader() {
     return Container(
-      color: AppTheme.whiteColor,
-      padding: EdgeInsets.all(16),
+      color: AppTheme.getBackgroundColor(context),
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           Container(
             decoration: BoxDecoration(
-              color: AppTheme.lightGreyColor,
+              color: AppTheme.getCardColor(context),
               borderRadius: BorderRadius.circular(25),
               border: Border.all(
-                color: AppTheme.greyColor.withOpacity(0.2),
+                color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
               ),
             ),
             child: TextField(
@@ -293,12 +296,12 @@ class _ChatScreenState extends State<ChatScreen> {
               decoration: InputDecoration(
                 hintText: 'Search landlords or properties...',
                 hintStyle: TextStyle(
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                   fontSize: 16,
                 ),
                 prefixIcon: Icon(
                   Icons.search,
-                  color: AppTheme.greyColor,
+                  color: AppTheme.getSecondaryTextColor(context),
                   size: 20,
                 ),
                 suffixIcon: _isSearching
@@ -319,7 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               style: TextStyle(
                 fontSize: 16,
-                color: AppTheme.blackColor,
+                color: AppTheme.getTextColor(context),
               ),
             ),
           ),
@@ -408,12 +411,19 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               child: ClipOval(
                 child: conversation.landlordProfilePic.isNotEmpty
-                    ? Image.asset(
-                        conversation.landlordProfilePic,
+                    ? CachedNetworkImage(
+                        imageUrl: ImageHelper.getFullImageUrl(
+                          conversation.landlordProfilePic,
+                        ),
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildDefaultAvatar(conversation.landlordName);
-                        },
+                        imageBuilder: (context, imageProvider) => CircleAvatar(
+                          radius: 28,
+                          backgroundImage: imageProvider,
+                        ),
+                        placeholder: (context, url) =>
+                            _buildDefaultAvatar(conversation.landlordName),
+                        errorWidget: (context, url, error) =>
+                            _buildDefaultAvatar(conversation.landlordName),
                       )
                     : _buildDefaultAvatar(conversation.landlordName),
               ),

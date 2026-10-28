@@ -1,5 +1,8 @@
 // ignore_for_file: deprecated_member_use, library_private_types_in_public_api
 import 'package:flutter/material.dart';
+import 'package:pearlnest/apis/chat_service.dart';
+import 'package:pearlnest/models/admin.dart';
+import 'package:pearlnest/apis/policy_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class PrivacyPolicyScreen extends StatefulWidget {
@@ -11,11 +14,63 @@ class PrivacyPolicyScreen extends StatefulWidget {
 
 class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  String? _privacyPolicy;
+  String? _termsAndConditions;
+  List<RefundTier> _refundTiers = const [];
+  String? _policyLoadError;
+  bool _isLoadingPolicies = true;
+  Admin? _supportAdmin;
+  bool _isLoadingSupportContact = true;
+  String? _supportContactError;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadPolicies();
+    _loadSupportContact();
+  }
+
+  Future<void> _loadSupportContact() async {
+    try {
+      final admin = await ChatService.fetchSupportAdmin();
+      if (!mounted) return;
+      setState(() {
+        _supportAdmin = admin;
+        _supportContactError = admin == null
+            ? 'Support contact details are not available right now.'
+            : null;
+        _isLoadingSupportContact = false;
+      });
+    } catch (error) {
+      debugPrint('Could not load policy support contacts: $error');
+      if (!mounted) return;
+      setState(() {
+        _supportContactError = 'Support contact details could not be loaded.';
+        _isLoadingSupportContact = false;
+      });
+    }
+  }
+
+  Future<void> _loadPolicies() async {
+    setState(() {
+      _isLoadingPolicies = true;
+      _policyLoadError = null;
+    });
+    try {
+      final policies = await PolicyService.fetchPolicies();
+      if (!mounted) return;
+      setState(() {
+        _privacyPolicy = policies.privacyPolicy;
+        _termsAndConditions = policies.termsAndConditions;
+        _refundTiers = policies.refundTiers;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _policyLoadError = error.toString());
+    } finally {
+      if (mounted) setState(() => _isLoadingPolicies = false);
+    }
   }
 
   @override
@@ -59,6 +114,8 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
       body: Column(
         children: [
           _buildHeader(),
+          if (_policyLoadError != null) _buildPolicyLoadError(),
+          if (_isLoadingPolicies) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -70,6 +127,32 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPolicyLoadError() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, color: AppTheme.primaryblue),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Current policies could not be loaded. The built-in policy text is shown instead.',
+                ),
+              ),
+              TextButton(
+                onPressed: _isLoadingPolicies ? null : _loadPolicies,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -192,6 +275,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
   }
 
   Widget _buildPrivacyPolicyTab() {
+    if (_privacyPolicy != null) {
+      return _buildLivePolicyContent('Privacy Policy', _privacyPolicy!);
+    }
     return SingleChildScrollView(
       padding: EdgeInsets.all(20),
       child: Column(
@@ -304,6 +390,12 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
   }
 
   Widget _buildTermsAndConditionsTab() {
+    if (_termsAndConditions != null) {
+      return _buildLivePolicyContent(
+        'Terms and Conditions',
+        _termsAndConditions!,
+      );
+    }
     return SingleChildScrollView(
       padding: EdgeInsets.all(20),
       child: Column(
@@ -444,45 +536,14 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
               'Cancellation policies protect both hosts and guests',
               'Each property may have different cancellation terms',
               'Policies are clearly displayed before booking',
-              'Refund amounts depend on timing and policy type',
+              'Refund amounts follow PearlNest’s current refund terms',
             ],
           ),
 
-          _buildPolicyTypeSection(
-            'Flexible Policy',
-            'Full refund 1 day prior to arrival',
-            [
-              'Cancel up to 24 hours before check-in for a full refund',
-              'Cancel within 24 hours: no refund for the first night',
-              'Service fees are refunded when cancellation is made within 48 hours of booking',
-              'If the guest cancels after check-in, nights not spent are not refunded',
-            ],
-            Colors.green,
-          ),
-
-          _buildPolicyTypeSection(
-            'Moderate Policy',
-            'Full refund 5 days prior to arrival',
-            [
-              'Cancel up to 5 days before check-in for a full refund',
-              'Cancel within 5 days: 50% refund for nights not spent',
-              'Cancel within 24 hours of check-in: no refund',
-              'Service fees are refunded when cancellation is made within 48 hours of booking',
-            ],
-            Colors.orange,
-          ),
-
-          _buildPolicyTypeSection(
-            'Strict Policy',
-            '50% refund up until 1 week prior to arrival',
-            [
-              'Cancel up to 7 days before check-in for a 50% refund',
-              'Cancel within 7 days of check-in: no refund',
-              'No refund for early departure or unused nights',
-              'Service fees are only refunded if cancellation is made within 48 hours of booking',
-            ],
-            Colors.red,
-          ),
+          if (_refundTiers.isNotEmpty)
+            _buildRefundTiersSection()
+          else
+            _buildUnavailableRefundNotice(),
 
           _buildSection(
             'Host Cancellations',
@@ -553,6 +614,126 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
 
           _buildContactSection(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLivePolicyContent(String title, String content) {
+    final readableContent = content
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'</p\s*>', caseSensitive: false), '\n\n')
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .trim();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(title),
+          const SizedBox(height: 12),
+          SelectableText(
+            readableContent,
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.6,
+              color: AppTheme.getTextColor(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefundTiersSection() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryblue.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryblue.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Refunds by booking status',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.getTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Refund percentages are based on the booking status.',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ..._refundTiers.map((tier) {
+            final status = tier.bookingStatus
+                .replaceAll('_', ' ')
+                .replaceAll('-', ' ')
+                .split(RegExp(r'\s+'))
+                .map((word) => word.isEmpty
+                    ? word
+                    : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
+                .join(' ');
+            final percentage = tier.refundPercent % 1 == 0
+                ? tier.refundPercent.toStringAsFixed(0)
+                : tier.refundPercent.toString();
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppTheme.getTextColor(context),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '$percentage% refund',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primaryblue,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnavailableRefundNotice() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        'Current refund terms are unavailable right now. Please try again later or check with PearlNest Support before cancelling.',
+        style: TextStyle(
+          fontSize: 14,
+          height: 1.5,
+          color: AppTheme.getTextColor(context),
+        ),
       ),
     );
   }
@@ -644,81 +825,6 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
     );
   }
 
-  Widget _buildPolicyTypeSection(String title, String subtitle, List<String> items, Color color) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 24),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.whiteColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: color,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          SizedBox(height: 12),
-          ...items.map((item) => Container(
-                margin: EdgeInsets.only(bottom: 6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: EdgeInsets.only(top: 6),
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        item,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.getSecondaryTextColor(context),
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-        ],
-      ),
-    );
-  }
-
   Widget _buildContactSection() {
     return Container(
       margin: EdgeInsets.only(top: 20, bottom: 40),
@@ -759,8 +865,33 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
             ),
           ),
           SizedBox(height: 16),
-          _buildContactItem(Icons.email_outlined, 'Email', 'pearlnestestates@gmail.com'),
-          _buildContactItem(Icons.phone_outlined, 'Phone', '+256791597476'),
+          if (_isLoadingSupportContact)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(),
+            )
+          else if (_supportContactError != null)
+            Row(
+              children: [
+                Expanded(child: Text(_supportContactError!)),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _isLoadingSupportContact = true;
+                      _supportContactError = null;
+                    });
+                    _loadSupportContact();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            )
+          else ...[
+            if (_supportAdmin!.email.trim().isNotEmpty)
+              _buildContactItem(Icons.email_outlined, 'Email', _supportAdmin!.email.trim()),
+            if (_supportAdmin!.contact.trim().isNotEmpty)
+              _buildContactItem(Icons.phone_outlined, 'Phone', _supportAdmin!.contact.trim()),
+          ],
           _buildContactItem(Icons.location_on_outlined, 'Address', 'Kampala Uganda'),
           _buildContactItem(Icons.access_time_outlined, 'Support Hours', 'Monday - Friday: 9:00 AM - 5:00 PM PST\nWeekends: 10:00 AM - 4:00 PM PST'),
         ],

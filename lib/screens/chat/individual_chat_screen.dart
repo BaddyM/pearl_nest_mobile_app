@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/chat_message.dart';
 import 'package:pearlnest/blocs/chat/chat_bloc.dart';
@@ -14,6 +16,7 @@ import 'package:pearlnest/screens/chat/message_bubble.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 
 class IndividualChatScreen extends StatefulWidget {
   final ChatConversation conversation;
@@ -141,12 +144,20 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 ),
                 child: ClipOval(
                   child: widget.conversation.landlordProfilePic.isNotEmpty
-                      ? Image.asset(
-                          widget.conversation.landlordProfilePic,
+                      ? CachedNetworkImage(
+                          imageUrl: ImageHelper.getFullImageUrl(
+                            widget.conversation.landlordProfilePic,
+                          ),
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildDefaultAvatar();
-                          },
+                          imageBuilder: (context, imageProvider) =>
+                              CircleAvatar(
+                            radius: 20,
+                            backgroundImage: imageProvider,
+                          ),
+                          placeholder: (context, url) =>
+                              _buildDefaultAvatar(),
+                          errorWidget: (context, url, error) =>
+                              _buildDefaultAvatar(),
                         )
                       : _buildDefaultAvatar(),
                 ),
@@ -364,8 +375,9 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     final currentMessage = messages[index];
     final previousMessage = messages[index - 1];
 
-    final timeDifference = currentMessage.timestamp.difference(previousMessage.timestamp);
-    return timeDifference.inMinutes > 30;
+    return currentMessage.timestamp.year != previousMessage.timestamp.year ||
+        currentMessage.timestamp.month != previousMessage.timestamp.month ||
+        currentMessage.timestamp.day != previousMessage.timestamp.day;
   }
 
   // Helper method to convert ChatMessage to Message for MessageBubble
@@ -381,15 +393,28 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
   }
 
   Widget _buildTimestamp(DateTime timestamp) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 16),
-      child: Text(
-        _formatTimestamp(timestamp),
-        style: TextStyle(
-          color: AppTheme.getSecondaryTextColor(context),
-          fontSize: 12,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.12),
+          ),
         ),
-        textAlign: TextAlign.center,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: Text(
+            _formatTimestamp(timestamp),
+            style: TextStyle(
+              color: AppTheme.getSecondaryTextColor(context),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     );
   }
@@ -409,13 +434,16 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    final dayDifference = today.difference(messageDate).inDays;
 
-    if (messageDate == today) {
+    if (dayDifference == 0) {
       return 'Today';
-    } else if (messageDate == today.subtract(Duration(days: 1))) {
+    } else if (dayDifference == 1) {
       return 'Yesterday';
+    } else if (dayDifference > 1 && dayDifference < 7) {
+      return DateFormat('EEEE').format(timestamp);
     } else {
-      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+      return DateFormat('d MMMM y').format(timestamp);
     }
   }
 

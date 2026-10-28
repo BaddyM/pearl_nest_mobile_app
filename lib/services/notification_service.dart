@@ -1,7 +1,22 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:pearlnest/apis/auth_service.dart';
+import 'package:pearlnest/apis/property_service.dart';
+import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
+import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/models/user_type.dart';
+import 'package:pearlnest/models/property.dart';
+import 'package:pearlnest/screens/chat/new_chat_conversation.dart';
+import 'package:pearlnest/screens/chat/new_chat_list.dart';
+import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
+import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
+import 'package:pearlnest/screens/tenant/notification_screen.dart';
+import 'package:pearlnest/screens/tenant/property_details_screen.dart';
+import 'package:pearlnest/screens/tenant/tenant_booking_history_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
@@ -9,12 +24,19 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   static bool _isInitialized = false;
   static String? _fcmToken;
+  static GlobalKey<NavigatorState>? _navigatorKey;
+  static Map<String, dynamic>? _pendingNavigation;
 
   // Notification channels
   static const String _defaultChannelId = 'pearlnest_default';
   static const String _chatChannelId = 'pearlnest_chat';
   static const String _bookingChannelId = 'pearlnest_booking';
   static const String _generalChannelId = 'pearlnest_general';
+
+  static void setNavigatorKey(GlobalKey<NavigatorState> navigatorKey) {
+    _navigatorKey = navigatorKey;
+    _schedulePendingNavigation();
+  }
 
   /// Initialize the notification service
   static Future<void> initialize() async {
@@ -81,7 +103,8 @@ class NotificationService {
 
     // Handle navigation based on notification payload
     if (notificationResponse.payload != null) {
-      _handleNotificationNavigation(notificationResponse.payload!);
+      final payload = _asMap(notificationResponse.payload);
+      navigateFromNotification(payload ?? {'type': notificationResponse.payload});
     }
   }
 
@@ -90,8 +113,8 @@ class NotificationService {
     const List<AndroidNotificationChannel> channels = [
       AndroidNotificationChannel(
         _defaultChannelId,
-        'Default Notifications',
-        description: 'Default notification channel for PearlNest',
+        'PearlNest Updates',
+        description: 'Important updates from PearlNest',
         importance: Importance.high,
         playSound: true,
         enableVibration: true,
@@ -99,8 +122,8 @@ class NotificationService {
       ),
       AndroidNotificationChannel(
         _chatChannelId,
-        'Chat Messages',
-        description: 'Notifications for new chat messages',
+        'PearlNest Messages',
+        description: 'New messages from PearlNest conversations',
         importance: Importance.high,
         playSound: true,
         enableVibration: true,
@@ -108,8 +131,8 @@ class NotificationService {
       ),
       AndroidNotificationChannel(
         _bookingChannelId,
-        'Booking Updates',
-        description: 'Notifications for booking updates and confirmations',
+        'PearlNest Bookings',
+        description: 'Booking updates and confirmations from PearlNest',
         importance: Importance.high,
         playSound: true,
         enableVibration: true,
@@ -117,8 +140,8 @@ class NotificationService {
       ),
       AndroidNotificationChannel(
         _generalChannelId,
-        'General Notifications',
-        description: 'General app notifications and updates',
+        'PearlNest News',
+        description: 'General news and updates from PearlNest',
         importance: Importance.defaultImportance,
         playSound: true,
         enableVibration: false,
@@ -221,7 +244,7 @@ class NotificationService {
     //debugPrint('Data: ${message.data}');
 
     // Handle navigation based on notification data
-    _handleNotificationNavigation(message.data.toString());
+    navigateFromNotification(Map<String, dynamic>.from(message.data));
   }
 
   /// Handle initial message when app is launched from terminated state
@@ -229,7 +252,7 @@ class NotificationService {
     RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) {
       //debugPrint('📱 App launched from notification: ${initialMessage.messageId}');
-      _handleNotificationNavigation(initialMessage.data.toString());
+      navigateFromNotification(Map<String, dynamic>.from(initialMessage.data));
     }
   }
 
@@ -268,10 +291,10 @@ class NotificationService {
       // Show notification
       await _flutterLocalNotificationsPlugin.show(
         notificationId,
-        message.notification?.title ?? 'PearlNest',
+        _brandedTitle(message.notification?.title ?? 'PearlNest'),
         message.notification?.body ?? 'You have a new notification',
         notificationDetails,
-        payload: message.data.toString(),
+        payload:         jsonEncode(message.data),
       );
     } catch (e) {
       //debugPrint('❌ Error showing local notification: $e');
@@ -280,9 +303,9 @@ class NotificationService {
 
   /// Get channel ID based on message type
   static String _getChannelIdFromMessage(RemoteMessage message) {
-    String type = message.data['type'] ?? 'default';
+    final type = (message.data['type'] ?? 'default').toString().toLowerCase();
 
-    switch (type.toLowerCase()) {
+    switch (type) {
       case 'chat':
       case 'message':
         return _chatChannelId;
@@ -301,13 +324,13 @@ class NotificationService {
   static String _getChannelNameFromId(String channelId) {
     switch (channelId) {
       case _chatChannelId:
-        return 'Chat Messages';
+        return 'PearlNest Messages';
       case _bookingChannelId:
-        return 'Booking Updates';
+        return 'PearlNest Bookings';
       case _generalChannelId:
-        return 'General Notifications';
+        return 'PearlNest News';
       default:
-        return 'Default Notifications';
+        return 'PearlNest Updates';
     }
   }
 
@@ -315,38 +338,265 @@ class NotificationService {
   static String _getChannelDescriptionFromId(String channelId) {
     switch (channelId) {
       case _chatChannelId:
-        return 'Notifications for new chat messages';
+        return 'New messages from PearlNest conversations';
       case _bookingChannelId:
-        return 'Notifications for booking updates and confirmations';
+        return 'Booking updates and confirmations from PearlNest';
       case _generalChannelId:
-        return 'General app notifications and updates';
+        return 'General news and updates from PearlNest';
       default:
-        return 'Default notification channel for PearlNest';
+        return 'Important updates from PearlNest';
     }
   }
 
-  /// Handle notification navigation
-  static void _handleNotificationNavigation(String payload) {
-    // This would typically navigate to specific screens based on payload
-    // For now, we'll just log the payload
-    //debugPrint('🔄 Handling notification navigation: $payload');
+  /// Routes actionable notifications while preserving useful legacy destinations.
+  static Future<bool> navigateFromNotification(
+    Map<String, dynamic> notification, {
+    User? user,
+    bool fallbackToNotificationScreen = true,
+  }) async {
+    final navigator = _navigatorKey?.currentState;
+    if (navigator == null) {
+      _pendingNavigation = notification;
+      _schedulePendingNavigation();
+      return false;
+    }
 
-    // Example navigation logic:
-    // Map<String, dynamic> data = jsonDecode(payload);
-    // String? type = data['type'];
-    // String? id = data['id'];
-    //
-    // switch (type) {
-    //   case 'chat':
-    //     // Navigate to chat screen
-    //     break;
-    //   case 'booking':
-    //     // Navigate to booking details
-    //     break;
-    //   default:
-    //     // Navigate to home screen
-    //     break;
-    // }
+    User? loadedUser = user;
+    if (loadedUser == null) {
+      try {
+        loadedUser = await AuthService.getCurrentUser();
+      } catch (_) {
+        return false;
+      }
+    }
+    final currentUser = loadedUser;
+    if (currentUser == null || currentUser.id.isEmpty) return false;
+
+    final data = <String, dynamic>{...notification};
+    final metadata = _asMap(
+      notification['metadata'] ??
+          notification['data'] ??
+          notification['notificationData'],
+    );
+    if (metadata != null) data.addAll(metadata);
+    final actionPayload = _asMap(
+      notification['actionData'] ??
+          notification['action_data'] ??
+          notification['action'],
+    );
+    if (actionPayload != null) data.addAll(actionPayload);
+
+    final rawAction = notification['action'] ??
+        notification['actionData'] ??
+        notification['action_data'] ??
+        data['destination'] ??
+        data['screen'] ??
+        data['route'] ??
+        data['actionType'];
+    final action = _normalizedAction(rawAction);
+    final type = _normalizedAction(data['type'] ?? data['notificationType']);
+    final propertyData = _asMap(data['property']);
+    final propertyId = _stringValue(
+      data['propertyId'] ?? data['property_id'] ?? propertyData?['id'],
+    );
+    final bookingId =
+        _stringValue(data['bookingId'] ?? data['booking_id']);
+    final destination = _isRecognizedDestination(action)
+        ? action
+        : type.isNotEmpty && type != 'system' && type != 'general'
+            ? type
+            : bookingId != null
+                ? 'booking'
+                : propertyId != null
+                    ? 'property'
+                    : '';
+
+    if (_containsAny(destination, ['chat', 'message'])) {
+      String? resolvedPeerId;
+      for (final candidate in [
+        data['otherUserId'],
+        data['recipientId'],
+        data['senderId'],
+        data['fromUserId'],
+        data['toUserId'],
+        data['userId'],
+      ]) {
+        final candidateId = _stringValue(candidate);
+        if (candidateId != null && candidateId != currentUser.id) {
+          resolvedPeerId = candidateId;
+          break;
+        }
+      }
+      final peerId = resolvedPeerId;
+      final peerName = _stringValue(
+            data['otherUserName'] ??
+                data['recipientName'] ??
+                data['senderName'] ??
+                data['userName'],
+          ) ??
+          'Chat';
+      final navContext = _navigatorKey?.currentContext;
+      if (peerId != null && peerId != currentUser.id && navContext != null) {
+        try {
+          navContext.read<NewChatBloc>().socket.connect(currentUser.id);
+        } catch (_) {
+          // A legacy notification may arrive before chat providers are ready.
+        }
+        navigator.push(
+          MaterialPageRoute(
+            builder: (_) => NewChatConversation(
+              fromUserId: currentUser.id,
+              toUserId: peerId,
+              userName: peerName,
+              userImageUrl: _stringValue(
+                data['profilePicture'] ?? data['profileImage'] ?? data['avatar'],
+              ),
+              propertyId: propertyId,
+            ),
+          ),
+        );
+      } else {
+        navigator.push(
+          MaterialPageRoute(builder: (_) => NewChatList(user: currentUser)),
+        );
+      }
+      return true;
+    }
+
+    if (_containsAny(destination, ['booking', 'reservation', 'payment'])) {
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => currentUser.userType == UserType.landlord
+              ? LandlordBookingRequestsScreen(user: currentUser)
+              : TenantBookingHistoryScreen(user: currentUser),
+        ),
+      );
+      return true;
+    }
+
+    if (_containsAny(destination, ['property', 'favorite', 'favourite']) &&
+        propertyId != null) {
+      final result = await PropertyService.getPropertyById(propertyId);
+      final loadedProperty = result['property'];
+      if (result['success'] == true && loadedProperty is Property) {
+        navigator.push(
+          MaterialPageRoute(
+            builder: (_) =>
+                PropertyDetailsScreen(
+                  property: loadedProperty,
+                  user: currentUser,
+                ),
+          ),
+        );
+        return true;
+      }
+    }
+
+    if (_containsAny(destination, ['help', 'support'])) {
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => HelpSupportScreen(user: currentUser),
+        ),
+      );
+      return true;
+    }
+
+    if (_containsAny(destination, ['notification'])) {
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => NotificationScreen(user: currentUser),
+        ),
+      );
+      return true;
+    }
+
+    // Keep legacy notifications useful even when they contain only a type.
+    if (type.isNotEmpty && type != 'system' && type != 'general') {
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => NotificationScreen(user: currentUser),
+        ),
+      );
+      return true;
+    }
+    if (fallbackToNotificationScreen) {
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => NotificationScreen(user: currentUser),
+        ),
+      );
+      return true;
+    }
+    return false;
+  }
+
+  static Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map) return Map<String, dynamic>.from(value);
+    if (value is String && value.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } on FormatException {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static String _normalizedAction(dynamic value) {
+    if (value is Map) {
+      final nested = _asMap(value);
+      return _normalizedAction(
+        nested?['destination'] ??
+            nested?['screen'] ??
+            nested?['route'] ??
+            nested?['action'] ??
+            nested?['actionType'] ??
+            nested?['type'],
+      );
+    }
+    return value?.toString().trim().toLowerCase().replaceAll('_', '').replaceAll('-', '') ?? '';
+  }
+
+  static String? _stringValue(dynamic value) {
+    if (value == null) return null;
+    final stringValue = value.toString().trim();
+    return stringValue.isEmpty || stringValue == 'null' ? null : stringValue;
+  }
+
+  static bool _containsAny(String value, List<String> options) =>
+      options.any((option) => value.contains(option));
+
+  static String _brandedTitle(String title) =>
+      title.toLowerCase().startsWith('pearlnest') ? title : 'PearlNest • $title';
+
+  static bool _isRecognizedDestination(String value) => _containsAny(
+        value,
+        [
+          'chat',
+          'message',
+          'booking',
+          'reservation',
+          'payment',
+          'property',
+          'favorite',
+          'favourite',
+          'support',
+          'help',
+          'notification',
+        ],
+      );
+
+  static void _schedulePendingNavigation() {
+    if (_pendingNavigation == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_navigatorKey?.currentState == null || _pendingNavigation == null) {
+        return;
+      }
+      final pending = _pendingNavigation!;
+      _pendingNavigation = null;
+      navigateFromNotification(pending);
+    });
   }
 
   /// Get FCM token
@@ -429,7 +679,7 @@ class NotificationService {
       // Show notification
       await _flutterLocalNotificationsPlugin.show(
         notificationId,
-        title,
+        _brandedTitle(title),
         body,
         notificationDetails,
         payload: payload,

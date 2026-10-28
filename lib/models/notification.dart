@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 enum NotificationType {
   propertyUpdate,
   booking,
@@ -36,31 +38,78 @@ class NotificationItem {
   });
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
+    final property = _mapFrom(json['property']);
+    final action = json['actionData'] ?? json['action'];
+    final metadata = _mapFrom(json['metadata'] ?? json['data']);
+    final metadataProperty = _mapFrom(metadata?['property']);
     return NotificationItem(
-      id: json['_id'] ?? json['id'] ?? '',
-      title: json['title'] ?? 'System Notification',
-      message: json['message'] ?? json['body'] ?? '',
-      type: _parseNotificationType(json['type'] ?? 'system'),
+      id: _stringValue(json['_id'] ?? json['id']) ?? '',
+      title: _stringValue(json['title']) ?? 'PearlNest Notification',
+      message: _stringValue(json['message'] ?? json['body']) ?? '',
+      type: _parseNotificationType(
+        _stringValue(json['type'] ?? metadata?['type']) ?? 'system',
+      ),
       timestamp: _parseTimestamp(json['createdAt'] ?? json['timestamp']),
-      isRead: json['isRead'] ?? json['read'] ?? false,
-      propertyId: json['propertyId'] ?? json['property']?['id'],
-      propertyTitle: json['propertyTitle'] ?? json['property']?['title'],
-      propertyImage: json['propertyImage'] ?? json['property']?['image'],
-      actionData: json['actionData'] ?? json['action'],
-      metadata: json['metadata'] ?? json['data'],
+      isRead: json['isRead'] == true || json['read'] == true,
+      propertyId: _stringValue(
+        json['propertyId'] ??
+            metadata?['propertyId'] ??
+            property?['id'] ??
+            metadataProperty?['id'],
+      ),
+      propertyTitle: _stringValue(
+        json['propertyTitle'] ??
+            metadata?['propertyTitle'] ??
+            property?['title'] ??
+            metadataProperty?['title'],
+      ),
+      propertyImage: _stringValue(
+        json['propertyImage'] ??
+            metadata?['propertyImage'] ??
+            property?['image'] ??
+            metadataProperty?['image'],
+      ),
+      actionData: action is String
+          ? action
+          : action is Map
+              ? jsonEncode(action)
+              : null,
+      metadata: metadata,
     );
+  }
+
+  static String? _stringValue(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty || text == 'null' ? null : text;
+  }
+
+  static Map<String, dynamic>? _mapFrom(dynamic value) {
+    if (value is Map) return Map<String, dynamic>.from(value);
+    if (value is String && value.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } on FormatException {
+        return null;
+      }
+    }
+    return null;
   }
 
   static NotificationType _parseNotificationType(String typeStr) {
     switch (typeStr.toLowerCase()) {
       case 'property_update':
       case 'property':
+      case 'properties':
       case 'propertyupdate':
         return NotificationType.propertyUpdate;
       case 'booking':
+      case 'bookings':
       case 'reservation':
         return NotificationType.booking;
       case 'message':
+      case 'messages':
       case 'chat':
         return NotificationType.message;
       case 'favorite':
@@ -68,12 +117,14 @@ class NotificationItem {
       case 'like':
         return NotificationType.favorite;
       case 'payment':
+      case 'payments':
       case 'transaction':
         return NotificationType.payment;
       case 'review':
       case 'rating':
         return NotificationType.review;
       case 'system':
+      case 'notifications':
       case 'app':
       case 'general':
       default:

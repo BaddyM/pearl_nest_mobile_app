@@ -50,6 +50,7 @@ class PropertyService {
               .map((item) => Map<String, dynamic>.from(item))
               .toList();
         }
+
       } on FormatException {
         await preferences.remove(_propertyTypeCacheKey);
         await preferences.remove(_propertyTypeCacheTimeKey);
@@ -84,6 +85,23 @@ class PropertyService {
     );
     return propertyTypes;
   }
+
+  static Future<String> getPropertyContact(String propertyId) async {
+    final response = await ApiClient.get('/property/$propertyId/contact');
+    if (response.statusCode != 200 || response.data is! Map) {
+      throw PropertyException(
+        'Could not load property contact details.',
+        statusCode: response.statusCode,
+      );
+    }
+    final data = response.data['data'];
+    final contact = data is Map ? data['contact'] : null;
+    if (contact is! String || contact.isEmpty) {
+      throw PropertyException('The landlord phone number is unavailable.');
+    }
+    return contact;
+  }
+
   // Logging helper
   static void _logRequest(String endpoint, Map<String, dynamic>? data, {String? token}) {
     if (kDebugMode) {
@@ -632,6 +650,7 @@ class PropertyService {
                   longitude: 0.0, // Not provided in API response
                   isFeatured: propertyData['featured'] ?? false,
                   isVerified: propertyData['isVerified'] ?? false,
+                  isAdminUploaded: propertyData['isAdminUploaded'] ?? false,
                   views: (propertyData['views'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList(),
                   shares: (propertyData['shares'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList(),
                   favourites: (propertyData['favourites'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList(),

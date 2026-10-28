@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/apis/refund_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/services/profile_service.dart';
 
 class LandlordRefundsScreen extends StatefulWidget {
   const LandlordRefundsScreen({super.key});
@@ -148,7 +149,10 @@ class _LandlordRefundsScreenState extends State<LandlordRefundsScreen> {
             ),
             const SizedBox(height: 8),
             Text('Tenant: ${tenant['name'] ?? 'Unknown'} · ${tenant['email'] ?? ''}', style: TextStyle(color: AppTheme.getSecondaryTextColor(context))),
-            Text('Request: UGX ${request['amount'] ?? 0}', style: TextStyle(color: AppTheme.primaryblue, fontWeight: FontWeight.bold)),
+            Text(
+              'Request: ${ProfileService().currencyConverter(price: ((request['amount'] as num?) ?? 0).toInt())}',
+              style: TextStyle(color: AppTheme.primaryblue, fontWeight: FontWeight.bold),
+            ),
             Text('Destination: $destinationType · ${request['destinationName'] ?? ''} · ${request['destinationProvider'] ?? ''} ${request['destinationAccount'] ?? ''}', style: TextStyle(color: AppTheme.getSecondaryTextColor(context))),
             const SizedBox(height: 8),
             Text('Reason', style: TextStyle(color: AppTheme.getTextColor(context), fontWeight: FontWeight.w600)),

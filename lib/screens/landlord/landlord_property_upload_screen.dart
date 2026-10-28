@@ -17,6 +17,7 @@ import 'package:pearlnest/blocs/property_upload/property_upload_state.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/app_config.dart';
+import 'package:pearlnest/services/profile_service.dart';
 
 class LandlordPropertyUploadScreen extends StatefulWidget {
   final User user;
@@ -127,6 +128,19 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   bool _isSale = false;
   bool _parking = false;
 
+  int _displayMoney(dynamic value) {
+    final amount = value is num
+        ? value
+        : num.tryParse(value?.toString() ?? '') ?? 0;
+    return ProfileService().fromBaseCurrency(amount);
+  }
+
+  double _baseMoney(String value) {
+    final trimmedValue = value.trim();
+    final amount = trimmedValue.isEmpty ? 0 : double.parse(trimmedValue);
+    return ProfileService().toBaseCurrency(amount).toDouble();
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -227,7 +241,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     setState(() {
       _titleController.text = propertyData['propertyName'] ?? '';
       _descriptionController.text = propertyData['description'] ?? '';
-      _priceController.text = propertyData['price']?.toString() ?? '0';
+      _priceController.text = _displayMoney(propertyData['price']).toString();
       _locationController.text = propertyData['location'] ?? '';
       _addressController.text = propertyData['fullAddress'] ?? '';
       _neighborhoodController.text = propertyData['neighborhood'] ?? '';
@@ -238,7 +252,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _nearbyPlacesController.text = propertyData['nearbyPlaces'] ?? '';
       _propertyMapController.text = propertyData['propertyMap'] ?? '';
       _distanceController.text = propertyData['distance'] ?? '';
-      _depositController.text = propertyData['deposit']?.toString() ?? '0';
+      _depositController.text = _displayMoney(propertyData['deposit']).toString();
       _isSale = propertyData['isSale'] ?? false;
       _isRent = propertyData['isRent'] ?? false;
       _parking = propertyData['parking'] ?? false;
@@ -286,7 +300,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       // Basic property information
       _titleController.text = property.title;
       _descriptionController.text = property.description;
-      _priceController.text = property.price.toString();
+      _priceController.text = _displayMoney(property.price).toString();
+      _depositController.text = _displayMoney(property.deposit).toString();
       _locationController.text = property.location;
       _addressController.text = property.address;
       _areaController.text = property.area.toString();
@@ -861,7 +876,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           hint: '0',
           icon: Icons.attach_money,
           keyboardType: TextInputType.number,
-          prefixText: 'UGX',
+          prefixText: '${ProfileService().currencyCode} ',
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please enter the price';
@@ -879,7 +894,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           hint: '0',
           icon: Icons.attach_money,
           keyboardType: TextInputType.number,
-          prefixText: 'UGX',
+          prefixText: '${ProfileService().currencyCode} ',
           validator: (value) {
             if (_isSale) return null;
             if (value == null || value.isEmpty) {
@@ -1951,8 +1966,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               propertyName: _titleController.text.trim(),
               propertyType: propertyTypeString,
               location: _locationController.text.trim(),
-              price: double.parse(_priceController.text),
-              deposit: double.tryParse(_depositController.text) ?? 0,
+              price: _baseMoney(_priceController.text),
+              deposit: _baseMoney(_depositController.text),
               amenities: amenitiesString,
               isRent: _isRent,
               isSale: _isSale,
@@ -1979,14 +1994,14 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             PropertyUploadRequested(
               propertyName: _titleController.text.trim(),
               propertyType: propertyTypeString,
-              deposit: double.tryParse(_depositController.text) ?? 0,
+              deposit: _baseMoney(_depositController.text),
               amenities: amenitiesString,
               isRent: _isRent,
               isSale: _isSale,
               parking: _parking,
               distance: _distanceController.text.trim(),
               location: _locationController.text.trim(),
-              price: double.parse(_priceController.text),
+              price: _baseMoney(_priceController.text),
               safetyAndSecurity: _safetySecurityController.text.trim(),
               description: _descriptionController.text.trim(),
               nearbyPlaces: _nearbyPlacesController.text.trim(),
@@ -2022,7 +2037,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Add a Google Maps embed link to help tenants locate your property:',
+                      'Add an optional Google Maps embed link to help tenants locate your property:',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.getSecondaryTextColor(context),
@@ -2034,7 +2049,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               ),
               SizedBox(height: 8),
               Text(
-                'Steps to get iframe:\n1. Open Google Maps\n2. Search for your property address\n3. Click "Share" → "Embed a map"\n4. Choose size (Medium recommended)\n5. Copy the iframe code and paste below',
+                'Steps to get iframe:\n1. Open Google Maps\n2. Search for your property address\n3. Click "Share" → "Embed a map"\n4. Choose size (Medium recommended)\n5. Copy the iframe code and paste below. You can also leave this blank.',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppTheme.getSecondaryTextColor(context),
@@ -2047,7 +2062,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         SizedBox(height: 16),
         _buildTextField(
           controller: _propertyMapController,
-          label: 'Property Map (iframe)',
+          label: 'Property Map (optional)',
           hint: '<iframe src="https://www.google.com/maps/embed?..." width="600" height="450"...></iframe>',
           icon: Icons.map,
           maxLines: 4,

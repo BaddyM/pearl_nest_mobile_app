@@ -115,47 +115,11 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
           SizedBox(height: 16),
           _buildContactItem(
             context,
-            Icons.email,
-            'Email Support',
-            'info@developwitheffect.com',
-            'Send us an email for detailed inquiries',
-            () => _launchEmail('developwitheffect@gmail.com'),
-          ),
-          SizedBox(height: 12),
-          _buildContactItem(
-            context,
-            Icons.bug_report,
-            'Report Bug',
-            'info@developwitheffect.com',
-            'Found a bug? Let us know!',
-            () => _launchEmail('developwitheffect@gmail.com'),
-          ),
-          SizedBox(height: 12),
-          _buildContactItem(
-            context,
-            Icons.lightbulb_outline,
-            'Feature Request',
-            'info@developwitheffect.com',
-            'Suggest new features or improvements',
-            () => _launchEmail('developwitheffect@gmail.com'),
-          ),
-          SizedBox(height: 12),
-          _buildContactItem(
-            context,
-            Icons.chat_outlined,
-            'WhatsApp Support',
-            '+256 757 919 472',
-            'Message us during working days',
-            () => _launchUrl('https://wa.me/256757919472'),
-          ),
-          SizedBox(height: 12),
-          _buildContactItem(
-            context,
-            Icons.phone,
-            'Phone Support',
-            '+256 757 919 472',
-            'Call us during business hours',
-            () => _launchPhone('+256757919472'),
+            Icons.language,
+            'Visit DevelopWithEffect',
+            'developwitheffect.xyz',
+            'Open the developer website to get in touch, report an issue, or discuss improvements.',
+            () => _launchUrl('https://developwitheffect.xyz'),
           ),
         ],
       ),
@@ -309,31 +273,18 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
     );
   }
 
-  void _launchEmail(String email) async {
-    final Uri emailUri = Uri(
-      scheme: 'mailto',
-      path: email,
-      query: 'subject=PearlNest App Inquiry',
-    );
-
-    if (await canLaunchUrl(emailUri)) {
-      await launchUrl(emailUri);
-    }
-  }
-
-  void _launchPhone(String phone) async {
-    final Uri phoneUri = Uri(scheme: 'tel', path: phone);
-
-    if (await canLaunchUrl(phoneUri)) {
-      await launchUrl(phoneUri);
-    }
-  }
-
-  void _launchUrl(String url) async {
+  Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
+    try {
+      if (!await canLaunchUrl(uri) ||
+          !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw StateError('The developer website could not be opened.');
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open developer website: $error')),
+      );
     }
   }
 

@@ -36,6 +36,7 @@ class Property {
   final DateTime updatedAt;
   final bool isFeatured;
   final bool isVerified;
+  final bool isAdminUploaded;
   final bool parking;
   final bool isSale;
   final bool isRent;
@@ -80,6 +81,7 @@ class Property {
     required this.updatedAt,
     this.isFeatured = false,
     this.isVerified = false,
+    this.isAdminUploaded = false,
     this.isRent = false,
     this.isSale = false,
     required this.deposit,
@@ -124,6 +126,7 @@ class Property {
     DateTime? updatedAt,
     bool? isFeatured,
     bool? isVerified,
+    bool? isAdminUploaded,
     bool? availabilityStatus,
     DateTime? availableFrom,
     List<Map<String, dynamic>>? views,
@@ -168,6 +171,7 @@ class Property {
       updatedAt: updatedAt ?? this.updatedAt,
       isFeatured: isFeatured ?? this.isFeatured,
       isVerified: isVerified ?? this.isVerified,
+      isAdminUploaded: isAdminUploaded ?? this.isAdminUploaded,
       availabilityStatus: this.availabilityStatus,
       availableFrom: availableFrom ?? this.availableFrom,
       views: views ?? this.views,
@@ -264,6 +268,7 @@ class Property {
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
       isFeatured: json['featured'] ?? false,
       isVerified: json['isVerified'] ?? false,
+      isAdminUploaded: json['isAdminUploaded'] ?? false,
       availabilityStatus: json['availability'],
       availableFrom: json['availableFrom'] != null ? DateTime.parse(json['availableFrom']) : null,
       views: (json['views'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
@@ -352,6 +357,7 @@ class Property {
       'updatedAt': updatedAt.toIso8601String(),
       'featured': isFeatured,
       'isVerified': isVerified,
+      'isAdminUploaded': isAdminUploaded,
       'availability': availabilityStatus,
       'availableFrom': availableFrom?.toIso8601String(),
       'views': views,

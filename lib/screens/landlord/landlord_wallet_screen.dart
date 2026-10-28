@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/apis/withdrawal_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/services/profile_service.dart';
 
 class LandlordWalletScreen extends StatefulWidget {
   const LandlordWalletScreen({super.key});
@@ -39,7 +40,7 @@ class _LandlordWalletScreenState extends State<LandlordWalletScreen> {
   int _amount(dynamic value) => value is num ? value.toInt() : 0;
 
   String _formatAmount(dynamic amount) =>
-      'UGX ${_amount(amount).toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',')}';
+      ProfileService().currencyConverter(price: _amount(amount));
 
   String _formatMonth(String? value) {
     if (value == null) return 'Month unavailable';
@@ -92,11 +93,13 @@ class _LandlordWalletScreenState extends State<LandlordWalletScreen> {
                   TextFormField(
                     controller: amountController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Amount (UGX)'),
+                    decoration: InputDecoration(
+                      labelText: 'Amount (${ProfileService().currencyCode})',
+                    ),
                     validator: (value) {
-                      final amount = int.tryParse(value ?? '');
-                      if (amount == null || amount <= 0) return 'Enter a whole amount greater than zero.';
-                      if (amount > availableAmount) return 'Amount exceeds your available balance.';
+                      final displayAmount = int.tryParse(value ?? '');
+                      if (displayAmount == null || displayAmount <= 0) return 'Enter a whole amount greater than zero.';
+                      if (ProfileService().toBaseCurrency(displayAmount) > availableAmount) return 'Amount exceeds your available balance.';
                       return null;
                     },
                   ),
@@ -144,7 +147,9 @@ class _LandlordWalletScreenState extends State<LandlordWalletScreen> {
                         ? null
                         : () async {
                             if (!formKey.currentState!.validate()) return;
-                            final amount = int.parse(amountController.text.trim());
+                            final amount = ProfileService().toBaseCurrency(
+                              int.parse(amountController.text.trim()),
+                            );
                             setSheetState(() => isSubmitting = true);
                             try {
                               await WithdrawalService.requestWithdrawal(

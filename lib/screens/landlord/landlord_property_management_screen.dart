@@ -104,6 +104,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             longitude: property.longitude,
             isFeatured: property.isFeatured,
             isVerified: property.isVerified,
+            isAdminUploaded: property.isAdminUploaded,
             views: property.views,
             shares: property.shares,
             favourites: property.favourites,
@@ -512,11 +513,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   }
 
   String _formatLargePrice(double price) {
-    if (price >= 1000000) {
-      return '${(price / 1000000).toStringAsFixed(1)}M';
-    } else {
-      return ProfileService().currencyConverter(price: price.toInt());
-    }
+    return ProfileService().currencyConverter(price: price.toInt());
   }
 
   Widget _buildPropertyListCard(Property property) {

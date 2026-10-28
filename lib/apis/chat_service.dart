@@ -400,31 +400,48 @@ class ChatService {
     final userId = prefs.getString("user_id");
 
     try {
-      debugPrint('📤 Making GET request to /chat/adminList...with role $role');
-      final response = (role == "ADMIN") ? await ApiClient.get('/chat/userList/$userId') : await ApiClient.get('/chat/adminList');
+      debugPrint('📤 Loading admin contacts with role $role');
+      var response = (role == "ADMIN")
+          ? await ApiClient.get('/chat/userList/$userId')
+          : await ApiClient.get('/user/admin/list');
+
+      final responseData = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      if (role != "ADMIN" &&
+          (response.statusCode != 200 ||
+              responseData['data'] is! List ||
+              (responseData['success'] != true &&
+                  responseData['success'] != null))) {
+        response = await ApiClient.get('/chat/adminList');
+      }
 
       stopwatch.stop();
 
       if (response.statusCode == 200) {
-        final responseData = response.data;
-        if (responseData['success'] == true && responseData['data'] != null) {
+        final responseData = response.data is Map
+            ? Map<String, dynamic>.from(response.data as Map)
+            : <String, dynamic>{};
+        if ((responseData['success'] == true ||
+                responseData['success'] == null) &&
+            responseData['data'] is List) {
           final adminData = responseData['data'] as List;
-          final unreadData = responseData['unread'] != null ? responseData['unread'] as List : [];
+          final unreadData =
+              responseData['unread'] is List ? responseData['unread'] as List : [];
 
           final admins = <Admin>[];
           final unread = <UnreadChat>[];
 
-          for (int i = 0; i < unreadData.length; i++) {
-            unread.add(UnreadChat.fromJson(unreadData[i]));
+          for (final item in unreadData.whereType<Map>()) {
+            unread.add(UnreadChat.fromJson(Map<String, dynamic>.from(item)));
           }
 
-          for (int i = 0; i < adminData.length; i++) {
-            final adminJson = adminData[i];
+          for (final item in adminData.whereType<Map>()) {
             try {
-              final admin = Admin.fromJson(adminJson);
+              final admin = Admin.fromJson(Map<String, dynamic>.from(item));
               admins.add(admin);
-            } catch (adminError) {
-              //debugPrint('   ❌ Error parsing admin #${i + 1}: $adminError');
+            } catch (error) {
+              debugPrint('Unable to parse an admin contact: $error');
             }
           }
           // Update cached admins
@@ -433,21 +450,31 @@ class ChatService {
 
           return [admins, unread];
         } else {
-          //debugPrint('❌ API response validation failed');
-          return [];
+          throw Exception('Admin list response was invalid.');
         }
       } else {
-        //debugPrint('❌ HTTP Error - API request failed: ${response.statusCode}');
-        return [];
+        throw Exception(
+          'Could not load admin list (status ${response.statusCode}).',
+        );
       }
-    } catch (e, stackTrace) {
-      //print("Error = ${e}");
-      //print("Location = ${stackTrace}");
+    } catch (error) {
+      debugPrint('Unable to fetch available admins: $error');
       stopwatch.stop();
-      return [];
+      rethrow;
     } finally {
       //debugPrint('🏁 === FETCH ADMIN LIST API CALL END ===');
     }
+  }
+
+  static Future<Admin?> fetchSupportAdmin() async {
+    final response = await fetchAvailableAdmins();
+    if (response.isEmpty || response.first is! List) return null;
+    for (final item in (response.first as List).whereType<Admin>()) {
+      if (item.contact.trim().isNotEmpty || item.email.trim().isNotEmpty) {
+        return item;
+      }
+    }
+    return null;
   }
 
   // Get admin conversations for chat - returns all available admins
@@ -513,6 +540,8 @@ class ChatService {
   static Future<ChatConversation?> getOrCreateConversation({
     required String adminId,
     required String adminName,
+    String? adminProfilePic,
+    bool isOnline = false,
     String? propertyTitle,
   }) async {
     try {
@@ -521,11 +550,11 @@ class ChatService {
         id: 'admin_$adminId',
         landlordId: adminId,
         landlordName: adminName,
-        landlordProfilePic: '', // Will use default avatar
+        landlordProfilePic: adminProfilePic ?? '',
         lastMessage: propertyTitle != null ? 'Chat about: $propertyTitle' : 'Chat with $adminName',
         lastMessageTime: DateTime.now(),
         unreadCount: 0,
-        isOnline: true, // Assume admin is online
+        isOnline: isOnline,
         propertyTitle: propertyTitle ?? 'General Support',
       );
 
@@ -608,7 +637,11 @@ class ChatService {
                 id: 'chat_$otherUserId',
                 landlordId: otherUserId?.toString() ?? '',
                 landlordName: otherUser['name']?.toString() ?? 'Unknown User',
-                landlordProfilePic: otherUser['profilePicture']?.toString() ?? '',
+                landlordProfilePic: (otherUser['profilePicture'] ??
+                        otherUser['profileImage'] ??
+                        otherUser['profilePhoto'])
+                    ?.toString() ??
+                    '',
                 lastMessage: chat['message']?.toString() ?? '',
                 lastMessageTime: DateTime.now(), // TODO: Parse actual timestamp if available
                 unreadCount: 0, // TODO: Get from API when available

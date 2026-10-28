@@ -122,7 +122,10 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                             final amount = successfulPayments.fold<num>(0, (sum, item) => sum + ((item["amount"] as num?) ?? 0));
                             final totalDue = booking.totalAmount ?? (property.deposit != 0 ? property.deposit : property.price);
                             final initialDue = booking.amount ?? totalDue;
-                            final balance = amount == 0 ? initialDue - amount.toDouble() : totalDue - amount.toDouble();
+                            final balance = (amount == 0
+                                    ? initialDue - amount.toDouble()
+                                    : totalDue - amount.toDouble())
+                                .clamp(0, double.infinity);
                             return Container(
                               margin: EdgeInsets.only(bottom: 20),
                               child: Column(
@@ -130,7 +133,7 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                 children: [
                                   PropertyCard(
                                     bookingId: bookingId,
-                                    isBooking: balance == 0.0 ? false : true,
+                                    isBooking: true,
                                     balance: balance.toInt(),
                                     paid: amount.toInt(),
                                     property: property,

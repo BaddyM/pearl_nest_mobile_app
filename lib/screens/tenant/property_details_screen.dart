@@ -7,6 +7,7 @@ import 'package:pearlnest/blocs/views/views_bloc.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
+import 'package:pearlnest/screens/tenant/booking_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_note_widget.dart';
 import 'package:share_plus/share_plus.dart';
@@ -25,9 +26,8 @@ import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
-import 'package:pearlnest/blocs/chat/chat_bloc.dart';
-import 'package:pearlnest/blocs/chat/chat_event.dart';
-import 'package:pearlnest/screens/chat/admin_list_screen.dart';
+import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
+import 'package:pearlnest/screens/chat/new_chat_conversation.dart';
 
 class Review {
   final String id;
@@ -75,7 +75,6 @@ class PropertyDetailsScreen extends StatefulWidget {
 }
 
 class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with TickerProviderStateMixin {
-  final String pearlNestContact = "+256778632307";
   late PageController _pageController;
   bool _isFavorite = false;
   late AnimationController _animationController;
@@ -97,6 +96,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   // Pending booking state
   List<Booking> _pendingBookings = [];
   Booking? _pendingBookingForProperty;
+  bool _hasBookedProperty = false;
+  String _landlordPhone = '';
+  String? _contactError;
   bool _isLoadingPendingBookings = true;
 
   // API data state
@@ -188,6 +190,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
     // Load pending bookings
     _loadPendingBookings();
+    if (widget.property.isAdminUploaded) _loadPropertyContact();
   }
 
   // Initialize stats from embedded property data
@@ -223,7 +226,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   void _loadPendingBookings() async {
     try {
       //debugPrint('📚 Loading pending bookings for property: ${widget.property.id}');
-      final pendingBookings = await BookingService.fetchPendingBookings();
+      final bookings = await BookingService.fetchBookings();
+      final pendingBookings = bookings.where((booking) => booking.status == BookingStatus.pending).toList();
 
       // Check if this specific property has a pending booking
       Booking? pendingBookingForThisProperty;
@@ -241,8 +245,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         setState(() {
           _pendingBookings = pendingBookings;
           _pendingBookingForProperty = pendingBookingForThisProperty;
+          _hasBookedProperty = bookings.any((booking) =>
+              booking.propertyId == widget.property.id &&
+              (booking.status == BookingStatus.pending ||
+                  booking.status == BookingStatus.confirmed));
           _isLoadingPendingBookings = false;
         });
+        if (_canContactLandlord) _loadPropertyContact();
       }
     } catch (e) {
       //debugPrint('❌ Error loading pending bookings: $e');
@@ -250,7 +259,35 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         setState(() {
           _pendingBookings = [];
           _pendingBookingForProperty = null;
+          _hasBookedProperty = false;
           _isLoadingPendingBookings = false;
+        });
+      }
+    }
+  }
+
+  bool get _canContactLandlord =>
+      widget.property.isAdminUploaded || _hasBookedProperty;
+
+  Future<void> _loadPropertyContact() async {
+    if (!_canContactLandlord ||
+        widget.user.userType != UserType.tenant ||
+        widget.user.id.isEmpty) {
+      return;
+    }
+    try {
+      final phone = await PropertyService.getPropertyContact(widget.property.id);
+      if (mounted) {
+        setState(() {
+          _landlordPhone = phone;
+          _contactError = null;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _landlordPhone = '';
+          _contactError = error.toString();
         });
       }
     }
@@ -282,14 +319,17 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   }
 
   void _showContactDialog() {
+    if (!_canContactLandlord) return;
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: AppTheme.getCardColor(context),
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(26),
           ),
           title: Row(
             children: [
@@ -338,7 +378,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         Icon(Icons.phone, color: AppTheme.primaryblue, size: 16),
                         SizedBox(width: 8),
                         Text(
-                          pearlNestContact,
+                          _landlordPhone.isEmpty
+                              ? 'Phone number unavailable'
+                              : _landlordPhone,
                           style: TextStyle(
                             fontSize: 14,
                             color: AppTheme.getSecondaryTextColor(context),
@@ -360,10 +402,12 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _makePhoneCall(widget.property.landlordPhone);
-              },
+              onPressed: _landlordPhone.isEmpty
+                  ? null
+                  : () {
+                      Navigator.of(context).pop();
+                      _makePhoneCall(_landlordPhone);
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryblue,
                 shape: RoundedRectangleBorder(
@@ -996,8 +1040,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   ),
                   decoration: InputDecoration(
                     labelText: 'Payment Amount',
-                    hintText: 'Enter amount (UGX)',
-                    prefixText: 'UGX ',
+                    hintText: 'Enter amount (${ProfileService().currencyCode})',
+                    prefixText: '${ProfileService().currencyCode} ',
                     prefixStyle: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1029,7 +1073,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       return 'Amount must be greater than 0';
                     }
 
-                    if (amount > widget.property.price) {
+                    if (ProfileService().toBaseCurrency(amount) > widget.property.price) {
                       return 'Amount cannot exceed $formattedPropertyPrice';
                     }
 
@@ -1053,7 +1097,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'You can pay any amount up to the full property price to secure your booking.',
+                          'Submitting this request does not take payment. If the landlord approves it, pay from My Bookings.',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppTheme.primaryblue,
@@ -1096,7 +1140,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       if (formKey.currentState!.validate()) {
                         final String value = amountController.text.trim().replaceAll(',', '');
                         final double amount = double.parse(value);
-                        Navigator.of(context).pop(amount);
+                        Navigator.of(context).pop(
+                          ProfileService().toBaseCurrency(amount).toDouble(),
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -1167,12 +1213,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         ),
                         child: Icon(Icons.book_online, color: AppTheme.primaryblue),
                       ),
-                      SizedBox(width: 10),
-                      Text(
-                        'Confirm Booking',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.getTextColor(context),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Send booking request',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.getTextColor(context),
+                          ),
                         ),
                       ),
                     ],
@@ -1186,8 +1234,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         Container(
                           padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppTheme.lightGreyColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppTheme.primaryblue.withValues(alpha: 0.07),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppTheme.primaryblue.withValues(alpha: 0.12),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1217,17 +1268,33 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                 ],
                               ),
                               SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Text(
-                                    '${ProfileService().currencyConverter(price: widget.property.price.toInt())} ${widget.property.priceType}',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryblue,
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: ProfileService().currencyConverter(
+                                        price: widget.property.price.toInt(),
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.primaryblue,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    if (widget.property.priceType.trim().isNotEmpty &&
+                                        widget.property.priceType != 'undefined')
+                                      TextSpan(
+                                        text: ' ${widget.property.priceType.trim()}',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: AppTheme.getSecondaryTextColor(context),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -1386,7 +1453,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
                         SizedBox(height: 16),
                         Text(
-                          "Thank you for booking with PearlNest Estates! To confirm your booking and receive feedback promptly, please make an initial deposit of at least UGX ${putCommas(deposit)} within 24 hours. If payment is not made within this time, the property will automatically be made available to other clients.",
+                          "Submitting this request does not take payment. The landlord must approve it first; if approved, you can complete payment from My Bookings.",
                           style: TextStyle(
                             fontSize: 14,
                             color: AppTheme.getSecondaryTextColor(context),
@@ -3310,7 +3377,15 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             ],
           ),
           SizedBox(height: 16),
-          if (widget.user.userType != UserType.landlord)
+          if (_canContactLandlord && _contactError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Could not load the landlord phone number.',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          if (widget.user.userType != UserType.landlord && _canContactLandlord)
             Row(
               children: [
                 Expanded(
@@ -3338,7 +3413,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       if (snapshot.hasData && snapshot.data == "TENANT") {
                         return Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: _messageAdmin,
+                            onPressed: _messageLandlord,
                             icon: Icon(Icons.message, size: 18),
                             label: Text('Message'),
                             style: OutlinedButton.styleFrom(
@@ -3584,7 +3659,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
   Widget _buildFloatingActionButtons() {
     // Check if this property has a pending booking
-    final hasPendingBooking = _pendingBookingForProperty != null;
+    final hasExistingBooking = _hasBookedProperty;
 
     // Check if property is available for booking
     final isPropertyAvailable = widget.property.status == PropertyStatus.approved;
@@ -3594,42 +3669,50 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             margin: EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.primaryblue),
-                    borderRadius: BorderRadius.circular(12),
-                    color: AppTheme.getCardColor(context),
-                  ),
-                  child: IconButton(
-                    onPressed: _showContactDialog,
-                    icon: Icon(
-                      Icons.phone,
-                      color: AppTheme.primaryblue,
-                      size: 24,
+                if (_canContactLandlord) ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.primaryblue),
+                      borderRadius: BorderRadius.circular(12),
+                      color: AppTheme.getCardColor(context),
+                    ),
+                    child: IconButton(
+                      onPressed: _showContactDialog,
+                      icon: Icon(
+                        Icons.phone,
+                        color: AppTheme.primaryblue,
+                        size: 24,
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 16),
+                  SizedBox(width: 16),
+                ],
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: _isLoadingPendingBookings ||
+                            (!isPropertyAvailable && !hasExistingBooking)
+                        ? null
+                        : () {
                       if (widget.user.id != "") {
-                        _isLoadingPendingBookings || !isPropertyAvailable
-                            ? null
-                            : hasPendingBooking
-                                ? _initiatePayment()
-                                : _showBookingConfirmationDialog(
-                                    isRent: widget.property.isRent,
-                                    deposit: widget.property.deposit.toInt(),
-                                  );
+                        hasExistingBooking
+                            ? _initiatePayment()
+                            : Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => BookingScreen(
+                                    property: widget.property,
+                                    user: widget.user,
+                                  ),
+                                ),
+                              );
                       } else {
                         Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _isLoadingPendingBookings || !isPropertyAvailable
+                      backgroundColor: _isLoadingPendingBookings ||
+                              (!isPropertyAvailable && !hasExistingBooking)
                           ? Colors.grey
-                          : hasPendingBooking
+                          : hasExistingBooking
                               ? AppTheme.primaryblue
                               : AppTheme.primaryblue,
                       foregroundColor: AppTheme.whiteColor,
@@ -3638,21 +3721,23 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 2,
-                      shadowColor: (hasPendingBooking ? AppTheme.primaryblue : AppTheme.primaryblue).withValues(alpha: 0.3),
+                      shadowColor: AppTheme.primaryblue.withValues(alpha: 0.3),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          hasPendingBooking ? Icons.payment : Icons.book_online,
+                          hasExistingBooking ? Icons.event_available : Icons.book_online,
                           size: 20,
                         ),
                         SizedBox(width: 8),
                         Text(
-                          hasPendingBooking
-                              ? 'Complete Payment'
+                          hasExistingBooking
+                              ? 'View Booking'
                               : isPropertyAvailable
-                                  ? 'Book Now'
+                                  ? (widget.property.isSale
+                                      ? 'Request a Viewing'
+                                      : 'Request Booking')
                                   : 'Unavailable',
                           style: TextStyle(
                             fontSize: 18,
@@ -3688,7 +3773,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   }
 
   void _callLandlord() async {
-    final phoneNumber = pearlNestContact;
+    if (!_canContactLandlord) return;
+    final phoneNumber = _landlordPhone;
     if (phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -3728,20 +3814,36 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     }
   }
 
-  void _messageAdmin() async {
-    // Initialize chat and navigate to admin list screen
-    final chatBloc = context.read<ChatBloc>();
-
-    // Initialize chat if not already done
-    chatBloc.add(const ChatInitialize());
-
-    // Navigate to admin list screen instead of direct chat
+  void _messageLandlord() async {
+    if (!_canContactLandlord) return;
+    if (widget.user.id.isEmpty) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+      return;
+    }
+    try {
+      await context.read<NewChatBloc>().socket.connect(widget.user.id);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not connect to chat: $error')),
+      );
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AdminListScreen(
-          user: widget.user,
+        builder: (context) => NewChatConversation(
+          fromUserId: widget.user.id,
+          toUserId: widget.property.landlordId,
+          userName: widget.property.landlordName,
+          userImageUrl: widget.property.profilePicture ??
+              widget.property.user?['profilePicture']?.toString() ??
+              widget.property.user?['profileImage']?.toString(),
+          propertyId: widget.property.id,
           propertyTitle: widget.property.title,
+          propertyAddress: widget.property.address,
         ),
       ),
     );
@@ -3784,95 +3886,103 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     showDialog(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.48),
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          // isDismissible: true,
-          // enableDrag: true,
-          // backgroundColor: Colors.transparent,
-          // builder: (context) => SingleChildScrollView(
+          backgroundColor: AppTheme.getCardColor(context),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppTheme.getCardColor(context), // Changed from green to orange to indicate pending
-                      shape: BoxShape.circle,
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.72, end: 1),
+                    duration: const Duration(milliseconds: 360),
+                    curve: Curves.easeOutBack,
+                    builder: (context, scale, child) => Transform.scale(
+                      scale: scale,
+                      child: child,
                     ),
-                    child: Icon(
-                      Icons.pending_actions, // Changed from check to pending icon
-                      color: AppTheme.whiteColor,
-                      size: 30,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.pending_actions_rounded,
+                        color: AppTheme.primaryblue,
+                        size: 34,
+                      ),
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   Text(
-                    'Booking Created!', // Changed from "Booking Successful"
+                    'Booking request sent',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.getTextColor(context),
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Your booking has been created and is pending payment. Complete the payment to secure your reservation as you will receive a call from us.',
+                    message.trim().isNotEmpty
+                        ? message
+                        : 'Your request is waiting for the landlord. You can check its status in My Bookings.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 14,
+                      height: 1.45,
                       color: AppTheme.getSecondaryTextColor(context),
                     ),
                   ),
-                  SizedBox(height: 16),
-                  AppNoteWidget(note: "If a payment for a booked property hasn't been made within 24 hours, the booking is revoked and property made available."),
-                  SizedBox(height: 16),
-
-                  // Add payment reminder container
+                  const SizedBox(height: 18),
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppTheme.getCardColor(context).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppTheme.primaryblue.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppTheme.getCardColor(context).withValues(alpha: 0.3),
-                        width: 1,
+                        color: AppTheme.primaryblue.withValues(alpha: 0.15),
                       ),
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.payment,
-                          color: AppTheme.getTextColor(context),
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          color: AppTheme.primaryblue,
                           size: 20,
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Payment required to complete your booking',
+                            'No payment is due yet. If the landlord approves, you can pay securely from My Bookings.',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 13,
+                              height: 1.4,
                               color: AppTheme.getTextColor(context),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
-                        SizedBox(height: 16),
                       ],
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
                   if (_checkInDate != null && _checkOutDate != null) ...[
                     Container(
-                      padding: EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.getBackgroundColor(context),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Column(
                         children: [
@@ -3938,10 +4048,12 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         ],
                       ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                   ],
 
-                  ElevatedButton(
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
@@ -3953,30 +4065,23 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.getCardColor(context), // Changed to orange to indicate next action is payment
+                      backgroundColor: AppTheme.primaryblue,
+                      foregroundColor: AppTheme.whiteColor,
+                      minimumSize: const Size.fromHeight(52),
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     ),
-                    child: Text(
-                      'Proceed to Payment', // Changed button text to be more actionable
-                      style: TextStyle(
-                        color: AppTheme.primaryblue,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: const Text(
+                      'View my bookings',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     ),
                   ),
                 ],
               ),
             ),
-            // child: Container(
-            // padding: const EdgeInsets.all(24),
-            // decoration: BoxDecoration(
-            //   color: AppTheme.getCardColor(context),
-            //   borderRadius: BorderRadius.circular(24),
-            //   ),
-            // ),
           ),
         );
       },

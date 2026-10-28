@@ -18,6 +18,7 @@ class BookingConfirmationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final priceType = property.priceType.trim();
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
@@ -33,8 +34,8 @@ class BookingConfirmationScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(20),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -42,32 +43,41 @@ class BookingConfirmationScreen extends StatelessWidget {
               width: double.infinity,
               padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppTheme.getCardColor(context).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+                color: AppTheme.primaryblue.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: AppTheme.primaryblue.withOpacity(0.3),
+                  color: AppTheme.primaryblue.withValues(alpha: 0.16),
                 ),
               ),
               child: Column(
                 children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryblue,
-                      shape: BoxShape.circle,
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.72, end: 1),
+                    duration: const Duration(milliseconds: 360),
+                    curve: Curves.easeOutBack,
+                    builder: (context, scale, child) => Transform.scale(
+                      scale: scale,
+                      child: child,
                     ),
-                    child: Icon(
-                      Icons.check,
-                      color: AppTheme.whiteColor,
-                      size: 40,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.13),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.pending_actions_rounded,
+                        color: AppTheme.primaryblue,
+                        size: 34,
+                      ),
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    'Booking Request Sent!',
+                    'Booking request sent',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.getTextColor(context),
                     ),
@@ -75,9 +85,10 @@ class BookingConfirmationScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Your booking request has been sent to the landlord. You will receive a confirmation shortly.',
+                    'Your request is waiting for the landlord. There is no payment due yet; if approved, you can pay securely from My Bookings.',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
+                      height: 1.45,
                       color: AppTheme.getSecondaryTextColor(context),
                     ),
                     textAlign: TextAlign.center,
@@ -97,9 +108,11 @@ class BookingConfirmationScreen extends StatelessWidget {
             SizedBox(height: 16),
             _buildDetailRow('Property', property.title),
             _buildDetailRow('Location', property.address),
-            _buildDetailRow('Price', '${ProfileService().currencyConverter(price: property.price.toInt())} ${property.priceType}'),
+            _buildDetailRow(
+              'Price',
+              '${ProfileService().currencyConverter(price: property.price.toInt())}${priceType.isEmpty || priceType == 'undefined' ? '' : ' $priceType'}',
+            ),
             _buildDetailRow('Landlord', property.landlordName),
-            _buildDetailRow('Contact', property.landlordPhone),
             SizedBox(height: 32),
             SizedBox(
               width: double.infinity,

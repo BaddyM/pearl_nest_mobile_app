@@ -89,21 +89,37 @@ class NotificationApiService {
       _logResponse('/notifications/list', response);
 
       if (response.statusCode == 200) {
-        final responseData = response.data as Map<String, dynamic>;
-
-        // Extract notifications data
-        final notificationsData = responseData['data'] as List<dynamic>? ?? [];
-        final totalCount = responseData['total'] ?? 0;
+        final responseData = response.data is Map
+            ? Map<String, dynamic>.from(response.data as Map)
+            : <String, dynamic>{};
+        final rawData = responseData['data'];
+        final nestedData = rawData is Map
+            ? Map<String, dynamic>.from(rawData)
+            : <String, dynamic>{};
+        final notificationsData = rawData is List
+            ? rawData
+            : nestedData['notifications'] is List
+                ? nestedData['notifications'] as List
+                : nestedData['data'] is List
+                    ? nestedData['data'] as List
+                    : <dynamic>[];
+        final totalCount = responseData['total'] ?? responseData['totalCount'];
         final currentPage = responseData['page'] ?? page;
         final totalPages = responseData['totalPages'] ?? 1;
+        final parsedPage = currentPage is num ? currentPage.toInt() : page;
+        final parsedTotalPages =
+            totalPages is num ? totalPages.toInt() : 1;
+        final parsedTotal = totalCount is num ? totalCount.toInt() : 0;
 
         return {
           'success': true,
           'notifications': notificationsData,
-          'total': totalCount,
-          'page': currentPage,
-          'totalPages': totalPages,
-          'hasMore': currentPage < totalPages,
+          'total': parsedTotal,
+          'page': parsedPage,
+          'totalPages': parsedTotalPages,
+          'hasMore': responseData['hasMore'] is bool
+              ? responseData['hasMore']
+              : parsedPage < parsedTotalPages,
           'message': responseData['message'] ?? 'Notifications fetched successfully',
           'statusCode': response.statusCode,
         };

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pearlnest/apis/refund_service.dart';
+import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class RefundRequestScreen extends StatefulWidget {
@@ -24,24 +25,28 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
   final _accountController = TextEditingController();
   final _providerController = TextEditingController();
   String? _paymentId;
+  RefundEligibility? _eligibility;
+  String? _eligibilityError;
+  bool _eligibilityLoading = false;
+  int _eligibilityRequestId = 0;
   String _destinationMethod = 'MOBILE_MONEY';
   List<Map<String, dynamic>> _requests = [];
   bool _loading = true;
   bool _submitting = false;
   String? _error;
 
-  List<Map<String, dynamic>> get _eligiblePayments => widget.payments.where((payment) {
-        final status = payment['paymentStatus']?.toString().toUpperCase();
-        return status == 'BOOKED' || status == 'APPROVED';
+  List<Map<String, dynamic>> get _payments => widget.payments.where((payment) {
+        final id = payment['id']?.toString().trim();
+        return id != null && id.isNotEmpty && id != 'null';
       }).toList();
 
   @override
   void initState() {
     super.initState();
-    final eligible = _eligiblePayments;
-    if (eligible.isNotEmpty) {
-      _paymentId = eligible.first['id']?.toString();
-      _amountController.text = (eligible.first['amount'] as num? ?? 0).toInt().toString();
+    final payments = _payments;
+    if (payments.isNotEmpty) {
+      _paymentId = payments.first['id']?.toString();
+      if (_paymentId != null) _loadEligibility(_paymentId!);
     }
     _loadRequests();
   }
@@ -72,26 +77,60 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
   }
 
   void _selectPayment(String? id) {
-    Map<String, dynamic>? payment;
-    for (final item in _eligiblePayments) {
-      if (item['id']?.toString() == id) {
-        payment = item;
-        break;
-      }
-    }
     setState(() {
       _paymentId = id;
-      _amountController.text = ((payment?['amount'] as num?) ?? 0).toInt().toString();
+      _eligibility = null;
+      _eligibilityError = null;
+      _amountController.clear();
     });
+    if (id != null && id.isNotEmpty) _loadEligibility(id);
+  }
+
+  Future<void> _loadEligibility(String paymentId) async {
+    final requestId = ++_eligibilityRequestId;
+    if (mounted) {
+      setState(() {
+        _eligibilityLoading = true;
+        _eligibilityError = null;
+        _eligibility = null;
+      });
+    }
+    try {
+      final eligibility = await RefundService.getEligibility(paymentId);
+      if (!mounted || requestId != _eligibilityRequestId) return;
+      final requestLimit = eligibility.requestLimit.clamp(0, double.infinity);
+      setState(() {
+        _eligibility = eligibility;
+        _amountController.text =
+            requestLimit > 0
+                ? ProfileService().fromBaseCurrency(requestLimit).toString()
+                : '';
+      });
+    } catch (error) {
+      if (!mounted || requestId != _eligibilityRequestId) return;
+      setState(() {
+        _eligibilityError = error.toString();
+      });
+    } finally {
+      if (mounted && requestId == _eligibilityRequestId) {
+        setState(() => _eligibilityLoading = false);
+      }
+    }
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() || _paymentId == null) return;
+    if (!_formKey.currentState!.validate() ||
+        _paymentId == null ||
+        _eligibility == null) {
+      return;
+    }
     setState(() => _submitting = true);
     try {
       await RefundService.requestRefund(
         paymentId: _paymentId!,
-        amount: int.parse(_amountController.text.trim()),
+        amount: ProfileService().toBaseCurrency(
+          int.parse(_amountController.text.trim()),
+        ),
         reason: _reasonController.text.trim(),
         destinationMethod: _destinationMethod,
         destinationName: _nameController.text.trim(),
@@ -103,6 +142,9 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Refund request sent to the landlord for review.')),
       );
+      if (_paymentId != null) {
+        await _loadEligibility(_paymentId!);
+      }
       await _loadRequests();
     } catch (error) {
       if (mounted) {
@@ -139,8 +181,8 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
               style: TextStyle(color: AppTheme.getSecondaryTextColor(context), height: 1.4),
             ),
             const SizedBox(height: 16),
-            if (_eligiblePayments.isEmpty)
-              _messageCard('No completed payments are available to request a refund for.')
+            if (_payments.isEmpty)
+            _messageCard('No payments are available to request a refund for.')
             else
               Form(
                 key: _formKey,
@@ -149,29 +191,63 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                   children: [
                     DropdownButtonFormField<String>(
                       value: _paymentId,
-                      decoration: const InputDecoration(labelText: 'Completed payment'),
-                      items: _eligiblePayments.map((payment) {
-                        final amount = (payment['amount'] as num? ?? 0).toInt();
+                      decoration: const InputDecoration(labelText: 'Payment'),
+                      items: _payments.map((payment) {
+                        final amount = _number(payment['amount']).toInt();
                         final date = payment['createdAt']?.toString().split('T').first ?? '';
                         return DropdownMenuItem(
                           value: payment['id']?.toString(),
-                          child: Text('UGX $amount · $date', overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            '${ProfileService().currencyConverter(price: amount)} · $date',
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         );
                       }).toList(),
                       onChanged: _selectPayment,
-                      validator: (value) => value == null ? 'Choose a completed payment.' : null,
+                      validator: (value) => value == null ? 'Choose a payment.' : null,
                     ),
                     const SizedBox(height: 12),
+                    if (_eligibilityLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_eligibilityError != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _messageCard(_eligibilityError!),
+                          TextButton(
+                            onPressed: _paymentId == null
+                                ? null
+                                : () => _loadEligibility(_paymentId!),
+                            child: const Text('Retry eligibility check'),
+                          ),
+                        ],
+                      )
+                    else if (_eligibility != null)
+                      _eligibilityCard(_eligibility!),
                     TextFormField(
                       controller: _amountController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Requested refund amount (UGX)'),
+                      enabled: _eligibility != null &&
+                          !_eligibilityLoading &&
+                          _eligibility!.requestLimit > 0,
+                      decoration: InputDecoration(
+                        labelText: 'Requested refund amount (${ProfileService().currencyCode})',
+                        helperText: _eligibility == null
+                            ? 'Check payment eligibility to continue.'
+                            : 'Available refund: ${ProfileService().currencyConverter(price: _eligibility!.requestLimit.round())}',
+                      ),
                       validator: (value) {
-                        final amount = int.tryParse(value ?? '');
-                        if (amount == null || amount <= 0) return 'Enter a whole amount greater than zero.';
-                        final selected = _eligiblePayments.where((payment) => payment['id']?.toString() == _paymentId);
-                        if (selected.isNotEmpty && amount > (selected.first['amount'] as num? ?? 0)) {
-                          return 'Refund cannot exceed this payment.';
+                        final displayAmount = int.tryParse(value ?? '');
+                        if (displayAmount == null || displayAmount <= 0) return 'Enter a whole amount greater than zero.';
+                        final eligibility = _eligibility;
+                        if (eligibility == null) {
+                          return 'Refund eligibility has not been checked.';
+                        }
+                        if (ProfileService().toBaseCurrency(displayAmount) > eligibility.requestLimit) {
+                          return 'Refund cannot exceed the remaining eligible amount of ${ProfileService().currencyConverter(price: eligibility.requestLimit.round())}.';
                         }
                         return null;
                       },
@@ -226,7 +302,12 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                     const SizedBox(height: 14),
                     if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
                     ElevatedButton(
-                      onPressed: _submitting ? null : _submit,
+                      onPressed: _submitting ||
+                              _eligibilityLoading ||
+                              _eligibility == null ||
+                              _eligibility!.requestLimit <= 0
+                          ? null
+                          : _submit,
                       child: _submitting
                           ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Text('Submit refund request'),
@@ -256,12 +337,96 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
       color: AppTheme.getCardColor(context),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text('UGX ${request['amount'] ?? 0} · $status', style: TextStyle(color: AppTheme.getTextColor(context), fontWeight: FontWeight.w600)),
+        title: Text(
+          '${ProfileService().currencyConverter(price: _number(request['amount']).round())} · $status',
+          style: TextStyle(color: AppTheme.getTextColor(context), fontWeight: FontWeight.w600),
+        ),
         subtitle: Text('$destination\n${request['reason'] ?? ''}', style: TextStyle(color: AppTheme.getSecondaryTextColor(context))),
         isThreeLine: true,
       ),
     );
   }
+
+  Widget _eligibilityCard(RefundEligibility eligibility) {
+    final bookingStatus = eligibility.bookingStatus
+        .replaceAll('_', ' ')
+        .replaceAll('-', ' ')
+        .toUpperCase();
+    return Card(
+      color: AppTheme.primaryblue.withValues(alpha: 0.06),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Refund eligibility',
+              style: TextStyle(
+                color: AppTheme.getTextColor(context),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _eligibilityRow('Booking status', bookingStatus),
+            _eligibilityRow(
+              'Refund percentage',
+              '${_formatAmount(eligibility.refundPercent)}%',
+            ),
+            _eligibilityRow(
+              'Payment amount',
+              ProfileService().currencyConverter(price: eligibility.paymentAmount.round()),
+            ),
+            _eligibilityRow(
+              'Maximum refundable',
+              ProfileService().currencyConverter(price: eligibility.maximumRefund.round()),
+            ),
+            _eligibilityRow(
+              'Already requested',
+              ProfileService().currencyConverter(price: eligibility.requestedAmount.round()),
+            ),
+            _eligibilityRow(
+              'Remaining available',
+              ProfileService().currencyConverter(price: eligibility.remainingRefund.round()),
+              emphasize: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _eligibilityRow(String label, String value, {bool emphasize = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: emphasize
+                  ? AppTheme.primaryblue
+                  : AppTheme.getTextColor(context),
+              fontWeight: emphasize ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _number(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  String _formatAmount(num value) =>
+      value % 1 == 0 ? value.toStringAsFixed(0) : value.toString();
 
   Widget _messageCard(String message) => Card(
         color: AppTheme.getCardColor(context),

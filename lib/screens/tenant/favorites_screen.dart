@@ -902,7 +902,9 @@ class _PropertyCardState extends State<PropertyCard> {
 
                   // Option 1: Pay Full Amount
                   RadioListTile<bool>(
-                    title: Text("Pay Full Amount (UGX ${putCommas(widget.isBooking ? totalAmount : calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee))})"),
+                    title: Text(
+                      "Pay Full Amount (${ProfileService().currencyConverter(price: widget.isBooking ? totalAmount : calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee))})",
+                    ),
                     value: true,
                     groupValue: isFullPayment,
                     onChanged: (val) => setModalState(() => isFullPayment = val!),
@@ -924,8 +926,8 @@ class _PropertyCardState extends State<PropertyCard> {
                       child: TextField(
                         keyboardType: TextInputType.number,
                         autofocus: true,
-                        decoration: const InputDecoration(
-                          prefixText: "UGX ",
+                        decoration: InputDecoration(
+                          prefixText: "${ProfileService().currencyCode} ",
                           hintText: "Enter amount",
                           border: OutlineInputBorder(),
                         ),
@@ -936,7 +938,7 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
 
                   const SizedBox(height: 10),
-                  RefundPolicyNotice(),
+                  RefundPolicyNotice(bookingStatus: widget.status?.name),
                   const SizedBox(height: 20),
 
                   // Action Button
@@ -947,10 +949,12 @@ class _PropertyCardState extends State<PropertyCard> {
                         padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
                       onPressed: () {
-                        final finalPay = isFullPayment
+                        final basePay = isFullPayment
                             ? (widget.isBooking ? totalAmount : calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee))
-                            : customAmount;
-                        if (finalPay == null || finalPay <= 0) {
+                            : customAmount == null
+                                ? null
+                                : ProfileService().toBaseCurrency(customAmount!);
+                        if (basePay == null || basePay <= 0) {
                           // You could call your showErrorDialog here!
                           return;
                         } else {
@@ -959,12 +963,12 @@ class _PropertyCardState extends State<PropertyCard> {
                                   CreatePayment(
                                     propertyId: widget.property.id,
                                     bookingId: widget.bookingId!,
-                                    amount: finalPay.toInt(),
+                                    amount: basePay,
                                     paid: widget.paid,
                                   ),
                                 );
                           }
-                          Navigator.pop(context, finalPay);
+                          Navigator.pop(context, basePay);
                         }
                       },
                       child: const Text("Continue to Payment"),
@@ -1039,15 +1043,13 @@ class _PropertyCardState extends State<PropertyCard> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
+        _pendingBalance = widget.balance;
         if (widget.property.isRent) {
           if (widget.booking != null) {
             if (widget.booking!.checkInDate != null && widget.booking!.checkOutDate != null) {
               _nights = widget.booking!.checkOutDate!.difference(widget.booking!.checkInDate!).inDays;
-              _pendingBalance = (_nights * widget.property.price).toInt();
             }
           }
-        } else {
-          _pendingBalance = widget.balance;
         }
       });
     });
@@ -1388,12 +1390,58 @@ class _PropertyCardState extends State<PropertyCard> {
   Widget _buttonToShow(BookingStatus status) {
     switch (status) {
       case BookingStatus.pending:
-        return _buildCompletePayment();
+        return _buildPendingApproval();
+      case BookingStatus.confirmed:
+        return _pendingBalance > 0
+            ? _buildCompletePayment()
+            : _buildFullyPaid();
       case BookingStatus.expired:
         return _buildBookingExpired();
-      default:
-        return _buildCompletePayment();
+      case BookingStatus.cancelled:
+        return const SizedBox.shrink();
+      case BookingStatus.completed:
+        return _buildBookingCompleted();
     }
+  }
+
+  Widget _buildPendingApproval() {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Waiting for landlord approval',
+            style: TextStyle(
+              color: AppTheme.getSecondaryTextColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () => showCancelBookingSheet(context),
+          child: const Text('Cancel request'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBookingCompleted() {
+    return Row(
+      children: const [
+        Icon(Icons.check_circle_outline, color: AppTheme.accentGreen),
+        SizedBox(width: 6),
+        Text('Booking completed', style: TextStyle(color: AppTheme.accentGreen)),
+      ],
+    );
+  }
+
+  Widget _buildFullyPaid() {
+    return Row(
+      children: const [
+        Icon(Icons.check_circle_outline, color: AppTheme.accentGreen),
+        SizedBox(width: 6),
+        Text('Paid in full', style: TextStyle(color: AppTheme.accentGreen)),
+      ],
+    );
   }
 
   Widget _buildBookingExpired() {

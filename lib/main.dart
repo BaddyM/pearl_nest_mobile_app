@@ -56,7 +56,7 @@ void main() async {
   DeepLinkService.initialize();
 
   //Initialize Shared preferences
-  ProfileService().init();
+  await ProfileService().init();
 
   final prefs = await SharedPreferences.getInstance();
   final String? userId = prefs.getString('user_id');
@@ -75,6 +75,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    NotificationService.setNavigatorKey(navigatorKey);
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(

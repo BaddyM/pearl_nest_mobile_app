@@ -23,17 +23,20 @@ class Admin {
 
   factory Admin.fromJson(Map<String, dynamic> json) {
     return Admin(
-      id: json['id'] ?? json['_id'] ?? '',
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      profilePicture: json['profilePicture'] ?? json['profileImage'],
-      isOnline: json['isOnline'] ?? false,
-      isAvailable: json['isOnline'] ?? true,
-      department: json['department'],
-      role: json['role'],
-      contact: json['contact'] ?? '',
+      id: (json['id'] ?? json['_id'])?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      profilePicture: (json['profilePicture'] ?? json['profileImage'])?.toString(),
+      isOnline: _parseBool(json['isOnline']),
+      isAvailable: _parseBool(json['isAvailable'] ?? json['isOnline']),
+      department: json['department']?.toString(),
+      role: json['role']?.toString(),
+      contact: json['contact']?.toString() ?? '',
     );
   }
+
+  static bool _parseBool(dynamic value) =>
+      value == true || value?.toString().toLowerCase() == 'true';
 
   Map<String, dynamic> toJson() {
     return {
@@ -61,8 +64,8 @@ class UnreadChat {
 
   factory UnreadChat.fromJson(Map<String, dynamic> json) {
     return UnreadChat(
-      id: json['fromUserId'],
-      isRead: json["isRead"],
+      id: json['fromUserId']?.toString() ?? '',
+      isRead: json["isRead"] == true,
     );
   }
 }

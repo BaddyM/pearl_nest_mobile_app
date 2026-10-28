@@ -20,14 +20,29 @@ class ProfileService {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  String get currencyCode =>
+      _prefs.getString("currency")?.toUpperCase() == "USD" ? "USD" : "UGX";
+
+  int get currencyValue {
+    final value = _prefs.getInt("currencyValue") ?? 1;
+    return value > 0 ? value : 1;
+  }
+
+  int toBaseCurrency(num displayAmount) =>
+      currencyCode == "USD"
+          ? (displayAmount * currencyValue).round()
+          : displayAmount.round();
+
+  int fromBaseCurrency(num baseAmount) =>
+      currencyCode == "USD"
+          ? (baseAmount / currencyValue).round()
+          : baseAmount.round();
+
   // Now this can be a regular String function!
   String currencyConverter({required int price}) {
     final putCommas = addCommas();
-    String? baseCurrency = _prefs.getString("currency");
-    int currencyValue = _prefs.getInt("currencyValue") ?? 1; // Default to 1 to avoid div by zero
-
-    if (baseCurrency == "USD") {
-      return "USD ${putCommas((price / currencyValue).toInt())}";
+    if (currencyCode == "USD") {
+      return "USD ${putCommas(fromBaseCurrency(price))}";
     }
     return "UGX ${putCommas(price)}";
   }

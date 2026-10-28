@@ -5,7 +5,7 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/landlord/landlord_property_management_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_property_upload_screen.dart';
-import 'package:pearlnest/screens/chat/chat_screen.dart';
+import 'package:pearlnest/screens/chat/new_chat_list.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
 import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -130,12 +130,12 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
             activeIcon: Icon(Icons.dashboard),
-            label: 'Overview',
+            label: 'Home',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.home_work_outlined),
             activeIcon: Icon(Icons.home_work),
-            label: 'Properties',
+            label: 'Listings',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today_outlined),
@@ -145,7 +145,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline),
             activeIcon: Icon(Icons.chat_bubble),
-            label: 'Chats',
+            label: 'Messages',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -172,7 +172,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
           user: widget.user,
         );
       case 3:
-        return ChatScreen(user: widget.user);
+        return NewChatList(user: widget.user, showBackButton: false);
       case 4:
         return LandlordProfileScreen(
           user: widget.user,

@@ -12,19 +12,39 @@ part 'new_chat_state.dart';
 class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
   final NewChatService socket;
   final String userId;
+  String? _activePeerId;
+  String? _activePropertyId;
   NewChatBloc(this.socket, this.userId) : super(NewChatInitial()) {
-    socket.connect(userId);
-
     // Listen to socket
     socket.on('sendMessage', (data) {
-      debugPrint("chatData: $data");
-      debugPrint("toUserId: ${data["toUserId"]}");
-      add(NewIncomingMessageEvent(data));
+      if (data is Map &&
+          _activePeerId != null &&
+          (data['fromUserId'] == _activePeerId ||
+              data['toUserId'] == _activePeerId) &&
+          (data['propertyId'] ?? null) == _activePropertyId) {
+        add(NewIncomingMessageEvent(Map<String, dynamic>.from(data)));
+      }
     });
 
     socket.on('userOnline', (data) {
       debugPrint("userOnline: $data");
     });
+    socket.on('chatError', (data) {
+      add(ChatSocketErrorEvent(
+        data is Map ? data['message']?.toString() ?? 'Message could not be sent.' : 'Message could not be sent.',
+      ));
+    });
+    socket.on('messageDelivered', (_) {
+      final peerId = _activePeerId;
+      if (peerId != null) {
+        add(FetchNewChat(
+          currentUserId: userId,
+          toUserId: peerId,
+          propertyId: _activePropertyId,
+        ));
+      }
+    });
+    if (userId.isNotEmpty) socket.connect(userId);
 
     Message convertToCoreMessage(Map<String, dynamic> json) {
       // 1. Convert Prisma ISO string to Milliseconds
@@ -44,6 +64,8 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
 
     on<FetchNewChat>((event, emit) async {
       try {
+        _activePeerId = event.toUserId;
+        _activePropertyId = event.propertyId;
         if (event.isSendMessage == true) {
           if (state is NewChatLoadedState) {
             final currentState = state as NewChatLoadedState;
@@ -72,7 +94,12 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
           if (event.isSendMessage != true) {
             emit(NewChatLoadingState());
           }
-          Response response = await ApiClient.get("/chat/messagesList/${event.toUserId}");
+          final propertyQuery = event.propertyId == null
+              ? ''
+              : '?propertyId=${Uri.encodeQueryComponent(event.propertyId!)}';
+          Response response = await ApiClient.get(
+            "/chat/messagesList/${event.toUserId}$propertyQuery",
+          );
           if (response.statusCode == 200 || response.statusCode == 201) {
             final jsonList = response.data["data"] as List;
             final List<Message> chatMessages = List<Message>.from(jsonList.map((json) => convertToCoreMessage(json as Map<String, dynamic>)));
@@ -99,6 +126,17 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
 
         final updatedMessages = List<Message>.from(current.messages)..add(newMessage);
 
+        final senderId = event.data['fromUserId']?.toString();
+        if (senderId != null &&
+            event.data['toUserId']?.toString() == userId &&
+            senderId == _activePeerId) {
+          add(ReadMessageEvent(
+            fromUserId: userId,
+            toUserId: senderId,
+            propertyId: _activePropertyId,
+          ));
+        }
+
         emit(
           NewChatLoadedState(
             messages: updatedMessages,
@@ -108,15 +146,28 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
       }
     });
 
+    on<ChatSocketErrorEvent>((event, emit) {
+      emit(NewChatErrorState(error: event.message));
+      final peerId = _activePeerId;
+      if (peerId != null) {
+        add(FetchNewChat(
+          currentUserId: userId,
+          toUserId: peerId,
+          propertyId: _activePropertyId,
+        ));
+      }
+    });
+
     on<FetchNewChatList>((event, emit) async {
       try {
-        bool userOnline = false;
         emit(NewChatListLoadingState());
         Response response = await ApiClient.get("/chat/chatList");
         if (response.statusCode == 200 || response.statusCode == 201) {
           final List<Map<String, dynamic>> data = List<Map<String, dynamic>>.from(response.data["data"]);
           if (data.isNotEmpty) {
             emit(NewChatListLoadedState(data: data));
+          } else if (!event.loadAdminsIfEmpty) {
+            emit(NewChatListLoadedState(data: const []));
           } else {
             Response adminResponse = await ApiClient.get("/chat/adminList");
             if (adminResponse.statusCode == 200 || adminResponse.statusCode == 201) {
@@ -136,11 +187,23 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
 
     on<SendMessageEvent>((event, emit) {
       socket.emit('sendMessage', {
+        'fromUserId': event.fromUserId,
         'toUserId': event.toUserId,
         'message': event.message,
       });
     });
 
-    on<ReadMessageEvent>((event, emit) {});
+    on<ReadMessageEvent>((event, emit) async {
+      try {
+        final propertyQuery = event.propertyId == null
+            ? ''
+            : '?propertyId=${Uri.encodeQueryComponent(event.propertyId!)}';
+        await ApiClient.patchWithoutData(
+          "/chat/readMessage/${event.toUserId}/${event.fromUserId}$propertyQuery",
+        );
+      } catch (error) {
+        debugPrint('Could not mark incoming chat messages as read: $error');
+      }
+    });
   }
 }

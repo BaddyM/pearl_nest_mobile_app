@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
@@ -8,10 +9,16 @@ import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/widgets/loading_widget.dart';
 import 'package:pearlnest/widgets/login_required_widget.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 
 class NewChatList extends StatefulWidget {
-  const NewChatList({super.key, required this.user});
+  const NewChatList({
+    super.key,
+    required this.user,
+    this.showBackButton = true,
+  });
   final User user;
+  final bool showBackButton;
 
   @override
   State<NewChatList> createState() => _NewChatListState();
@@ -22,12 +29,17 @@ class _NewChatListState extends State<NewChatList> {
   void initState() {
     super.initState();
     if (widget.user.id != "") {
+      context.read<NewChatBloc>().socket.connect(widget.user.id);
       _fetchChatList();
     }
   }
 
   void _fetchChatList() {
-    context.read<NewChatBloc>().add(FetchNewChatList());
+    context.read<NewChatBloc>().add(
+          FetchNewChatList(
+            loadAdminsIfEmpty: widget.user.userType != UserType.landlord,
+          ),
+        );
   }
 
   String convertUserType(UserType userType) {
@@ -45,7 +57,8 @@ class _NewChatListState extends State<NewChatList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(),
+        automaticallyImplyLeading: widget.showBackButton,
+        leading: widget.showBackButton ? BackButton() : null,
         title: Text("Chat"),
         centerTitle: false,
         actions: [
@@ -71,49 +84,78 @@ class _NewChatListState extends State<NewChatList> {
                         height: MediaQuery.of(context).size.height * 0.8,
                       );
                     } else if (state is NewChatListLoadedState) {
-                      return Container(
-                        height: MediaQuery.of(context).size.height * 0.875,
-                        padding: EdgeInsets.all(16),
-                        child: ListView.builder(
-                            physics: ScrollPhysics(),
-                            itemCount: state.data.length,
-                            itemBuilder: (context, index) {
-                              String name = state.data[index]["fromUser"]["name"];
-                              String role = state.data[index]["fromUser"]["role"];
-                              bool isOnline = state.data[index]["fromUser"]["isOnline"];
-                              String id = state.data[index]["fromUserId"];
-                              bool isRead = state.data[index]["isRead"];
-                              return _buildChatListCard(
-                                name,
-                                widget.user.id,
-                                role,
-                                id,
-                                isOnline: isOnline,
-                                unread: isRead,
-                              );
-                            }),
+                      return Expanded(
+                        child: state.data.isEmpty
+                            ? _buildEmptyConversations()
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: state.data.length,
+                                itemBuilder: (context, index) {
+                                  final item = state.data[index];
+                                  final isCurrentUserSender =
+                                      item["fromUserId"] == widget.user.id;
+                                  final peer = isCurrentUserSender
+                                      ? item["toUser"]
+                                      : item["fromUser"];
+                                  final peerData = peer is Map
+                                      ? Map<String, dynamic>.from(peer)
+                                      : <String, dynamic>{};
+                                  final name =
+                                      peerData["name"]?.toString() ?? "User";
+                                  final role =
+                                      peerData["role"]?.toString() ?? "";
+                                  final isOnline =
+                                      peerData["isOnline"] == true;
+                                  final profilePhoto =
+                                      _profilePhotoUrl(peerData);
+                                  final property = item["property"] is Map
+                                      ? Map<String, dynamic>.from(item["property"])
+                                      : <String, dynamic>{};
+                                  final id = isCurrentUserSender
+                                      ? item["toUserId"]?.toString() ?? ""
+                                      : item["fromUserId"]?.toString() ?? "";
+                                  final isUnread =
+                                      !isCurrentUserSender &&
+                                      item["isRead"] != true;
+                                  return _buildChatListCard(
+                                    name,
+                                    widget.user.id,
+                                    role,
+                                    id,
+                                    imageUrl: profilePhoto,
+                                    propertyId: item["propertyId"]?.toString(),
+                                    propertyTitle: property["propertyName"]?.toString(),
+                                    propertyAddress: property["fullAddress"]?.toString(),
+                                    isOnline: isOnline,
+                                    unread: isUnread,
+                                  );
+                                },
+                              ),
                       );
                     } else if (state is NewChatListInitState) {
-                      return Container(
-                        height: MediaQuery.of(context).size.height * 0.875,
-                        padding: EdgeInsets.all(16),
-                        child: ListView.builder(
-                            physics: ScrollPhysics(),
-                            itemCount: state.data.length,
-                            itemBuilder: (context, index) {
-                              String name = state.data[index]["name"];
-                              String role = state.data[index]["role"];
-                              bool isOnline = state.data[index]["isOnline"];
-                              String id = state.data[index]["id"];
-                              return _buildChatListCard(
-                                name,
-                                widget.user.id,
-                                role,
-                                id,
-                                isOnline: isOnline,
-                                unread: false,
-                              );
-                            }),
+                      return Expanded(
+                        child: state.data.isEmpty
+                            ? _buildEmptyConversations()
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: state.data.length,
+                                itemBuilder: (context, index) {
+                                  final admin = state.data[index];
+                                  return _buildChatListCard(
+                                    admin["name"]?.toString() ?? "Support",
+                                    widget.user.id,
+                                    admin["role"]?.toString() ?? "",
+                                    admin["id"]?.toString() ?? "",
+                                    imageUrl: _profilePhotoUrl(
+                                      Map<String, dynamic>.from(admin),
+                                    ),
+                                    propertyTitle: null,
+                                    propertyAddress: null,
+                                    isOnline: admin["isOnline"] == true,
+                                    unread: false,
+                                  );
+                                },
+                              ),
                       );
                     } else {
                       return SizedBox();
@@ -136,7 +178,65 @@ class _NewChatListState extends State<NewChatList> {
     );
   }
 
-  Widget _buildChatListCard(String userName, String currentUserId, String role, String toUserId, {bool isOnline = false, bool unread = false}) {
+  Widget _buildEmptyConversations() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 44,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No conversations yet',
+              style: TextStyle(
+                color: AppTheme.getTextColor(context),
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Messages about your properties will appear here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _profilePhotoUrl(Map<String, dynamic> user) {
+    final value = user['profilePicture'] ??
+        user['profileImage'] ??
+        user['profilePhoto'] ??
+        user['avatar'];
+    if (value is! String ||
+        value.trim().isEmpty ||
+        value.trim().toLowerCase() == 'undefined' ||
+        value.trim().toLowerCase() == 'null') {
+      return null;
+    }
+    return ImageHelper.getFullImageUrl(value.trim());
+  }
+
+  Widget _buildChatListCard(
+    String userName,
+    String currentUserId,
+    String role,
+    String toUserId, {
+    String? propertyId,
+    String? propertyTitle,
+    String? propertyAddress,
+    String? imageUrl,
+    bool isOnline = false,
+    bool unread = false,
+  }) {
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -160,6 +260,10 @@ class _NewChatListState extends State<NewChatList> {
                   fromUserId: currentUserId,
                   toUserId: toUserId,
                   userName: userName,
+                  userImageUrl: imageUrl,
+                  propertyId: propertyId,
+                  propertyTitle: propertyTitle,
+                  propertyAddress: propertyAddress,
                 ),
               ),
             );
@@ -181,7 +285,22 @@ class _NewChatListState extends State<NewChatList> {
                       width: 1,
                     ),
                   ),
-                  child: _buildDefaultAvatar(userName),
+                  child: imageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          imageBuilder: (context, imageProvider) => CircleAvatar(
+                            radius: 24,
+                            backgroundColor:
+                                AppTheme.primaryblue.withValues(alpha: 0.1),
+                            backgroundImage: imageProvider,
+                          ),
+                          placeholder: (context, url) =>
+                              _buildDefaultAvatar(userName),
+                          errorWidget: (context, url, error) =>
+                              _buildDefaultAvatar(userName),
+                        )
+                      : _buildDefaultAvatar(userName),
                 ),
                 SizedBox(width: 16),
 
@@ -216,6 +335,18 @@ class _NewChatListState extends State<NewChatList> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      if (propertyTitle != null && propertyTitle.trim().isNotEmpty) ...[
+                        SizedBox(height: 4),
+                        Text(
+                          propertyTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppTheme.getSecondaryTextColor(context),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                       SizedBox(height: 4),
                       Row(
                         children: [

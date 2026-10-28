@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/models/admin.dart';
@@ -8,15 +10,18 @@ import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 
 class AdminListScreen extends StatefulWidget {
   final User user;
   final String? propertyTitle; // Optional, for context-specific chats
+  final bool randomAdminOnly;
 
   const AdminListScreen({
     super.key,
     required this.user,
     this.propertyTitle,
+    this.randomAdminOnly = false,
   });
 
   @override
@@ -27,6 +32,7 @@ class _AdminListScreenState extends State<AdminListScreen> {
   List<Admin> _admins = [];
   List<UnreadChat> _unread = [];
   bool _isLoading = true;
+  bool _isStartingRandomChat = false;
   String? _errorMessage;
 
   @override
@@ -48,11 +54,25 @@ class _AdminListScreenState extends State<AdminListScreen> {
       final admins = await ChatService.fetchAvailableAdmins();
 
       if (mounted) {
+        final availableAdmins = admins.isNotEmpty && admins.first is List
+            ? List<Admin>.from(admins.first as List)
+            : <Admin>[];
         setState(() {
-          _admins = admins[0];
-          _unread = admins[1];
+          _admins = availableAdmins;
+          _unread = admins.length > 1 && admins[1] is List
+              ? List<UnreadChat>.from(admins[1] as List)
+              : <UnreadChat>[];
           _isLoading = false;
+          if (widget.randomAdminOnly && availableAdmins.isNotEmpty) {
+            _isStartingRandomChat = true;
+          } else if (widget.randomAdminOnly) {
+            _errorMessage = 'No support agents are available right now. Please try again later.';
+          }
         });
+        if (widget.randomAdminOnly && availableAdmins.isNotEmpty) {
+          final admin = availableAdmins[Random().nextInt(availableAdmins.length)];
+          await _startChatWithAdmin(admin);
+        }
       }
     } catch (e) {
       debugPrint('❌ AdminListScreen: Error loading admins - $e');
@@ -69,12 +89,14 @@ class _AdminListScreenState extends State<AdminListScreen> {
     await _loadAdmins();
   }
 
-  void _startChatWithAdmin(Admin admin) async {
+  Future<void> _startChatWithAdmin(Admin admin) async {
     try {
       // Create or get conversation with this admin
       final conversation = await ChatService.getOrCreateConversation(
         adminId: admin.id,
         adminName: admin.name,
+        adminProfilePic: admin.profilePicture,
+        isOnline: admin.isOnline,
         propertyTitle: widget.propertyTitle,
       );
 
@@ -93,11 +115,26 @@ class _AdminListScreenState extends State<AdminListScreen> {
         if (result == "popped") {
           _onRefresh();
         }
+        if (widget.randomAdminOnly && mounted) {
+          Navigator.of(context).pop();
+        }
       } else {
+        if (widget.randomAdminOnly && mounted) {
+          setState(() {
+            _isStartingRandomChat = false;
+            _errorMessage = 'Unable to start a support chat. Please try again.';
+          });
+        }
         _showErrorSnackBar('Unable to start chat. Please try again.');
       }
     } catch (e) {
       //debugPrint('❌ Error starting chat with admin: $e');
+      if (widget.randomAdminOnly && mounted) {
+        setState(() {
+          _isStartingRandomChat = false;
+          _errorMessage = 'Unable to connect to support right now. Please try again.';
+        });
+      }
       _showErrorSnackBar('Failed to start chat. Please try again.');
     }
   }
@@ -146,6 +183,33 @@ class _AdminListScreenState extends State<AdminListScreen> {
   }
 
   Widget _buildBody() {
+    if (widget.randomAdminOnly && (_isLoading || _isStartingRandomChat)) {
+      return _buildLoadingState();
+    }
+    if (widget.randomAdminOnly && _errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.support_agent, size: 48, color: AppTheme.primaryblue),
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTheme.getTextColor(context)),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _onRefresh,
+                child: const Text('Try again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     if (_isLoading) {
       return _buildLoadingState();
     }
@@ -393,7 +457,9 @@ class _AdminListScreenState extends State<AdminListScreen> {
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(24),
                           child: Image.network(
-                            admin.profilePicture!,
+                            ImageHelper.getFullImageUrl(
+                              admin.profilePicture!,
+                            ),
                             width: 48,
                             height: 48,
                             fit: BoxFit.cover,

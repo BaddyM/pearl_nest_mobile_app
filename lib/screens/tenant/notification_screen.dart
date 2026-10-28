@@ -3,6 +3,7 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/notification.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/notification_api_service.dart';
+import 'package:pearlnest/services/notification_service.dart';
 import 'package:pearlnest/widgets/login_required_widget.dart';
 
 import '../../utils/custom_snackbar.dart';
@@ -79,8 +80,15 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       );
 
       if (result['success'] == true) {
-        final notificationsData = result['notifications'] as List<dynamic>;
-        final notifications = notificationsData.map((data) => NotificationItem.fromJson(data as Map<String, dynamic>)).toList();
+        final notificationsData = result['notifications'];
+        final notifications = notificationsData is List
+            ? notificationsData
+                .whereType<Map>()
+                .map((data) => NotificationItem.fromJson(
+                      Map<String, dynamic>.from(data),
+                    ))
+                .toList()
+            : <NotificationItem>[];
 
         setState(() {
           if (isRefresh) {
@@ -88,8 +96,10 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           } else {
             _notifications.addAll(notifications);
           }
-          _totalCount = result['total'] ?? 0;
-          _hasMore = result['hasMore'] ?? false;
+          _totalCount = result['total'] is num
+              ? (result['total'] as num).toInt()
+              : 0;
+          _hasMore = result['hasMore'] == true;
           _isLoading = false;
           _hasError = false;
           _errorMessage = '';
@@ -140,12 +150,19 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       );
 
       if (result['success'] == true) {
-        final notificationsData = result['notifications'] as List<dynamic>;
-        final notifications = notificationsData.map((data) => NotificationItem.fromJson(data as Map<String, dynamic>)).toList();
+        final notificationsData = result['notifications'];
+        final notifications = notificationsData is List
+            ? notificationsData
+                .whereType<Map>()
+                .map((data) => NotificationItem.fromJson(
+                      Map<String, dynamic>.from(data),
+                    ))
+                .toList()
+            : <NotificationItem>[];
 
         setState(() {
           _notifications.addAll(notifications);
-          _hasMore = result['hasMore'] ?? false;
+          _hasMore = result['hasMore'] == true;
           _isLoadingMore = false;
         });
       } else {
@@ -210,7 +227,11 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     }
   }
 
-  void _markAsRead(NotificationItem notification, {bool isDeleted = false}) async {
+  void _markAsRead(
+    NotificationItem notification, {
+    bool isDeleted = false,
+    bool showFeedback = true,
+  }) async {
     if (notification.isRead) return;
 
     try {
@@ -225,12 +246,35 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
             _unreadCount--;
           }
         });
-        _showSuccessSnackBar(isDeleted ? 'Notification deleted successfully' : 'Notification marked as read');
+        if (showFeedback) {
+          _showSuccessSnackBar(
+            isDeleted ? 'Notification deleted successfully' : 'Notification marked as read',
+          );
+        }
       } else {
         // _showErrorSnackBar(result['message'] ?? 'Failed to mark as read');
       }
     } catch (e) {
       //_showErrorSnackBar('An error occurred while marking as read');
+    }
+  }
+
+  Future<void> _openNotification(NotificationItem notification) async {
+    if (!notification.isRead) {
+      _markAsRead(notification, showFeedback: false);
+    }
+    final didNavigate = await NotificationService.navigateFromNotification(
+      notification.toJson(),
+      user: widget.user,
+      fallbackToNotificationScreen: false,
+    );
+    if (!didNavigate && mounted) {
+      _showNotificationModal(
+        context,
+        data: notification.message,
+        title: notification.title,
+        notification: notification,
+      );
     }
   }
 
@@ -330,7 +374,29 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(title),
+          title: Row(
+            children: [
+              Icon(Icons.home_work_outlined, color: AppTheme.primaryblue),
+              SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'PearlNest',
+                      style: TextStyle(
+                        color: AppTheme.primaryblue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min, // Constrains height to content
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -631,12 +697,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         _markAsRead(notification, isDeleted: true);
       },
       child: GestureDetector(
-        onTap: () {
-          _showNotificationModal(context, data: notification.message, title: notification.title, notification: notification);
-          if (!notification.isRead) {
-            _markAsRead(notification);
-          }
-        },
+        onTap: () => _openNotification(notification),
         child: Container(
           margin: EdgeInsets.only(bottom: 12),
           padding: EdgeInsets.all(16),
@@ -676,6 +737,32 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notification.title,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.getTextColor(context),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (!notification.isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.primaryblue,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: 5),
                     Text(
                       notification.message,
                       style: TextStyle(

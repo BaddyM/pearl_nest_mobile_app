@@ -6,6 +6,8 @@ import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/theme_provider.dart';
 import 'package:pearlnest/apis/auth_service.dart';
+import 'package:pearlnest/blocs/auth/auth_bloc.dart';
+import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:provider/provider.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/tenant/contact_developer_screen.dart';
@@ -162,6 +164,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _emailNotifications,
           (value) => _updateNotificationPreference(
             preferenceType: 'email',
+            value: value,
+          ),
+          isLoading: _isUpdatingNotifications,
+        ),
+        _buildSwitchItem(
+          Icons.sms_outlined,
+          'SMS Notifications',
+          'Receive booking updates by text message',
+          _smsNotifications,
+          (value) => _updateNotificationPreference(
+            preferenceType: 'sms',
             value: value,
           ),
           isLoading: _isUpdatingNotifications,
@@ -474,6 +487,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         case 'email':
           _emailNotifications = value;
           break;
+        case 'sms':
+          _smsNotifications = value;
+          break;
       }
       setState(() {});
 
@@ -489,6 +505,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       if (result['success'] == true) {
+        if (mounted) {
+          context.read<AuthBloc>().add(AuthCheckSessionRequested());
+        }
         // Show success feedback
         _showSnackBar(
           '${_getPreferenceDisplayName(preferenceType)} ${value ? 'enabled' : 'disabled'}',
@@ -507,7 +526,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _smsNotifications = !value;
             break;
         }
-        setState(() {});
+        if (mounted) setState(() {});
 
         _showSnackBar(
           'Failed to update notification preference: ${result['message'] ?? 'Unknown error'}',
@@ -527,16 +546,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _smsNotifications = !value;
           break;
       }
-      setState(() {});
+      if (mounted) setState(() {});
 
       _showSnackBar(
         'Network error. Please try again.',
         Colors.red,
       );
     } finally {
-      setState(() {
-        _isUpdatingNotifications = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isUpdatingNotifications = false;
+        });
+      }
     }
   }
 
@@ -656,6 +677,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showSnackBar(String message, Color backgroundColor) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

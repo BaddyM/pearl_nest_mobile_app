@@ -77,7 +77,7 @@ class _BookingScreenState extends State<BookingScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Book Property',
+          _isSale ? 'Request a Viewing' : 'Request Booking',
           style: TextStyle(
             color: AppTheme.getTextColor(context),
             fontWeight: FontWeight.bold,
@@ -285,7 +285,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           ),
                         )
                       : Text(
-                          _isSale ? 'Request viewing' : 'Continue to booking',
+                          _isSale ? 'Request a viewing' : 'Send booking request',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -328,6 +328,8 @@ class _BookingScreenState extends State<BookingScreen> {
     final quote = _bookingQuote!;
     final choices = (quote['paymentOptions'] as List<dynamic>? ?? []).cast<String>();
     final amountDueNow = (quote['amountDueNow'] as num? ?? 0).toInt();
+    final baseAmount = (quote['baseAmount'] as num? ?? 0).toInt();
+    final totalAmount = (quote['totalAmount'] as num? ?? amountDueNow).toInt();
     final bookingFee = (quote['bookingFeeAmount'] as num? ?? 0).toInt();
     final transactionFee = (quote['transactionFeeAmount'] as num? ?? 0).toInt();
     return Container(
@@ -365,7 +367,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 for (final option in const ['DEPOSIT', 'HALF', 'FULL'])
                   if (choices.contains(option))
                     ChoiceChip(
-                      label: Text(option == 'DEPOSIT' ? 'Deposit' : option == 'HALF' ? 'Half' : 'Full'),
+                      label: Text(option == 'DEPOSIT' ? '20% deposit' : option == 'HALF' ? 'Half' : 'Full'),
                       selected: _paymentOption == option,
                       selectedColor: AppTheme.primaryblue.withValues(alpha: 0.16),
                       labelStyle: TextStyle(
@@ -390,9 +392,19 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
           ],
           const SizedBox(height: 14),
+          if (!_isSale) ...[
+            _buildQuoteRow(
+              context,
+              widget.property.priceType.toLowerCase().contains('night')
+                  ? 'Rent for selected dates'
+                  : 'Property deposit',
+              ProfileService().currencyConverter(price: baseAmount),
+            ),
+            const SizedBox(height: 7),
+          ],
           _buildQuoteRow(
             context,
-            _isSale ? 'Viewing fee' : 'Booking amount',
+            _isSale ? 'Viewing fee' : 'Booking fee',
             ProfileService().currencyConverter(price: bookingFee),
           ),
           const SizedBox(height: 7),
@@ -412,7 +424,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Due today',
+                      'Due after landlord approval',
                       style: TextStyle(
                         color: AppTheme.getSecondaryTextColor(context),
                         fontSize: 13,
@@ -442,6 +454,14 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
             ],
           ),
+          if (totalAmount != amountDueNow) ...[
+            const SizedBox(height: 10),
+            _buildQuoteRow(
+              context,
+              'Estimated total for the full stay',
+              ProfileService().currencyConverter(price: totalAmount),
+            ),
+          ],
         ],
       ),
     );
@@ -615,160 +635,186 @@ class _BookingScreenState extends State<BookingScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.getCardColor(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: const BoxDecoration(
-                color: Colors.orange, // Changed from green to orange
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.pending_actions, // Changed from check to pending icon
-                color: Colors.white,
-                size: 30,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Booking Created!', // Changed from "Booking Successful!"
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.getTextColor(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your booking has been created and is pending payment. Please complete the payment to secure your reservation.',
-              style: TextStyle(
-                color: AppTheme.getSecondaryTextColor(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-
-            // Add payment reminder container
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.orange.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.payment,
-                    color: Colors.orange,
-                    size: 16,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.72, end: 1),
+                  duration: const Duration(milliseconds: 360),
+                  curve: Curves.easeOutBack,
+                  builder: (context, scale, child) => Transform.scale(
+                    scale: scale,
+                    child: child,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Payment required to complete booking',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w500,
+                  child: Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.pending_actions_rounded,
+                      color: AppTheme.primaryblue,
+                      size: 32,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  _isSale ? 'Viewing request sent' : 'Booking request sent',
+                  style: TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message.trim().isNotEmpty
+                      ? message
+                      : _isSale
+                          ? "Your viewing request is waiting for the landlord's response. Review its status in My Bookings."
+                          : "Your request is waiting for the landlord's response. You can review its status in My Bookings. If it is approved, complete payment there to confirm your reservation.",
+                  style: TextStyle(
+                    height: 1.45,
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryblue.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        color: AppTheme.primaryblue,
+                        size: 19,
                       ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _isSale
+                              ? 'Any viewing fee is only due after the landlord approves your request.'
+                              : 'No payment is due until the landlord approves your request.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: AppTheme.getTextColor(context),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_checkInDate != null && (_isSale || _checkOutDate != null)) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.getBackgroundColor(context),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildConfirmationDateRow(
+                          context,
+                          _isSale ? 'Preferred date' : 'Check-in',
+                          _checkInDate!,
+                        ),
+                        if (!_isSale) ...[
+                          const SizedBox(height: 10),
+                          _buildConfirmationDateRow(
+                            context,
+                            'Check-out',
+                            _checkOutDate!,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            if (_checkInDate != null && _checkOutDate != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryblue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Check-in:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.getTextColor(context),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(this.context).push(
+                        MaterialPageRoute(
+                          builder: (context) => BookingsListScreen(
+                            user: widget.user,
                           ),
                         ),
-                        Text(
-                          DateFormat('MMM dd, yyyy').format(_checkInDate!),
-                          style: const TextStyle(
-                            color: AppTheme.primaryblue,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryblue,
+                      foregroundColor: AppTheme.whiteColor,
+                      minimumSize: const Size.fromHeight(52),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Check-out:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.getTextColor(context),
-                          ),
-                        ),
-                        Text(
-                          DateFormat('MMM dd, yyyy').format(_checkOutDate!),
-                          style: const TextStyle(
-                            color: AppTheme.primaryblue,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => BookingsListScreen(
-                      user: widget.user,
+                    child: const Text(
+                      'View my bookings',
+                      style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange, // Changed to orange to indicate next action is payment
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: Text(
-                'Proceed to Payment', // Changed button text to be more actionable
-                style: TextStyle(
-                  color: AppTheme.whiteColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildConfirmationDateRow(
+    BuildContext context,
+    String label,
+    DateTime date,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+          ),
+        ),
+        Text(
+          DateFormat('MMM d, yyyy').format(date),
+          style: const TextStyle(
+            color: AppTheme.primaryblue,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 

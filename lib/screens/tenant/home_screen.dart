@@ -28,6 +28,7 @@ import 'package:pearlnest/screens/tenant/profile_screen.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/screens/tenant/search_screen.dart';
 import 'package:pearlnest/screens/tenant/payment_screen.dart';
+import 'package:pearlnest/screens/landlord/landlord_dashboard_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:shimmer/shimmer.dart';
@@ -99,9 +100,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  @override
   void initState() {
     super.initState();
+    if (widget.user.userType == UserType.landlord) return;
     // //debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
     _loadProperties();
     _loadPropertyCategories();
@@ -698,7 +699,9 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         backgroundColor: AppTheme.getBackgroundColor(context),
         body: _buildBody(),
-        floatingActionButton: _currentIndex == 0 && _showBackToTop
+        floatingActionButton: widget.user.userType != UserType.landlord &&
+                _currentIndex == 0 &&
+                _showBackToTop
             ? AnimatedOpacity(
                 opacity: _showBackToTop ? 1.0 : 0.0,
                 duration: Duration(milliseconds: 300),
@@ -729,6 +732,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody() {
+    if (widget.user.userType == UserType.landlord) {
+      return LandlordDashboardScreen(
+        user: widget.user,
+        landlord: _createDummyLandlord(),
+      );
+    }
+
     return Stack(
       children: [
         switch (_currentIndex) {
@@ -1985,73 +1995,50 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
+                        Expanded(
+                          child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            !featured
-                                ? Row(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      SizedBox(
-                                        width: featured ? MediaQuery.of(context).size.width * 0.45 : MediaQuery.of(context).size.width * 0.54,
-                                        child: Text(
-                                          ProfileService().currencyConverter(price: property.price.toInt()),
-                                          style: TextStyle(
-                                            fontSize: featured ? 18 : 20,
-                                            overflow: TextOverflow.ellipsis,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.primaryblue,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        property.priceType != "undefined" ? property.priceType : "",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: AppTheme.getSecondaryTextColor(context),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      SizedBox(
-                                        width: featured ? MediaQuery.of(context).size.width * 0.45 : MediaQuery.of(context).size.width * 0.55,
-                                        child: Text(
-                                          ProfileService().currencyConverter(price: property.price.toInt()),
-                                          style: TextStyle(
-                                            fontSize: featured ? 18 : 20,
-                                            overflow: TextOverflow.ellipsis,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.primaryblue,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        property.priceType != "undefined" ? property.priceType : "",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: AppTheme.getSecondaryTextColor(context),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: ProfileService().currencyConverter(
+                                      price: property.price.toInt(),
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: featured ? 18 : 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.primaryblue,
+                                    ),
                                   ),
-                            SizedBox(height: 4),
-                            Text(
-                              '${property.reviewCount} reviews',
+                                  if (property.priceType != "undefined" &&
+                                      property.priceType.trim().isNotEmpty)
+                                    TextSpan(
+                                      text: ' ${property.priceType.trim()}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppTheme.getSecondaryTextColor(context),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
+                            ),
+                          SizedBox(height: 4),
+                          Text(
+                            '${property.reviewCount} reviews',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppTheme.getSecondaryTextColor(context),
                               ),
                             ),
                           ],
-                        ),
+                          ),
+                          ),
                       ],
                     ),
                   ),
@@ -2743,8 +2730,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   decoration: InputDecoration(
                     labelText: 'Payment Amount',
-                    hintText: 'Enter amount (UGX)',
-                    prefixText: 'UGX ',
+                    hintText: 'Enter amount (${ProfileService().currencyCode})',
+                    prefixText: '${ProfileService().currencyCode} ',
                     prefixStyle: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -2776,7 +2763,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       return 'Amount must be greater than 0';
                     }
 
-                    if (amount > property.price) {
+                    if (ProfileService().toBaseCurrency(amount) > property.price) {
                       return 'Amount cannot exceed $formattedPropertyPrice';
                     }
 
@@ -2843,7 +2830,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (formKey.currentState!.validate()) {
                         final String value = amountController.text.trim().replaceAll(',', '');
                         final double amount = double.parse(value);
-                        Navigator.of(context).pop(amount);
+                        Navigator.of(context).pop(
+                          ProfileService().toBaseCurrency(amount).toDouble(),
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(

@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pearlnest/apis/chat_service.dart';
+import 'package:pearlnest/models/admin.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/screens/chat/admin_list_screen.dart';
@@ -23,6 +25,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   final TextEditingController _messageController = TextEditingController();
   String _selectedCategory = 'General';
   bool _isSubmitting = false;
+  Admin? _supportAdmin;
+  bool _contactLoading = true;
+  String? _contactError;
 
   final List<String> _categories = [
     'General',
@@ -36,9 +41,36 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadSupportContact();
+  }
+
+  @override
   void dispose() {
     _messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSupportContact() async {
+    try {
+      final supportAdmin = await ChatService.fetchSupportAdmin();
+      if (!mounted) return;
+      setState(() {
+        _supportAdmin = supportAdmin;
+        _contactError = supportAdmin == null
+            ? 'Support contact details are not available right now.'
+            : null;
+        _contactLoading = false;
+      });
+    } catch (error) {
+      debugPrint('Could not load support contact details: $error');
+      if (!mounted) return;
+      setState(() {
+        _contactError = 'Support contact details could not be loaded.';
+        _contactLoading = false;
+      });
+    }
   }
 
   @override
@@ -251,11 +283,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           ),
           _buildFAQItem(
             'How do I book a property?',
-            'Browse available properties, select your preferred dates, and submit a make a small payment of atleast \$2 to submit a booking request. The landlord will review and respond to your request immediately.',
+            'Choose your dates and send a booking request. No payment is due while it is waiting for landlord approval. If approved, complete checkout from My Bookings to confirm the reservation.',
           ),
           _buildFAQItem(
             'What payment methods are accepted?',
-            'We accept all major credit cards, debit cards, and bank transfers. All payments are processed securely through our platform.',
+            'Available payment methods are shown during checkout after a booking request is approved.',
           ),
           _buildFAQItem(
             'How do I cancel a booking?',
@@ -454,19 +486,50 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             ),
           ),
           SizedBox(height: 16),
-          _buildContactInfoItem(
-            Icons.phone,
-            'Phone Support',
-            '+256791597476',
-            'Available 24/7',
-          ),
-          _buildContactInfoItem(
-            Icons.email,
-            'Email Support',
-            'pearlnestestates@gmail.com',
-            'Response within 24 hours',
-          ),
-         
+          if (_contactLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_contactError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _contactError!,
+                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _contactLoading = true;
+                        _contactError = null;
+                      });
+                      _loadSupportContact();
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            if (_supportAdmin!.contact.trim().isNotEmpty)
+              _buildContactInfoItem(
+                Icons.phone,
+                'Phone Support',
+                _supportAdmin!.contact.trim(),
+                'Support contact from the PearlNest team',
+              ),
+            if (_supportAdmin!.email.trim().isNotEmpty)
+              _buildContactInfoItem(
+                Icons.email,
+                'Email Support',
+                _supportAdmin!.email.trim(),
+                'Email the PearlNest support team',
+              ),
+          ],
           _buildContactInfoItem(
             Icons.access_time,
             'Business Hours',
@@ -551,16 +614,22 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         builder: (context) => AdminListScreen(
           user: widget.user,
           propertyTitle: 'Help & Support',
+          randomAdminOnly: true,
         ),
       ),
     );
   }
 
   void _makePhoneCall() async {
-    const phoneNumber = 'tel:+256791597476';
+    final phone = _supportAdmin?.contact.trim() ?? '';
+    if (phone.isEmpty) {
+      _showErrorDialog('Support phone number is not available right now.');
+      return;
+    }
+    final phoneNumber = Uri(scheme: 'tel', path: phone);
     try {
-      if (await canLaunch(phoneNumber)) {
-        await launch(phoneNumber);
+      if (await canLaunchUrl(phoneNumber)) {
+        await launchUrl(phoneNumber);
       } else {
         _showErrorDialog('Could not launch phone dialer');
       }
@@ -572,17 +641,25 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   }
 
   void _sendEmail() async {
+    final email = _supportAdmin?.email.trim() ?? '';
+    if (email.isEmpty) {
+      _showErrorDialog('Support email address is not available right now.');
+      return;
+    }
     final emailUri = Uri(
       scheme: 'mailto',
-      path: 'pearlnestestates@gmail.com',
-      query: 'subject=Support Request from ${widget.user.name}&body=Hello PearlNest Support Team,\n\n',
+      path: email,
+      queryParameters: {
+        'subject': 'Support Request from ${widget.user.name}',
+        'body': 'Hello PearlNest Support Team,\n\n',
+      },
     );
 
     try {
       if (await canLaunchUrl(emailUri)) {
         await launchUrl(emailUri);
       } else {
-        await Clipboard.setData(ClipboardData(text: 'pearlnestestates@gmail.com'));
+        await Clipboard.setData(ClipboardData(text: email));
         _showSuccessDialog('Email address copied to clipboard');
       }
     } catch (e, stackTrace) {
@@ -616,7 +693,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
 
     final subject = Uri.encodeComponent("Support Request - $_selectedCategory");
     final body = Uri.encodeComponent(_messageController.text.trim());
-    final email = "pearlnestestates@gmail.com";
+    final email = _supportAdmin?.email.trim() ?? '';
+    if (email.isEmpty) {
+      _showErrorDialog('Support email address is not available right now.');
+      return;
+    }
 
     final uri = Uri.parse("mailto:$email?subject=$subject&body=$body");
 

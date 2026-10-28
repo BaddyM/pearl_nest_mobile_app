@@ -2,10 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/screens/chat/message_status.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/utils/image_helper.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -47,12 +50,12 @@ class MessageBubble extends StatelessWidget {
                 margin: EdgeInsets.only(right: 8, bottom: 4),
                 child: ClipOval(
                   child: senderAvatar != null && senderAvatar!.isNotEmpty
-                      ? Image.asset(
-                          senderAvatar!,
+                      ? CachedNetworkImage(
+                          imageUrl: ImageHelper.getFullImageUrl(senderAvatar!),
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildSmallAvatar();
-                          },
+                          placeholder: (context, url) => _buildSmallAvatar(),
+                          errorWidget: (context, url, error) =>
+                              _buildSmallAvatar(),
                         )
                       : _buildSmallAvatar(),
                 ),
@@ -62,8 +65,8 @@ class MessageBubble extends StatelessWidget {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isFromCurrentUser 
-                      ? const Color.fromARGB(255, 43, 127, 106) 
+                  color: isFromCurrentUser
+                      ? AppTheme.primaryblue
                       : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(18),
@@ -85,9 +88,9 @@ class MessageBubble extends StatelessWidget {
                     Text(
                       message.content,
                       style: TextStyle(
-                        color: isFromCurrentUser 
-                            ? AppTheme.whiteColor 
-                            : AppTheme.getSecondaryTextColor(context),
+                        color: isFromCurrentUser
+                            ? AppTheme.whiteColor
+                            : AppTheme.getTextColor(context),
                         fontSize: 16,
                         height: 1.3,
                       ),
@@ -99,8 +102,8 @@ class MessageBubble extends StatelessWidget {
                         Text(
                           _formatMessageTime(message.timestamp),
                           style: TextStyle(
-                            color: isFromCurrentUser 
-                                ? AppTheme.whiteColor.withOpacity(0.7)
+                            color: isFromCurrentUser
+                                ? AppTheme.whiteColor.withOpacity(0.75)
                                 : AppTheme.getSecondaryTextColor(context),
                             fontSize: 12,
                           ),
@@ -153,11 +156,6 @@ class MessageBubble extends StatelessWidget {
   }
 
   String _formatMessageTime(DateTime timestamp) {
-    final hour = timestamp.hour;
-    final minute = timestamp.minute.toString().padLeft(2, '0');
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-    
-    return '$displayHour:$minute $period';
+    return DateFormat.jm().format(timestamp);
   }
 }
