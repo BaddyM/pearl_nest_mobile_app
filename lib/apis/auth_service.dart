@@ -603,23 +603,12 @@ class AuthService {
             'statusCode': 200,
           };
         } else {
-          // If profile fetch fails, still return successful verification
-          return {
-            'success': true,
-            'token': tempToken,
-            'message': 'OTP verification successful',
-            'statusCode': 200,
-          };
+          throw AuthException(
+            'OTP was accepted, but your profile could not be loaded. Please try again.',
+            code: 'PROFILE_FETCH_FAILED',
+            statusCode: profileResponse.statusCode,
+          );
         }
-      } catch (profileError) {
-        // If profile fetch fails, still return successful verification
-        _logError('profile fetch after OTP', profileError);
-        return {
-          'success': true,
-          'token': tempToken,
-          'message': 'OTP verification successful',
-          'statusCode': 200,
-        };
       }
     } catch (e) {
       // //debugPrint('AuthService: OTP verification error - $e');

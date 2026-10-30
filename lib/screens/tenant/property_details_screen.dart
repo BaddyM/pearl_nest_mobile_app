@@ -1977,10 +1977,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       ),
                     ),
                     Text(
-                      widget.property.isSale ||
-                              widget.property.priceType.toLowerCase() == 'for_sale'
-                          ? 'For sale'
-                          : widget.property.priceType.replaceAll('_', ' '),
+                      widget.property.pricePeriodLabel,
                       style: TextStyle(
                         fontSize: priceTypeFontSize,
                         color: AppTheme.getSecondaryTextColor(context),

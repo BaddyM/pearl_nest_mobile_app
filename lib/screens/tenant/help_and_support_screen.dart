@@ -286,12 +286,24 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             'Choose your dates and send a booking request. No payment is due while it is waiting for landlord approval. If approved, complete checkout from My Bookings to confirm the reservation.',
           ),
           _buildFAQItem(
+            'Can I book or pay on the website?',
+            'Use the PearlNest app to send booking requests and complete secure checkout. Do not pay before your request is approved; the app will show when payment is due.',
+          ),
+          _buildFAQItem(
+            'How do I request a property tour?',
+            'Open the property in the app, choose Request a Tour, and select a preferred date. Any visit fee is shown before you submit the request.',
+          ),
+          _buildFAQItem(
             'What payment methods are accepted?',
-            'Available payment methods are shown during checkout after a booking request is approved.',
+            'Available payment options are shown in secure in-app checkout after your booking request is approved.',
           ),
           _buildFAQItem(
             'How do I cancel a booking?',
             'You can cancel a booking through your bookings section. Cancellation policies vary by property and timing.',
+          ),
+          _buildFAQItem(
+            'How do I request a refund?',
+            'Open My Bookings and choose Request a refund on a booking with an eligible completed payment. If the landlord rejects your booking, the full remaining payment is guaranteed for refund; other requests are reviewed.',
           ),
           _buildFAQItem(
             'What documents are needed to become a landloard?',

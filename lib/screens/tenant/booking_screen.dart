@@ -5,6 +5,7 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
+import 'package:pearlnest/screens/tenant/booking_confirmation_screen.dart';
 import 'package:pearlnest/screens/tenant/payment_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -38,13 +39,13 @@ class _BookingScreenState extends State<BookingScreen> {
   bool get _isSale => widget.property.isSale || widget.property.priceType.toLowerCase() == 'for_sale';
   bool get _isViewingRequest => widget.isViewingRequest || _isSale;
   bool get _isShortStay =>
-      widget.property.priceType.toLowerCase().contains('night') ||
+      widget.property.pricePeriodLabel == '/ night' ||
       widget.property.type.toLowerCase().contains('air');
   bool get _isLongTermRental =>
       !_isSale &&
       !_isShortStay &&
       widget.property.isRent &&
-      (widget.property.priceType.toLowerCase() == 'per_month' ||
+      (widget.property.pricePeriodLabel == '/ month' ||
           widget.property.type.toLowerCase() == 'rentals');
 
   @override
@@ -172,7 +173,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                             const SizedBox(height: 7),
                             Text(
-                              '${ProfileService().currencyConverter(price: widget.property.price.toInt())} ${_isSale ? 'For sale' : widget.property.priceType.replaceAll('_', ' ')}',
+                              '${ProfileService().currencyConverter(price: widget.property.price.toInt())} ${widget.property.pricePeriodLabel}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.primaryblue,
@@ -333,7 +334,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       : Text(
                           _isViewingRequest
                               ? 'Pay visit fee & request viewing'
-                              : 'Continue to secure payment',
+                              : 'Send booking request',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -372,7 +373,7 @@ class _BookingScreenState extends State<BookingScreen> {
             child: Text(
               _isViewingRequest
                   ? 'The property visit fee is calculated from the admin-set rate.'
-                  : 'Choose your dates to see the booking total.',
+                  : 'Choose your dates to see the booking estimate. Payment is only due after the landlord approves your request.',
               style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
             ),
           ),
@@ -424,6 +425,16 @@ class _BookingScreenState extends State<BookingScreen> {
               color: AppTheme.getTextColor(context),
             ),
           ),
+          if (!_isViewingRequest) ...[
+            const SizedBox(height: 6),
+            Text(
+              'No payment is due while your request is waiting for approval.',
+              style: TextStyle(
+                color: AppTheme.getSecondaryTextColor(context),
+                height: 1.35,
+              ),
+            ),
+          ],
           if (choices.length > 1) ...[
             const SizedBox(height: 8),
             Wrap(
@@ -769,6 +780,21 @@ class _BookingScreenState extends State<BookingScreen> {
         bookingId = createdId;
         paymentAmount = (booking['amount'] as num?)?.toDouble() ??
             (_bookingQuote!['amountDueNow'] as num).toDouble();
+
+        if (!mounted) return;
+        await Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => BookingConfirmationScreen(
+              property: widget.property,
+              user: widget.user,
+              checkInDate: _checkInDate,
+              checkOutDate: _checkOutDate,
+              estimatedAmount: paymentAmount,
+              paymentOption: _paymentOption,
+            ),
+          ),
+        );
+        return;
       }
 
       final payment = await PaymentService.createPayment(

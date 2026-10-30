@@ -149,6 +149,28 @@ class Property {
   int get promotionalPrice =>
       (price.toInt() - currentPromotionDiscount).clamp(0, price.toInt()).toInt();
 
+  String get pricePeriodLabel {
+    final rawPeriod = priceType.trim();
+    if (isSale || rawPeriod.toLowerCase() == 'for_sale') return 'For sale';
+    if (rawPeriod.isEmpty) {
+      final normalizedType = type.toLowerCase();
+      if (normalizedType.contains('land') || normalizedType.contains('plot')) {
+        return 'total';
+      }
+      return isRent ? '/ month' : '';
+    }
+
+    final normalizedPeriod = rawPeriod
+        .toLowerCase()
+        .replaceFirst(RegExp(r'^/\s*'), '')
+        .replaceAll('_', ' ')
+        .replaceFirst(RegExp(r'^per\s+'), '');
+    if (const {'night', 'week', 'month', 'year'}.contains(normalizedPeriod)) {
+      return '/ $normalizedPeriod';
+    }
+    return rawPeriod;
+  }
+
   int get promotionPercentOff =>
       price <= 0 ? 0 : (currentPromotionDiscount * 100 / price).round();
 

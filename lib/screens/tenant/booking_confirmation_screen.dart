@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/services/profile_service.dart';
@@ -9,16 +10,24 @@ import 'package:pearlnest/widgets/app_theme.dart';
 class BookingConfirmationScreen extends StatelessWidget {
   final Property property;
   final User user;
+  final DateTime? checkInDate;
+  final DateTime? checkOutDate;
+  final double? estimatedAmount;
+  final String? paymentOption;
 
   const BookingConfirmationScreen({
     super.key,
     required this.property,
     required this.user,
+    this.checkInDate,
+    this.checkOutDate,
+    this.estimatedAmount,
+    this.paymentOption,
   });
 
   @override
   Widget build(BuildContext context) {
-    final priceType = property.priceType.trim();
+    final pricePeriod = property.pricePeriodLabel;
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
@@ -108,10 +117,34 @@ class BookingConfirmationScreen extends StatelessWidget {
             SizedBox(height: 16),
             _buildDetailRow('Property', property.title),
             _buildDetailRow('Location', property.address),
+            if (checkInDate != null)
+              _buildDetailRow(
+                'Start date',
+                DateFormat('EEE, d MMM yyyy').format(checkInDate!),
+              ),
+            if (checkOutDate != null)
+              _buildDetailRow(
+                'End date',
+                DateFormat('EEE, d MMM yyyy').format(checkOutDate!),
+              ),
             _buildDetailRow(
               'Price',
-              '${ProfileService().currencyConverter(price: property.price.toInt())}${priceType.isEmpty || priceType == 'undefined' ? '' : ' $priceType'}',
+              '${ProfileService().currencyConverter(price: property.price.toInt())}${pricePeriod.isEmpty ? '' : ' $pricePeriod'}',
             ),
+            if (estimatedAmount != null)
+              _buildDetailRow(
+                'Estimated payment after approval',
+                ProfileService().currencyConverter(price: estimatedAmount!.toInt()),
+              ),
+            if (paymentOption != null)
+              _buildDetailRow(
+                'Payment option',
+                paymentOption == 'DEPOSIT'
+                    ? 'Deposit'
+                    : paymentOption == 'HALF'
+                        ? 'Half'
+                        : 'Full',
+              ),
             _buildDetailRow('Landlord', property.landlordName),
             SizedBox(height: 32),
             SizedBox(

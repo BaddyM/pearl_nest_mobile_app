@@ -20,7 +20,7 @@ class PropertyPromotionPrice extends StatelessWidget {
     final formatter = ProfileService();
     final promoted = property.hasActivePromotion;
     final price = promoted ? property.promotionalPrice : property.price.toInt();
-    final period = property.priceType.trim();
+    final period = property.pricePeriodLabel;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
