@@ -741,10 +741,7 @@ class _BookingScreenState extends State<BookingScreen> {
           preferredDate: checkInFormatted,
           contactNumber: phone,
         );
-        final response = result['data'];
-        final booking = response is Map && response['data'] is Map
-            ? Map<String, dynamic>.from(response['data'] as Map)
-            : <String, dynamic>{};
+        final booking = result;
         final createdId = booking['id']?.toString();
         if (createdId == null || createdId.isEmpty) {
           throw BookingException('The visit request reference was not returned. Please try again.');

@@ -37,7 +37,11 @@ class FetchBookings extends BookingEvent {
 }
 
 class FetchLandlordBookings extends BookingEvent {
-  const FetchLandlordBookings();
+  final bool isAdmin;
+  const FetchLandlordBookings({this.isAdmin = false});
+
+  @override
+  List<Object?> get props => [isAdmin];
 }
 
 class BookingStatusUpdateRequested extends BookingEvent {

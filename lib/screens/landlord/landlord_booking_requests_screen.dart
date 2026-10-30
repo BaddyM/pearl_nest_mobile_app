@@ -1,5 +1,6 @@
 import 'package:add_comma/add_comma.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pearlnest/apis/booking_service.dart';
@@ -9,9 +10,11 @@ import 'package:pearlnest/blocs/booking/booking_state.dart';
 import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LandlordBookingRequestsScreen extends StatefulWidget {
   final User user;
@@ -45,7 +48,9 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     super.didChangeDependencies();
     // Only fetch once
     if (_allBookings.isEmpty) {
-      context.read<BookingBloc>().add(const FetchLandlordBookings());
+      context.read<BookingBloc>().add(FetchLandlordBookings(
+            isAdmin: widget.user.userType == UserType.admin,
+          ));
     }
   }
 
@@ -159,7 +164,9 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
         status: newStatus == BookingStatus.confirmed ? 'APPROVED' : 'REJECTED',
       );
       statusUpdated = true;
-      final bookings = await BookingService.fetchLandlordBookings();
+      final bookings = widget.user.userType == UserType.admin
+          ? await BookingService.fetchAdminBookings()
+          : await BookingService.fetchLandlordBookings();
       if (!mounted) return;
       setState(() {
         _allBookings = bookings;
@@ -222,28 +229,52 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     );
   }
 
-  void _contactTenant(String tenantId) {
-    final bookingBloc = context.read<BookingBloc>();
-    final state = bookingBloc.state;
-    String tenantPhone = 'No phone';
-    if (state is BookingLoaded) {
-      final booking = state.bookings.firstWhere(
-        (b) => b.tenantId == tenantId,
-        orElse: () => Booking.empty(),
+  Future<void> _contactTenant(Booking booking, {required bool text}) async {
+    final phone = booking.tenantPhone.trim();
+    if (phone.isEmpty || phone == 'No phone provided') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This tenant has not provided a phone number.')),
       );
-      tenantPhone = booking.tenantPhone;
+      return;
     }
+    final uri = Uri(scheme: text ? 'sms' : 'tel', path: phone);
+    try {
+      if (await launchUrl(uri)) return;
+    } on PlatformException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open the contact app: ${error.message}')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    final action = text ? 'send a message' : 'make a call';
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Calling $tenantPhone...',
-          style: TextStyle(color: AppTheme.lightGreyColor),
-        ),
-        backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(milliseconds: 500),
-        margin: EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      SnackBar(content: Text('No app can $action to this number.')),
+    );
+  }
+
+  Widget _buildTenantContactActions(Booking booking) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _contactTenant(booking, text: false),
+              icon: const Icon(Icons.call_outlined),
+              label: const Text('Call tenant'),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _contactTenant(booking, text: true),
+              icon: const Icon(Icons.sms_outlined),
+              label: const Text('Text tenant'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -314,7 +345,9 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                 child: IconButton(
                   tooltip: 'Refresh bookings',
                   onPressed: () {
-                    context.read<BookingBloc>().add(const FetchLandlordBookings());
+                    context.read<BookingBloc>().add(FetchLandlordBookings(
+                          isAdmin: widget.user.userType == UserType.admin,
+                        ));
                   },
                   icon: Icon(
                     Icons.refresh,
@@ -690,6 +723,8 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                 if (booking.status == BookingStatus.pending) ...[
                   SizedBox(height: 16),
                   _buildBookingActionButtons(booking),
+                ] else if (booking.status == BookingStatus.confirmed) ...[
+                  _buildTenantContactActions(booking),
                 ],
               ],
             ),

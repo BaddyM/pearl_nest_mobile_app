@@ -11,10 +11,16 @@ class NewChatLoadedState extends NewChatState {
   final List<Message> messages;
   final bool isSendMessage;
   final DateTime dateTime;
-  NewChatLoadedState({required this.messages, this.isSendMessage = false, required this.dateTime});
+  final String conversationStatus;
+  NewChatLoadedState({
+    required this.messages,
+    this.isSendMessage = false,
+    required this.dateTime,
+    this.conversationStatus = 'OPEN',
+  });
 
   @override
-  List<Object?> get props => [messages, dateTime];
+  List<Object?> get props => [messages, dateTime, conversationStatus];
 }
 
 class NewChatErrorState extends NewChatState {

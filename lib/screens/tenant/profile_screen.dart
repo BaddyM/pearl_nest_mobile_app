@@ -526,6 +526,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           ),
         ),
       ]);
+    } else if (widget.user.userType == UserType.admin) {
+      workspaceItems.add(
+        _buildMenuItem(
+          Icons.fact_check_outlined,
+          'Review All Booking Requests',
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  LandlordBookingRequestsScreen(user: widget.user),
+            ),
+          ),
+        ),
+      );
     } else if (widget.user.userType == UserType.tenant) {
       workspaceItems.add(
         _buildMenuItem(
@@ -548,7 +562,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             'Workspace',
             widget.user.userType == UserType.landlord
                 ? 'Manage your properties and bookings'
-                : 'Keep track of your property bookings',
+                : widget.user.userType == UserType.admin
+                    ? 'Review and approve booking requests across properties'
+                    : 'Keep track of your property bookings',
             workspaceItems,
           ),
         _buildMenuSection('Account', 'Preferences and account management', [

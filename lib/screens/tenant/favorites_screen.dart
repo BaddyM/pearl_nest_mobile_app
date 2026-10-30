@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:add_comma/add_comma.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -818,6 +820,7 @@ class _PropertyCardState extends State<PropertyCard> {
   final putCommas = addCommas();
   int _pendingBalance = 0;
   int _nights = 0;
+  Timer? _expiryTimer;
 
   Map<String, dynamic> _getResponsiveCardValues(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -1042,6 +1045,11 @@ class _PropertyCardState extends State<PropertyCard> {
   @override
   void initState() {
     super.initState();
+    if (widget.status == BookingStatus.pending && widget.booking != null) {
+      _expiryTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
         _pendingBalance = widget.balance;
@@ -1054,6 +1062,12 @@ class _PropertyCardState extends State<PropertyCard> {
         }
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _expiryTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -1401,21 +1415,42 @@ class _PropertyCardState extends State<PropertyCard> {
   }
 
   Widget _buildPendingApproval() {
-    return Row(
+    final booking = widget.booking;
+    final remaining = booking?.expiresAt.difference(DateTime.now());
+    final remainingText = remaining == null || remaining.isNegative
+        ? 'Expiry is being processed'
+        : '${remaining.inHours}h ${remaining.inMinutes.remainder(60)}m';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(
-            'Waiting for landlord approval',
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Waiting for landlord approval',
+                style: TextStyle(
+                  color: AppTheme.getSecondaryTextColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => showCancelBookingSheet(context),
+              child: const Text('Cancel request'),
+            ),
+          ],
+        ),
+        if (booking != null) ...[
+          Text(
+            remaining == null || remaining.isNegative
+                ? '$remainingText. Contact Pearl Nest support in the app if you still need help.'
+                : 'Request expires in $remainingText if there is no response. Message Pearl Nest support in the app if something seems wrong.',
             style: TextStyle(
               color: AppTheme.getSecondaryTextColor(context),
-              fontWeight: FontWeight.w600,
+              fontSize: 12,
             ),
           ),
-        ),
-        TextButton(
-          onPressed: () => showCancelBookingSheet(context),
-          child: const Text('Cancel request'),
-        ),
+        ],
       ],
     );
   }

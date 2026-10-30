@@ -101,6 +101,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   String _landlordPhone = '';
   String? _contactError;
   bool _isLoadingPendingBookings = true;
+  bool _showFullDescription = false;
+  Map<String, dynamic>? _bookingFeePromotion;
+  String? _bookingFeePromotionError;
 
   // API data state
   int _viewsCount = 0;
@@ -191,7 +194,21 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
     // Load pending bookings
     _loadPendingBookings();
-    if (widget.property.isAdminUploaded) _loadPropertyContact();
+    if (widget.property.isAdminOwner) _loadPropertyContact();
+    if (widget.property.isRent && !widget.property.isSale) {
+      _loadBookingFeePromotion();
+    }
+  }
+
+  Future<void> _loadBookingFeePromotion() async {
+    try {
+      final promotion = await BookingService.getBookingFeePromotion();
+      if (mounted) setState(() => _bookingFeePromotion = promotion);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _bookingFeePromotionError = error.toString());
+      }
+    }
   }
 
   // Initialize stats from embedded property data
@@ -246,10 +263,19 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         setState(() {
           _pendingBookings = pendingBookings;
           _pendingBookingForProperty = pendingBookingForThisProperty;
-          _hasBookedProperty = bookings.any((booking) =>
-              booking.propertyId == widget.property.id &&
-              (booking.status == BookingStatus.pending ||
-                  booking.status == BookingStatus.confirmed));
+          _hasBookedProperty = bookings.any((booking) {
+            if (booking.propertyId != widget.property.id ||
+                (booking.status != BookingStatus.pending &&
+                    booking.status != BookingStatus.confirmed)) {
+              return false;
+            }
+            final isViewing =
+                booking.bookingPurpose?.toUpperCase() == 'PROPERTY_VIEWING';
+            return isViewing
+                ? booking.hasSuccessfulPayment || (booking.amount ?? 0) <= 0
+                : booking.status == BookingStatus.confirmed &&
+                    (booking.hasSuccessfulPayment || (booking.amount ?? 0) <= 0);
+          });
           _isLoadingPendingBookings = false;
         });
         if (_canContactLandlord) _loadPropertyContact();
@@ -268,7 +294,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   }
 
   bool get _canContactLandlord =>
-      widget.property.isAdminUploaded || _hasBookedProperty;
+      widget.property.isAdminOwner || _hasBookedProperty;
 
   Future<void> _loadPropertyContact() async {
     if (!_canContactLandlord ||
@@ -1983,6 +2009,26 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
+                    if ((_bookingFeePromotion?['discountAmount'] as num? ?? 0) > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: Text(
+                          'Booking fee offer: save ${ProfileService().currencyConverter(price: (_bookingFeePromotion!['discountAmount'] as num).toInt())}',
+                          style: const TextStyle(
+                            color: AppTheme.accentGreen,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    else if (_bookingFeePromotionError != null)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 5),
+                        child: Text(
+                          'Booking-fee offer details are temporarily unavailable.',
+                          style: TextStyle(color: Colors.orange, fontSize: 11),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -2926,13 +2972,45 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 color: AppTheme.primaryblue.withValues(alpha: 0.1),
               ),
             ),
-            child: Text(
-              widget.property.description,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.getSecondaryTextColor(context),
-                height: 1.6,
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final textStyle = TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.getSecondaryTextColor(context),
+                  height: 1.6,
+                );
+                final painter = TextPainter(
+                  text: TextSpan(
+                    text: widget.property.description,
+                    style: textStyle,
+                  ),
+                  textDirection: Directionality.of(context),
+                  maxLines: 4,
+                )..layout(maxWidth: constraints.maxWidth);
+                final canExpand = painter.didExceedMaxLines;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.property.description,
+                      style: textStyle,
+                      maxLines: _showFullDescription ? null : 4,
+                      overflow: _showFullDescription
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
+                    ),
+                    if (canExpand)
+                      TextButton(
+                        onPressed: () => setState(
+                          () => _showFullDescription = !_showFullDescription,
+                        ),
+                        child: Text(
+                          _showFullDescription ? 'Show less' : 'Read more',
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
           SizedBox(height: 16),
@@ -3856,6 +3934,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       return;
     }
     try {
+      await ChatService.startPropertyConversation(
+        peerId: widget.property.landlordId,
+        propertyId: widget.property.id,
+      );
       await context.read<NewChatBloc>().socket.connect(widget.user.id);
     } catch (error) {
       if (!mounted) return;

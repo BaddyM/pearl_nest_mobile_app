@@ -9,11 +9,13 @@ class RefundRequestScreen extends StatefulWidget {
     required this.propertyName,
     required this.payments,
     this.landlordRejected = false,
+    this.administratorReview = false,
   });
 
   final String propertyName;
   final List<Map<String, dynamic>> payments;
   final bool landlordRejected;
+  final bool administratorReview;
 
   @override
   State<RefundRequestScreen> createState() => _RefundRequestScreenState();
@@ -190,6 +192,8 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
             Text(
               widget.landlordRejected
                   ? 'Because the landlord rejected this booking, your full remaining payment is guaranteed and approved automatically. Pearl Nest will manually transfer it to the destination you provide.'
+                  : widget.administratorReview
+                      ? 'This visit fee was paid to Pearl Nest. Administrators review visit-fee refund requests, and approved refunds are paid manually.'
                   : 'The landlord reviews your request first, then an administrator makes the final decision. Approved refunds are paid manually to the destination you provide.',
               style: TextStyle(color: AppTheme.getSecondaryTextColor(context), height: 1.4),
             ),

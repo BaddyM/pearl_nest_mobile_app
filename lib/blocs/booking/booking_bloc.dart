@@ -142,14 +142,15 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   ) async {
     emit(const BookingLoading());
     try {
-      Response response = await ApiClient.delete("/booking/cancel/${event.bookingId}");
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        emit(BookingCancelled());
-      }
+      await BookingService.cancelBooking(event.bookingId);
+      emit(BookingCancelled());
+      add(FetchBookings());
+    } on BookingException catch (error) {
+      emit(BookingError(message: error.message));
     } catch (e, trace) {
       debugPrint("Error: $e");
       debugPrint("Location: $trace");
-      emit(BookingError(message: "Sorry, failed to cancel the booking\nPlease try again later"));
+      emit(BookingError(message: "Could not cancel this booking: $e"));
     }
   }
 
@@ -246,7 +247,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     _logState('FETCH_LANDLORD_BOOKINGS', state);
 
     try {
-      final bookings = await BookingService.fetchLandlordBookings();
+      final bookings = event.isAdmin
+          ? await BookingService.fetchAdminBookings()
+          : await BookingService.fetchLandlordBookings();
 
       emit(BookingLoaded(bookings: bookings));
       _logState('FETCH_LANDLORD_BOOKINGS_SUCCESS', state);

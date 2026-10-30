@@ -31,6 +31,42 @@ class ChatService {
   // Get available admins
   static List<Admin> get availableAdmins => _availableAdmins;
 
+  static Future<void> startPropertyConversation({
+    required String peerId,
+    required String propertyId,
+  }) async {
+    final response = await ApiClient.post(
+      '/chat/conversation/$peerId/$propertyId/start',
+      {},
+    );
+    if ((response.statusCode != 200 && response.statusCode != 201) ||
+        response.data is! Map ||
+        response.data['success'] != true) {
+      final message = response.data is Map
+          ? response.data['message']?.toString()
+          : null;
+      throw Exception(message ?? 'Could not open the property conversation.');
+    }
+  }
+
+  static Future<void> completePropertyConversation({
+    required String peerId,
+    required String propertyId,
+  }) async {
+    final response = await ApiClient.patch(
+      '/chat/conversation/$peerId/$propertyId/complete',
+      {},
+    );
+    if ((response.statusCode != 200 && response.statusCode != 201) ||
+        response.data is! Map ||
+        response.data['success'] != true) {
+      final message = response.data is Map
+          ? response.data['message']?.toString()
+          : null;
+      throw Exception(message ?? 'Could not complete the property conversation.');
+    }
+  }
+
   // Initialize and connect to socket with comprehensive debugging
   static Future<void> connect() async {
     if (_socket != null && _socket!.connected) {

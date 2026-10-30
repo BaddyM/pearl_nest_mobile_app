@@ -131,6 +131,8 @@ class Property {
         (promotionUsageLimit == null || promotionUsageCount < promotionUsageLimit!);
   }
 
+  bool get isAdminOwner => user?['role']?.toString().toUpperCase() == 'ADMIN';
+
   int get currentPromotionDiscount {
     if (!hasActivePromotion) return 0;
     final basePrice = price.toInt();

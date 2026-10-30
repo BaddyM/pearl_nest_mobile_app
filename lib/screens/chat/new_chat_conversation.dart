@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pearlnest/apis/property_service.dart';
+import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
@@ -40,6 +41,8 @@ class _NewChatConversationState extends State<NewChatConversation> {
   var uuid = const Uuid();
   String? _propertyTitle;
   String? _propertyAddress;
+  String _conversationStatus = 'OPEN';
+  bool _isUpdatingConversation = false;
 
   @override
   void initState() {
@@ -85,6 +88,58 @@ class _NewChatConversationState extends State<NewChatConversation> {
             propertyId: widget.propertyId,
           ),
         );
+  }
+
+  Future<void> _toggleConversationStatus() async {
+    final propertyId = widget.propertyId;
+    if (propertyId == null || _isUpdatingConversation) return;
+    final isCompleted = _conversationStatus == 'COMPLETED';
+    if (!isCompleted) {
+      final shouldComplete = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Complete conversation?'),
+          content: const Text(
+            'This closes the property conversation. Either participant can reopen it later.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Keep open'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Complete'),
+            ),
+          ],
+        ),
+      );
+      if (shouldComplete != true || !mounted) return;
+    }
+
+    setState(() => _isUpdatingConversation = true);
+    try {
+      if (isCompleted) {
+        await ChatService.startPropertyConversation(
+          peerId: widget.toUserId,
+          propertyId: propertyId,
+        );
+      } else {
+        await ChatService.completePropertyConversation(
+          peerId: widget.toUserId,
+          propertyId: propertyId,
+        );
+      }
+      if (!mounted) return;
+      setState(() => _conversationStatus = isCompleted ? 'OPEN' : 'COMPLETED');
+      _fetchChat();
+    } catch (error) {
+      if (mounted) {
+        CustomSnackBar.showError(context, error.toString());
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdatingConversation = false);
+    }
   }
 
   @override
@@ -146,15 +201,30 @@ class _NewChatConversationState extends State<NewChatConversation> {
         ),
         centerTitle: false,
         actions: [
-          GestureDetector(
-            onTap: _fetchChat,
-            child: Icon(
-              Icons.refresh,
-              color: AppTheme.getTextColor(context),
-              size: 30,
+          if (widget.propertyId != null)
+            IconButton(
+              tooltip: _conversationStatus == 'COMPLETED'
+                  ? 'Reopen conversation'
+                  : 'Complete conversation',
+              onPressed:
+                  _isUpdatingConversation ? null : _toggleConversationStatus,
+              icon: _isUpdatingConversation
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      _conversationStatus == 'COMPLETED'
+                          ? Icons.restart_alt
+                          : Icons.check_circle_outline,
+                    ),
             ),
+          IconButton(
+            tooltip: 'Refresh messages',
+            onPressed: _fetchChat,
+            icon: const Icon(Icons.refresh),
           ),
-          SizedBox(width: 10),
         ],
       ),
       body: BlocConsumer<NewChatBloc, NewChatState>(builder: (context, state) {
@@ -185,23 +255,25 @@ class _NewChatConversationState extends State<NewChatConversation> {
             ),
             chatController: _chatController,
             currentUserId: widget.fromUserId,
-            onMessageSend: (text) {
-              context.read<NewChatBloc>().add(
-                    FetchNewChat(
-                      currentUserId: widget.fromUserId,
-                      toUserId: widget.toUserId,
-                      propertyId: widget.propertyId,
-                      isSendMessage: true,
-                      sendMessage: {
-                        "fromUserId": widget.fromUserId,
-                        "toUserId": widget.toUserId,
-                        "text": text,
-                        if (widget.propertyId != null)
-                          "propertyId": widget.propertyId,
-                      },
-                    ),
-                  );
-            },
+            onMessageSend: _conversationStatus == 'COMPLETED'
+                ? null
+                : (text) {
+                    context.read<NewChatBloc>().add(
+                          FetchNewChat(
+                            currentUserId: widget.fromUserId,
+                            toUserId: widget.toUserId,
+                            propertyId: widget.propertyId,
+                            isSendMessage: true,
+                            sendMessage: {
+                              "fromUserId": widget.fromUserId,
+                              "toUserId": widget.toUserId,
+                              "text": text,
+                              if (widget.propertyId != null)
+                                "propertyId": widget.propertyId,
+                            },
+                          ),
+                        );
+                  },
             resolveUser: (UserID id) async {
               return User(id: widget.fromUserId, name: widget.userName);
             },
@@ -217,6 +289,9 @@ class _NewChatConversationState extends State<NewChatConversation> {
           CustomSnackBar.showError(context, "Sorry, failed to fetch message.");
         } else if (state is NewChatLoadedState) {
           _chatController.setMessages(state.messages);
+          if (_conversationStatus != state.conversationStatus) {
+            setState(() => _conversationStatus = state.conversationStatus);
+          }
         }
       }),
     );

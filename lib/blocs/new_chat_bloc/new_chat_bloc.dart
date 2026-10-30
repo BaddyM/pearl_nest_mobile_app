@@ -85,6 +85,7 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
             emit(NewChatLoadedState(
               messages: updatedMessages,
               dateTime: DateTime.now(),
+              conversationStatus: currentState.conversationStatus,
             ));
 
             // 3️⃣ Send to socket
@@ -103,6 +104,8 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
           if (response.statusCode == 200 || response.statusCode == 201) {
             final jsonList = response.data["data"] as List;
             final List<Message> chatMessages = List<Message>.from(jsonList.map((json) => convertToCoreMessage(json as Map<String, dynamic>)));
+            final conversationStatus =
+                response.data["conversationStatus"]?.toString() ?? 'OPEN';
             try {
               await ApiClient.patchWithoutData(
                 "/chat/readMessage/${event.toUserId}/$userId$propertyQuery",
@@ -113,6 +116,7 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
             emit(NewChatLoadedState(
               messages: chatMessages,
               dateTime: DateTime.now(),
+              conversationStatus: conversationStatus,
             ));
           } else {
             emit(NewChatErrorState(error: "Sorry, failed to fetch chatlist"));
@@ -148,6 +152,7 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
           NewChatLoadedState(
             messages: updatedMessages,
             dateTime: DateTime.now(),
+            conversationStatus: current.conversationStatus,
           ),
         );
       }

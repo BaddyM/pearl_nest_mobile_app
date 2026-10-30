@@ -127,7 +127,7 @@ class Booking {
       bookingPurpose: json['bookingPurpose']?.toString(),
       landlordRejected:
           json['bookingStatus']?.toString().toUpperCase() == 'REJECTED',
-      createdAt: parseDate(json['bookingDate']),
+      createdAt: parseDate(json['createdAt']?.toString() ?? json['bookingDate']?.toString()),
       tenantName: user['name']?.toString() ?? 'Unknown User',
       tenantEmail: user['email']?.toString() ?? 'No email provided',
       tenantPhone: user['contact']?.toString() ?? 'No phone provided',
@@ -177,4 +177,13 @@ class Booking {
 
   // Get payment count
   int get paymentCount => payments.length;
+
+  bool get hasSuccessfulPayment => payments.any((payment) {
+        final status = payment['paymentStatus']?.toString().toUpperCase();
+        return status == 'APPROVED' || status == 'BOOKED';
+      });
+
+  bool get isViewingRequest => bookingPurpose?.toUpperCase() == 'PROPERTY_VIEWING';
+
+  DateTime get expiresAt => createdAt.add(const Duration(hours: 24));
 }

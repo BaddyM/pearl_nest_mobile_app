@@ -211,6 +211,36 @@ class BookingService {
     return data;
   }
 
+  static Future<Map<String, dynamic>> getBookingFeePromotion() async {
+    try {
+      final response = await ApiClient.get('/booking/fee-promotion');
+      final data = response.data;
+      if (response.statusCode != 200 ||
+          data is! Map ||
+          data['success'] != true ||
+          data['data'] is! Map) {
+        throw BookingException(
+          data is Map
+              ? data['message']?.toString() ??
+                  'The booking-fee offer could not be loaded.'
+              : 'The booking-fee offer could not be loaded.',
+          statusCode: response.statusCode,
+        );
+      }
+      return Map<String, dynamic>.from(data['data'] as Map);
+    } on DioException catch (error) {
+      final message = error.response?.data is Map
+          ? error.response?.data['message']?.toString()
+          : null;
+      throw BookingException(
+        message?.isNotEmpty == true
+            ? message!
+            : 'Could not load the booking-fee offer. Check your connection.',
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
   static Future<List<Booking>> fetchBookings({String? status}) async {
     try {
       final endpoint = status != null ? '/booking/list?status=$status' : '/booking/list';
@@ -363,6 +393,7 @@ class BookingService {
           //debugPrint('⚠️ No booking data found in response');
           return [];
         }
+
       } else {
         throw BookingException(
           'Failed to fetch landlord bookings: ${response.statusMessage}',
@@ -389,6 +420,47 @@ class BookingService {
         rethrow;
       }
       throw BookingException('Unexpected error: $e');
+    }
+  }
+
+  static Future<List<Booking>> fetchAdminBookings() async {
+    try {
+      const limit = 100;
+      final bookings = <Booking>[];
+      var page = 1;
+      while (true) {
+        final endpoint = '/booking/all?page=$page&limit=$limit';
+        final response = await ApiClient.get(endpoint);
+        final data = response.data;
+        if (response.statusCode != 200 ||
+            data is! Map ||
+            data['success'] != true ||
+            data['data'] is! List) {
+          throw BookingException(
+            data is Map
+                ? data['message']?.toString() ?? 'Failed to fetch admin bookings'
+                : 'Failed to fetch admin bookings',
+            statusCode: response.statusCode,
+          );
+        }
+        final items = data['data'] as List;
+        bookings.addAll(
+          items.map(
+            (json) => Booking.fromApiJson(
+              Map<String, dynamic>.from(json as Map),
+            ),
+          ),
+        );
+        if (items.length < limit) break;
+        page++;
+      }
+      return bookings;
+    } on DioException catch (error) {
+      _logError('fetch admin bookings', error);
+      throw BookingException(
+        error.response?.data?['message'] ?? 'Failed to fetch admin bookings',
+        statusCode: error.response?.statusCode,
+      );
     }
   }
 }

@@ -3,10 +3,14 @@ import "package:flutter_bloc/flutter_bloc.dart";
 import "package:pearlnest/blocs/booking/booking_bloc.dart";
 import "package:pearlnest/blocs/booking/booking_event.dart";
 import "package:pearlnest/blocs/booking/booking_state.dart";
+import "package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart";
+import "package:pearlnest/apis/chat_service.dart";
+import "package:pearlnest/screens/chat/new_chat_conversation.dart";
 import "package:pearlnest/models/booking.dart";
 import "package:pearlnest/models/property.dart";
 import "package:pearlnest/models/user.dart";
 import "package:pearlnest/screens/tenant/favorites_screen.dart";
+import "package:pearlnest/screens/tenant/booking_screen.dart";
 import "package:pearlnest/screens/tenant/home_screen.dart";
 import "package:pearlnest/screens/tenant/refund_request_screen.dart";
 import "package:pearlnest/widgets/app_theme.dart";
@@ -24,6 +28,7 @@ class BookingsListScreen extends StatefulWidget {
 
 class _BookingsListScreenState extends State<BookingsListScreen> {
   bool _isGridView = false;
+  bool _showBookingHistory = false;
 
   Map<String, dynamic> _getResponsiveValues(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -60,16 +65,111 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
     final Uri url = Uri.parse(urlString);
 
     try {
-      // canLaunchUrl checks if the device has an app that can handle the request
       if (await canLaunchUrl(url)) {
         await launchUrl(url);
       } else {
-        throw 'Could not launch $urlString';
+        throw Exception('Could not launch $urlString');
       }
     } catch (e) {
-      // You can use the showErrorDialog we created earlier here!
-      print("Error launching URL: $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open the requested app: $e')),
+      );
     }
+  }
+
+  bool _canContactLandlord(Booking booking) =>
+      booking.status == BookingStatus.confirmed &&
+      (booking.hasSuccessfulPayment || (booking.amount ?? 0) <= 0);
+
+  bool _canRebook(Property property) =>
+      property.availabilityStatus &&
+      property.availableUnits > 0 &&
+      property.status == PropertyStatus.approved;
+
+  void _rebook(Property property, Booking booking) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BookingScreen(
+          property: property,
+          user: widget.user,
+          isViewingRequest: booking.isViewingRequest,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openLandlordChat(Booking booking) async {
+    final property = booking.property;
+    if (property == null || property.landlordId.isEmpty) return;
+    try {
+      await ChatService.startPropertyConversation(
+        peerId: property.landlordId,
+        propertyId: property.id,
+      );
+      await context.read<NewChatBloc>().socket.connect(widget.user.id);
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => NewChatConversation(
+          fromUserId: widget.user.id,
+          toUserId: property.landlordId,
+          userName: property.landlordName,
+          userImageUrl: property.profilePicture ??
+              property.user?['profilePicture']?.toString(),
+          propertyId: property.id,
+          propertyTitle: property.title,
+          propertyAddress: property.address,
+        ),
+      ));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open the landlord chat: $error')),
+      );
+    }
+  }
+
+  Widget _buildLandlordContactActions(Booking booking) {
+    final property = booking.property!;
+    final phone = property.landlordPhone.trim();
+    return Card(
+      margin: const EdgeInsets.only(top: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Booking approved - contact the property owner',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                if (phone.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () => launchMyUrl('tel:$phone'),
+                    icon: const Icon(Icons.call_outlined),
+                    label: const Text('Call'),
+                  ),
+                if (phone.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () => launchMyUrl('sms:$phone'),
+                    icon: const Icon(Icons.sms_outlined),
+                    label: const Text('Text'),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () => _openLandlordChat(booking),
+                  icon: const Icon(Icons.chat_outlined),
+                  label: const Text('Chat'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -104,16 +204,59 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                 if (state is BookingLoading) {
                   return LoadingWidget();
                 } else if (state is BookingLoaded) {
+                  final bookings = state.bookings.where((booking) {
+                    final isHistory = booking.status == BookingStatus.cancelled ||
+                        booking.status == BookingStatus.completed ||
+                        booking.status == BookingStatus.expired;
+                    return _showBookingHistory ? isHistory : !isHistory;
+                  }).toList()
+                    ..sort((first, second) =>
+                        second.createdAt.compareTo(first.createdAt));
                   return Padding(
                     padding: const EdgeInsets.all(16),
-                    child: ListView.builder(
-                        itemCount: state.bookings.length,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          Property? property = state.bookings[index].property;
-                          String? bookingId = state.bookings[index].id;
-                          Booking booking = state.bookings[index];
+                    child: Column(
+                      children: [
+                        SegmentedButton<bool>(
+                          segments: const [
+                            ButtonSegment(
+                              value: false,
+                              label: Text('Active'),
+                              icon: Icon(Icons.pending_actions),
+                            ),
+                            ButtonSegment(
+                              value: true,
+                              label: Text('History'),
+                              icon: Icon(Icons.history),
+                            ),
+                          ],
+                          selected: {_showBookingHistory},
+                          onSelectionChanged: (selection) => setState(
+                            () => _showBookingHistory = selection.first,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (bookings.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 36),
+                            child: Text(
+                              _showBookingHistory
+                                  ? 'No past bookings yet.'
+                                  : 'No active bookings. Your requests will appear here.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppTheme.getSecondaryTextColor(context),
+                              ),
+                            ),
+                          )
+                        else
+                          ListView.builder(
+                            itemCount: bookings.length,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemBuilder: (context, index) {
+                          Property? property = bookings[index].property;
+                          String? bookingId = bookings[index].id;
+                          Booking booking = bookings[index];
                           if (property != null) {
                             final successfulPayments = booking.payments.where((item) {
                               final paymentStatus = item["paymentStatus"]?.toString().toUpperCase();
@@ -154,6 +297,33 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                     status: booking.status,
                                     booking: booking,
                                   ),
+                                  if (booking.status == BookingStatus.cancelled ||
+                                      booking.status == BookingStatus.expired)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton.icon(
+                                          onPressed: _canRebook(property)
+                                              ? () => _rebook(property, booking)
+                                              : null,
+                                          icon: Icon(
+                                            booking.isViewingRequest
+                                                ? Icons.event_available_outlined
+                                                : Icons.replay_outlined,
+                                          ),
+                                          label: Text(
+                                            _canRebook(property)
+                                                ? booking.isViewingRequest
+                                                    ? 'Request tour again'
+                                                    : 'Book this property again'
+                                                : 'Property currently unavailable',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  if (_canContactLandlord(booking))
+                                    _buildLandlordContactActions(booking),
                                   if (successfulPayments.isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 8),
@@ -170,6 +340,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                               propertyName: booking.propertyTitle,
                                               payments: successfulPayments,
                                               landlordRejected: booking.landlordRejected,
+                                              administratorReview:
+                                                  booking.isViewingRequest,
                                             ),
                                           ));
                                         },
@@ -181,7 +353,10 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                           } else {
                             return SizedBox();
                           }
-                        }),
+                            },
+                          ),
+                      ],
+                    ),
                   );
                 } else if (state is PaymentLink) {
                   return SizedBox(
