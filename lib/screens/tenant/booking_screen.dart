@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/apis/booking_service.dart';
+import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
+import 'package:pearlnest/screens/tenant/payment_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
-import 'package:pearlnest/blocs/booking/booking_bloc.dart';
-import 'package:pearlnest/blocs/booking/booking_event.dart';
-import 'package:pearlnest/blocs/booking/booking_state.dart';
 
 class BookingScreen extends StatefulWidget {
   final Property property;
   final User user;
+  final bool isViewingRequest;
 
   const BookingScreen({
     super.key,
     required this.property,
     required this.user,
+    this.isViewingRequest = false,
   });
 
   @override
@@ -28,20 +28,42 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   DateTime? _checkInDate;
   DateTime? _checkOutDate;
+  bool _noMoveOutDate = true;
   String _paymentOption = 'DEPOSIT';
   Map<String, dynamic>? _bookingQuote;
   bool _quoteLoading = false;
+  bool _isSubmitting = false;
+  late final TextEditingController _contactNumberController;
 
   bool get _isSale => widget.property.isSale || widget.property.priceType.toLowerCase() == 'for_sale';
+  bool get _isViewingRequest => widget.isViewingRequest || _isSale;
+  bool get _isShortStay =>
+      widget.property.priceType.toLowerCase().contains('night') ||
+      widget.property.type.toLowerCase().contains('air');
+  bool get _isLongTermRental =>
+      !_isSale &&
+      !_isShortStay &&
+      widget.property.isRent &&
+      (widget.property.priceType.toLowerCase() == 'per_month' ||
+          widget.property.type.toLowerCase() == 'rentals');
 
   @override
   void initState() {
     super.initState();
-    if (_isSale) _loadBookingQuote();
+    _contactNumberController = TextEditingController(text: widget.user.phone);
+    if (_isViewingRequest) _loadBookingQuote();
+  }
+
+  @override
+  void dispose() {
+    _contactNumberController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadBookingQuote() async {
-    if (!_isSale && (_checkInDate == null || _checkOutDate == null)) return;
+    if (!_isViewingRequest &&
+        (_checkInDate == null ||
+            (!_isLongTermRental || !_noMoveOutDate) && _checkOutDate == null)) return;
     setState(() {
       _quoteLoading = true;
       _bookingQuote = null;
@@ -50,12 +72,9 @@ class _BookingScreenState extends State<BookingScreen> {
       final quote = await BookingService.getBookingQuote(
         propertyId: widget.property.id,
         checkInDate: _checkInDate == null ? null : DateFormat('yyyy-MM-dd').format(_checkInDate!),
-        checkOutDate: _isSale
-            ? null
-            : _checkOutDate == null
-                ? null
-                : DateFormat('yyyy-MM-dd').format(_checkOutDate!),
+        checkOutDate: _checkOutDate == null ? null : DateFormat('yyyy-MM-dd').format(_checkOutDate!),
         paymentOption: _paymentOption,
+        isViewing: _isViewingRequest,
       );
       if (mounted) setState(() => _bookingQuote = quote);
     } catch (error) {
@@ -77,24 +96,14 @@ class _BookingScreenState extends State<BookingScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          _isSale ? 'Request a Viewing' : 'Request Booking',
+          _isViewingRequest ? 'Request a Tour' : 'Request Booking',
           style: TextStyle(
             color: AppTheme.getTextColor(context),
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
-      body: BlocListener<BookingBloc, BookingState>(
-        listener: (context, state) {
-          if (state is BookingSuccess) {
-            _showSuccessDialog(state.message);
-          } else if (state is BookingFailure) {
-            _showErrorSnackBar(state.error);
-          } else if (state is BookingValidationError) {
-            _showValidationErrors(state.fieldErrors);
-          }
-        },
-        child: SafeArea(
+      body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             child: Column(
@@ -126,7 +135,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Icon(
-                          _isSale ? Icons.visibility_outlined : Icons.home_work_outlined,
+                          _isViewingRequest ? Icons.visibility_outlined : Icons.home_work_outlined,
                           color: AppTheme.primaryblue,
                           size: 28,
                         ),
@@ -163,7 +172,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                             const SizedBox(height: 7),
                             Text(
-                              '${ProfileService().currencyConverter(price: widget.property.price.toInt())} ${widget.property.priceType}',
+                              '${ProfileService().currencyConverter(price: widget.property.price.toInt())} ${_isSale ? 'For sale' : widget.property.priceType.replaceAll('_', ' ')}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.primaryblue,
@@ -177,7 +186,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
                 const SizedBox(height: 26),
                 Text(
-                  _isSale ? 'Plan your property viewing' : 'Choose your stay',
+                  _isViewingRequest ? 'Plan your property tour' : 'Choose your stay',
                   style: TextStyle(
                     fontSize: 21,
                     fontWeight: FontWeight.bold,
@@ -186,28 +195,73 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  _isSale
-                      ? 'Choose a convenient date to visit this property.'
-                      : 'Select arrival and departure dates to see your price.',
+                  _isViewingRequest
+                      ? 'Choose a convenient date. The admin-set visit fee is paid to Pearl Nest before your request is sent.'
+                      : _isLongTermRental
+                          ? 'Choose your move-in date. Your move-out date can be left open-ended.'
+                          : 'Select arrival and departure dates to see your price.',
                   style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                 ),
                 const SizedBox(height: 18),
                 _buildDateSelector(
                   context,
-                  title: _isSale ? 'Preferred viewing date' : 'Check-in',
+                  title: _isViewingRequest
+                      ? 'Preferred tour date'
+                      : _isLongTermRental ? 'Move-in date' : 'Check-in',
                   date: _checkInDate,
                   onTap: () => _selectCheckInDate(context),
                 ),
-                if (!_isSale) ...[
+                if (_isViewingRequest) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _contactNumberController,
+                    keyboardType: TextInputType.phone,
+                    style: TextStyle(color: AppTheme.getTextColor(context)),
+                    decoration: InputDecoration(
+                      labelText: 'Phone number for the callback',
+                      prefixIcon: const Icon(Icons.phone_outlined, color: AppTheme.primaryblue),
+                      filled: true,
+                      fillColor: AppTheme.getCardColor(context),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  _buildDateSelector(
-                    context,
-                    title: 'Check-out',
-                    date: _checkOutDate,
-                    onTap: () => _selectCheckOutDate(context),
+                  Text(
+                    'Pay the property visit fee to submit this request. It does not reserve the property; the landlord will call to arrange a time.',
+                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
                   ),
                 ],
-                if (_checkInDate != null && _checkOutDate != null && !_isSale) ...[
+                if (!_isViewingRequest) ...[
+                  if (_isLongTermRental)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _noMoveOutDate,
+                      title: const Text("I don't know my move-out date yet"),
+                      subtitle: const Text(
+                        'The landlord will confirm the lease duration and notice terms.',
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _noMoveOutDate = value ?? false;
+                          if (_noMoveOutDate) _checkOutDate = null;
+                        });
+                        _loadBookingQuote();
+                      },
+                    ),
+                  if (!_isLongTermRental || !_noMoveOutDate) ...[
+                    const SizedBox(height: 10),
+                    _buildDateSelector(
+                      context,
+                      title: _isLongTermRental ? 'Estimated move-out date' : 'Check-out',
+                      date: _checkOutDate,
+                      onTap: () => _selectCheckOutDate(context),
+                    ),
+                  ],
+                ],
+                if (_checkInDate != null &&
+                    _checkOutDate != null &&
+                    !_isViewingRequest &&
+                    _isShortStay) ...[
                   const SizedBox(height: 14),
                   Container(
                     width: double.infinity,
@@ -245,16 +299,8 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
           ),
         ),
-      ),
-      bottomNavigationBar: BlocBuilder<BookingBloc, BookingState>(
-        builder: (context, state) {
-          final isLoading = state is BookingLoading;
-          final canBook = _checkInDate != null &&
-              (_isSale || _checkOutDate != null) &&
-              _bookingQuote != null &&
-              !isLoading &&
-              !_quoteLoading;
-          return SafeArea(
+      bottomNavigationBar:
+          SafeArea(
             top: false,
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -267,7 +313,7 @@ class _BookingScreenState extends State<BookingScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: canBook ? _submitBooking : null,
+                  onPressed: _canSubmit ? _submitBooking : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryblue,
                     disabledBackgroundColor: AppTheme.primaryblue.withValues(alpha: 0.35),
@@ -275,7 +321,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 17),
                     elevation: 0,
                   ),
-                  child: isLoading
+                  child: _isSubmitting
                       ? const SizedBox(
                           width: 21,
                           height: 21,
@@ -285,7 +331,9 @@ class _BookingScreenState extends State<BookingScreen> {
                           ),
                         )
                       : Text(
-                          _isSale ? 'Request a viewing' : 'Send booking request',
+                          _isViewingRequest
+                              ? 'Pay visit fee & request viewing'
+                              : 'Continue to secure payment',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -295,11 +343,18 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
               ),
             ),
-          );
-        },
-      ),
+          ),
     );
   }
+
+  bool get _canSubmit =>
+      _checkInDate != null &&
+      (_isViewingRequest ||
+          (_isLongTermRental && _noMoveOutDate) ||
+          _checkOutDate != null) &&
+      _bookingQuote != null &&
+      !_isSubmitting &&
+      !_quoteLoading;
 
   Widget _buildQuotePrompt(BuildContext context) {
     return Container(
@@ -315,7 +370,9 @@ class _BookingScreenState extends State<BookingScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              _isSale ? 'Your viewing fee will appear here.' : 'Choose your dates to see the booking total.',
+              _isViewingRequest
+                  ? 'The property visit fee is calculated from the admin-set rate.'
+                  : 'Choose your dates to see the booking total.',
               style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
             ),
           ),
@@ -329,8 +386,17 @@ class _BookingScreenState extends State<BookingScreen> {
     final choices = (quote['paymentOptions'] as List<dynamic>? ?? []).cast<String>();
     final amountDueNow = (quote['amountDueNow'] as num? ?? 0).toInt();
     final baseAmount = (quote['baseAmount'] as num? ?? 0).toInt();
+    final visitFee = (quote['visitFeeAmount'] as num? ?? baseAmount).toInt();
     final totalAmount = (quote['totalAmount'] as num? ?? amountDueNow).toInt();
     final bookingFee = (quote['bookingFeeAmount'] as num? ?? 0).toInt();
+    final originalBaseAmount =
+        (quote['originalBaseAmount'] as num? ?? baseAmount + (quote['propertyDiscountAmount'] as num? ?? 0)).toInt();
+    final propertyDiscount =
+        (quote['propertyDiscountAmount'] as num? ?? 0).toInt();
+    final originalBookingFee =
+        (quote['originalBookingFeeAmount'] as num? ?? bookingFee + (quote['bookingFeeDiscountAmount'] as num? ?? 0)).toInt();
+    final bookingFeeDiscount =
+        (quote['bookingFeeDiscountAmount'] as num? ?? 0).toInt();
     final transactionFee = (quote['transactionFeeAmount'] as num? ?? 0).toInt();
     return Container(
       width: double.infinity,
@@ -351,7 +417,7 @@ class _BookingScreenState extends State<BookingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _isSale ? 'Viewing fee estimate' : 'Your booking estimate',
+            _isViewingRequest ? 'Property visit fee' : 'Your booking estimate',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -392,22 +458,57 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
           ],
           const SizedBox(height: 14),
-          if (!_isSale) ...[
-            _buildQuoteRow(
-              context,
-              widget.property.priceType.toLowerCase().contains('night')
-                  ? 'Rent for selected dates'
-                  : 'Property deposit',
-              ProfileService().currencyConverter(price: baseAmount),
-            ),
-            const SizedBox(height: 7),
+          if (!_isViewingRequest) ...[
+            if (_isLongTermRental && quote['advanceRentMonths'] != null) ...[
+              _buildQuoteRow(
+                context,
+                'Advance rent (${quote['advanceRentMonths']} months)',
+                ProfileService().currencyConverter(
+                  price: (quote['advanceRentAmount'] as num? ?? 0).toInt(),
+                ),
+              ),
+              const SizedBox(height: 7),
+              _buildQuoteRow(
+                context,
+                'Refundable security deposit (${quote['securityDepositMonths'] ?? 0} months)',
+                ProfileService().currencyConverter(
+                  price: (quote['securityDepositAmount'] as num? ?? 0).toInt(),
+                ),
+              ),
+              const SizedBox(height: 7),
+            ] else ...[
+              _buildQuoteRow(
+                context,
+                _isShortStay ? 'Rent for selected dates' : 'Property deposit',
+                ProfileService().currencyConverter(price: originalBaseAmount),
+              ),
+              const SizedBox(height: 7),
+            ],
+            if (propertyDiscount > 0) ...[
+              _buildQuoteRow(
+                context,
+                'Property promotion',
+                '-${ProfileService().currencyConverter(price: propertyDiscount)}',
+              ),
+              const SizedBox(height: 7),
+            ],
           ],
           _buildQuoteRow(
             context,
-            _isSale ? 'Viewing fee' : 'Booking fee',
-            ProfileService().currencyConverter(price: bookingFee),
+            _isViewingRequest ? 'Visit fee paid to Pearl Nest' : 'Booking fee',
+            ProfileService().currencyConverter(
+              price: _isViewingRequest ? visitFee : originalBookingFee,
+            ),
           ),
           const SizedBox(height: 7),
+          if (!_isViewingRequest && bookingFeeDiscount > 0) ...[
+            _buildQuoteRow(
+              context,
+              'Booking-fee promotion',
+              '-${ProfileService().currencyConverter(price: bookingFeeDiscount)}',
+            ),
+            const SizedBox(height: 7),
+          ],
           _buildQuoteRow(
             context,
             'Transaction fee',
@@ -424,7 +525,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Due after landlord approval',
+                      _isViewingRequest ? 'Pay now to request tour' : 'Due now at secure checkout',
                       style: TextStyle(
                         color: AppTheme.getSecondaryTextColor(context),
                         fontSize: 13,
@@ -573,10 +674,7 @@ class _BookingScreenState extends State<BookingScreen> {
           _checkOutDate = null;
         }
       });
-      if (_isSale) {
-        _checkOutDate = picked;
-      }
-      _loadBookingQuote();
+      if (!_isViewingRequest) _loadBookingQuote();
     }
   }
 
@@ -611,22 +709,113 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  void _submitBooking() {
-    if (_checkInDate == null || (!_isSale && _checkOutDate == null)) {
+  Future<void> _submitBooking() async {
+    if (!_canSubmit || _checkInDate == null) {
       return;
     }
 
-    // Format dates as ISO 8601 strings for API
+    setState(() => _isSubmitting = true);
     final checkInFormatted = DateFormat('yyyy-MM-dd').format(_checkInDate!);
-    final checkOutFormatted = DateFormat('yyyy-MM-dd').format(_isSale ? _checkInDate! : _checkOutDate!);
 
-    context.read<BookingBloc>().add(BookingCreateRequested(
+    try {
+      late final String bookingId;
+      late final double paymentAmount;
+      if (_isViewingRequest) {
+        final phone = _contactNumberController.text.trim();
+        if (phone.length < 7 || phone.length > 30) {
+          throw BookingException('Enter a valid phone number for the viewing callback.');
+        }
+        final result = await BookingService.createViewingRequest(
+          propertyId: widget.property.id,
+          preferredDate: checkInFormatted,
+          contactNumber: phone,
+        );
+        final response = result['data'];
+        final booking = response is Map && response['data'] is Map
+            ? Map<String, dynamic>.from(response['data'] as Map)
+            : <String, dynamic>{};
+        final createdId = booking['id']?.toString();
+        if (createdId == null || createdId.isEmpty) {
+          throw BookingException('The visit request reference was not returned. Please try again.');
+        }
+        bookingId = createdId;
+        paymentAmount = (booking['amount'] as num?)?.toDouble() ??
+            (_bookingQuote!['amountDueNow'] as num).toDouble();
+        if (paymentAmount == 0 && mounted) {
+          _showSuccessDialog(
+            'Your visit request has been sent. The landlord or Pearl Nest team will call to arrange a time.',
+          );
+          return;
+        }
+      } else {
+        final checkOutFormatted = _checkOutDate == null
+            ? null
+            : DateFormat('yyyy-MM-dd').format(_checkOutDate!);
+        final result = await BookingService.createBooking(
           propertyId: widget.property.id,
           checkInDate: checkInFormatted,
           checkOutDate: checkOutFormatted,
           deposit: widget.property.deposit.toInt(),
           paymentOption: _paymentOption,
-        ));
+        );
+        final response = result['data'];
+        final booking = response is Map && response['data'] is Map
+            ? Map<String, dynamic>.from(response['data'] as Map)
+            : <String, dynamic>{};
+        final createdId = booking['id']?.toString();
+        if (createdId == null || createdId.isEmpty) {
+          throw BookingException('The booking reference was not returned. Please try again.');
+        }
+        bookingId = createdId;
+        paymentAmount = (booking['amount'] as num?)?.toDouble() ??
+            (_bookingQuote!['amountDueNow'] as num).toDouble();
+      }
+
+      final payment = await PaymentService.createPayment(
+        userId: widget.user.id,
+        propertyId: widget.property.id,
+        bookingId: bookingId,
+        amount: paymentAmount,
+      );
+      final redirectUrl = payment['redirectUrl']?.toString();
+      final orderTrackingId = payment['orderTrackingId']?.toString();
+      final merchantReference = payment['merchantReference']?.toString();
+      if (payment['success'] != true ||
+          redirectUrl == null ||
+          redirectUrl.isEmpty ||
+          orderTrackingId == null ||
+          merchantReference == null) {
+        await BookingService.cancelBooking(bookingId);
+        throw BookingException(
+          '${payment['message']?.toString() ?? 'Secure checkout could not be started.'} '
+          'The unpaid booking request was cancelled.',
+        );
+      }
+
+      if (!mounted) return;
+      final paymentResult = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => PaymentScreen(
+            redirectUrl: redirectUrl,
+            orderTrackingId: orderTrackingId,
+            merchantReference: merchantReference,
+            amount: paymentAmount,
+            propertyTitle: widget.property.title,
+            user: widget.user,
+          ),
+        ),
+      );
+      if (paymentResult != true && mounted) {
+        await BookingService.cancelBooking(bookingId);
+        _showErrorSnackBar(
+          'Payment was not completed. Your unpaid booking request has been cancelled; you can try again.',
+        );
+      }
+    } catch (error) {
+      if (mounted) _showErrorSnackBar(error.toString());
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   void _showSuccessDialog(String message) {
@@ -669,7 +858,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  _isSale ? 'Viewing request sent' : 'Booking request sent',
+                  _isViewingRequest ? 'Tour request sent' : 'Booking request sent',
                   style: TextStyle(
                     fontSize: 21,
                     fontWeight: FontWeight.bold,
@@ -681,9 +870,9 @@ class _BookingScreenState extends State<BookingScreen> {
                 Text(
                   message.trim().isNotEmpty
                       ? message
-                      : _isSale
-                          ? "Your viewing request is waiting for the landlord's response. Review its status in My Bookings."
-                          : "Your request is waiting for the landlord's response. You can review its status in My Bookings. If it is approved, complete payment there to confirm your reservation.",
+                      : _isViewingRequest
+                          ? "Your tour request is waiting for the landlord or Pearl Nest team to arrange a time. Review its status in My Bookings."
+                          : "Your paid booking request is waiting for the landlord's response. Review its status in My Bookings.",
                   style: TextStyle(
                     height: 1.45,
                     color: AppTheme.getSecondaryTextColor(context),
@@ -711,9 +900,9 @@ class _BookingScreenState extends State<BookingScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          _isSale
-                              ? 'Any viewing fee is only due after the landlord approves your request.'
-                              : 'No payment is due until the landlord approves your request.',
+                          _isViewingRequest
+                            ? 'The admin-set visit fee is shown before checkout. Paying it submits a tour request; it does not reserve the property.'
+                              : 'Your booking is only confirmed after secure payment succeeds.',
                           style: TextStyle(
                             fontSize: 13,
                             height: 1.4,
@@ -725,7 +914,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     ],
                   ),
                 ),
-                if (_checkInDate != null && (_isSale || _checkOutDate != null)) ...[
+                if (_checkInDate != null && (_isViewingRequest || _checkOutDate != null)) ...[
                   const SizedBox(height: 14),
                   Container(
                     width: double.infinity,
@@ -738,10 +927,10 @@ class _BookingScreenState extends State<BookingScreen> {
                       children: [
                         _buildConfirmationDateRow(
                           context,
-                          _isSale ? 'Preferred date' : 'Check-in',
+                          _isViewingRequest ? 'Preferred date' : 'Check-in',
                           _checkInDate!,
                         ),
-                        if (!_isSale) ...[
+                        if (!_isViewingRequest) ...[
                           const SizedBox(height: 10),
                           _buildConfirmationDateRow(
                             context,

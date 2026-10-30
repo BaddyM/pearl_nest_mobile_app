@@ -4,13 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:async';
 import 'package:pearlnest/apis/app_config.dart';
+import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/apis/booking_service.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/apis/auth_service.dart';
-import 'package:pearlnest/blocs/auth/auth_bloc.dart';
-import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
@@ -20,7 +19,6 @@ import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/chat/new_chat_list.dart';
-import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/screens/tenant/favorites_screen.dart';
 import 'package:pearlnest/screens/tenant/notification_screen.dart';
@@ -30,7 +28,9 @@ import 'package:pearlnest/screens/tenant/search_screen.dart';
 import 'package:pearlnest/screens/tenant/payment_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_dashboard_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/widgets/property_promotion_price.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -62,6 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showBackToTop = false;
   int _unreadNotificationCount = 0; // Count of unread notifications
   Timer? _notificationTimer; // Timer for periodic notification refresh
+  int _unreadChatCount = 0;
+  Timer? _chatCountTimer;
   Timer? _categoryAutoScrollTimer;
   Timer? _categoryRefreshTimer;
 
@@ -106,6 +108,13 @@ class _HomeScreenState extends State<HomeScreen> {
     // //debugPrint('🏠 HomeScreen: initState() called for user: ${widget.user.name}');
     _loadProperties();
     _loadPropertyCategories();
+    if (widget.user.id.isNotEmpty) {
+      _loadUnreadChatCount();
+      _chatCountTimer = Timer.periodic(
+        const Duration(seconds: 30),
+        (_) => _loadUnreadChatCount(),
+      );
+    }
     _startCategoryAutoScroll();
     _categoryRefreshTimer = Timer.periodic(
       const Duration(minutes: 10),
@@ -141,9 +150,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _navigateToPearlNestChat() async {
+  Future<void> _navigateToPearlNestChat() async {
     // Navigate to admin list screen instead of direct chat
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => NewChatList(
@@ -151,6 +160,34 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+    await _loadUnreadChatCount();
+  }
+
+  Future<void> _loadUnreadChatCount() async {
+    try {
+      final response = await ApiClient.get('/chat/chatList');
+      final responseData = response.data;
+      if (response.statusCode != 200 ||
+          responseData is! Map ||
+          responseData['success'] != true ||
+          responseData['data'] is! List) {
+        throw StateError('The chat list response was invalid.');
+      }
+      final unreadCount = (responseData['data'] as List)
+          .whereType<Map>()
+          .fold<int>(0, (total, conversation) {
+        final count = int.tryParse(conversation['unreadCount']?.toString() ?? '');
+        final isCurrentUserSender =
+            conversation['fromUserId']?.toString() == widget.user.id;
+        return total +
+            (count ?? (isCurrentUserSender || conversation['isRead'] == true ? 0 : 1));
+      });
+      if (mounted && unreadCount != _unreadChatCount) {
+        setState(() => _unreadChatCount = unreadCount);
+      }
+    } catch (error) {
+      debugPrint('Could not refresh unread chat count: $error');
+    }
   }
 
   @override
@@ -158,6 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _scrollController.dispose();
     _categoryScrollController.dispose();
     _notificationTimer?.cancel(); // Cancel notification timer
+    _chatCountTimer?.cancel();
     _categoryAutoScrollTimer?.cancel();
     _categoryRefreshTimer?.cancel();
     super.dispose();
@@ -284,10 +322,32 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } else {
       setState(() {
-        _isLoading = true;
+        _isLoading = _properties.isEmpty;
         _errorMessage = null;
         _currentPage = 1;
       });
+
+      if (_properties.isEmpty) {
+        try {
+          final cachedProperties = await PropertyService.getCachedProperties();
+          if (cachedProperties.isNotEmpty && mounted) {
+            setState(() {
+              _properties = cachedProperties;
+              _categoryProperties = List.from(cachedProperties);
+              _featuredProperties = cachedProperties
+                  .where((property) =>
+                      property.isFeatured && property.availabilityStatus == true)
+                  .toList();
+              _totalProperties = cachedProperties.length;
+              _totalPages = 1;
+              _hasNextPage = false;
+              _isLoading = false;
+            });
+          }
+        } catch (error, stackTrace) {
+          debugPrint('Could not load saved properties: $error\n$stackTrace');
+        }
+      }
     }
 
     try {
@@ -307,14 +367,21 @@ class _HomeScreenState extends State<HomeScreen> {
       if (loadMore) {
         // Append-only path: don't refetch featured properties or bookings.
         final newProperties = List<Property>.from(propertiesResult)..shuffle();
+        final existingIds = _properties.map((property) => property.id).toSet();
+        final uniqueNew = newProperties
+            .where((property) => existingIds.add(property.id))
+            .toList();
+
+        try {
+          await PropertyService.cacheProperties([..._properties, ...uniqueNew]);
+        } catch (error, stackTrace) {
+          debugPrint('Could not save properties for offline use: $error\n$stackTrace');
+        }
 
         if (mounted) {
           setState(() {
             // De-duplicate by id so unstable server ordering can't append the
             // same property twice (which previously looked like a runaway loop).
-            final existingIds = _properties.map((p) => p.id).toSet();
-            final uniqueNew = newProperties.where((p) => existingIds.add(p.id)).toList();
-
             _properties.addAll(uniqueNew);
             _categoryProperties.addAll(uniqueNew);
 
@@ -328,15 +395,32 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
+      try {
+        await PropertyService.cacheProperties(propertiesResult);
+      } catch (error, stackTrace) {
+        debugPrint('Could not save properties for offline use: $error\n$stackTrace');
+      }
+
       // Initial / refresh load: also fetch featured properties and bookings.
-      final featuredResult = await PropertyService.getFeaturedProperties(
-        page: 1,
-        limit: _pageLimit,
-      );
+      Map<String, dynamic> featuredResult = {};
+      try {
+        featuredResult = await PropertyService.getFeaturedProperties(
+          page: 1,
+          limit: _pageLimit,
+        );
+      } catch (error) {
+        debugPrint('Could not refresh featured properties: $error');
+      }
 
       //Get pending bookings
-      List<Booking> _emptybookings = [];
-      final pendingBookings = widget.user.id != "" ? await BookingService.fetchBookings() : _emptybookings;
+      List<Booking> pendingBookings = [];
+      if (widget.user.id.isNotEmpty) {
+        try {
+          pendingBookings = await BookingService.fetchBookings();
+        } catch (error) {
+          debugPrint('Could not refresh pending bookings: $error');
+        }
+      }
 
       if (propertiesResult.isNotEmpty) {
         final newProperties = List<Property>.from(propertiesResult)..shuffle();
@@ -373,7 +457,8 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         if (mounted) {
           setState(() {
-            // _errorMessage = 'There are no properties to show.';
+            _properties = [];
+            _featuredProperties = [];
             _categoryProperties = []; // Initialize empty category properties
             _pendingBookings = []; // Initialize empty pending bookings
             _pendingProperties = []; // Initialize empty pending properties
@@ -392,20 +477,29 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _isLoadingMore = false;
           });
+          CustomSnackBar.showError(
+            context,
+            'Could not load more properties. Check your internet connection.',
+          );
         }
         return;
       }
 
       if (mounted) {
-        context.read<AuthBloc>().add(AuthLogoutRequested());
-        Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => LoginScreen()), (route) => false);
+        final hasPropertiesToShow = _properties.isNotEmpty;
+        final message = hasPropertiesToShow
+            ? 'Could not refresh properties. Showing saved properties.'
+            : 'Could not load properties. Check your internet connection and try again.';
         setState(() {
-          _errorMessage = 'An error occurred while loading properties.';
-          _categoryProperties = []; // Initialize empty category properties
-          _pendingBookings = []; // Initialize empty pending bookings
-          _pendingProperties = []; // Initialize empty pending properties
+          _errorMessage = hasPropertiesToShow ? null : message;
+          if (!hasPropertiesToShow) {
+            _categoryProperties = [];
+            _pendingBookings = [];
+            _pendingProperties = [];
+          }
           _isLoading = false;
         });
+        CustomSnackBar.showError(context, message);
       }
     }
   }
@@ -552,8 +646,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (error) {
       if (!mounted) return;
       debugPrint('Could not load property categories: $error');
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Property categories could not be refreshed.')),
+      CustomSnackBar.showError(
+        context,
+        'Property categories could not be refreshed.',
       );
     }
   }
@@ -624,16 +719,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       if (mounted) {
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(
-        //     content: Text('Failed to load $categoryName properties'),
-        //     backgroundColor: Colors.red,
-        //     behavior: SnackBarBehavior.floating,
-        //     duration: Duration(seconds: 3),
-        //     margin: EdgeInsets.all(16),
-        //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        //   ),
-        // );
+        CustomSnackBar.showError(
+          context,
+          'Failed to load $categoryName properties. Please try again.',
+        );
       }
     }
   }
@@ -1999,34 +2088,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: ProfileService().currencyConverter(
-                                      price: property.price.toInt(),
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: featured ? 18 : 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryblue,
-                                    ),
-                                  ),
-                                  if (property.priceType != "undefined" &&
-                                      property.priceType.trim().isNotEmpty)
-                                    TextSpan(
-                                      text: ' ${property.priceType.trim()}',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: AppTheme.getSecondaryTextColor(context),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: true,
+                            PropertyPromotionPrice(
+                              property: property,
+                              fontSize: featured ? 18 : 20,
                             ),
                           SizedBox(height: 4),
                           Text(
@@ -2916,6 +2980,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeIcon: Icons.mail,
                 label: 'Chat',
                 index: 4,
+                badgeCount: _unreadChatCount,
                 onTap: () => _navigateToPearlNestChat(),
               ),
             ],
@@ -2955,6 +3020,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData activeIcon,
     required String label,
     required int index,
+    int badgeCount = 0,
     VoidCallback? onTap,
   }) {
     final isActive = _currentIndex == index;
@@ -2969,10 +3035,38 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
-              size: 24,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  isActive ? activeIcon : icon,
+                  color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+                  size: 24,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: -7,
+                    right: -12,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade600,
+                        border: Border.all(color: AppTheme.getCardColor(context), width: 1.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             SizedBox(height: 4),
             Text(
@@ -3085,7 +3179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       Text(
-                        'Check-out: ${booking.checkOutDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkOutDate!) : 'N/A'}',
+                        'Check-out: ${booking.checkOutDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkOutDate!) : booking.bookingPurpose == 'RENTAL' ? 'Open-ended' : 'N/A'}',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppTheme.getSecondaryTextColor(context),
@@ -3190,16 +3284,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        margin: EdgeInsets.all(16),
-      ),
-    );
+    CustomSnackBar.showError(context, message);
   }
 }

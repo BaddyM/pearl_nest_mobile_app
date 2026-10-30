@@ -6,7 +6,7 @@ import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/user_type.dart';
-import 'package:pearlnest/screens/common/login_screen.dart';
+import 'package:pearlnest/screens/common/registration_otp_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart'; // Add this import
 
@@ -15,6 +15,7 @@ class CompleteRegistrationScreen extends StatefulWidget {
   final String email;
   final String password;
   final UserType userType;
+  final bool acceptedTermsAndPrivacyPolicy;
 
   const CompleteRegistrationScreen({
     super.key,
@@ -22,6 +23,7 @@ class CompleteRegistrationScreen extends StatefulWidget {
     required this.email,
     required this.password,
     required this.userType,
+    required this.acceptedTermsAndPrivacyPolicy,
   });
 
   @override
@@ -46,18 +48,17 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
           duration: Duration(milliseconds: 2000),
         );
         // Navigation is now handled by main.dart based on auth state
-      } else if (state is AuthUnauthenticated) {
-        // Check if this is after a successful registration (registration creates user but doesn't log them in)
-        CustomSnackBar.showSuccess(
+      } else if (state is AuthRegistrationSuccess) {
+        CustomSnackBar.showInfo(
           context,
-          'Account created successfully! Please login to continue.',
+          state.message,
           duration: Duration(milliseconds: 2000),
         );
-
-        // Navigate to login screen
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
+          MaterialPageRoute(
+            builder: (context) => RegistrationOtpScreen(email: state.email),
+          ),
           (route) => false,
         );
       } else if (state is AuthFailure) {
@@ -287,6 +288,7 @@ class _CompleteRegistrationScreenState extends State<CompleteRegistrationScreen>
         password: widget.password,
         phone: _phoneController.text.trim(),
         userType: widget.userType.toString().split('.').last.toUpperCase(),
+        acceptedTermsAndPrivacyPolicy: widget.acceptedTermsAndPrivacyPolicy,
       ));
     }
   }

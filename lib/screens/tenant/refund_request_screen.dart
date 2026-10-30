@@ -8,10 +8,12 @@ class RefundRequestScreen extends StatefulWidget {
     super.key,
     required this.propertyName,
     required this.payments,
+    this.landlordRejected = false,
   });
 
   final String propertyName;
   final List<Map<String, dynamic>> payments;
+  final bool landlordRejected;
 
   @override
   State<RefundRequestScreen> createState() => _RefundRequestScreenState();
@@ -43,6 +45,9 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.landlordRejected) {
+      _reasonController.text = 'Landlord rejected this booking.';
+    }
     final payments = _payments;
     if (payments.isNotEmpty) {
       _paymentId = payments.first['id']?.toString();
@@ -138,9 +143,15 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
         destinationProvider: _providerController.text.trim(),
       );
       if (!mounted) return;
-      _reasonController.clear();
+      if (!widget.landlordRejected) _reasonController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Refund request sent to the landlord for review.')),
+        SnackBar(
+          content: Text(
+            widget.landlordRejected
+                ? 'Your guaranteed full refund is approved and queued for manual payout.'
+                : 'Refund request sent to the landlord for review.',
+          ),
+        ),
       );
       if (_paymentId != null) {
         await _loadEligibility(_paymentId!);
@@ -177,7 +188,9 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'The landlord reviews your request first, then an administrator makes the final decision. Approved refunds are paid manually to the destination you provide.',
+              widget.landlordRejected
+                  ? 'Because the landlord rejected this booking, your full remaining payment is guaranteed and approved automatically. Pearl Nest will manually transfer it to the destination you provide.'
+                  : 'The landlord reviews your request first, then an administrator makes the final decision. Approved refunds are paid manually to the destination you provide.',
               style: TextStyle(color: AppTheme.getSecondaryTextColor(context), height: 1.4),
             ),
             const SizedBox(height: 16),
@@ -234,11 +247,16 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                           !_eligibilityLoading &&
                           _eligibility!.requestLimit > 0,
                       decoration: InputDecoration(
-                        labelText: 'Requested refund amount (${ProfileService().currencyCode})',
+                        labelText: widget.landlordRejected
+                            ? 'Guaranteed refund amount (${ProfileService().currencyCode})'
+                            : 'Requested refund amount (${ProfileService().currencyCode})',
                         helperText: _eligibility == null
                             ? 'Check payment eligibility to continue.'
-                            : 'Available refund: ${ProfileService().currencyConverter(price: _eligibility!.requestLimit.round())}',
+                            : widget.landlordRejected
+                                ? 'Full remaining balance of this payment.'
+                                : 'Available refund: ${ProfileService().currencyConverter(price: _eligibility!.requestLimit.round())}',
                       ),
+                      readOnly: widget.landlordRejected,
                       validator: (value) {
                         final displayAmount = int.tryParse(value ?? '');
                         if (displayAmount == null || displayAmount <= 0) return 'Enter a whole amount greater than zero.';

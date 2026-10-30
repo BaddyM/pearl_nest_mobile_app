@@ -131,6 +131,17 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
+                                  if (booking.landlordRejected)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Text(
+                                        'The landlord rejected this booking. Any completed payment is guaranteed a full refund. Add your payout details below; the refund is approved automatically and paid manually.',
+                                        style: TextStyle(
+                                          color: AppTheme.getSecondaryTextColor(context),
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ),
                                   PropertyCard(
                                     bookingId: bookingId,
                                     isBooking: true,
@@ -148,12 +159,17 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                       padding: const EdgeInsets.only(top: 8),
                                       child: OutlinedButton.icon(
                                         icon: const Icon(Icons.currency_exchange),
-                                        label: const Text('Request a refund'),
+                                        label: Text(
+                                          booking.landlordRejected
+                                              ? 'Claim guaranteed refund'
+                                              : 'Request a refund',
+                                        ),
                                         onPressed: () {
                                           Navigator.of(context).push(MaterialPageRoute(
                                             builder: (_) => RefundRequestScreen(
                                               propertyName: booking.propertyTitle,
                                               payments: successfulPayments,
+                                              landlordRejected: booking.landlordRejected,
                                             ),
                                           ));
                                         },

@@ -401,11 +401,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       ..onTap = () {
                                         Navigator.push(
                                           context,
-                                          MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()),
+                                          MaterialPageRoute(
+                                            builder: (context) => PrivacyPolicyScreen(initialTabIndex: 1),
+                                          ),
                                         );
                                       },
                                   ),
-                                  TextSpan(text: ' and '),
+                                  TextSpan(text: ' and acknowledge the '),
                                   TextSpan(
                                     text: 'Privacy Policy',
                                     style: TextStyle(
@@ -416,7 +418,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       ..onTap = () {
                                         Navigator.push(
                                           context,
-                                          MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()),
+                                          MaterialPageRoute(
+                                            builder: (context) => PrivacyPolicyScreen(initialTabIndex: 0),
+                                          ),
                                         );
                                       },
                                   ),
@@ -504,6 +508,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
             userType: _selectedUserType,
+            acceptedTermsAndPrivacyPolicy: _agreeToTerms,
           ),
         ),
       );

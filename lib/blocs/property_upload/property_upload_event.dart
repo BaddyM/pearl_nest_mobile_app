@@ -14,6 +14,8 @@ class PropertyUploadRequested extends PropertyUploadEvent {
   final String location;
   final double price;
   final double deposit;
+  final int advanceRentMonths;
+  final int securityDepositMonths;
   final String amenities;
   final String safetyAndSecurity;
   final String description;
@@ -30,11 +32,15 @@ class PropertyUploadRequested extends PropertyUploadEvent {
   final bool isSale;
   final bool parking;
   final String distance;
+  final int totalUnits;
+  final int availableUnits;
 
   const PropertyUploadRequested({
     required this.propertyName,
     required this.distance,
     required this.deposit,
+    required this.advanceRentMonths,
+    required this.securityDepositMonths,
     required this.propertyType,
     required this.location,
     required this.price,
@@ -50,6 +56,8 @@ class PropertyUploadRequested extends PropertyUploadEvent {
     required this.propertyMap,
     required this.period,
     required this.images,
+    this.totalUnits = 1,
+    this.availableUnits = 1,
     this.isSale = false,
     this.isRent = false,
     this.parking = false,
@@ -74,10 +82,14 @@ class PropertyUploadRequested extends PropertyUploadEvent {
         period,
         images,
         deposit,
+        advanceRentMonths,
+        securityDepositMonths,
         distance,
         isSale,
         isRent,
         parking,
+        totalUnits,
+        availableUnits,
       ];
 }
 
@@ -88,6 +100,8 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
   final String location;
   final double price;
   final double deposit;
+  final int advanceRentMonths;
+  final int securityDepositMonths;
   final String amenities;
   final String safetyAndSecurity;
   final String description;
@@ -106,6 +120,8 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
   final bool parking;
   final String distance;
   final List<File> images;
+  final int totalUnits;
+  final int availableUnits;
 
   const PropertyUpdateRequested({
     required this.propertyId,
@@ -126,7 +142,11 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
     required this.period,
     required this.availability,
     required this.deposit,
+    required this.advanceRentMonths,
+    required this.securityDepositMonths,
     required this.distance,
+    required this.totalUnits,
+    required this.availableUnits,
     this.isSale = false,
     this.isRent = false,
     this.parking = false,
@@ -155,11 +175,15 @@ class PropertyUpdateRequested extends PropertyUploadEvent {
         availability,
         availableFrom,
         deposit,
+        advanceRentMonths,
+        securityDepositMonths,
         isRent,
         isSale,
         parking,
         distance,
         images,
+        totalUnits,
+        availableUnits,
       ];
 }
 

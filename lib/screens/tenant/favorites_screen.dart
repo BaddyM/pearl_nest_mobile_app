@@ -10,6 +10,7 @@ import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/widgets/property_promotion_price.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/widgets/cancellation_status_widget.dart';
@@ -1306,15 +1307,10 @@ class _PropertyCardState extends State<PropertyCard> {
           SizedBox(height: 6),
 
           // Price - single line
-          Text(
-            '${ProfileService().currencyConverter(price: widget.property.price.toInt())}',
-            style: TextStyle(
-              fontSize: responsive['priceFontSize'],
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryblue,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          PropertyPromotionPrice(
+            property: widget.property,
+            fontSize: (responsive['priceFontSize'] as num?)?.toDouble() ?? 18,
+            showPeriod: false,
           ),
 
           // Price type - single line

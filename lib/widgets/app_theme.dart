@@ -29,6 +29,9 @@ class AppTheme {
       onSurface: blackColor,
     ),
     scaffoldBackgroundColor: whiteColor,
+    snackBarTheme: SnackBarThemeData(
+      dismissDirection: DismissDirection.horizontal,
+    ),
     cardColor: lightGreyColor,
     appBarTheme: AppBarTheme(
       backgroundColor: primaryblue,
@@ -102,6 +105,9 @@ class AppTheme {
       onSurface: darkTextPrimary,
     ),
     scaffoldBackgroundColor: darkBackground,
+    snackBarTheme: SnackBarThemeData(
+      dismissDirection: DismissDirection.horizontal,
+    ),
     cardColor: darkCardColor,
     appBarTheme: AppBarTheme(
       backgroundColor: primaryblue,

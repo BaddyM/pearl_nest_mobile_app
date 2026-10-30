@@ -124,6 +124,7 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
     required String phone,
+    required bool acceptedTermsAndPrivacyPolicy,
     String userType = 'TENANT',
   }) async {
     _setLoading(true);
@@ -133,6 +134,7 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
         phone: phone,
+        acceptedTermsAndPrivacyPolicy: acceptedTermsAndPrivacyPolicy,
         userType: userType,
       );
 

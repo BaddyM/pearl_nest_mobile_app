@@ -16,6 +16,7 @@ import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
 import 'package:pearlnest/screens/common/forgot_password_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -34,7 +35,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late bool _emailNotifications;
   late bool _pushNotifications;
-  late bool _smsNotifications;
   String _selectedCurrency = ''; // Default to UGX for Uganda
   bool _isUpdatingNotifications = false;
 
@@ -44,7 +44,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Initialize notification preferences from user data
     _emailNotifications = widget.user.emailNotifications;
     _pushNotifications = widget.user.pushNotifications;
-    _smsNotifications = widget.user.smsNotifications;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       setState(() {
@@ -171,12 +170,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildSwitchItem(
           Icons.sms_outlined,
           'SMS Notifications',
-          'Receive booking updates by text message',
-          _smsNotifications,
-          (value) => _updateNotificationPreference(
-            preferenceType: 'sms',
-            value: value,
-          ),
+          'SMS delivery is not available yet',
+          false,
+          (_) {},
+          isEnabled: false,
           isLoading: _isUpdatingNotifications,
         ),
       ],
@@ -349,6 +346,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool value,
     ValueChanged<bool> onChanged, {
     bool isLoading = false,
+    bool isEnabled = true,
   }) {
     return ListTile(
       leading: Container(
@@ -389,7 +387,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             )
           : Switch(
               value: value,
-              onChanged: isLoading ? null : onChanged,
+              onChanged: isLoading || !isEnabled ? null : onChanged,
               activeColor: AppTheme.primaryblue,
             ),
     );
@@ -474,6 +472,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) async {
     if (_isUpdatingNotifications) return;
 
+    if (preferenceType == 'push' && value) {
+      final permissionGranted = await NotificationService.requestPushPermission();
+      if (!mounted) return;
+      if (!permissionGranted) {
+        _showSnackBar(
+          'Enable notifications in your device settings before turning on push alerts.',
+          Colors.red,
+        );
+        return;
+      }
+    }
+
     setState(() {
       _isUpdatingNotifications = true;
     });
@@ -487,9 +497,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         case 'email':
           _emailNotifications = value;
           break;
-        case 'sms':
-          _smsNotifications = value;
-          break;
       }
       setState(() {});
 
@@ -500,7 +507,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         phone: widget.user.phone,
         bio: widget.user.bio,
         pushNotifications: _pushNotifications,
-        smsNotifications: _smsNotifications,
+        smsNotifications: false,
         emailNotifications: _emailNotifications,
       );
 
@@ -522,9 +529,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           case 'email':
             _emailNotifications = !value;
             break;
-          case 'sms':
-            _smsNotifications = !value;
-            break;
         }
         if (mounted) setState(() {});
 
@@ -541,9 +545,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           break;
         case 'email':
           _emailNotifications = !value;
-          break;
-        case 'sms':
-          _smsNotifications = !value;
           break;
       }
       if (mounted) setState(() {});
@@ -567,8 +568,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return 'Push notifications';
       case 'email':
         return 'Email notifications';
-      case 'sms':
-        return 'SMS notifications';
       default:
         return 'Notification preference';
     }

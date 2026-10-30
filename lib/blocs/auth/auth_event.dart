@@ -16,12 +16,14 @@ class AuthRegisterRequested extends AuthEvent {
   final String password;
   final String phone;
   final String userType;
+  final bool acceptedTermsAndPrivacyPolicy;
 
   AuthRegisterRequested({
     required this.name,
     required this.email,
     required this.password,
     required this.phone,
+    required this.acceptedTermsAndPrivacyPolicy,
     this.userType = 'TENANT',
   });
 }
@@ -60,4 +62,17 @@ class AuthOtpResendRequested extends AuthEvent {
     required this.email,
     required this.tempToken,
   });
+}
+
+class AuthRegistrationOtpRequested extends AuthEvent {
+  final String email;
+  final String otp;
+
+  AuthRegistrationOtpRequested({required this.email, required this.otp});
+}
+
+class AuthRegistrationOtpResendRequested extends AuthEvent {
+  final String email;
+
+  AuthRegistrationOtpResendRequested({required this.email});
 }

@@ -259,6 +259,7 @@ class AuthService {
     required String email,
     required String password,
     required String phone,
+    required bool acceptedTermsAndPrivacyPolicy,
     String userType = 'TENANT',
   }) async {
     try {
@@ -269,6 +270,9 @@ class AuthService {
         throw ValidationException('Password must be at least $_passwordMinLength characters');
       }
       if (phone.trim().isEmpty) throw ValidationException('Phone number is required');
+      if (!acceptedTermsAndPrivacyPolicy) {
+        throw ValidationException('Agree to the Terms of Service and acknowledge the Privacy Policy to continue');
+      }
 
       // Create request data according to API specification
       final requestData = {
@@ -277,6 +281,7 @@ class AuthService {
         'password': password,
         'contact': phone.trim(),
         'role': userType.toUpperCase(),
+        'acceptedTermsAndPrivacyPolicy': acceptedTermsAndPrivacyPolicy,
       };
 
       _logRequest('/user/register', requestData);
@@ -285,20 +290,13 @@ class AuthService {
       _logResponse('/user/register', response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = _validateResponse(response, requiredFields: ['data']);
-
-        // Save token if provided (check both token and accessToken)
-        final token = responseData['token'] ?? responseData['accessToken'];
-        if (token != null) {
-          await _saveToken(token, expiresIn: responseData['expiresIn']);
-        }
+        final responseData = _validateResponse(response);
 
         return {
           'success': true,
-          'user': User.fromJson(responseData['data']),
-          'token': token,
+          'email': email.trim().toLowerCase(),
           'message': responseData['message'] ?? 'Registration successful',
-          'requiresVerification': responseData['requiresVerification'] ?? false,
+          'requiresVerification': responseData['requiresVerification'] == true,
           'statusCode': response.statusCode,
         };
       } else {
@@ -310,6 +308,70 @@ class AuthService {
       }
     } catch (e) {
       return _handleError(e, 'registration');
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyRegistrationOtp(
+    String email,
+    String otp,
+  ) async {
+    try {
+      if (email.trim().isEmpty) throw ValidationException('Email is required');
+      if (!RegExp(r'^\d{6}$').hasMatch(otp.trim())) {
+        throw ValidationException('Enter the six-digit code sent to your email');
+      }
+
+      final response = await ApiClient.post('/user/verify-registration', {
+        'email': email.trim().toLowerCase(),
+        'otp': otp.trim(),
+      });
+      final responseData = _validateResponse(response);
+      final token = responseData['accessToken']?.toString();
+      if (response.statusCode != 200 || token == null || token.isEmpty) {
+        throw AuthException(
+          responseData['message']?.toString() ?? 'Email verification failed',
+          statusCode: response.statusCode,
+        );
+      }
+
+      await _saveToken(token);
+      ApiClient.setAuthToken(token);
+      final profileResponse = await ApiClient.get('/user/userProfile/fetch');
+      final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
+      final user = User.fromJson(Map<String, dynamic>.from(profileData['data'] as Map));
+      await saveUserData(user);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('role', user.userType.toString().split('.').last.toUpperCase());
+      return {
+        'success': true,
+        'user': user,
+        'token': token,
+        'message': responseData['message'] ?? 'Email verified successfully',
+      };
+    } catch (error) {
+      return _handleError(error, 'registration OTP verification');
+    }
+  }
+
+  static Future<Map<String, dynamic>> resendRegistrationOtp(String email) async {
+    try {
+      if (email.trim().isEmpty) throw ValidationException('Email is required');
+      final response = await ApiClient.post('/user/resend-registration-otp', {
+        'email': email.trim().toLowerCase(),
+      });
+      final responseData = _validateResponse(response);
+      if (response.statusCode != 200 || responseData['success'] != true) {
+        throw AuthException(
+          responseData['message']?.toString() ?? 'Could not resend the verification code',
+          statusCode: response.statusCode,
+        );
+      }
+      return {
+        'success': true,
+        'message': responseData['message'] ?? 'A new verification code has been sent.',
+      };
+    } catch (error) {
+      return _handleError(error, 'registration OTP resend');
     }
   }
 
@@ -1097,12 +1159,9 @@ class AuthService {
 
       // Then update other profile information using the regular endpoint
       final requestData = <String, dynamic>{
-        'userId': currentUser.id,
         'name': name.trim(),
         'email': email.trim().toLowerCase(),
         'contact': phone.trim(),
-        'role': currentUser.userType.toString().split('.').last.toUpperCase(),
-        'isVerified': currentUser.isVerified,
       };
 
       // Add optional fields if provided

@@ -131,7 +131,8 @@ class CustomSnackBar {
           ],
         ),
         backgroundColor: config.backgroundColor,
-        duration: const Duration(milliseconds: 2000),
+        duration: duration ?? const Duration(seconds: 2),
+        dismissDirection: DismissDirection.horizontal,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(

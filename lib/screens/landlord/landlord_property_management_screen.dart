@@ -114,6 +114,13 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
             propertyMap: property.propertyMap,
             safetyAndSecurity: property.safetyAndSecurity,
             nearbyPlaces: property.nearbyPlaces,
+            promotionDiscountType: property.promotionDiscountType,
+            promotionDiscountValue: property.promotionDiscountValue,
+            promotionStartsAt: property.promotionStartsAt,
+            promotionEndsAt: property.promotionEndsAt,
+            promotionUsageLimit: property.promotionUsageLimit,
+            promotionUsageCount: property.promotionUsageCount,
+            promotionProposalStatus: property.promotionProposalStatus,
           );
         }).toList();
 
@@ -774,6 +781,19 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         ],
                       ),
                     ),
+                    PopupMenuItem(
+                      value: 'promotion',
+                      child: Row(
+                        children: [
+                          Icon(Icons.local_offer_outlined, size: 16, color: AppTheme.getTextColor(context)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Propose discount',
+                            style: TextStyle(color: AppTheme.getTextColor(context)),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                   child: Container(
                     padding: EdgeInsets.all(4),
@@ -916,6 +936,19 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                               SizedBox(width: 8),
                               Text(
                                 'Edit',
+                                style: TextStyle(color: AppTheme.getTextColor(context)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'promotion',
+                          child: Row(
+                            children: [
+                              Icon(Icons.local_offer_outlined, size: 16, color: AppTheme.getTextColor(context)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Propose discount',
                                 style: TextStyle(color: AppTheme.getTextColor(context)),
                               ),
                             ],
@@ -1232,6 +1265,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
       case 'edit':
         _editProperty(property);
         break;
+      case 'promotion':
+        _proposePropertyPromotion(property);
+        break;
       case 'feature':
         _toggleFeatureProperty(property);
         break;
@@ -1239,6 +1275,164 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         _deleteProperty(property);
         break;
     }
+  }
+
+  Future<void> _proposePropertyPromotion(Property property) async {
+    if (property.promotionProposalStatus == 'PENDING') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This property already has a discount awaiting review.')),
+      );
+      return;
+    }
+    if (property.status != PropertyStatus.approved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only approved properties can be promoted.')),
+      );
+      return;
+    }
+    final discountController = TextEditingController();
+    final usageLimitController = TextEditingController();
+    String discountType = 'PERCENTAGE';
+    DateTime? startsAt;
+    DateTime? endsAt;
+    final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) => AlertDialog(
+            backgroundColor: AppTheme.getCardColor(dialogContext),
+            title: Text(
+              'Propose a property discount',
+              style: TextStyle(color: AppTheme.getTextColor(dialogContext)),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: discountType,
+                    decoration: const InputDecoration(labelText: 'Discount type'),
+                    items: const [
+                      DropdownMenuItem(value: 'PERCENTAGE', child: Text('Percentage')),
+                      DropdownMenuItem(value: 'FIXED', child: Text('Fixed amount')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setDialogState(() => discountType = value);
+                    },
+                  ),
+                  TextField(
+                    controller: discountController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: discountType == 'PERCENTAGE' ? 'Percent off' : 'Amount off',
+                      suffixText: discountType == 'PERCENTAGE' ? '%' : null,
+                    ),
+                  ),
+                  TextField(
+                    controller: usageLimitController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Use limit (optional)',
+                      helperText: 'Leave blank for unlimited uses',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(startsAt == null
+                        ? 'Choose start date'
+                        : 'Starts ${DateFormat.yMMMd().format(startsAt!)}'),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: dialogContext,
+                        initialDate: startsAt ?? DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2100),
+                      );
+                      if (date != null) setDialogState(() => startsAt = date);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(endsAt == null
+                        ? 'Choose end date'
+                        : 'Ends ${DateFormat.yMMMd().format(endsAt!)}'),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: dialogContext,
+                        initialDate: endsAt ?? DateTime.now().add(const Duration(days: 7)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2100),
+                      );
+                      if (date != null) setDialogState(() => endsAt = date);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final value = int.tryParse(discountController.text.trim());
+                  final usageLimit = usageLimitController.text.trim().isEmpty
+                      ? null
+                      : int.tryParse(usageLimitController.text.trim());
+                  if (value == null ||
+                      value < 1 ||
+                      (discountType == 'PERCENTAGE' && value > 100) ||
+                      (discountType == 'FIXED' && value >= property.price) ||
+                      (usageLimitController.text.trim().isNotEmpty &&
+                          (usageLimit == null || usageLimit < 1)) ||
+                      startsAt == null ||
+                      endsAt == null ||
+                      !endsAt!.isAfter(startsAt!)) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('Enter a valid discount, date range and optional use limit.')),
+                    );
+                    return;
+                  }
+                  Navigator.pop(dialogContext, true);
+                },
+                child: const Text('Submit for review'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+    if (confirmed == true && startsAt != null && endsAt != null) {
+      try {
+        await PropertyService.proposePropertyPromotion(
+          propertyId: property.id,
+          discountType: discountType,
+          discountValue: int.parse(discountController.text.trim()),
+          startsAt: startsAt!,
+          endsAt: endsAt!.add(const Duration(days: 1)),
+          usageLimit: usageLimitController.text.trim().isEmpty
+              ? null
+              : int.parse(usageLimitController.text.trim()),
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Discount proposal sent for admin review.')),
+          );
+          _loadProperties();
+        }
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not submit discount: $error')),
+          );
+        }
+      }
+    }
+    discountController.dispose();
+    usageLimitController.dispose();
   }
 
   void _viewPropertyDetails(Property property) {

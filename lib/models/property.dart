@@ -14,6 +14,8 @@ class Property {
   final String type;
   final double price;
   final double deposit;
+  final int? advanceRentMonths;
+  final int? securityDepositMonths;
   final String priceType;
   final String location;
   final String address;
@@ -41,6 +43,8 @@ class Property {
   final bool isSale;
   final bool isRent;
   final bool availabilityStatus;
+  final int totalUnits;
+  final int availableUnits;
   final DateTime? availableFrom;
   final List<Map<String, dynamic>> views;
   final List<Map<String, dynamic>> shares;
@@ -51,6 +55,13 @@ class Property {
   final String? safetyAndSecurity; // Optional safety features
   final String? nearbyPlaces; // Optional nearby places
   final String? profilePicture;
+  final String? promotionDiscountType;
+  final int? promotionDiscountValue;
+  final DateTime? promotionStartsAt;
+  final DateTime? promotionEndsAt;
+  final int? promotionUsageLimit;
+  final int promotionUsageCount;
+  final String? promotionProposalStatus;
 
   Property({
     this.profilePicture,
@@ -85,8 +96,12 @@ class Property {
     this.isRent = false,
     this.isSale = false,
     required this.deposit,
+    this.advanceRentMonths,
+    this.securityDepositMonths,
     this.parking = false,
     required this.availabilityStatus,
+    this.totalUnits = 1,
+    this.availableUnits = 1,
     this.availableFrom,
     this.views = const [],
     this.shares = const [],
@@ -96,7 +111,46 @@ class Property {
     this.propertyMap,
     this.safetyAndSecurity,
     this.nearbyPlaces,
+    this.promotionDiscountType,
+    this.promotionDiscountValue,
+    this.promotionStartsAt,
+    this.promotionEndsAt,
+    this.promotionUsageLimit,
+    this.promotionUsageCount = 0,
+    this.promotionProposalStatus,
   });
+
+  bool get hasActivePromotion {
+    final now = DateTime.now();
+    return promotionDiscountType != null &&
+        promotionDiscountValue != null &&
+        promotionStartsAt != null &&
+        promotionEndsAt != null &&
+        !promotionStartsAt!.isAfter(now) &&
+        promotionEndsAt!.isAfter(now) &&
+        (promotionUsageLimit == null || promotionUsageCount < promotionUsageLimit!);
+  }
+
+  int get currentPromotionDiscount {
+    if (!hasActivePromotion) return 0;
+    final basePrice = price.toInt();
+    if (promotionDiscountType == 'PERCENTAGE') {
+      return (basePrice * promotionDiscountValue! / 100)
+          .ceil()
+          .clamp(0, basePrice)
+          .toInt();
+    }
+    if (promotionDiscountType == 'FIXED') {
+      return promotionDiscountValue!.clamp(0, basePrice).toInt();
+    }
+    return 0;
+  }
+
+  int get promotionalPrice =>
+      (price.toInt() - currentPromotionDiscount).clamp(0, price.toInt()).toInt();
+
+  int get promotionPercentOff =>
+      price <= 0 ? 0 : (currentPromotionDiscount * 100 / price).round();
 
   Property copyWith({
     String? id,
@@ -104,6 +158,8 @@ class Property {
     String? description,
     String? type,
     double? price,
+    int? advanceRentMonths,
+    int? securityDepositMonths,
     String? priceType,
     String? location,
     String? address,
@@ -128,6 +184,8 @@ class Property {
     bool? isVerified,
     bool? isAdminUploaded,
     bool? availabilityStatus,
+    int? totalUnits,
+    int? availableUnits,
     DateTime? availableFrom,
     List<Map<String, dynamic>>? views,
     List<Map<String, dynamic>>? shares,
@@ -138,6 +196,13 @@ class Property {
     String? safetyAndSecurity,
     String? nearbyPlaces,
     String? profilePicture,
+    String? promotionDiscountType,
+    int? promotionDiscountValue,
+    DateTime? promotionStartsAt,
+    DateTime? promotionEndsAt,
+    int? promotionUsageLimit,
+    int? promotionUsageCount,
+    String? promotionProposalStatus,
   }) {
     return Property(
       id: id ?? this.id,
@@ -146,6 +211,8 @@ class Property {
       type: type ?? this.type,
       price: price ?? this.price,
       deposit: deposit,
+      advanceRentMonths: advanceRentMonths ?? this.advanceRentMonths,
+      securityDepositMonths: securityDepositMonths ?? this.securityDepositMonths,
       isSale: isSale,
       isRent: isRent,
       parking: parking,
@@ -173,6 +240,8 @@ class Property {
       isVerified: isVerified ?? this.isVerified,
       isAdminUploaded: isAdminUploaded ?? this.isAdminUploaded,
       availabilityStatus: this.availabilityStatus,
+      totalUnits: totalUnits ?? this.totalUnits,
+      availableUnits: availableUnits ?? this.availableUnits,
       availableFrom: availableFrom ?? this.availableFrom,
       views: views ?? this.views,
       shares: shares ?? this.shares,
@@ -183,6 +252,13 @@ class Property {
       safetyAndSecurity: safetyAndSecurity ?? this.safetyAndSecurity,
       nearbyPlaces: nearbyPlaces ?? this.nearbyPlaces,
       profilePicture: profilePicture ?? this.profilePicture,
+      promotionDiscountType: promotionDiscountType ?? this.promotionDiscountType,
+      promotionDiscountValue: promotionDiscountValue ?? this.promotionDiscountValue,
+      promotionStartsAt: promotionStartsAt ?? this.promotionStartsAt,
+      promotionEndsAt: promotionEndsAt ?? this.promotionEndsAt,
+      promotionUsageLimit: promotionUsageLimit ?? this.promotionUsageLimit,
+      promotionUsageCount: promotionUsageCount ?? this.promotionUsageCount,
+      promotionProposalStatus: promotionProposalStatus ?? this.promotionProposalStatus,
     );
   }
 
@@ -242,6 +318,8 @@ class Property {
       type: json['propertyType'],
       price: (json['price'] ?? 0).toDouble(),
       deposit: (json['deposit'] ?? 0).toDouble(),
+      advanceRentMonths: (json['advanceRentMonths'] as num?)?.toInt(),
+      securityDepositMonths: (json['securityDepositMonths'] as num?)?.toInt(),
       priceType: json['priceType'] ?? json['period'] ?? 'monthly',
       location: json['location'] ?? '',
       address: json['address'] ?? json['fullAddress'] ?? '',
@@ -270,6 +348,8 @@ class Property {
       isVerified: json['isVerified'] ?? false,
       isAdminUploaded: json['isAdminUploaded'] ?? false,
       availabilityStatus: json['availability'],
+      totalUnits: (json['totalUnits'] as num?)?.toInt() ?? 1,
+      availableUnits: (json['availableUnits'] as num?)?.toInt() ?? 1,
       availableFrom: json['availableFrom'] != null ? DateTime.parse(json['availableFrom']) : null,
       views: (json['views'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
       shares: (json['shares'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
@@ -279,6 +359,17 @@ class Property {
       propertyMap: json['propertyMap'] as String?,
       safetyAndSecurity: json['safetyAndSecurity'] as String?,
       nearbyPlaces: json['nearbyPlaces'] as String?,
+      promotionDiscountType: json['promotionDiscountType'] as String?,
+      promotionDiscountValue: (json['promotionDiscountValue'] as num?)?.toInt(),
+      promotionStartsAt: json['promotionStartsAt'] == null
+          ? null
+          : DateTime.tryParse(json['promotionStartsAt'].toString()),
+      promotionEndsAt: json['promotionEndsAt'] == null
+          ? null
+          : DateTime.tryParse(json['promotionEndsAt'].toString()),
+      promotionUsageLimit: (json['promotionUsageLimit'] as num?)?.toInt(),
+      promotionUsageCount: (json['promotionUsageCount'] as num?)?.toInt() ?? 0,
+      promotionProposalStatus: json['promotionProposalStatus'] as String?,
     );
   }
 
@@ -316,7 +407,7 @@ class Property {
 
   // Helper method to parse PropertyStatus from string
   static PropertyStatus _parsePropertyStatus(String status) {
-    switch (status) {
+    switch (status.toUpperCase()) {
       case "BOOKED":
         return PropertyStatus.booked;
       case 'APPROVED':
@@ -359,6 +450,8 @@ class Property {
       'isVerified': isVerified,
       'isAdminUploaded': isAdminUploaded,
       'availability': availabilityStatus,
+      'totalUnits': totalUnits,
+      'availableUnits': availableUnits,
       'availableFrom': availableFrom?.toIso8601String(),
       'views': views,
       'shares': shares,
@@ -367,6 +460,13 @@ class Property {
       'propertyMap': propertyMap,
       'safetyAndSecurity': safetyAndSecurity,
       'nearbyPlaces': nearbyPlaces,
+      'promotionDiscountType': promotionDiscountType,
+      'promotionDiscountValue': promotionDiscountValue,
+      'promotionStartsAt': promotionStartsAt?.toIso8601String(),
+      'promotionEndsAt': promotionEndsAt?.toIso8601String(),
+      'promotionUsageLimit': promotionUsageLimit,
+      'promotionUsageCount': promotionUsageCount,
+      'promotionProposalStatus': promotionProposalStatus,
     };
   }
 }

@@ -35,6 +35,8 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
         location: event.location,
         price: event.price,
         deposit: event.deposit,
+        advanceRentMonths: event.advanceRentMonths,
+        securityDepositMonths: event.securityDepositMonths,
         distance: event.distance,
         parking: event.parking,
         isRent: event.isRent,
@@ -50,6 +52,8 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
         fullAddress: event.fullAddress,
         propertyMap: event.propertyMap,
         period: event.period,
+        totalUnits: event.totalUnits,
+        availableUnits: event.availableUnits,
         //availability: event.availability,
         //availableFrom: event.availableFrom,
         images: event.images,
@@ -129,6 +133,8 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
         location: event.location,
         price: event.price,
         deposit: event.deposit,
+        advanceRentMonths: event.advanceRentMonths,
+        securityDepositMonths: event.securityDepositMonths,
         distance: event.distance,
         parking: event.parking,
         isSale: event.isSale,
@@ -146,6 +152,8 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
         period: event.period,
         availability: event.availability,
         availableFrom: event.availableFrom,
+        totalUnits: event.totalUnits,
+        availableUnits: event.availableUnits,
       );
 
       if (result['success'] == true) {

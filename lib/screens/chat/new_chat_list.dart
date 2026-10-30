@@ -114,9 +114,11 @@ class _NewChatListState extends State<NewChatList> {
                                   final id = isCurrentUserSender
                                       ? item["toUserId"]?.toString() ?? ""
                                       : item["fromUserId"]?.toString() ?? "";
-                                  final isUnread =
-                                      !isCurrentUserSender &&
-                                      item["isRead"] != true;
+                                  final unreadCount =
+                                      int.tryParse(item["unreadCount"]?.toString() ?? '');
+                                  final isUnread = unreadCount != null
+                                      ? unreadCount > 0
+                                      : !isCurrentUserSender && item["isRead"] != true;
                                   return _buildChatListCard(
                                     name,
                                     widget.user.id,

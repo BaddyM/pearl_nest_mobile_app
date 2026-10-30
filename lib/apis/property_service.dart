@@ -27,9 +27,39 @@ class ValidationException extends PropertyException {
 }
 
 class PropertyService {
+  static const String _propertyListCacheKey = 'property_list_cache';
   static const String _propertyTypeCacheKey = 'property_type_config';
   static const String _propertyTypeCacheTimeKey = 'property_type_config_fetched_at';
   static const Duration _propertyTypeCacheDuration = Duration(minutes: 10);
+
+  static Future<List<Property>> getCachedProperties() async {
+    final preferences = await SharedPreferences.getInstance();
+    final cachedJson = preferences.getString(_propertyListCacheKey);
+    if (cachedJson == null) return [];
+
+    try {
+      final decoded = jsonDecode(cachedJson);
+      if (decoded is! List) {
+        throw const FormatException('Cached properties must be a list.');
+      }
+      return decoded
+          .whereType<Map>()
+          .map((item) => Property.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (error, stackTrace) {
+      debugPrint('Could not read cached properties: $error\n$stackTrace');
+      await preferences.remove(_propertyListCacheKey);
+      return [];
+    }
+  }
+
+  static Future<void> cacheProperties(List<Property> properties) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(
+      _propertyListCacheKey,
+      jsonEncode(properties.map((property) => property.toJson()).toList()),
+    );
+  }
 
   static Future<List<Map<String, dynamic>>> getPropertyTypeConfigs({
     bool forceRefresh = false,
@@ -100,6 +130,38 @@ class PropertyService {
       throw PropertyException('The landlord phone number is unavailable.');
     }
     return contact;
+  }
+
+  static Future<void> proposePropertyPromotion({
+    required String propertyId,
+    required String discountType,
+    required int discountValue,
+    required DateTime startsAt,
+    required DateTime endsAt,
+    int? usageLimit,
+  }) async {
+    final response = await ApiClient.post(
+      '/property/$propertyId/promotion',
+      {
+        'discountType': discountType,
+        'discountValue': discountValue,
+        'startsAt': startsAt.toUtc().toIso8601String(),
+        'endsAt': endsAt.toUtc().toIso8601String(),
+        'usageLimit': usageLimit,
+      },
+    );
+    final data = response.data;
+    if (response.statusCode != 200 ||
+        data is! Map ||
+        data['success'] != true) {
+      final message = data is Map ? data['message']?.toString() : null;
+      throw PropertyException(
+        message?.isNotEmpty == true
+            ? message!
+            : 'Could not submit the promotion proposal.',
+        statusCode: response.statusCode,
+      );
+    }
   }
 
   // Logging helper
@@ -644,6 +706,8 @@ class PropertyService {
                   reviewCount: 0, // Not provided in API response
                   status: _parsePropertyStatus(propertyData['status']),
                   availabilityStatus: propertyData['availability'],
+                  totalUnits: (propertyData['totalUnits'] as num?)?.toInt() ?? 1,
+                  availableUnits: (propertyData['availableUnits'] as num?)?.toInt() ?? 1,
                   createdAt: DateTime.tryParse(propertyData['createdAt'] ?? '') ?? DateTime.now(),
                   updatedAt: DateTime.tryParse(propertyData['updatedAt'] ?? '') ?? DateTime.now(),
                   latitude: 0.0, // Not provided in API response
@@ -728,6 +792,8 @@ class PropertyService {
     required String location,
     required double price,
     required double deposit,
+    required int advanceRentMonths,
+    required int securityDepositMonths,
     required String amenities,
     required String safetyAndSecurity,
     required String description,
@@ -743,6 +809,8 @@ class PropertyService {
     required bool isRent,
     required bool parking,
     required String distance,
+    int totalUnits = 1,
+    int availableUnits = 1,
     //required bool availability, // true for "Available Now", false for "Available Later"
     DateTime? availableFrom, // Only needed when availability is false
     List<File>? images,
@@ -755,6 +823,8 @@ class PropertyService {
         'location': location,
         'price': price.round(),
         'deposit': deposit.round(),
+        'advanceRentMonths': advanceRentMonths,
+        'securityDepositMonths': securityDepositMonths,
         'amenities': amenities,
         'distance': distance,
         'isRent': isRent,
@@ -770,6 +840,8 @@ class PropertyService {
         'fullAddress': fullAddress,
         'propertyMap': propertyMap,
         'period': period,
+        'totalUnits': totalUnits,
+        'availableUnits': availableUnits,
         // 'availability': availability,
       };
 
@@ -922,6 +994,8 @@ class PropertyService {
     String? location,
     double? price,
     double? deposit,
+    int? advanceRentMonths,
+    int? securityDepositMonths,
     bool? parking,
     String? distance,
     bool? isRent,
@@ -941,6 +1015,8 @@ class PropertyService {
     bool? isVerified,
     bool? availability, // true for "Available Now", false for "Available Later"
     DateTime? availableFrom, // Only needed when availability is false
+    int? totalUnits,
+    int? availableUnits,
   }) async {
     try {
       // Build the request body with only provided fields
@@ -951,6 +1027,8 @@ class PropertyService {
       if (location != null) requestBody['location'] = location;
       if (price != null) requestBody['price'] = price;
       if (deposit != null) requestBody['deposit'] = deposit;
+      if (advanceRentMonths != null) requestBody['advanceRentMonths'] = advanceRentMonths;
+      if (securityDepositMonths != null) requestBody['securityDepositMonths'] = securityDepositMonths;
       if (distance != null) requestBody['distance'] = distance;
       if (parking != null) requestBody['parking'] = parking;
       if (isRent != null) requestBody['isRent'] = isRent;
@@ -969,6 +1047,8 @@ class PropertyService {
       if (featured != null) requestBody['featured'] = featured;
       if (isVerified != null) requestBody['isVerified'] = isVerified;
       if (availability != null) requestBody['availability'] = availability;
+      if (totalUnits != null) requestBody['totalUnits'] = totalUnits;
+      if (availableUnits != null) requestBody['availableUnits'] = availableUnits;
 
       // Add availableFrom date if provided (only for "Available Later")
       if (availability == false && availableFrom != null) {

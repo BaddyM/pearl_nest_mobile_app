@@ -6,6 +6,7 @@ import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/auth_service.dart';
 import 'package:pearlnest/network/exceptions/network_exceptions.dart';
+import 'package:pearlnest/utils/custom_snackbar.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -378,29 +379,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         }
       } on ValidationException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.message),
-              backgroundColor: Colors.red,
-            ),
-          );
+          CustomSnackBar.showError(context, e.message);
         }
       } on AuthException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.message),
-              backgroundColor: Colors.red,
-            ),
-          );
+          CustomSnackBar.showError(context, e.message);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('An unexpected error occurred. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
+          CustomSnackBar.showError(
+            context,
+            'An unexpected error occurred. Please try again.',
           );
         }
       } finally {

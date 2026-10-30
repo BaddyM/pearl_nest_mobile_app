@@ -27,9 +27,9 @@ class User {
     this.favoriteProperties = const [],
     required DateTime updatedAt,
     this.bio,
-    this.pushNotifications = true,
-    this.smsNotifications = true,
-    this.emailNotifications = true,
+    this.pushNotifications = false,
+    this.smsNotifications = false,
+    this.emailNotifications = false,
   });
 
   // Add this factory constructor
@@ -52,9 +52,9 @@ class User {
           ? DateTime.parse(json['updatedAt']) 
           : DateTime.now(),
       bio: json['bio'],
-      pushNotifications: json['pushNotifications'] ?? true,
-      smsNotifications: json['smsNotifications'] ?? true,
-      emailNotifications: json['emailNotifications'] ?? true,
+      pushNotifications: json['pushNotifications'] ?? false,
+      smsNotifications: json['smsNotifications'] ?? false,
+      emailNotifications: json['emailNotifications'] ?? false,
     );
   }
 

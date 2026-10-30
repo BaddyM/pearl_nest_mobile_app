@@ -23,6 +23,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthCheckSessionRequested>(_onCheckSessionRequested);
     on<AuthOtpVerificationRequested>(_onOtpVerificationRequested);
     on<AuthOtpResendRequested>(_onOtpResendRequested);
+    on<AuthRegistrationOtpRequested>(_onRegistrationOtpRequested);
+    on<AuthRegistrationOtpResendRequested>(_onRegistrationOtpResendRequested);
 
     // Initialize session check
     add(AuthCheckSessionRequested());
@@ -148,9 +150,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         phone: event.phone,
         userType: event.userType,
+        acceptedTermsAndPrivacyPolicy: event.acceptedTermsAndPrivacyPolicy,
       );
 
       if (result['success'] == true) {
+        if (result['requiresVerification'] == true) {
+          emit(AuthRegistrationSuccess(
+            message: result['message'] ?? 'Enter the verification code sent to your email.',
+            email: event.email,
+          ));
+          return;
+        }
+
         // Check if auto-login is possible
         if (result['token'] != null) {
           _currentUser = result['user'];
@@ -399,6 +410,50 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       emit(AuthFailure(message: errorMessage));
+    }
+
+    Future<void> _onRegistrationOtpRequested(
+      AuthRegistrationOtpRequested event,
+      Emitter<AuthState> emit,
+    ) async {
+      emit(AuthOtpVerificationLoading());
+      try {
+        final result = await AuthService.verifyRegistrationOtp(event.email, event.otp);
+        if (result['success'] == true) {
+          _currentUser = result['user'];
+          _currentToken = result['token'];
+          ApiClient.setAuthToken(_currentToken);
+          emit(AuthSuccess(user: _currentUser!, token: _currentToken!));
+        } else {
+          emit(AuthFailure(
+            message: result['message'] ?? 'That code could not be verified. Please try again.',
+          ));
+        }
+      } catch (error) {
+        emit(AuthFailure(message: error.toString()));
+      }
+    }
+
+    Future<void> _onRegistrationOtpResendRequested(
+      AuthRegistrationOtpResendRequested event,
+      Emitter<AuthState> emit,
+    ) async {
+      emit(AuthOtpVerificationLoading());
+      try {
+        final result = await AuthService.resendRegistrationOtp(event.email);
+        if (result['success'] == true) {
+          emit(AuthRegistrationSuccess(
+            message: result['message'] ?? 'A new verification code has been sent.',
+            email: event.email,
+          ));
+        } else {
+          emit(AuthFailure(
+            message: result['message'] ?? 'Could not resend the verification code.',
+          ));
+        }
+      } catch (error) {
+        emit(AuthFailure(message: error.toString()));
+      }
     }
   }
 }

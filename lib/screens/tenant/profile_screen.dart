@@ -44,13 +44,43 @@ class ProfileScreen extends StatefulWidget {
   _ProfileScreenState createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+  late final AnimationController _entryController;
+
   @override
   void initState() {
     super.initState();
+    _entryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    )..forward();
     if (widget.user.id != "") {
       context.read<ProfileBloc>().add(FetchProfileEvent());
     }
+  }
+
+  @override
+  void dispose() {
+    _entryController.dispose();
+    super.dispose();
+  }
+
+  Widget _animatedSection(Widget child, int index) {
+    final double start = (index * 0.14).clamp(0.0, 0.7).toDouble();
+    final animation = CurvedAnimation(
+      parent: _entryController,
+      curve: Interval(start, 1, curve: Curves.easeOutCubic),
+    );
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.06),
+          end: Offset.zero,
+        ).animate(animation),
+        child: child,
+      ),
+    );
   }
 
   @override
@@ -84,35 +114,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: widget.user.id != ""
               ? Column(
                   children: [
-                    _buildProfileHeader(),
-                    _buildProfileInfo(),
+                    _animatedSection(_buildProfileHeader(), 0),
+                    _animatedSection(_buildProfileInfo(), 1),
                     if (widget.user.userType == UserType.tenant)
-                      BlocBuilder<ProfileBloc, ProfileState>(builder: (context, state) {
-                        if (state is ProfileLoadingState) {
-                          return LoadingWidget(height: MediaQuery.of(context).size.height * 0.1);
-                        } else if (state is ProfileLoadedState) {
-                          List<Map<String, dynamic>> reg = List<Map<String, dynamic>>.from(state.data["LandLordRegistration"]);
-                          if (reg.isNotEmpty) {
-                            return ListView.builder(
-                                itemCount: reg.length,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemBuilder: (context, index) {
-                                  RegistrationStatus status = RegistrationStatus.fromString((reg[index]["status"]).toString().toLowerCase());
-                                  String registrationId = reg[index]["id"].toString();
-                                  String dateSubmitted = reg[index]["createdAt"].toString();
-                                  return status == RegistrationStatus.rejected ? _buildBecomeLandlordCard() : RegistrationStatusCard(status: status, registrationId: registrationId, dateSubmitted: DateFormat("dd-MMM-yyyy").format(DateTime.parse(dateSubmitted)));
-                                });
-                          } else {
-                            return _buildBecomeLandlordCard();
-                          }
-                        } else if (state is ProfileErrorState) {
-                          return CustomErrorWidget(message: state.msg ?? "Sorry, failed to fetch profile.\nPlease try again later.");
-                        } else {
-                          return SizedBox();
-                        }
-                      }),
-                    _buildMenuItems(),
+                      _animatedSection(
+                        BlocBuilder<ProfileBloc, ProfileState>(
+                          builder: (context, state) {
+                            if (state is ProfileLoadingState) {
+                              return LoadingWidget(
+                                height: MediaQuery.of(context).size.height * 0.1,
+                              );
+                            } else if (state is ProfileLoadedState) {
+                              final registrations = List<Map<String, dynamic>>.from(
+                                state.data["LandLordRegistration"],
+                              );
+                              if (registrations.isNotEmpty) {
+                                return ListView.builder(
+                                  itemCount: registrations.length,
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemBuilder: (context, index) {
+                                    final registration = registrations[index];
+                                    final status = RegistrationStatus.fromString(
+                                      registration["status"].toString().toLowerCase(),
+                                    );
+                                    final registrationId = registration["id"].toString();
+                                    final dateSubmitted = registration["createdAt"].toString();
+                                    return status == RegistrationStatus.rejected
+                                        ? _buildBecomeLandlordCard()
+                                        : RegistrationStatusCard(
+                                            status: status,
+                                            registrationId: registrationId,
+                                            dateSubmitted: DateFormat("dd-MMM-yyyy").format(
+                                              DateTime.parse(dateSubmitted),
+                                            ),
+                                          );
+                                  },
+                                );
+                              }
+                              return _buildBecomeLandlordCard();
+                            } else if (state is ProfileErrorState) {
+                              return CustomErrorWidget(
+                                message: state.msg ??
+                                    "Sorry, failed to fetch profile.\nPlease try again later.",
+                              );
+                            }
+                            return const SizedBox();
+                          },
+                        ),
+                        2,
+                      ),
+                    _animatedSection(_buildMenuItems(), 3),
                   ],
                 )
               : Container(
@@ -427,134 +479,164 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMenuItems() {
+    final workspaceItems = <Widget>[];
+    if (widget.user.userType == UserType.landlord) {
+      workspaceItems.addAll([
+        _buildMenuItem(
+          Icons.dashboard,
+          'Landlord Dashboard',
+          () {
+            final landlord = widget.landlord ?? _createDummyLandlord();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LandlordDashboardScreen(
+                  user: widget.user,
+                  landlord: landlord,
+                ),
+              ),
+            );
+          },
+        ),
+        _buildMenuItem(
+          Icons.home_work,
+          'My Properties',
+          () {
+            final landlord = widget.landlord ?? _createDummyLandlord();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LandlordPropertyManagementScreen(
+                  user: widget.user,
+                  landlord: landlord,
+                  properties: [],
+                ),
+              ),
+            );
+          },
+        ),
+        _buildMenuItem(
+          Icons.calendar_today,
+          'Booking Requests',
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LandlordBookingRequestsScreen(user: widget.user),
+            ),
+          ),
+        ),
+      ]);
+    } else if (widget.user.userType == UserType.tenant) {
+      workspaceItems.add(
+        _buildMenuItem(
+          Icons.calendar_today,
+          'My Bookings',
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookingsListScreen(user: widget.user),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
-        if (widget.user.userType == UserType.landlord) ...[
+        if (workspaceItems.isNotEmpty)
+          _buildMenuSection(
+            'Workspace',
+            widget.user.userType == UserType.landlord
+                ? 'Manage your properties and bookings'
+                : 'Keep track of your property bookings',
+            workspaceItems,
+          ),
+        _buildMenuSection('Account', 'Preferences and account management', [
           _buildMenuItem(
-            Icons.dashboard,
-            'Landlord Dashboard',
-            () {
-              final landlord = widget.landlord ?? _createDummyLandlord();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LandlordDashboardScreen(
-                    user: widget.user,
-                    landlord: landlord,
-                  ),
-                ),
-              );
-            },
+            Icons.settings,
+            'Settings',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SettingsScreen(user: widget.user)),
+            ),
           ),
           _buildMenuItem(
-            Icons.home_work,
-            'My Properties',
-            () {
-              final landlord = widget.landlord ?? _createDummyLandlord();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LandlordPropertyManagementScreen(
-                    user: widget.user,
-                    landlord: landlord,
-                    properties: [],
-                  ),
-                ),
-              );
-            },
+            Icons.delete_forever_outlined,
+            'Delete Account',
+            _showDeleteAccountDialog,
+            isDestructive: true,
           ),
-        ],
-        if (widget.user.userType == UserType.tenant || widget.user.userType == UserType.landlord)
+        ]),
+        _buildMenuSection('Help & support', 'Get help with PearlNest', [
           _buildMenuItem(
-            Icons.calendar_today,
-            'Bookings',
-            () {
-              if (widget.user.userType == UserType.landlord) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LandlordBookingRequestsScreen(
-                      user: widget.user,
-                    ),
-                  ),
-                );
-              } else if (widget.user.userType == UserType.tenant) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BookingsListScreen(
-                      user: widget.user,
-                    ),
-                  ),
-                );
-              } else {}
-            },
+            Icons.help_outline,
+            'Help & Support',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HelpSupportScreen(user: widget.user)),
+            ),
           ),
-        _buildMenuItem(
-          Icons.settings,
-          'Settings',
-          () {
-            Navigator.push(
+          _buildMenuItem(
+            Icons.code,
+            'Contact Developer',
+            () => Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => SettingsScreen(user: widget.user),
-              ),
-            );
-          },
-        ),
-        _buildMenuItem(
-          Icons.help_outline,
-          'Help & Support',
-          () {
-            Navigator.push(
+              MaterialPageRoute(builder: (context) => ContactDeveloperScreen()),
+            ),
+          ),
+          _buildMenuItem(
+            Icons.privacy_tip_outlined,
+            'Privacy Policy',
+            () => Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => HelpSupportScreen(user: widget.user),
-              ),
-            );
-          },
-        ),
-        _buildMenuItem(
-          Icons.code,
-          "Contact Developer",
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ContactDeveloperScreen(),
-              ),
-            );
-          },
-        ),
-        _buildMenuItem(
-          Icons.privacy_tip_outlined,
-          'Privacy Policy',
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PrivacyPolicyScreen(),
-              ),
-            );
-          },
-        ),
-        _buildMenuItem(
-          Icons.delete_forever_outlined,
-          'Delete Account',
-          () {
-            _showDeleteAccountDialog();
-          },
-          isDestructive: true,
-        ),
-        _buildMenuItem(
-          Icons.logout,
-          'Logout',
-          () {
-            _showLogoutDialog();
-          },
-          isDestructive: true,
-        ),
+              MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()),
+            ),
+          ),
+        ]),
+        _buildMenuSection('Session', 'Manage your current session', [
+          _buildMenuItem(Icons.logout, 'Logout', _showLogoutDialog, isDestructive: true),
+        ]),
       ],
+    );
+  }
+
+  Widget _buildMenuSection(String title, String subtitle, List<Widget> items) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.getTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ...items,
+        ],
+      ),
     );
   }
 

@@ -23,6 +23,7 @@ import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/booking.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/widgets/property_promotion_price.dart';
 import 'package:pearlnest/blocs/booking/booking_bloc.dart';
 import 'package:pearlnest/blocs/booking/booking_event.dart';
 import 'package:pearlnest/blocs/booking/booking_state.dart';
@@ -1268,33 +1269,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                 ],
                               ),
                               SizedBox(height: 8),
-                              Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: ProfileService().currencyConverter(
-                                        price: widget.property.price.toInt(),
-                                      ),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.primaryblue,
-                                      ),
-                                    ),
-                                    if (widget.property.priceType.trim().isNotEmpty &&
-                                        widget.property.priceType != 'undefined')
-                                      TextSpan(
-                                        text: ' ${widget.property.priceType.trim()}',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: AppTheme.getSecondaryTextColor(context),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                              PropertyPromotionPrice(
+                                property: widget.property,
+                                fontSize: 16,
                               ),
                             ],
                           ),
@@ -1930,6 +1907,21 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               ),
             ],
           ),
+          if ((widget.property.isSale ||
+                  widget.property.priceType.toLowerCase() == 'for_sale') &&
+              widget.property.deposit > 0) ...[
+            SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Initial buyer deposit: ${ProfileService().currencyConverter(price: widget.property.deposit.toInt())} (for information only; not charged for a viewing request)',
+                style: TextStyle(
+                  fontSize: priceTypeFontSize,
+                  color: AppTheme.getSecondaryTextColor(context),
+                ),
+              ),
+            ),
+          ],
           SizedBox(height: spacing),
           Text(
             widget.property.title,
@@ -1985,7 +1977,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       ),
                     ),
                     Text(
-                      widget.property.priceType,
+                      widget.property.isSale ||
+                              widget.property.priceType.toLowerCase() == 'for_sale'
+                          ? 'For sale'
+                          : widget.property.priceType.replaceAll('_', ' '),
                       style: TextStyle(
                         fontSize: priceTypeFontSize,
                         color: AppTheme.getSecondaryTextColor(context),
@@ -2136,8 +2131,12 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
           Expanded(
             child: _buildStatCard(
               icon: Icons.schedule,
-              title: 'Available',
-              value: widget.property.availabilityStatus == true ? 'Now' : 'Later',
+              title: widget.property.totalUnits > 1 ? 'Units available' : 'Available',
+              value: widget.property.totalUnits > 1
+                  ? '${widget.property.availableUnits} of ${widget.property.totalUnits}'
+                  : widget.property.availabilityStatus && widget.property.availableUnits > 0
+                      ? 'Now'
+                      : 'Later',
               color: AppTheme.primaryblue,
               isSmallScreen: isSmallScreen,
               isVerySmallScreen: isVerySmallScreen,
@@ -3662,7 +3661,12 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     final hasExistingBooking = _hasBookedProperty;
 
     // Check if property is available for booking
-    final isPropertyAvailable = widget.property.status == PropertyStatus.approved;
+    final isPropertyAvailable =
+        widget.property.status == PropertyStatus.approved &&
+        widget.property.availabilityStatus &&
+        widget.property.availableUnits > 0;
+    final isSale = widget.property.isSale ||
+        widget.property.priceType.toLowerCase() == 'for_sale';
 
     return (widget.user.userType != UserType.landlord)
         ? Container(
@@ -3688,7 +3692,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   SizedBox(width: 16),
                 ],
                 Expanded(
-                  child: ElevatedButton(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ElevatedButton(
                     onPressed: _isLoadingPendingBookings ||
                             (!isPropertyAvailable && !hasExistingBooking)
                         ? null
@@ -3735,7 +3743,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                           hasExistingBooking
                               ? 'View Booking'
                               : isPropertyAvailable
-                                  ? (widget.property.isSale
+                                  ? (isSale
                                       ? 'Request a Viewing'
                                       : 'Request Booking')
                                   : 'Unavailable',
@@ -3746,6 +3754,34 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         ),
                       ],
                     ),
+                      ),
+                      if (widget.property.isRent && !isSale)
+                        TextButton.icon(
+                          onPressed: !isPropertyAvailable
+                              ? null
+                              : () {
+                                  if (widget.user.id.isEmpty) {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => LoginScreen(),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => BookingScreen(
+                                        property: widget.property,
+                                        user: widget.user,
+                                        isViewingRequest: true,
+                                      ),
+                                    ),
+                                  );
+                                },
+                          icon: const Icon(Icons.tour_outlined, size: 18),
+                          label: const Text('Request a tour · visit fee applies'),
+                        ),
+                    ],
                   ),
                 )
               ],

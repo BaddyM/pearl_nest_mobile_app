@@ -103,6 +103,13 @@ class NewChatBloc extends Bloc<NewChatEvent, NewChatState> {
           if (response.statusCode == 200 || response.statusCode == 201) {
             final jsonList = response.data["data"] as List;
             final List<Message> chatMessages = List<Message>.from(jsonList.map((json) => convertToCoreMessage(json as Map<String, dynamic>)));
+            try {
+              await ApiClient.patchWithoutData(
+                "/chat/readMessage/${event.toUserId}/$userId$propertyQuery",
+              );
+            } catch (error) {
+              debugPrint('Could not mark opened chat messages as read: $error');
+            }
             emit(NewChatLoadedState(
               messages: chatMessages,
               dateTime: DateTime.now(),

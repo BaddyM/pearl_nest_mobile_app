@@ -211,15 +211,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
     String code = _controllers.map((controller) => controller.text).join();
     
     if (code.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter the complete 6-digit code', style: TextStyle(color: AppTheme.lightGreyColor),),
-          backgroundColor: Colors.red,
-          duration: Duration(milliseconds: 500),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-        ),
-      );
+      CustomSnackBar.showError(context, 'Please enter the complete 6-digit code');
       return;
     }
 

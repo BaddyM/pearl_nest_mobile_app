@@ -132,15 +132,68 @@ class BookingService {
     }
   }
 
+  static Future<Map<String, dynamic>> createViewingRequest({
+    required String propertyId,
+    required String preferredDate,
+    required String contactNumber,
+    String? note,
+  }) async {
+    try {
+      final response = await ApiClient.post('/booking/viewing-request', {
+        'propertyId': propertyId,
+        'preferredDate': preferredDate,
+        'contactNumber': contactNumber,
+        if (note?.trim().isNotEmpty == true) 'note': note!.trim(),
+      });
+      final data = response.data;
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data is Map &&
+          data['success'] == true) {
+        return Map<String, dynamic>.from(data['data'] as Map);
+      }
+      throw BookingException(
+        data is Map
+            ? data['message']?.toString() ?? 'Could not send the viewing request.'
+            : 'Could not send the viewing request.',
+        statusCode: response.statusCode,
+      );
+    } catch (error) {
+      if (error is BookingException) rethrow;
+      throw BookingException('Could not send the viewing request: $error');
+    }
+  }
+
+  static Future<void> cancelBooking(String bookingId) async {
+    try {
+      final response = await ApiClient.delete('/booking/cancel/$bookingId');
+      final data = response.data;
+      if (response.statusCode != 200 ||
+          data is! Map ||
+          data['success'] != true) {
+        throw BookingException(
+          data is Map
+              ? data['message']?.toString() ?? 'Could not cancel the unpaid booking.'
+              : 'Could not cancel the unpaid booking.',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (error) {
+      if (error is BookingException) rethrow;
+      throw BookingException('Could not cancel the unpaid booking: $error');
+    }
+  }
+
   static Future<Map<String, dynamic>> getBookingQuote({
     required String propertyId,
     String? checkInDate,
     String? checkOutDate,
     String paymentOption = 'FULL',
+    bool isViewing = false,
   }) async {
     final params = <String, String>{
       'propertyId': propertyId,
       'paymentOption': paymentOption,
+      if (isViewing) 'purpose': 'VIEWING',
       if (checkInDate != null) 'checkInDate': checkInDate,
       if (checkOutDate != null) 'checkOutDate': checkOutDate,
     };

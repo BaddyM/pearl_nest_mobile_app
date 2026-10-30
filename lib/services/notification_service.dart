@@ -17,7 +17,6 @@ import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/notification_screen.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/screens/tenant/tenant_booking_history_screen.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
@@ -51,9 +50,6 @@ class NotificationService {
       // Initialize Firebase Cloud Messaging
       await _initializeFirebaseMessaging();
 
-      // Request permissions
-      await _requestNotificationPermissions();
-
       // Setup FCM listeners
       _setupFCMListeners();
 
@@ -74,11 +70,8 @@ class NotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@drawable/ic_notification');
 
     // iOS initialization settings
-    const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings();
 
     // Combined initialization settings
     const InitializationSettings initializationSettings = InitializationSettings(
@@ -167,37 +160,22 @@ class NotificationService {
     await _firebaseMessaging.setAutoInitEnabled(true);
   }
 
-  /// Request notification permissions
-  static Future<void> _requestNotificationPermissions() async {
-    // Request FCM permissions
-    NotificationSettings settings = await _firebaseMessaging.requestPermission(
+  static Future<bool> requestPushPermission() async {
+    final settings = await _firebaseMessaging.requestPermission(
       alert: true,
-      announcement: false,
       badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
       sound: true,
     );
-
-    //debugPrint('FCM Permission status: ${settings.authorizationStatus}');
-
-    // Request local notifications permissions
-    await _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
-
-    // Request additional permissions
-    await _requestAdditionalPermissions();
-  }
-
-  /// Request additional permissions
-  static Future<void> _requestAdditionalPermissions() async {
-    // Request notification permission for Android 13+
-    await Permission.notification.request();
-
-    // Request exact alarm permission if needed
-    if (await Permission.systemAlertWindow.isDenied) {
-      await Permission.systemAlertWindow.request();
+    if (settings.authorizationStatus == AuthorizationStatus.denied ||
+        settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+      return false;
     }
+
+    final androidPermission = await _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+    return androidPermission ?? true;
   }
 
   /// Setup FCM listeners

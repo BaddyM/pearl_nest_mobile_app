@@ -2,6 +2,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/api_client.dart';
 
+class PaymentException implements Exception {
+  final String message;
+
+  const PaymentException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class PaymentService {
   static Future<Map<String, dynamic>> getLandlordWallet() async {
     try {
@@ -46,13 +55,6 @@ class PaymentService {
       }
     }
 
-    class PaymentException implements Exception {
-      final String message;
-      const PaymentException(this.message);
-
-      @override
-      String toString() => message;
-    }
   }
 
   /// Create a payment for a booking

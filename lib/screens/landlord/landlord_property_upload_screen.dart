@@ -41,6 +41,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _depositController = TextEditingController();
+  final _advanceRentMonthsController = TextEditingController(text: '1');
+  final _securityDepositMonthsController = TextEditingController(text: '0');
   final _locationController = TextEditingController();
   final _addressController = TextEditingController();
   final _areaController = TextEditingController();
@@ -51,6 +53,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   final _nearbyPlacesController = TextEditingController();
   final _propertyMapController = TextEditingController();
   final _distanceController = TextEditingController();
+  final _totalUnitsController = TextEditingController(text: '1');
+  final _availableUnitsController = TextEditingController(text: '1');
 
   String _selectedType = "apartment";
   String _selectedPriceType = 'per_month';
@@ -83,7 +87,15 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
 
   List<Map<String, dynamic>> _availablePropertyTypes = [
     {"key": "apartment", "label": "Apartment", "bookingMode": "STANDARD"},
+    {"key": "house", "label": "House", "bookingMode": "STANDARD"},
+    {"key": "land_plot", "label": "Land/Plot", "bookingMode": "STANDARD"},
     {"key": "air_bnb", "label": "Airbnb", "bookingMode": "SHORT_STAY"},
+    {"key": "rentals", "label": "Rentals", "bookingMode": "STANDARD"},
+    {"key": "condominium", "label": "Condominium", "bookingMode": "STANDARD"},
+    {"key": "villa", "label": "Villa", "bookingMode": "STANDARD"},
+    {"key": "office_space", "label": "Office Space", "bookingMode": "STANDARD"},
+    {"key": "showroom", "label": "Showroom", "bookingMode": "STANDARD"},
+    {"key": "warehouse", "label": "Warehouse", "bookingMode": "STANDARD"},
   ];
 
   Map<String, dynamic>? get _selectedPropertyType {
@@ -96,6 +108,20 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   bool get _isShortStay =>
       _selectedPropertyType?["bookingMode"] == "SHORT_STAY" ||
       _selectedType.toLowerCase().contains("air");
+
+  String get _propertyTypeIdentity =>
+      '${_selectedPropertyType?["key"] ?? _selectedType} ${_selectedPropertyType?["label"] ?? ""}'
+          .toLowerCase();
+
+  bool get _isLandType =>
+      _propertyTypeIdentity.contains("land") ||
+      _propertyTypeIdentity.contains("plot");
+
+  bool get _isCommercialType => RegExp(
+        r'office|commercial|showroom|warehouse|shop|retail|industrial',
+      ).hasMatch(_propertyTypeIdentity);
+
+  bool get _showRoomCounts => !_isLandType && !_isCommercialType;
 
   String _propertyTypeKey(String value) {
     final normalized = value.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_').replaceAll(RegExp(r'^_|_$'), '');
@@ -114,7 +140,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       ? ["for_sale"]
       : _isShortStay
           ? ["per_night"]
-          : ["per_week", "per_month", "per_year"];
+          : _selectedType.toLowerCase() == 'rentals'
+              ? ["per_month"]
+              : ["per_week", "per_month", "per_year"];
+
+  bool get _usesMonthlyRentalTerms =>
+      _isRent && !_isSale && !_isShortStay && _selectedPriceType == 'per_month';
 
   String _normalizePeriod(dynamic value) {
     final normalized = (value?.toString() ?? "").trim().toLowerCase().replaceAll(" ", "_");
@@ -124,7 +155,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     return "per_month";
   }
 
-  bool _isRent = false;
+  bool _isRent = true;
   bool _isSale = false;
   bool _parking = false;
 
@@ -146,11 +177,17 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     _titleController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
+    _depositController.dispose();
+    _advanceRentMonthsController.dispose();
+    _securityDepositMonthsController.dispose();
     _locationController.dispose();
     _addressController.dispose();
     _areaController.dispose();
     _bedroomsController.dispose();
     _bathroomsController.dispose();
+    _distanceController.dispose();
+    _totalUnitsController.dispose();
+    _availableUnitsController.dispose();
     _neighborhoodController.dispose();
     _safetySecurityController.dispose();
     _nearbyPlacesController.dispose();
@@ -179,6 +216,11 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                   "bookingMode": type["bookingMode"]?.toString() ?? "STANDARD",
                 })
             .toList();
+        if (options.isEmpty) {
+          options.addAll(
+            _availablePropertyTypes.map((type) => Map<String, dynamic>.from(type)),
+          );
+        }
         if (_selectedType.isNotEmpty && !options.any((type) => type["key"] == _selectedType)) {
           options.add({"key": _selectedType, "label": _selectedType, "bookingMode": "STANDARD"});
         }
@@ -252,11 +294,20 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _nearbyPlacesController.text = propertyData['nearbyPlaces'] ?? '';
       _propertyMapController.text = propertyData['propertyMap'] ?? '';
       _distanceController.text = propertyData['distance'] ?? '';
+      _totalUnitsController.text = propertyData['totalUnits']?.toString() ?? '1';
+      _availableUnitsController.text =
+          propertyData['availableUnits']?.toString() ?? '1';
       _depositController.text = _displayMoney(propertyData['deposit']).toString();
-      _isSale = propertyData['isSale'] ?? false;
-      _isRent = propertyData['isRent'] ?? false;
+      _advanceRentMonthsController.text = (propertyData['advanceRentMonths'] ?? 1).toString();
+      _securityDepositMonthsController.text = (propertyData['securityDepositMonths'] ?? 0).toString();
+      _isSale =
+          propertyData['isSale'] == true ||
+          _normalizePeriod(propertyData['period']) == 'for_sale';
+      _isRent = !_isSale && propertyData['isRent'] == true;
       _parking = propertyData['parking'] ?? false;
-      _selectedPriceType = _normalizePeriod(propertyData['period']);
+      _selectedPriceType = _isSale
+          ? 'for_sale'
+          : _normalizePeriod(propertyData['period']);
 
       // Parse amenities string to list
       if (propertyData['amenities'] != null && propertyData['amenities'].toString().isNotEmpty) {
@@ -267,6 +318,11 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       // Set property type
       String propertyTypeString = propertyData['propertyType'] ?? 'Apartment';
       _selectedType = _propertyTypeKey(propertyTypeString);
+      if (_selectedType.toLowerCase() == 'rentals') {
+        _isSale = false;
+        _isRent = true;
+        _selectedPriceType = 'per_month';
+      }
       if (_isSale) {
         _selectedPriceType = "for_sale";
       } else if (_isShortStay) {
@@ -302,11 +358,15 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _descriptionController.text = property.description;
       _priceController.text = _displayMoney(property.price).toString();
       _depositController.text = _displayMoney(property.deposit).toString();
+      _advanceRentMonthsController.text = (property.advanceRentMonths ?? 1).toString();
+      _securityDepositMonthsController.text = (property.securityDepositMonths ?? 0).toString();
       _locationController.text = property.location;
       _addressController.text = property.address;
       _areaController.text = property.area.toString();
       _bedroomsController.text = property.bedrooms.toString();
       _bathroomsController.text = property.bathrooms.toString();
+      _totalUnitsController.text = property.totalUnits.toString();
+      _availableUnitsController.text = property.availableUnits.toString();
 
       // Use the new fields from the Property model
       _neighborhoodController.text = property.neighborhood ?? property.address; // Fallback to address if neighborhood is null
@@ -320,8 +380,14 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       _selectedPriceType = _normalizePeriod(property.priceType);
       //debugPrint('🔍 Selected priceType: "$_selectedPriceType"');
       _selectedType = _propertyTypeKey(property.type);
-      _isSale = property.isSale;
-      _isRent = property.isRent;
+      _isSale =
+          property.isSale || _normalizePeriod(property.priceType) == 'for_sale';
+      _isRent = !_isSale && property.isRent;
+      if (_selectedType.toLowerCase() == 'rentals') {
+        _isSale = false;
+        _isRent = true;
+        _selectedPriceType = 'per_month';
+      }
       if (_isSale) {
         _selectedPriceType = "for_sale";
       } else if (_isShortStay) {
@@ -650,6 +716,12 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               _buildPricingSection(),
             ),
             SizedBox(height: 20),
+            _buildSectionCard(
+              'Unit inventory',
+              Icons.apartment_outlined,
+              _buildInventorySection(),
+            ),
+            SizedBox(height: 20),
             // _buildSectionCard(
             //   'Availability',
             //   Icons.calendar_today_outlined,
@@ -752,6 +824,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   Widget _buildBasicInfoSection() {
     return Column(
       children: [
+        _buildListingIntentSelector(),
+        SizedBox(height: 20),
         _buildTextField(
           controller: _titleController,
           label: 'Property Title',
@@ -784,29 +858,88 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     );
   }
 
+  Widget _buildListingIntentSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'First, what are you listing this property for?',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.getTextColor(context),
+          ),
+        ),
+        RadioListTile<bool>(
+          contentPadding: EdgeInsets.zero,
+          value: false,
+          groupValue: _isSale,
+          title: const Text('For rent'),
+          onChanged: (value) => _setListingIntent(false),
+        ),
+        RadioListTile<bool>(
+          contentPadding: EdgeInsets.zero,
+          value: true,
+          groupValue: _isSale,
+          title: const Text('For sale'),
+          onChanged: _selectedType.toLowerCase() == 'rentals' || _isShortStay
+              ? null
+              : (value) => _setListingIntent(true),
+        ),
+      ],
+    );
+  }
+
+  void _setListingIntent(bool sale) {
+    setState(() {
+      if (sale && (_selectedType.toLowerCase() == 'rentals' || _isShortStay)) {
+        final compatibleType = _availablePropertyTypes.firstWhere(
+          (type) =>
+              type['bookingMode'] != 'SHORT_STAY' &&
+              type['key'].toString().toLowerCase() != 'rentals',
+          orElse: () => {"key": "apartment", "bookingMode": "STANDARD"},
+        );
+        _selectedType = compatibleType['key'].toString();
+      }
+      _isSale = sale;
+      _isRent = !sale;
+      _selectedPriceType = sale
+          ? 'for_sale'
+          : _isShortStay
+              ? 'per_night'
+              : 'per_month';
+    });
+  }
+
   Widget _buildPropertyDetailsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildTextField(
-          controller: _bedroomsController,
-          label: 'Bedrooms',
-          hint: '0',
-          icon: Icons.bed,
-          keyboardType: TextInputType.number,
-        ),
-        SizedBox(height: 16),
-        _buildTextField(
-          controller: _bathroomsController,
-          label: 'Bathrooms',
-          hint: '0',
-          icon: Icons.bathtub,
-          keyboardType: TextInputType.number,
-        ),
-        SizedBox(height: 20),
+        if (_showRoomCounts) ...[
+          _buildTextField(
+            controller: _bedroomsController,
+            label: 'Bedrooms',
+            hint: '0',
+            icon: Icons.bed,
+            keyboardType: TextInputType.number,
+          ),
+          SizedBox(height: 16),
+          _buildTextField(
+            controller: _bathroomsController,
+            label: 'Bathrooms',
+            hint: '0',
+            icon: Icons.bathtub,
+            keyboardType: TextInputType.number,
+          ),
+          SizedBox(height: 20),
+        ],
         _buildTextField(
           controller: _areaController,
-          label: 'Area (sq meters)',
+          label: _isLandType
+              ? 'Land area (sq meters)'
+              : _isCommercialType
+                  ? 'Floor area (sq meters)'
+                  : 'Area (sq meters)',
           hint: 'Enter property area',
           icon: Icons.square_foot,
           keyboardType: TextInputType.number,
@@ -884,25 +1017,54 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             return null;
           },
         ),
-        _buildTextField(
-          controller: _depositController,
-          label: _isSale
-              ? 'Deposit (not used for sale visits)'
-              : _isShortStay
-                  ? 'Minimum deposit for 20% stay option'
-                  : 'Initial booking / rental deposit',
-          hint: '0',
-          icon: Icons.attach_money,
-          keyboardType: TextInputType.number,
-          prefixText: '${ProfileService().currencyCode} ',
-          validator: (value) {
-            if (_isSale) return null;
-            if (value == null || value.isEmpty) {
-              return 'Please enter the deposit';
-            }
-            return null;
-          },
-        ),
+        if (_usesMonthlyRentalTerms) ...[
+          _buildTextField(
+            controller: _advanceRentMonthsController,
+            label: 'Rent paid upfront (months)',
+            hint: '1',
+            icon: Icons.calendar_month_outlined,
+            keyboardType: TextInputType.number,
+            validator: _validateRentalMonths,
+          ),
+          _buildTextField(
+            controller: _securityDepositMonthsController,
+            label: 'Refundable security deposit (months)',
+            hint: '0',
+            icon: Icons.shield_outlined,
+            keyboardType: TextInputType.number,
+            validator: _validateRentalMonths,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Advance rent is credited to the first months of the tenancy. Keep any refundable security deposit separate and explain its refund terms in the lease.',
+                style: TextStyle(color: AppTheme.getSecondaryTextColor(context), fontSize: 12),
+              ),
+            ),
+          ),
+        ] else ...[
+          _buildTextField(
+            controller: _depositController,
+            label: _isSale
+                ? 'Initial buyer deposit (informational only)'
+                : _isShortStay
+                    ? 'Minimum deposit for 20% stay option'
+                    : 'Initial booking / rental deposit',
+            hint: '0',
+            icon: Icons.attach_money,
+            keyboardType: TextInputType.number,
+            prefixText: '${ProfileService().currencyCode} ',
+            validator: (value) {
+              if (_isSale) return null;
+              if (value == null || value.isEmpty) {
+                return 'Please enter the deposit';
+              }
+              return null;
+            },
+          ),
+        ],
         if (_isShortStay && !_isSale)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -920,13 +1082,67 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Visitors pay the sale viewing fee configured by the administrator.',
+                'This is the buyer’s initial deposit for reference only. It is not charged for a viewing request; visitors pay the administrator-configured viewing fee.',
                 style: TextStyle(color: AppTheme.getSecondaryTextColor(context), fontSize: 12),
               ),
             ),
           ),
         SizedBox(height: 16),
         _buildPriceTypeDropdown(),
+      ],
+    );
+  }
+
+  String? _validateRentalMonths(String? value) {
+    final months = int.tryParse(value ?? '');
+    if (months == null || months < 0 || months > 24) {
+      return 'Enter a whole number from 0 to 24 months';
+    }
+    return null;
+  }
+
+  Widget _buildInventorySection() {
+    return Column(
+      children: [
+        _buildTextField(
+          controller: _totalUnitsController,
+          label: 'Total units',
+          hint: '1',
+          icon: Icons.apartment,
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            final total = int.tryParse(value ?? '');
+            if (total == null || total < 1) {
+              return 'Enter a total of at least 1 unit';
+            }
+            return null;
+          },
+        ),
+        _buildTextField(
+          controller: _availableUnitsController,
+          label: 'Available units',
+          hint: '1',
+          icon: Icons.meeting_room_outlined,
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            final available = int.tryParse(value ?? '');
+            final total = int.tryParse(_totalUnitsController.text);
+            if (available == null || available < 0 || total == null || available > total) {
+              return 'Enter a number from 0 to the total units';
+            }
+            return null;
+          },
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Rental bookings reserve one unit. Short-stay capacity is checked against the selected dates.',
+            style: TextStyle(
+              color: AppTheme.getSecondaryTextColor(context),
+              fontSize: 12,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1235,7 +1451,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         value: _selectedType,
         style: TextStyle(color: AppTheme.getTextColor(context), fontWeight: FontWeight.w500),
         decoration: InputDecoration(
-          labelText: 'Property Type',
+          labelText: 'Listing category',
           prefixIcon: Container(
             margin: EdgeInsets.all(12),
             padding: EdgeInsets.all(8),
@@ -1265,10 +1481,21 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           if (value == null) return;
           setState(() {
             _selectedType = value;
-            _selectedPriceType = _isSale ? "for_sale" : _isShortStay ? "per_night" : "per_month";
-            if (_isShortStay && !_isSale) {
+            if (value.toLowerCase() == 'rentals') {
               _isRent = true;
               _isSale = false;
+              _selectedPriceType = 'per_month';
+            }
+            if (!_showRoomCounts) {
+              _bedroomsController.clear();
+              _bathroomsController.clear();
+            }
+            if (_isShortStay) {
+              _isRent = true;
+              _isSale = false;
+              _selectedPriceType = "per_night";
+            } else {
+              _selectedPriceType = _isSale ? "for_sale" : "per_month";
             }
           });
         },
@@ -1968,6 +2195,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               location: _locationController.text.trim(),
               price: _baseMoney(_priceController.text),
               deposit: _baseMoney(_depositController.text),
+              advanceRentMonths: int.parse(_advanceRentMonthsController.text),
+              securityDepositMonths: int.parse(_securityDepositMonthsController.text),
               amenities: amenitiesString,
               isRent: _isRent,
               isSale: _isSale,
@@ -1976,8 +2205,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               safetyAndSecurity: _safetySecurityController.text.trim(),
               description: _descriptionController.text.trim(),
               nearbyPlaces: _nearbyPlacesController.text.trim(),
-              numberOfBeds: int.parse(_bedroomsController.text),
-              numberOfBathrooms: int.parse(_bathroomsController.text),
+              numberOfBeds: int.tryParse(_bedroomsController.text.trim()) ?? 0,
+              numberOfBathrooms: int.tryParse(_bathroomsController.text.trim()) ?? 0,
               areaMeasurement: areaMeasurementString,
               neighborhood: _neighborhoodController.text.trim(),
               fullAddress: _addressController.text.trim(),
@@ -1985,6 +2214,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               period: _selectedPriceType,
               availability: _availabilityStatus == true,
               availableFrom: _availabilityStatus == false ? _availableFrom : null,
+              totalUnits: int.parse(_totalUnitsController.text),
+              availableUnits: int.parse(_availableUnitsController.text),
               images: _selectedImages,
             ),
           );
@@ -1995,6 +2226,8 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               propertyName: _titleController.text.trim(),
               propertyType: propertyTypeString,
               deposit: _baseMoney(_depositController.text),
+              advanceRentMonths: int.parse(_advanceRentMonthsController.text),
+              securityDepositMonths: int.parse(_securityDepositMonthsController.text),
               amenities: amenitiesString,
               isRent: _isRent,
               isSale: _isSale,
@@ -2005,13 +2238,15 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               safetyAndSecurity: _safetySecurityController.text.trim(),
               description: _descriptionController.text.trim(),
               nearbyPlaces: _nearbyPlacesController.text.trim(),
-              numberOfBeds: int.parse(_bedroomsController.text),
-              numberOfBathrooms: int.parse(_bathroomsController.text),
+              numberOfBeds: int.tryParse(_bedroomsController.text.trim()) ?? 0,
+              numberOfBathrooms: int.tryParse(_bathroomsController.text.trim()) ?? 0,
               areaMeasurement: areaMeasurementString,
               neighborhood: _neighborhoodController.text.trim(),
               fullAddress: _addressController.text.trim(),
               propertyMap: _propertyMapController.text.trim(),
               period: _selectedPriceType,
+              totalUnits: int.parse(_totalUnitsController.text),
+              availableUnits: int.parse(_availableUnitsController.text),
               images: _selectedImages,
             ),
           );
@@ -2120,51 +2355,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
   Widget _otherSection() {
     return Column(
       children: [
-        SwitchListTile(
-          title: const Text("Rent"),
-          subtitle: Text(_isShortStay
-              ? "Short-stay listings are rented by the night."
-              : "Is this property available for rent?"),
-          value: _isRent,
-          activeColor: Colors.green,
-          onChanged: _isShortStay ? null : (bool value) {
-            setState(() {
-              _isRent = value && !_isSale;
-              if (_isRent) {
-                _selectedPriceType = _isShortStay ? "per_night" : "per_month";
-              }
-            });
-          },
-          secondary: const Icon(Icons.house_rounded),
-        ),
-        if (_isShortStay)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'The selected property type uses nightly pricing and offers guests 20%, half, or full payment options.',
-              style: TextStyle(color: AppTheme.getSecondaryTextColor(context), fontSize: 12),
-            ),
-          ),
-        SizedBox(height: 16),
-        SwitchListTile(
-          title: const Text("Sale"),
-          subtitle: const Text("Visitors pay the administrator-configured viewing fee."),
-          value: _isSale,
-          activeColor: Colors.green,
-          onChanged: (bool value) {
-            setState(() {
-              _isSale = value;
-              if (value) {
-                _isRent = false;
-                _selectedPriceType = "for_sale";
-              } else {
-                _selectedPriceType = _isShortStay ? "per_night" : "per_month";
-              }
-            });
-          },
-          secondary: const Icon(Icons.house_rounded),
-        ),
-        SizedBox(height: 16),
         SwitchListTile(
           title: const Text("Parking"),
           subtitle: const Text("Does this property have a parking?"),

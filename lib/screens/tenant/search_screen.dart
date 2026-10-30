@@ -7,6 +7,7 @@ import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/screens/tenant/filters_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/widgets/property_promotion_price.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
@@ -826,7 +827,6 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildPropertyCard(Property property) {
-    final formattedPrice = ProfileService().currencyConverter(price: property.price.toInt());
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1166,26 +1166,9 @@ class _SearchScreenState extends State<SearchScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '$formattedPrice',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryblue,
-                                ),
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                property.priceType,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.getSecondaryTextColor(context),
-                                ),
-                              ),
-                            ],
+                          PropertyPromotionPrice(
+                            property: property,
+                            fontSize: 20,
                           ),
                           if (property.availabilityStatus == false && property.availableFrom != null)
                             Text(

@@ -6,7 +6,9 @@ import 'package:pearlnest/apis/policy_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class PrivacyPolicyScreen extends StatefulWidget {
-  const PrivacyPolicyScreen({super.key});
+  final int initialTabIndex;
+
+  const PrivacyPolicyScreen({super.key, this.initialTabIndex = 0});
 
   @override
   _PrivacyPolicyScreenState createState() => _PrivacyPolicyScreenState();
@@ -26,7 +28,11 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTabIndex,
+    );
     _loadPolicies();
     _loadSupportContact();
   }
