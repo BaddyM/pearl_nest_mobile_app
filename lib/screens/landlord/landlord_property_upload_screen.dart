@@ -195,6 +195,42 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     super.dispose();
   }
 
+  Future<void> _loadPropertyTypes() async {
+    try {
+      final types = await PropertyService.getPropertyTypeConfigs();
+      if (!mounted) return;
+      final options = types
+          .map((type) => <String, dynamic>{
+                "key": type["key"].toString(),
+                "label": type["label"].toString(),
+                "bookingMode": type["bookingMode"]?.toString() ?? "STANDARD",
+              })
+          .toList();
+      if (options.isEmpty) {
+        options.addAll(
+          _availablePropertyTypes.map((type) => Map<String, dynamic>.from(type)),
+        );
+      }
+      if (_selectedType.isNotEmpty && !options.any((type) => type["key"] == _selectedType)) {
+        options.add({"key": _selectedType, "label": _selectedType, "bookingMode": "STANDARD"});
+      }
+      setState(() {
+        _availablePropertyTypes = options;
+        _loadingPropertyTypes = false;
+        if (_isShortStay && !_isSale) {
+          _selectedPriceType = "per_night";
+        }
+      });
+    } catch (error) {
+      if (mounted) setState(() => _loadingPropertyTypes = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load property types: $error')),
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -203,42 +239,6 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
     // If editing an existing property, fetch and populate the form fields
     if (widget.property != null) {
       _loadPropertyForEditing();
-    }
-
-    Future<void> _loadPropertyTypes() async {
-      try {
-        final types = await PropertyService.getPropertyTypeConfigs();
-        if (!mounted) return;
-        final options = types
-            .map((type) => <String, dynamic>{
-                  "key": type["key"].toString(),
-                  "label": type["label"].toString(),
-                  "bookingMode": type["bookingMode"]?.toString() ?? "STANDARD",
-                })
-            .toList();
-        if (options.isEmpty) {
-          options.addAll(
-            _availablePropertyTypes.map((type) => Map<String, dynamic>.from(type)),
-          );
-        }
-        if (_selectedType.isNotEmpty && !options.any((type) => type["key"] == _selectedType)) {
-          options.add({"key": _selectedType, "label": _selectedType, "bookingMode": "STANDARD"});
-        }
-        setState(() {
-          _availablePropertyTypes = options;
-          _loadingPropertyTypes = false;
-          if (_isShortStay && !_isSale) {
-            _selectedPriceType = "per_night";
-          }
-        });
-      } catch (error) {
-        if (mounted) setState(() => _loadingPropertyTypes = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not load property types: $error')),
-          );
-        }
-      }
     }
   }
 
@@ -1469,10 +1469,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           contentPadding: EdgeInsets.symmetric(horizontal: 60, vertical: 16),
         ),
         items: _availablePropertyTypes.map((type) {
-          return DropdownMenuItem(
-            value: type["key"],
+          return DropdownMenuItem<String>(
+            value: type["key"]?.toString(),
             child: Text(
-              type["label"] ?? type["key"] ?? "",
+              type["label"]?.toString() ?? type["key"]?.toString() ?? "",
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
           );

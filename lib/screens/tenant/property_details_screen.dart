@@ -19,6 +19,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:pearlnest/apis/app_config.dart';
 import 'package:pearlnest/apis/property_interactions_service.dart';
 import 'package:pearlnest/apis/booking_service.dart';
+import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/booking.dart';

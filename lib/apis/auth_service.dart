@@ -580,35 +580,33 @@ class AuthService {
       ApiClient.setAuthToken(tempToken);
 
       // Fetch user profile data after successful OTP verification
-      try {
-        final profileResponse = await ApiClient.get('/user/userProfile/fetch');
-        _logResponse('/user/userProfile/fetch', profileResponse);
+      final profileResponse = await ApiClient.get('/user/userProfile/fetch');
+      _logResponse('/user/userProfile/fetch', profileResponse);
 
-        if (profileResponse.statusCode == 200) {
-          final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
+      if (profileResponse.statusCode == 200) {
+        final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
 
-          // Create user object from profile data
-          final userData = profileData['data'];
+        // Create user object from profile data
+        final userData = profileData['data'];
 
-          final user = User.fromJson(userData);
+        final user = User.fromJson(userData);
 
-          // Save user data and last login
-          await saveUserData(user);
+        // Save user data and last login
+        await saveUserData(user);
 
-          return {
-            'success': true,
-            'user': user,
-            'token': tempToken,
-            'message': 'OTP verification successful',
-            'statusCode': 200,
-          };
-        } else {
-          throw AuthException(
-            'OTP was accepted, but your profile could not be loaded. Please try again.',
-            code: 'PROFILE_FETCH_FAILED',
-            statusCode: profileResponse.statusCode,
-          );
-        }
+        return {
+          'success': true,
+          'user': user,
+          'token': tempToken,
+          'message': 'OTP verification successful',
+          'statusCode': 200,
+        };
+      } else {
+        throw AuthException(
+          'OTP was accepted, but your profile could not be loaded. Please try again.',
+          code: 'PROFILE_FETCH_FAILED',
+          statusCode: profileResponse.statusCode,
+        );
       }
     } catch (e) {
       // //debugPrint('AuthService: OTP verification error - $e');
