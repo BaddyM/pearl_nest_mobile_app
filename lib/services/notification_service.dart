@@ -15,8 +15,8 @@ import 'package:pearlnest/screens/chat/new_chat_list.dart';
 import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart';
 import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/notification_screen.dart';
+import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
-import 'package:pearlnest/screens/tenant/tenant_booking_history_screen.dart';
 
 class NotificationService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
@@ -446,7 +446,7 @@ class NotificationService {
         MaterialPageRoute(
           builder: (_) => currentUser.userType == UserType.landlord
               ? LandlordBookingRequestsScreen(user: currentUser)
-              : TenantBookingHistoryScreen(user: currentUser),
+              : BookingsListScreen(user: currentUser),
         ),
       );
       return true;

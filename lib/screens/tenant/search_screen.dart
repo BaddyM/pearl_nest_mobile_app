@@ -827,6 +827,8 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildPropertyCard(Property property) {
+    final isBooked = property.availableUnits <= 0 ||
+        property.status == PropertyStatus.booked;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1004,20 +1006,32 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: property.availabilityStatus == true ? Colors.green : Colors.orange,
+                      color: isBooked
+                          ? Colors.red.shade700
+                          : property.availabilityStatus
+                              ? Colors.green
+                              : Colors.orange,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          property.availabilityStatus == true ? Icons.check_circle : Icons.schedule,
+                          isBooked
+                              ? Icons.block
+                              : property.availabilityStatus
+                                  ? Icons.check_circle
+                                  : Icons.schedule,
                           color: AppTheme.whiteColor,
                           size: 12,
                         ),
                         SizedBox(width: 4),
                         Text(
-                          property.availabilityStatus == true ? 'Available Now' : 'Available Later',
+                          isBooked
+                              ? 'Unavailable'
+                              : property.availabilityStatus
+                                  ? 'Available Now'
+                                  : 'Available Later',
                           style: TextStyle(
                             color: AppTheme.whiteColor,
                             fontSize: 10,

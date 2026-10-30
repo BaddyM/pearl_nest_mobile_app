@@ -32,6 +32,7 @@ class Booking {
   final String? bookingPurpose;
   final bool landlordRejected;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   final Property? property;
 
   // Add fields for API parsing
@@ -59,6 +60,7 @@ class Booking {
     this.bookingPurpose,
     this.landlordRejected = false,
     required this.createdAt,
+    this.updatedAt,
     required this.tenantName,
     required this.tenantEmail,
     required this.tenantPhone,
@@ -128,6 +130,9 @@ class Booking {
       landlordRejected:
           json['bookingStatus']?.toString().toUpperCase() == 'REJECTED',
       createdAt: parseDate(json['createdAt']?.toString() ?? json['bookingDate']?.toString()),
+      updatedAt: json['updatedAt'] == null
+          ? null
+          : parseDate(json['updatedAt']?.toString()),
       tenantName: user['name']?.toString() ?? 'Unknown User',
       tenantEmail: user['email']?.toString() ?? 'No email provided',
       tenantPhone: user['contact']?.toString() ?? 'No phone provided',
@@ -183,7 +188,26 @@ class Booking {
         return status == 'APPROVED' || status == 'BOOKED';
       });
 
+  double get successfulPaymentsTotal => payments.fold(0.0, (sum, payment) {
+        final status = payment['paymentStatus']?.toString().toUpperCase();
+        final amount = payment['amount'];
+        if ((status == 'APPROVED' || status == 'BOOKED') && amount is num) {
+          return sum + amount.toDouble();
+        }
+        return sum;
+      });
+
+  bool get isPaymentComplete {
+    final due = totalAmountValue ?? amount ?? 0;
+    return due <= 0 || successfulPaymentsTotal >= due;
+  }
+
   bool get isViewingRequest => bookingPurpose?.toUpperCase() == 'PROPERTY_VIEWING';
 
-  DateTime get expiresAt => createdAt.add(const Duration(hours: 24));
+  DateTime get expiresAt =>
+      (status == BookingStatus.confirmed ? updatedAt ?? createdAt : createdAt)
+          .add(const Duration(hours: 24));
+
+  bool get isActive => DateTime.now().isBefore(expiresAt) &&
+      (status == BookingStatus.pending || status == BookingStatus.confirmed);
 }

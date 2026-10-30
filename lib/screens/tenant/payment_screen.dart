@@ -5,6 +5,7 @@ import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:pearlnest/widgets/refund_policy.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String redirectUrl;
@@ -13,6 +14,7 @@ class PaymentScreen extends StatefulWidget {
   final double amount;
   final String propertyTitle;
   final User user;
+  final String bookingStatus;
 
   const PaymentScreen({
     super.key,
@@ -22,6 +24,7 @@ class PaymentScreen extends StatefulWidget {
     required this.amount,
     required this.propertyTitle,
     required this.user,
+    this.bookingStatus = 'PENDING',
   });
 
   @override
@@ -468,6 +471,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
               ],
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: RefundPolicyNotice(bookingStatus: widget.bookingStatus),
           ),
           Expanded(
             child: Stack(

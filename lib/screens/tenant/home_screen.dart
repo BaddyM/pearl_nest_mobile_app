@@ -424,7 +424,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (propertiesResult.isNotEmpty) {
         final newProperties = List<Property>.from(propertiesResult)..shuffle();
-        _pendingBookings = pendingBookings.where((b) => b.status == BookingStatus.pending).toList();
+        _pendingBookings = pendingBookings.where((booking) {
+          if (!booking.isActive) return false;
+          if (booking.status == BookingStatus.pending) return true;
+          return booking.status == BookingStatus.confirmed &&
+              !booking.isPaymentComplete;
+        }).toList();
 
         List<Property> featuredProperties = [];
         if (featuredResult['success'] == true) {
@@ -1686,6 +1691,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPropertyCard(Property property, User user, {bool featured = false}) {
+    final isBooked = property.availableUnits <= 0 ||
+        property.status == PropertyStatus.booked;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1890,7 +1897,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: property.availabilityStatus == true ? Colors.green : Colors.orange,
+                      color: isBooked
+                          ? Colors.red.shade700
+                          : property.availabilityStatus
+                              ? Colors.green
+                              : Colors.orange,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -1904,13 +1915,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          property.availabilityStatus == true ? Icons.check_circle : Icons.schedule,
+                          isBooked
+                              ? Icons.block
+                              : property.availabilityStatus
+                                  ? Icons.check_circle
+                                  : Icons.schedule,
                           color: AppTheme.whiteColor,
                           size: 14,
                         ),
                         SizedBox(width: 6),
                         Text(
-                          property.availabilityStatus == true ? 'Available Now' : 'Available Later',
+                          isBooked
+                              ? 'Unavailable'
+                              : property.availabilityStatus
+                                  ? 'Available Now'
+                                  : 'Available Later',
                           style: TextStyle(
                             color: AppTheme.whiteColor,
                             fontSize: 11,
@@ -2150,7 +2169,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pending Bookings',
+                      'Bookings needing attention',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -2158,7 +2177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Text(
-                      '${_pendingBookings.length} ${_pendingBookings.length == 1 ? 'property' : 'properties'} waiting for payment',
+                      '${_pendingBookings.where((booking) => booking.status == BookingStatus.pending).length} awaiting approval · ${_pendingBookings.where((booking) => booking.status == BookingStatus.confirmed).length} awaiting payment',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.getSecondaryTextColor(context),
@@ -2177,31 +2196,19 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: EdgeInsets.symmetric(horizontal: 20),
             itemCount: _pendingBookings.length,
             itemBuilder: (context, index) {
-              if (_pendingBookings.isNotEmpty) {
-                final property = _pendingBookings[index].property;
-                final booking = _getPendingBookingForProperty(property!.id);
-                return Container(
-                  width: 280,
-                  margin: EdgeInsets.only(right: 16),
-                  child: _buildPendingPropertyCard(property, booking),
-                );
-              }
+              final booking = _pendingBookings[index];
+              final property = booking.property;
+              if (property == null) return const SizedBox.shrink();
+              return Container(
+                width: 280,
+                margin: const EdgeInsets.only(right: 16),
+                child: _buildPendingPropertyCard(property, booking),
+              );
             },
           ),
         ),
       ],
     );
-  }
-
-  // Get pending booking for a specific property
-  Booking? _getPendingBookingForProperty(String propertyId) {
-    try {
-      return _pendingBookings.firstWhere(
-        (booking) => booking.propertyId == propertyId,
-      );
-    } catch (e) {
-      return null; // No pending booking found
-    }
   }
 
   Widget _buildPendingPropertyCard(Property property, Booking? booking) {
@@ -2329,7 +2336,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         SizedBox(width: 4),
                         Text(
-                          'PENDING PAYMENT',
+                          booking?.status == BookingStatus.confirmed
+                              ? 'PENDING PAYMENT'
+                              : 'AWAITING APPROVAL',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -2551,6 +2560,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   amount: paymentAmount,
                   propertyTitle: property.title,
                   user: widget.user,
+                  bookingStatus: booking.status == BookingStatus.confirmed
+                      ? 'APPROVED'
+                      : booking.status.name.toUpperCase(),
                 ),
               ),
             );
@@ -2612,6 +2624,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 amount: paymentAmount, // Use the user-specified amount
                 propertyTitle: property.title,
                 user: widget.user,
+                bookingStatus: booking.status == BookingStatus.confirmed
+                    ? 'APPROVED'
+                    : booking.status.name.toUpperCase(),
               ),
             ),
           );

@@ -1267,6 +1267,34 @@ class _PropertyCardState extends State<PropertyCard> {
                 ),
               ),
             ),
+
+          if (!widget.isBooking &&
+              (widget.property.availableUnits <= 0 ||
+                  widget.property.status == PropertyStatus.booked))
+            Positioned(
+              right: responsive['isSmallScreen'] ? 8 : 12,
+              bottom: widget.isHorizontal
+                  ? (responsive['isSmallScreen'] ? 8 : 12)
+                  : 8,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: responsive['isSmallScreen'] ? 7 : 9,
+                  vertical: responsive['isSmallScreen'] ? 4 : 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Unavailable',
+                  style: TextStyle(
+                    color: AppTheme.whiteColor,
+                    fontSize: responsive['badgeFontSize'],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
         ],
       );
     });

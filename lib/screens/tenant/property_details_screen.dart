@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:add_comma/add_comma.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -60,6 +62,7 @@ class Review {
       propertyId: json['property']?['id']?.toString() ?? '',
     );
   }
+
 }
 
 class PropertyDetailsScreen extends StatefulWidget {
@@ -100,6 +103,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   List<Booking> _pendingBookings = [];
   Booking? _pendingBookingForProperty;
   bool _hasBookedProperty = false;
+  Timer? _bookingExpiryTimer;
   String _landlordPhone = '';
   String? _contactError;
   bool _isLoadingPendingBookings = true;
@@ -213,6 +217,106 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     }
   }
 
+  Future<void> _showBookingFeePromotionDetails() async {
+    final promotion = _bookingFeePromotion;
+    if (promotion == null) return;
+
+    final originalFee = (promotion['originalBookingFeeAmount'] as num?)?.toInt() ?? 0;
+    final discount = (promotion['discountAmount'] as num?)?.toInt() ?? 0;
+    final discountedFee = (promotion['bookingFeeAmount'] as num?)?.toInt() ??
+        (originalFee - discount).clamp(0, originalFee).toInt();
+    final discountType = promotion['discountType']?.toString();
+    final rawDiscountValue = promotion['discountValue'];
+    final discountValue = rawDiscountValue is num ? rawDiscountValue : null;
+    final startsAt = DateTime.tryParse(promotion['startsAt']?.toString() ?? '');
+    final endsAt = DateTime.tryParse(promotion['endsAt']?.toString() ?? '');
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Booking fee offer',
+                style: TextStyle(
+                  color: AppTheme.getTextColor(context),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildPromotionDetailRow(
+                'Standard booking fee',
+                ProfileService().currencyConverter(price: originalFee),
+              ),
+              _buildPromotionDetailRow(
+                'Your saving',
+                ProfileService().currencyConverter(price: discount),
+              ),
+              _buildPromotionDetailRow(
+                'Booking fee with offer',
+                ProfileService().currencyConverter(price: discountedFee),
+              ),
+              if (discountType != null && discountValue != null)
+                _buildPromotionDetailRow(
+                  'Discount',
+                  discountType.toUpperCase() == 'PERCENTAGE'
+                      ? '$discountValue%'
+                      : ProfileService().currencyConverter(
+                          price: discountValue.toInt(),
+                        ),
+                ),
+              if (startsAt != null)
+                _buildPromotionDetailRow(
+                  'Offer starts',
+                  DateFormat.yMMMd().add_jm().format(startsAt.toLocal()),
+                ),
+              if (endsAt != null)
+                _buildPromotionDetailRow(
+                  'Offer ends',
+                  DateFormat.yMMMd().add_jm().format(endsAt.toLocal()),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromotionDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: AppTheme.getTextColor(context),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Initialize stats from embedded property data
   void _initializeStatsFromEmbeddedData() {
     setState(() {
@@ -242,44 +346,42 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     }
   }
 
-  // Load pending bookings for current user and check if this property has pending booking
+  // Load current-user bookings and detect an active booking for this property.
   void _loadPendingBookings() async {
     try {
       //debugPrint('📚 Loading pending bookings for property: ${widget.property.id}');
       final bookings = await BookingService.fetchBookings();
       final pendingBookings = bookings.where((booking) => booking.status == BookingStatus.pending).toList();
-
-      // Check if this specific property has a pending booking
-      Booking? pendingBookingForThisProperty;
-      try {
-        pendingBookingForThisProperty = pendingBookings.firstWhere(
-          (booking) => booking.propertyId == widget.property.id,
-        );
-        //debugPrint('📚 Found pending booking for this property: ${pendingBookingForThisProperty.id}');
-      } catch (e) {
-        // No pending booking for this property
-        //debugPrint('📚 No pending booking found for this property');
-      }
+      final now = DateTime.now();
+      final propertyBookings = bookings.where((booking) {
+        if (booking.propertyId != widget.property.id ||
+            (booking.status != BookingStatus.pending &&
+                booking.status != BookingStatus.confirmed)) {
+          return false;
+        }
+        return (booking.status == BookingStatus.confirmed &&
+                booking.isPaymentComplete) ||
+            booking.expiresAt.isAfter(now);
+      }).toList()
+        ..sort((first, second) =>
+            (second.updatedAt ?? second.createdAt)
+                .compareTo(first.updatedAt ?? first.createdAt));
+      final currentBooking = propertyBookings.isEmpty ? null : propertyBookings.first;
 
       if (mounted) {
         setState(() {
           _pendingBookings = pendingBookings;
-          _pendingBookingForProperty = pendingBookingForThisProperty;
+          _pendingBookingForProperty = currentBooking;
           _hasBookedProperty = bookings.any((booking) {
             if (booking.propertyId != widget.property.id ||
-                (booking.status != BookingStatus.pending &&
-                    booking.status != BookingStatus.confirmed)) {
+                booking.status != BookingStatus.confirmed) {
               return false;
             }
-            final isViewing =
-                booking.bookingPurpose?.toUpperCase() == 'PROPERTY_VIEWING';
-            return isViewing
-                ? booking.hasSuccessfulPayment || (booking.amount ?? 0) <= 0
-                : booking.status == BookingStatus.confirmed &&
-                    (booking.hasSuccessfulPayment || (booking.amount ?? 0) <= 0);
+            return booking.hasSuccessfulPayment || (booking.amount ?? 0) <= 0;
           });
           _isLoadingPendingBookings = false;
         });
+        _startBookingExpiryTimer();
         if (_canContactLandlord) _loadPropertyContact();
       }
     } catch (e) {
@@ -291,8 +393,51 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
           _hasBookedProperty = false;
           _isLoadingPendingBookings = false;
         });
+        _bookingExpiryTimer?.cancel();
       }
     }
+  }
+
+  bool get _hasActivePropertyBooking {
+    final booking = _pendingBookingForProperty;
+    if (booking == null) return false;
+    if (booking.status == BookingStatus.confirmed && booking.isPaymentComplete) {
+      return true;
+    }
+    return booking.expiresAt.isAfter(DateTime.now());
+  }
+
+  void _startBookingExpiryTimer() {
+    _bookingExpiryTimer?.cancel();
+    final booking = _pendingBookingForProperty;
+    if (booking == null ||
+        (booking.status == BookingStatus.confirmed &&
+            booking.isPaymentComplete)) {
+      return;
+    }
+
+    _bookingExpiryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (!booking.expiresAt.isAfter(DateTime.now())) {
+        timer.cancel();
+        setState(() {});
+        _loadPendingBookings();
+        return;
+      }
+      setState(() {});
+    });
+  }
+
+  String _bookingExpiryLabel(Booking booking) {
+    final remaining = booking.expiresAt.difference(DateTime.now());
+    if (remaining.isNegative) return 'Expired';
+    final hours = remaining.inHours.toString().padLeft(2, '0');
+    final minutes = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
   }
 
   bool get _canContactLandlord =>
@@ -324,6 +469,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
   @override
   void dispose() {
+    _bookingExpiryTimer?.cancel();
     _animationController.dispose();
     _tabController.dispose();
     _pageController.dispose();
@@ -705,6 +851,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       MaterialPageRoute(
         builder: (context) => BookingsListScreen(
           user: widget.user,
+          propertyId: widget.property.id,
         ),
       ),
     );
@@ -2013,13 +2160,29 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     ),
                     if ((_bookingFeePromotion?['discountAmount'] as num? ?? 0) > 0)
                       Padding(
-                        padding: const EdgeInsets.only(top: 5),
-                        child: Text(
-                          'Booking fee offer: save ${ProfileService().currencyConverter(price: (_bookingFeePromotion!['discountAmount'] as num).toInt())}',
-                          style: const TextStyle(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: TextButton.icon(
+                          onPressed: _showBookingFeePromotionDetails,
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            alignment: Alignment.centerLeft,
+                          ),
+                          icon: const Icon(
+                            Icons.local_offer_outlined,
+                            size: 14,
                             color: AppTheme.accentGreen,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                          ),
+                          label: Text(
+                            'Save ${ProfileService().currencyConverter(price: (_bookingFeePromotion!['discountAmount'] as num).toInt())} on booking fee · details',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.accentGreen,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       )
@@ -2179,9 +2342,12 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               title: widget.property.totalUnits > 1 ? 'Units available' : 'Available',
               value: widget.property.totalUnits > 1
                   ? '${widget.property.availableUnits} of ${widget.property.totalUnits}'
-                  : widget.property.availabilityStatus && widget.property.availableUnits > 0
-                      ? 'Now'
-                      : 'Later',
+                  : widget.property.availableUnits <= 0 ||
+                          widget.property.status == PropertyStatus.booked
+                      ? 'Unavailable'
+                      : widget.property.availabilityStatus
+                          ? 'Now'
+                          : 'Later',
               color: AppTheme.primaryblue,
               isSmallScreen: isSmallScreen,
               isVerySmallScreen: isVerySmallScreen,
@@ -3734,8 +3900,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   }
 
   Widget _buildFloatingActionButtons() {
-    // Check if this property has a pending booking
-    final hasExistingBooking = _hasBookedProperty;
+    final currentBooking = _pendingBookingForProperty;
+    final hasExistingBooking = _hasActivePropertyBooking;
 
     // Check if property is available for booking
     final isPropertyAvailable =
@@ -3773,6 +3939,34 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (currentBooking != null &&
+                          hasExistingBooking &&
+                          (currentBooking.status == BookingStatus.pending ||
+                              !currentBooking.isPaymentComplete))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              currentBooking.status == BookingStatus.pending
+                                  ? 'Your request is awaiting approval. It expires in ${_bookingExpiryLabel(currentBooking)}.'
+                                  : 'Complete your payment within ${_bookingExpiryLabel(currentBooking)} to keep this booking.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppTheme.getTextColor(context),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
                       ElevatedButton(
                     onPressed: _isLoadingPendingBookings ||
                             (!isPropertyAvailable && !hasExistingBooking)
@@ -3818,7 +4012,12 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         SizedBox(width: 8),
                         Text(
                           hasExistingBooking
-                              ? 'View Booking'
+                              ? currentBooking?.status == BookingStatus.confirmed &&
+                                      !currentBooking!.isPaymentComplete
+                                  ? 'Complete Payment'
+                                  : currentBooking?.status == BookingStatus.pending
+                                      ? 'View Request'
+                                      : 'View Booking'
                               : isPropertyAvailable
                                   ? (isSale
                                       ? 'Request a Viewing'

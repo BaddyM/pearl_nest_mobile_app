@@ -825,6 +825,7 @@ class _BookingScreenState extends State<BookingScreen> {
             amount: paymentAmount,
             propertyTitle: widget.property.title,
             user: widget.user,
+            bookingStatus: 'PENDING',
           ),
         ),
       );

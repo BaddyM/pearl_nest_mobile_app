@@ -12,6 +12,26 @@ class PaymentException implements Exception {
 }
 
 class PaymentService {
+  static String _paymentErrorMessage(Object error) {
+    if (error is DioException) {
+      final responseData = error.response?.data;
+      if (responseData is Map && responseData['message'] != null) {
+        return responseData['message'].toString();
+      }
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout) {
+        return 'The server took too long to respond. Please try again.';
+      }
+      if (error.type == DioExceptionType.connectionError) {
+        return 'Unable to reach the payment server. Check your connection and try again.';
+      }
+    }
+
+    final message = error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '').trim();
+    return message.isEmpty ? 'Payment checkout could not be started. Please try again.' : message;
+  }
+
   static Future<Map<String, dynamic>> getLandlordWallet() async {
     try {
       final response = await ApiClient.get('/payments/landlord/wallet');
@@ -107,7 +127,7 @@ class PaymentService {
       _logError('create payment', e);
       return {
         'success': false,
-        'message': 'Network error occurred while creating payment',
+        'message': _paymentErrorMessage(e),
         'error': e.toString(),
       };
     }

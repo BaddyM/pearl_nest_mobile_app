@@ -12,6 +12,7 @@ import "package:pearlnest/models/user.dart";
 import "package:pearlnest/screens/tenant/favorites_screen.dart";
 import "package:pearlnest/screens/tenant/booking_screen.dart";
 import "package:pearlnest/screens/tenant/home_screen.dart";
+import "package:pearlnest/screens/tenant/property_details_screen.dart";
 import "package:pearlnest/screens/tenant/refund_request_screen.dart";
 import "package:pearlnest/widgets/app_theme.dart";
 import "package:pearlnest/widgets/empty_properties.dart";
@@ -19,8 +20,9 @@ import "package:pearlnest/widgets/loading_widget.dart";
 import "package:url_launcher/url_launcher.dart";
 
 class BookingsListScreen extends StatefulWidget {
-  const BookingsListScreen({super.key, required this.user});
+  const BookingsListScreen({super.key, required this.user, this.propertyId});
   final User user;
+  final String? propertyId;
 
   @override
   State<BookingsListScreen> createState() => _BookingsListScreenState();
@@ -208,7 +210,9 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                     final isHistory = booking.status == BookingStatus.cancelled ||
                         booking.status == BookingStatus.completed ||
                         booking.status == BookingStatus.expired;
-                    return _showBookingHistory ? isHistory : !isHistory;
+                    return (_showBookingHistory ? isHistory : !isHistory) &&
+                        (widget.propertyId == null ||
+                            booking.propertyId == widget.propertyId);
                   }).toList()
                     ..sort((first, second) =>
                         second.createdAt.compareTo(first.createdAt));
@@ -291,7 +295,16 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                     balance: balance.toInt(),
                                     paid: amount.toInt(),
                                     property: property,
-                                    onTap: () {},
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => PropertyDetailsScreen(
+                                            property: property,
+                                            user: widget.user,
+                                          ),
+                                        ),
+                                      );
+                                    },
                                     onFavorite: () {},
                                     isFavorite: false,
                                     status: booking.status,
