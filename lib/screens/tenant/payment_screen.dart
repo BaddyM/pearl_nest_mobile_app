@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:pearlnest/services/profile_service.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
-import 'package:intl/intl.dart';
-import 'package:pearlnest/widgets/refund_policy.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String redirectUrl;
@@ -372,192 +369,84 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            padding: const EdgeInsets.all(17),
-            decoration: BoxDecoration(
-              color: AppTheme.getCardColor(context),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: AppTheme.primaryblue.withValues(alpha: 0.2),
+          if (_hasError)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 58, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Payment page could not load',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.getTextColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _errorMessage ?? 'Check your connection and try again.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.getSecondaryTextColor(context),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _hasError = false;
+                          _isLoading = true;
+                        });
+                        _controller.reload();
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try again'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            WebViewWidget(controller: _controller),
+          if (_isLoading && !_hasError)
+            Container(
+              color: AppTheme.getBackgroundColor(context),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Connecting to secure checkout',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.getTextColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Your booking details are being prepared.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.getSecondaryTextColor(context),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryblue.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: const Icon(
-                        Icons.home_work_outlined,
-                        color: AppTheme.primaryblue,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.propertyTitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppTheme.getTextColor(context),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Complete payment securely to continue',
-                            style: TextStyle(
-                              color: AppTheme.getSecondaryTextColor(context),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(height: 1),
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Amount due',
-                            style: TextStyle(
-                              color: AppTheme.getSecondaryTextColor(context),
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            ProfileService().currencyConverter(price: widget.amount.toInt()),
-                            style: const TextStyle(
-                              color: AppTheme.primaryblue,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 19,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.lock_outline, color: AppTheme.primaryblue, size: 18),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Secure checkout',
-                      style: TextStyle(
-                        color: AppTheme.getSecondaryTextColor(context),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: RefundPolicyNotice(bookingStatus: widget.bookingStatus),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                if (_hasError)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline, size: 58, color: Colors.red),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Payment page could not load',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.getTextColor(context),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _errorMessage ?? 'Check your connection and try again.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppTheme.getSecondaryTextColor(context),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _hasError = false;
-                                _isLoading = true;
-                              });
-                              _controller.reload();
-                            },
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Try again'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  WebViewWidget(controller: _controller),
-                if (_isLoading && !_hasError)
-                  Container(
-                    color: AppTheme.getBackgroundColor(context),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Connecting to secure checkout',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.getTextColor(context),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Your booking details are being prepared.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.getSecondaryTextColor(context),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
         ],
       ),
     );
