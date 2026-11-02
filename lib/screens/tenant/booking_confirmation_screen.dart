@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/screens/tenant/home_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
@@ -152,7 +153,12 @@ class BookingConfirmationScreen extends StatelessWidget {
               height: 56,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.popUntil(context, (route) => route.isFirst);
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (_) => HomeScreen(user: user),
+                    ),
+                    (route) => false,
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryblue,

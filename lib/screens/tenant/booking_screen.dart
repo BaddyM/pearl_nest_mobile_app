@@ -79,7 +79,7 @@ class _BookingScreenState extends State<BookingScreen> {
       );
       if (mounted) setState(() => _bookingQuote = quote);
     } catch (error) {
-      if (mounted) _showErrorSnackBar(error.toString());
+      if (mounted) _showErrorSnackBar(_errorMessage(error));
     } finally {
       if (mounted) setState(() => _quoteLoading = false);
     }
@@ -333,7 +333,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         )
                       : Text(
                           _isViewingRequest
-                              ? 'Pay visit fee & request viewing'
+                              ? 'Pay visit fee & request a tour'
                               : 'Send booking request',
                           style: const TextStyle(
                             color: Colors.white,
@@ -795,7 +795,6 @@ class _BookingScreenState extends State<BookingScreen> {
       }
 
       final payment = await PaymentService.createPayment(
-        userId: widget.user.id,
         propertyId: widget.property.id,
         bookingId: bookingId,
         amount: paymentAmount,
@@ -836,7 +835,7 @@ class _BookingScreenState extends State<BookingScreen> {
         );
       }
     } catch (error) {
-      if (mounted) _showErrorSnackBar(error.toString());
+      if (mounted) _showErrorSnackBar(_errorMessage(error));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -1032,16 +1031,27 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _showErrorSnackBar(String error) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(error),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.fixed,
+          duration: const Duration(seconds: 4),
         ),
-      ),
-    );
+      );
+  }
+
+  String _errorMessage(Object error) {
+    if (error is BookingException) return error.message;
+    final message = error
+        .toString()
+        .replaceFirst(RegExp(r'^(BookingException|PaymentException):\s*'), '')
+        .trim();
+    return message.isEmpty
+        ? 'Something went wrong. Please try again.'
+        : message;
   }
 
   void _showValidationErrors(Map<String, String> errors) {

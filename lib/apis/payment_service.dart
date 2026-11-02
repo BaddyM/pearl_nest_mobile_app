@@ -79,7 +79,6 @@ class PaymentService {
 
   /// Create a payment for a booking
   static Future<Map<String, dynamic>> createPayment({
-    required String userId,
     required String propertyId,
     required String bookingId,
     required double amount,
@@ -87,7 +86,6 @@ class PaymentService {
   }) async {
     try {
       final requestData = {
-        'userId': userId,
         'propertyId': propertyId,
         'bookingId': bookingId,
         'amount': amount,

@@ -2530,9 +2530,8 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
 
-        // Create payment with the fallback user ID
+        // The API identifies the payer from the authenticated session.
         final paymentResult = await PaymentService.createPayment(
-          userId: currentUserId,
           bookingId: booking.id,
           propertyId: property.id,
           amount: paymentAmount,
@@ -2596,7 +2595,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Create payment with the user-specified amount
       final paymentResult = await PaymentService.createPayment(
-        userId: widget.user.id,
         bookingId: booking.id,
         propertyId: property.id,
         amount: paymentAmount, // Use the user-specified amount instead of property.price

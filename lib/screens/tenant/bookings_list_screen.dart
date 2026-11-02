@@ -216,7 +216,6 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
         : balance;
     try {
       final payment = await PaymentService.createPayment(
-        userId: widget.user.id,
         propertyId: booking.propertyId,
         bookingId: booking.id,
         amount: amount.toDouble(),

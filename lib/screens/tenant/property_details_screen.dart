@@ -951,7 +951,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
     //     // Create payment with the fallback user ID
     //     final paymentResult = await PaymentService.createPayment(
-    //       userId: currentUserId,
     //       bookingId: _pendingBookingForProperty!.id,
     //       propertyId: widget.property.id,
     //       amount: paymentAmount,
@@ -1017,7 +1016,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
     //   // Create payment with the user-specified amount
     //   final paymentResult = await PaymentService.createPayment(
-    //     userId: widget.user.id,
     //     bookingId: _pendingBookingForProperty!.id,
     //     propertyId: widget.property.id,
     //     amount: paymentAmount, // Use the user-specified amount instead of widget.property.price
@@ -3993,7 +3991,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                       : 'View Booking'
                               : isPropertyAvailable
                                   ? (isSale
-                                      ? 'Request a Viewing'
+                                      ? 'Request a tour'
                                       : 'Request Booking')
                                   : 'Unavailable',
                           style: TextStyle(
@@ -4005,7 +4003,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     ),
                       ),
                       if (widget.property.isRent && !isSale)
-                        TextButton.icon(
+                        OutlinedButton.icon(
                           onPressed: !isPropertyAvailable
                               ? null
                               : () {
@@ -4027,8 +4025,33 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                     ),
                                   );
                                 },
-                          icon: const Icon(Icons.tour_outlined, size: 18),
-                          label: const Text('Request a tour · visit fee applies'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primaryblue,
+                            side: BorderSide(
+                              color: AppTheme.primaryblue.withValues(alpha: 0.55),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.tour_outlined, size: 19),
+                          label: const Text(
+                            'Request a tour',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      if (widget.property.isRent && !isSale)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            'Property visit fee applies.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppTheme.getSecondaryTextColor(context),
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                     ],
                   ),
