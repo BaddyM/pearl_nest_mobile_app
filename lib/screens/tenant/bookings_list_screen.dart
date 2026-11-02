@@ -1,19 +1,25 @@
 import "package:flutter/material.dart";
 import "package:flutter_bloc/flutter_bloc.dart";
+import "package:intl/intl.dart";
+import "package:pearlnest/apis/booking_service.dart";
 import "package:pearlnest/blocs/booking/booking_bloc.dart";
 import "package:pearlnest/blocs/booking/booking_event.dart";
 import "package:pearlnest/blocs/booking/booking_state.dart";
 import "package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart";
 import "package:pearlnest/apis/chat_service.dart";
+import "package:pearlnest/apis/payment_service.dart";
 import "package:pearlnest/screens/chat/new_chat_conversation.dart";
 import "package:pearlnest/models/booking.dart";
 import "package:pearlnest/models/property.dart";
 import "package:pearlnest/models/user.dart";
 import "package:pearlnest/screens/tenant/favorites_screen.dart";
 import "package:pearlnest/screens/tenant/booking_screen.dart";
+import "package:pearlnest/screens/tenant/booking_change_request_screen.dart";
 import "package:pearlnest/screens/tenant/home_screen.dart";
+import "package:pearlnest/screens/tenant/payment_screen.dart";
 import "package:pearlnest/screens/tenant/property_details_screen.dart";
 import "package:pearlnest/screens/tenant/refund_request_screen.dart";
+import "package:pearlnest/services/profile_service.dart";
 import "package:pearlnest/widgets/app_theme.dart";
 import "package:pearlnest/widgets/empty_properties.dart";
 import "package:pearlnest/widgets/loading_widget.dart";
@@ -84,10 +90,58 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
       booking.status == BookingStatus.confirmed &&
       (booking.hasSuccessfulPayment || (booking.amount ?? 0) <= 0);
 
+  bool _canCancelBooking(Booking booking) =>
+      booking.status == BookingStatus.pending ||
+      booking.status == BookingStatus.confirmed;
+
+  bool _canAskAboutBookingChange(Booking booking) {
+    final bookingIsChatEligible =
+        booking.status == BookingStatus.confirmed ||
+            (booking.isViewingRequest &&
+                booking.status == BookingStatus.pending);
+    return bookingIsChatEligible &&
+        (booking.hasSuccessfulPayment || (booking.amount ?? 0) <= 0);
+  }
+
+  bool _canRequestBookingChange(Booking booking) =>
+      booking.status == BookingStatus.confirmed && !booking.isViewingRequest;
+
   bool _canRebook(Property property) =>
       property.availabilityStatus &&
       property.availableUnits > 0 &&
       property.status == PropertyStatus.approved;
+
+  Future<void> _confirmCancellation(Booking booking) async {
+    final shouldCancel = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel this booking?'),
+        content: Text(
+          booking.hasSuccessfulPayment
+              ? 'Your booking will be cancelled. Any completed payment is not refunded automatically; after cancellation, open booking history to submit a separate refund request under the applicable refund policy.'
+              : 'Your booking will be cancelled. Any payment that has not completed will also be cancelled.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep booking'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cancel booking'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldCancel == true && mounted) {
+      context.read<BookingBloc>().add(CancelBooking(bookingId: booking.id));
+    }
+  }
 
   void _rebook(Property property, Booking booking) {
     Navigator.of(context).push(
@@ -99,6 +153,108 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openBookingChangeRequest(Booking booking) async {
+    final changed = await Navigator.of(context).push<bool>(
+      PageRouteBuilder<bool>(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            BookingChangeRequestScreen(booking: booking),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final position = Tween<Offset>(
+            begin: const Offset(0.04, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          ));
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(position: position, child: child),
+          );
+        },
+      ),
+    );
+    if (changed == true && mounted) {
+      context.read<BookingBloc>().add(FetchBookings());
+    }
+  }
+
+  Future<void> _respondToBookingChange(
+    Booking booking,
+    BookingChangeRequest request,
+    String decision,
+  ) async {
+    try {
+      await BookingService.respondToBookingChange(
+        requestId: request.id,
+        decision: decision,
+      );
+      if (!mounted) return;
+      context.read<BookingBloc>().add(FetchBookings());
+      final message = decision == 'ACCEPT'
+          ? 'The booking dates have been updated. Any remaining balance must be paid separately; a price reduction may be eligible for a refund request.'
+          : decision == 'CANCEL'
+              ? 'Change request cancelled.'
+              : 'Change offer declined. Your existing booking is unchanged.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update the change request: $error')),
+      );
+    }
+  }
+
+  Future<void> _payBookingBalance(Booking booking, int balance) async {
+    final property = booking.property;
+    if (property == null || balance <= 0) return;
+    final amount = booking.successfulPaymentsTotal <= 0
+        ? (booking.amount ?? balance.toDouble()).round()
+        : balance;
+    try {
+      final payment = await PaymentService.createPayment(
+        userId: widget.user.id,
+        propertyId: booking.propertyId,
+        bookingId: booking.id,
+        amount: amount.toDouble(),
+      );
+      final redirectUrl = payment['redirectUrl']?.toString();
+      final orderTrackingId = payment['orderTrackingId']?.toString();
+      final merchantReference = payment['merchantReference']?.toString();
+      if (payment['success'] != true ||
+          redirectUrl == null ||
+          redirectUrl.isEmpty ||
+          orderTrackingId == null ||
+          merchantReference == null) {
+        throw BookingException(
+          payment['message']?.toString() ??
+              'Payment checkout could not be started.',
+        );
+      }
+      if (!mounted) return;
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => PaymentScreen(
+            redirectUrl: redirectUrl,
+            orderTrackingId: orderTrackingId,
+            merchantReference: merchantReference,
+            amount: amount.toDouble(),
+            propertyTitle: booking.propertyTitle,
+            user: widget.user,
+            bookingStatus: 'APPROVED',
+          ),
+        ),
+      );
+      if (mounted) context.read<BookingBloc>().add(FetchBookings());
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start payment: $error')),
+      );
+    }
   }
 
   Future<void> _openLandlordChat(Booking booking) async {
@@ -161,11 +317,6 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                     icon: const Icon(Icons.sms_outlined),
                     label: const Text('Text'),
                   ),
-                OutlinedButton.icon(
-                  onPressed: () => _openLandlordChat(booking),
-                  icon: const Icon(Icons.chat_outlined),
-                  label: const Text('Chat'),
-                ),
               ],
             ),
           ],
@@ -310,6 +461,34 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                     status: booking.status,
                                     booking: booking,
                                   ),
+                                  if (_canRequestBookingChange(booking))
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: OutlinedButton.icon(
+                                        onPressed: () =>
+                                            _openBookingChangeRequest(booking),
+                                        icon: const Icon(Icons.edit_calendar_outlined),
+                                        label: const Text('Request date change'),
+                                      ),
+                                    ),
+                                  if (booking.changeRequests.isNotEmpty)
+                                    _buildBookingChangeStatus(
+                                      booking,
+                                      booking.changeRequests.first,
+                                    ),
+                                  if (booking.status == BookingStatus.confirmed &&
+                                      balance > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: OutlinedButton.icon(
+                                        onPressed: () =>
+                                            _payBookingBalance(booking, balance.toInt()),
+                                        icon: const Icon(Icons.payment_outlined),
+                                        label: Text(
+                                          'Pay remaining balance (${ProfileService().currencyConverter(price: balance.toInt())})',
+                                        ),
+                                      ),
+                                    ),
                                   if (booking.status == BookingStatus.cancelled ||
                                       booking.status == BookingStatus.expired)
                                     Padding(
@@ -337,6 +516,42 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                     ),
                                   if (_canContactLandlord(booking))
                                     _buildLandlordContactActions(booking),
+                                  if (_canCancelBooking(booking))
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Wrap(
+                                        alignment: WrapAlignment.end,
+                                        spacing: 8,
+                                        runSpacing: 8,
+                                        children: [
+                                          if (_canAskAboutBookingChange(booking) &&
+                                              property.landlordId.isNotEmpty)
+                                            OutlinedButton.icon(
+                                              onPressed: () =>
+                                                  _openLandlordChat(booking),
+                                              icon: const Icon(
+                                                Icons.edit_calendar_outlined,
+                                              ),
+                                              label: const Text(
+                                                'Message landlord',
+                                              ),
+                                            ),
+                                          OutlinedButton.icon(
+                                            onPressed: () =>
+                                                _confirmCancellation(booking),
+                                            icon: const Icon(
+                                              Icons.cancel_outlined,
+                                            ),
+                                            label: const Text(
+                                              'Cancel booking',
+                                            ),
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: Colors.red,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   if (successfulPayments.isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 8),
@@ -345,6 +560,11 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                         label: Text(
                                           booking.landlordRejected
                                               ? 'Claim guaranteed refund'
+                                              : booking.changeRequests.any(
+                                                      (item) =>
+                                                          item.status == 'ACCEPTED' &&
+                                                          item.refundAmount > 0)
+                                                  ? 'Request price-difference refund'
                                               : 'Request a refund',
                                         ),
                                         onPressed: () {
@@ -355,6 +575,12 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                               landlordRejected: booking.landlordRejected,
                                               administratorReview:
                                                   booking.isViewingRequest,
+                                              bookingChangeRefund:
+                                                  booking.changeRequests.any(
+                                                (item) =>
+                                                    item.status == 'ACCEPTED' &&
+                                                    item.refundAmount > 0,
+                                              ),
                                             ),
                                           ));
                                         },
@@ -366,6 +592,7 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                           } else {
                             return SizedBox();
                           }
+
                             },
                           ),
                       ],
@@ -443,7 +670,7 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                               ),
                               const SizedBox(height: 12),
                               const Text(
-                                "Your booking has been successfully cancelled. A confirmation email has been sent to you.",
+                                "Your booking was cancelled and a confirmation email has been sent. Any completed payment needs a separate refund request; cancellation does not automatically refund it.",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: Colors.grey, fontSize: 16),
                               ),
@@ -476,6 +703,76 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
         ),
       ],
     ));
+  }
+
+  Widget _buildBookingChangeStatus(
+    Booking booking,
+    BookingChangeRequest request,
+  ) {
+    final status = request.status;
+    final quotedTotal = request.offeredQuote?['totalAmount'];
+    final formattedTotal = quotedTotal is num
+        ? 'UGX ${NumberFormat('#,##0').format(quotedTotal)}'
+        : null;
+    return Card(
+      margin: const EdgeInsets.only(top: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              switch (status) {
+                'PENDING' => 'Change request sent',
+                'OFFERED' => 'Landlord sent a change offer',
+                'ACCEPTED' => 'Booking change accepted',
+                'DECLINED' => 'Change request declined',
+                'CANCELLED' => 'Change request cancelled',
+                _ => 'Booking change update',
+              },
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${DateFormat.yMMMd().format(request.checkInDate)}'
+              '${request.checkOutDate == null ? '' : ' – ${DateFormat.yMMMd().format(request.checkOutDate!)}'}'
+              '${formattedTotal == null ? '' : '\nUpdated total: $formattedTotal'}',
+              style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+            ),
+            if (status == 'OFFERED') ...[
+              const SizedBox(height: 10),
+              const Text(
+                'Your current booking is unchanged until you accept. A higher total will leave a balance to pay; a lower total may require a separate refund request.',
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  FilledButton(
+                    onPressed: () =>
+                        _respondToBookingChange(booking, request, 'ACCEPT'),
+                    child: const Text('Accept offer'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () =>
+                        _respondToBookingChange(booking, request, 'DECLINE'),
+                    child: const Text('Decline'),
+                  ),
+                ],
+              ),
+            ] else if (status == 'PENDING')
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () =>
+                      _respondToBookingChange(booking, request, 'CANCEL'),
+                  child: const Text('Cancel request'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildHeader() {

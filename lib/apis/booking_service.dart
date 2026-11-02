@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/models/booking.dart';
 
@@ -180,6 +181,79 @@ class BookingService {
     } catch (error) {
       if (error is BookingException) rethrow;
       throw BookingException('Could not cancel the unpaid booking: $error');
+    }
+  }
+
+  static Future<Map<String, dynamic>> requestBookingChange({
+    required String bookingId,
+    required DateTime checkInDate,
+    DateTime? checkOutDate,
+    String paymentOption = 'FULL',
+  }) async {
+    return _changeRequest(
+      '/booking/$bookingId/change-requests',
+      {
+        'checkInDate': DateFormat('yyyy-MM-dd').format(checkInDate),
+        if (checkOutDate != null)
+          'checkOutDate': DateFormat('yyyy-MM-dd').format(checkOutDate),
+        'paymentOption': paymentOption,
+      },
+      method: 'POST',
+    );
+  }
+
+  static Future<Map<String, dynamic>> reviewBookingChange({
+    required String requestId,
+    required String decision,
+  }) =>
+      _changeRequest(
+        '/booking/change-requests/$requestId/review',
+        {'decision': decision},
+        method: 'PATCH',
+      );
+
+  static Future<Map<String, dynamic>> respondToBookingChange({
+    required String requestId,
+    required String decision,
+  }) =>
+      _changeRequest(
+        '/booking/change-requests/$requestId/respond',
+        {'decision': decision},
+        method: 'PATCH',
+      );
+
+  static Future<Map<String, dynamic>> _changeRequest(
+    String endpoint,
+    Map<String, dynamic> body, {
+    required String method,
+  }) async {
+    try {
+      final response = method == 'POST'
+          ? await ApiClient.post(endpoint, body)
+          : await ApiClient.patch(endpoint, body);
+      final data = response.data;
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data is Map &&
+          data['success'] == true &&
+          data['data'] is Map) {
+        return Map<String, dynamic>.from(data['data'] as Map);
+      }
+      final message = data is Map ? data['message']?.toString() : null;
+      throw BookingException(
+        message?.isNotEmpty == true
+            ? message!
+            : 'The booking change could not be completed.',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      final message = body is Map ? body['message']?.toString() : null;
+      throw BookingException(
+        message?.isNotEmpty == true
+            ? message!
+            : 'Unable to reach the booking service. Check your connection and try again.',
+        statusCode: error.response?.statusCode,
+      );
     }
   }
 

@@ -305,6 +305,14 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
           ),
 
           _buildSection(
+            'On-device chat storage',
+            [
+              'The app stores a limited local copy of your conversation list and recent messages so chats can open quickly while the network refreshes. The cache is limited to 200 messages per conversation and kept for up to 30 days.',
+              'The local cache is not currently encrypted. It is removed when you log out; messages may also remain on PearlNest servers under this policy.',
+            ],
+          ),
+
+          _buildSection(
             'How We Use Your Information',
             [
               'To provide and maintain our property rental services',
@@ -462,8 +470,19 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
               'All bookings are subject to host approval',
               'Payment is processed securely through our platform',
               'Fees and taxes are clearly displayed before booking',
-              'Refunds are subject to the applicable cancellation policy',
+              'Tenants can cancel pending or approved bookings from My Bookings',
+              'Cancelling a booking does not automatically refund completed payments; submit a separate refund request under the applicable policy',
               'We may charge additional fees for platform services',
+            ],
+          ),
+
+          _buildSection(
+            'Booking changes and travel insurance',
+            [
+              'Tenants can request new booking dates from an approved accommodation booking. The landlord must review the request and the tenant must accept the updated quote.',
+              "The existing booking remains unchanged unless the tenant accepts the landlord's offer. Any additional balance is payable separately; a reduction may require a separate refund request under the applicable policy.",
+              'A chat message about changing dates is not itself an approved change. If the in-app request is unavailable, contact PearlNest Support.',
+              'PearlNest does not provide or arrange travel insurance',
             ],
           ),
 
@@ -539,10 +558,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
           _buildSection(
             'Overview',
             [
-              'Cancellation policies protect both hosts and guests',
-              'Each property may have different cancellation terms',
-              'Policies are clearly displayed before booking',
-              'Refund amounts follow PearlNest’s current refund terms',
+              'Tenants can cancel pending and approved bookings from My Bookings',
+              'Refund eligibility and amounts follow the current refund terms shown in the app',
+              'Review the applicable refund terms before confirming a cancellation',
             ],
           ),
 
@@ -555,9 +573,8 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
             'Host Cancellations',
             [
               'Hosts should not cancel confirmed reservations',
-              'If a host cancels, guests receive a full refund',
-              'Hosts may face penalties for frequent cancellations',
-              'We will help find alternative accommodations when possible',
+              'If a host cancels or rejects a booking, contact PearlNest Support to review available options and any applicable refund',
+              'Any refund depends on the booking status and the current refund terms',
             ],
           ),
 
@@ -576,45 +593,40 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
           _buildSection(
             'How to Cancel',
             [
-              'Log into your PearlNest account',
-              'Go to "My Trips" or "My Bookings"',
-              'Select the reservation you want to cancel',
-              'Click "Cancel Reservation" and follow the prompts',
-              'You will receive a confirmation email',
-              'Refunds are processed within 5-10 business days',
+              'Open My Bookings and select an active booking',
+              'Choose Cancel booking and confirm the cancellation',
+              'The app currently allows cancellation of pending and approved bookings',
+              'You will receive a confirmation email when the cancellation succeeds',
+              'A completed payment is not refunded automatically; use Request a refund on the cancelled booking in booking history',
             ],
           ),
 
           _buildSection(
             'Refund Processing',
             [
-              'Refunds are issued to the original payment method',
-              'Processing time varies by payment provider',
-              'Credit cards: 5-10 business days',
-              'PayPal: 1-3 business days',
-              'Bank transfers: 3-7 business days',
-              'You will receive email confirmation when refund is processed',
+              'Cancellation and refund are separate actions',
+              'Submit a refund request from the booking history when the booking has completed payments',
+              'The amount and eligibility follow the current refund terms shown in the app',
+              'Processing time depends on review and the payment provider; contact PearlNest Support for a status update',
             ],
           ),
 
           _buildSection(
             'Modification vs. Cancellation',
             [
-              'Consider modifying your reservation instead of cancelling',
-              'Date changes may be possible with host approval',
-              'Modifications may incur additional fees',
-              'Contact the host directly to discuss options',
-              'Our support team can assist with modifications',
+              'For an approved accommodation booking, submit a date-change request from My Bookings',
+              'The landlord reviews the requested dates and returns a quote; the existing booking stays unchanged until you accept that offer',
+              'Any additional balance must be paid separately. If the revised total is lower than the amount already paid, submit a separate refund request under the applicable refund policy',
+              'If the in-app change request is unavailable, contact PearlNest Support. A chat message alone does not change a booking',
             ],
           ),
 
           _buildSection(
             'Travel Insurance',
             [
-              'Consider purchasing travel insurance for additional protection',
-              'Insurance may cover cancellations due to covered reasons',
-              'Review insurance terms carefully before purchasing',
-              'PearlNest does not provide travel insurance directly',
+              'PearlNest does not provide, sell, or arrange travel insurance',
+              'If you want cover, contact an insurer or licensed insurance adviser directly',
+              'Cover, exclusions, cancellation rights, and claims are determined by the insurer, not PearlNest',
             ],
           ),
 
@@ -645,6 +657,25 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> with SingleTi
               color: AppTheme.getTextColor(context),
             ),
           ),
+          if (title == 'Privacy Policy')
+            _buildSection(
+              'On-device chat storage',
+              [
+                'The app stores a limited local copy of your conversation list and recent messages so chats can open quickly while the network refreshes. The cache is limited to 200 messages per conversation and kept for up to 30 days.',
+                'The local cache is not currently encrypted. It is removed when you log out; messages may also remain on PearlNest servers under this policy.',
+              ],
+            ),
+          if (title == 'Terms and Conditions')
+            _buildSection(
+              'Current booking features',
+              [
+                'Tenants can cancel pending or approved bookings from My Bookings; cancelling does not automatically refund completed payments.',
+                'Tenants can request new dates for approved accommodation bookings. The landlord reviews the request, then the tenant must accept the updated quote; the current booking stays unchanged until acceptance.',
+                'An increased total leaves an additional balance payable separately. A reduced total may be eligible for a separate refund request under the current refund terms.',
+                'A chat message is not an approved booking change; use the in-app change request or contact support if unavailable.',
+                'PearlNest does not provide or arrange travel insurance.',
+              ],
+            ),
         ],
       ),
     );

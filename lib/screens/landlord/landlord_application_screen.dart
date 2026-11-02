@@ -148,6 +148,52 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _buildSectionCard(
+                  title: 'After approval',
+                  icon: Icons.info_outline,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.home_work_outlined),
+                      title: const Text('Manage property listings'),
+                      subtitle: const Text('Add properties and update their details.'),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.calendar_today_outlined),
+                      title: const Text('Handle bookings and messages'),
+                      subtitle: const Text('Review booking requests and communicate with tenants.'),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.account_balance_wallet_outlined),
+                      title: const Text('View earnings and request withdrawals'),
+                      subtitle: const Text(
+                        'Withdrawals require administrator approval and are paid manually.',
+                      ),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.receipt_long_outlined),
+                      title: const Text('Review refund requests'),
+                      subtitle: const Text(
+                        'You can recommend a decision; an administrator makes the final decision.',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'The landlord dashboard currently provides basic listing activity counts, not detailed financial analytics or expense tracking. PearlNest does not provide travel insurance.',
+                      style: TextStyle(
+                        color: AppTheme.getSecondaryTextColor(context),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Form(
                   key: _formKey,
                   child: Column(

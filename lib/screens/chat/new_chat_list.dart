@@ -166,6 +166,18 @@ class _NewChatListState extends State<NewChatList> {
                   listener: (context, state) {
                     if (state is NewChatListErrorState) {
                       CustomSnackBar.showError(context, state.error);
+                    } else if (state is NewChatListLoadedState &&
+                        state.refreshError != null) {
+                      CustomSnackBar.showError(
+                        context,
+                        state.refreshError!,
+                      );
+                    } else if (state is NewChatListInitState &&
+                        state.refreshError != null) {
+                      CustomSnackBar.showError(
+                        context,
+                        state.refreshError!,
+                      );
                     }
                   },
                 ),

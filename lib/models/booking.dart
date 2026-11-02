@@ -41,6 +41,7 @@ class Booking {
   final String tenantPhone;
   final String propertyTitle;
   final List<Map<String, dynamic>> payments; // Add payments field
+  final List<BookingChangeRequest> changeRequests;
 
   Booking({
     required this.id,
@@ -66,6 +67,7 @@ class Booking {
     required this.tenantPhone,
     required this.propertyTitle,
     this.payments = const [], // Default empty list
+    this.changeRequests = const [],
   });
 
   factory Booking.fromApiJson(Map<String, dynamic> json) {
@@ -138,6 +140,13 @@ class Booking {
       tenantPhone: user['contact']?.toString() ?? 'No phone provided',
       propertyTitle: property['propertyName']?.toString() ?? 'Unknown Property',
       payments: (json['Payments'] as List<dynamic>?)?.map((p) => p as Map<String, dynamic>).toList() ?? [],
+      changeRequests: (json['changeRequests'] as List<dynamic>?)
+              ?.whereType<Map>()
+              .map((item) => BookingChangeRequest.fromApiJson(
+                    Map<String, dynamic>.from(item),
+                  ))
+              .toList() ??
+          const [],
     );
   }
 
@@ -161,6 +170,7 @@ class Booking {
       tenantPhone: '',
       propertyTitle: '',
       payments: [],
+      changeRequests: const [],
     );
   }
 
@@ -210,4 +220,43 @@ class Booking {
 
   bool get isActive => DateTime.now().isBefore(expiresAt) &&
       (status == BookingStatus.pending || status == BookingStatus.confirmed);
+}
+
+class BookingChangeRequest {
+  final String id;
+  final DateTime checkInDate;
+  final DateTime? checkOutDate;
+  final String? paymentOption;
+  final String status;
+  final Map<String, dynamic>? offeredQuote;
+  final double refundAmount;
+
+  const BookingChangeRequest({
+    required this.id,
+    required this.checkInDate,
+    required this.checkOutDate,
+    required this.paymentOption,
+    required this.status,
+    required this.offeredQuote,
+    required this.refundAmount,
+  });
+
+  factory BookingChangeRequest.fromApiJson(Map<String, dynamic> json) {
+    final quote = json['offeredQuote'];
+    return BookingChangeRequest(
+      id: json['id']?.toString() ?? '',
+      checkInDate: DateTime.tryParse(json['checkInDate']?.toString() ?? '') ??
+          DateTime.now(),
+      checkOutDate: json['checkOutDate'] == null
+          ? null
+          : DateTime.tryParse(json['checkOutDate'].toString()),
+      paymentOption: json['paymentOption']?.toString(),
+      status: json['status']?.toString().toUpperCase() ?? 'PENDING',
+      offeredQuote:
+          quote is Map ? Map<String, dynamic>.from(quote) : null,
+      refundAmount: json['refundAmount'] is num
+          ? (json['refundAmount'] as num).toDouble()
+          : 0,
+    );
+  }
 }

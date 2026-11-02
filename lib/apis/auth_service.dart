@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/services/chat_cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pearlnest/services/notification_service.dart';
 import 'package:pearlnest/network/exceptions/network_exceptions.dart';
@@ -789,6 +790,11 @@ class AuthService {
 
       // Always clear local storage
       await Future.wait([prefs.remove(_tokenKey), prefs.remove(_userDataKey), prefs.remove(_lastLoginKey), prefs.remove(_tokenExpiryKey), prefs.remove(_userIdKey), prefs.remove('role')]);
+      try {
+        await ChatCacheService.clearAll();
+      } catch (error) {
+        _logError('clear local chat cache on logout', error);
+      }
 
       // Clear user ID using dedicated method
       await _clearUserId();
@@ -1393,6 +1399,7 @@ class AuthService {
         prefs.remove(_tokenExpiryKey),
         prefs.remove(_userIdKey),
       ]);
+      await ChatCacheService.clearAll();
 
       if (kDebugMode) {
         // //debugPrint('🧹 All user data cleared from local storage');

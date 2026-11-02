@@ -251,6 +251,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 ),
               ),
               const SizedBox(height: 12),
+              Text(
+                'This offer reduces the PearlNest booking fee only; it does not reduce the property rent or sale price.',
+                style: TextStyle(
+                  color: AppTheme.getSecondaryTextColor(context),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
               _buildPromotionDetailRow(
                 'Standard booking fee',
                 ProfileService().currencyConverter(price: originalFee),
@@ -2106,12 +2114,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               color: AppTheme.getTextColor(context),
               height: 1.2,
             ),
-            maxLines: isVerySmallScreen
-                ? 1
-                : isSmallScreen
-                    ? 2
-                    : 3,
-            overflow: TextOverflow.ellipsis,
+            softWrap: true,
           ),
           SizedBox(height: spacing * 0.5),
           Row(
@@ -2125,8 +2128,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     fontSize: addressFontSize,
                     color: AppTheme.getSecondaryTextColor(context),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  softWrap: true,
                 ),
               ),
             ],
@@ -2140,23 +2142,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '${ProfileService().currencyConverter(price: widget.property.price.toInt())}',
-                        style: TextStyle(
-                          fontSize: priceFontSize,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryblue,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      widget.property.pricePeriodLabel,
-                      style: TextStyle(
-                        fontSize: priceTypeFontSize,
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
+                    PropertyPromotionPrice(
+                      property: widget.property,
+                      fontSize: priceFontSize,
                     ),
                     if ((_bookingFeePromotion?['discountAmount'] as num? ?? 0) > 0)
                       Padding(
@@ -2175,9 +2163,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                             color: AppTheme.accentGreen,
                           ),
                           label: Text(
-                            'Save ${ProfileService().currencyConverter(price: (_bookingFeePromotion!['discountAmount'] as num).toInt())} on booking fee · details',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            'Save ${ProfileService().currencyConverter(price: (_bookingFeePromotion!['discountAmount'] as num).toInt())} on booking fee · view offer details',
+                            softWrap: true,
                             style: const TextStyle(
                               color: AppTheme.accentGreen,
                               fontSize: 11,
@@ -3263,18 +3250,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     // Parse amenities from property data first
     final List<Map<String, dynamic>> amenities = _parseAmenities(widget.property.amenities);
 
-    // Grid settings - Adjust for small screens and number of amenities
-    final totalAmenities = amenities.length;
-    final crossAxisCount = isVerySmallScreen
-        ? (totalAmenities > 6 ? 3 : 2) // Reduce columns on very small screens
-        : (totalAmenities > 8 ? 4 : 3); // Normal screens
-    final crossAxisSpacing = isVerySmallScreen ? 6.0 : 8.0;
-    final mainAxisSpacing = isVerySmallScreen ? 6.0 : 8.0;
-    final childAspectRatio = isVerySmallScreen
-        ? 0.85
-        : isSmallScreen
-            ? 0.87
-            : 0.9;
+    // Keep amenity labels readable on narrow screens.
     final itemPadding = isVerySmallScreen ? 6.0 : 8.0;
     final itemBorderRadius = isVerySmallScreen ? 8.0 : 10.0;
     final iconTextSpacing = isVerySmallScreen ? 4.0 : 6.0;
@@ -3306,57 +3282,54 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             ),
           ),
           SizedBox(height: sectionSpacing),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: crossAxisSpacing,
-              mainAxisSpacing: mainAxisSpacing,
-              childAspectRatio: childAspectRatio,
-            ),
-            itemCount: amenities.length,
-            itemBuilder: (context, index) {
-              final amenity = amenities[index];
-              return Container(
-                padding: EdgeInsets.all(itemPadding),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(itemBorderRadius),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      flex: 2,
-                      child: Icon(
-                        amenity['icon'] as IconData,
-                        color: AppTheme.primaryblue,
-                        size: iconSize,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount = constraints.maxWidth >= 520
+                  ? 4
+                  : constraints.maxWidth >= 360
+                      ? 3
+                      : 2;
+              final spacing = isVerySmallScreen ? 6.0 : 8.0;
+              final itemWidth =
+                  (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
+                      crossAxisCount;
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: amenities.map((amenity) {
+                  return SizedBox(
+                    width: itemWidth,
+                    child: Container(
+                      padding: EdgeInsets.all(itemPadding),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(itemBorderRadius),
                       ),
-                    ),
-                    SizedBox(height: iconTextSpacing),
-                    Flexible(
-                      flex: 1,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          amenity['name'] as String,
-                          style: TextStyle(
-                            fontSize: amenityFontSize,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.getTextColor(context),
-                            height: 1.0, // Tight line height
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            amenity['icon'] as IconData,
+                            color: AppTheme.primaryblue,
+                            size: iconSize,
                           ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1, // Force single line on small screens
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                          SizedBox(height: iconTextSpacing),
+                          Text(
+                            amenity['name'] as String,
+                            style: TextStyle(
+                              fontSize: amenityFontSize,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.getTextColor(context),
+                              height: 1.2,
+                            ),
+                            textAlign: TextAlign.center,
+                            softWrap: true,
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  );
+                }).toList(),
               );
             },
           ),

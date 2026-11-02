@@ -12,15 +12,25 @@ class NewChatLoadedState extends NewChatState {
   final bool isSendMessage;
   final DateTime dateTime;
   final String conversationStatus;
+  final String? refreshError;
+  final Map<String, dynamic>? pendingMessage;
   NewChatLoadedState({
     required this.messages,
     this.isSendMessage = false,
     required this.dateTime,
     this.conversationStatus = 'OPEN',
+    this.refreshError,
+    this.pendingMessage,
   });
 
   @override
-  List<Object?> get props => [messages, dateTime, conversationStatus];
+  List<Object?> get props => [
+        messages,
+        dateTime,
+        conversationStatus,
+        refreshError,
+        pendingMessage,
+      ];
 }
 
 class NewChatErrorState extends NewChatState {
@@ -32,12 +42,14 @@ class NewChatListLoadingState extends NewChatState {}
 
 class NewChatListInitState extends NewChatState {
   final List<Map<String, dynamic>> data;
-  NewChatListInitState({required this.data});
+  final String? refreshError;
+  NewChatListInitState({required this.data, this.refreshError});
 }
 
 class NewChatListLoadedState extends NewChatState {
   final List<Map<String, dynamic>> data;
-  NewChatListLoadedState({required this.data});
+  final String? refreshError;
+  NewChatListLoadedState({required this.data, this.refreshError});
 }
 
 class NewChatListErrorState extends NewChatState {

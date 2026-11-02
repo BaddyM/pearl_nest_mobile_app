@@ -26,8 +26,10 @@ class PropertyPromotionPrice extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (promoted)
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 4,
             children: [
               Text(
                 formatter.currencyConverter(price: property.price.toInt()),
@@ -37,7 +39,6 @@ class PropertyPromotionPrice extends StatelessWidget {
                   decoration: TextDecoration.lineThrough,
                 ),
               ),
-              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
@@ -48,6 +49,7 @@ class PropertyPromotionPrice extends StatelessWidget {
                   property.promotionDiscountType == 'PERCENTAGE'
                       ? '${property.promotionDiscountValue}% off'
                       : 'Save ${formatter.currencyConverter(price: property.currentPromotionDiscount)}',
+                  softWrap: true,
                   style: TextStyle(
                     color: Colors.red,
                     fontSize: fontSize * 0.55,
@@ -79,8 +81,7 @@ class PropertyPromotionPrice extends StatelessWidget {
                 ),
             ],
           ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+          softWrap: true,
         ),
       ],
     );

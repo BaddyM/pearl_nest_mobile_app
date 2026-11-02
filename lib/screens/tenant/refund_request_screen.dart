@@ -10,12 +10,14 @@ class RefundRequestScreen extends StatefulWidget {
     required this.payments,
     this.landlordRejected = false,
     this.administratorReview = false,
+    this.bookingChangeRefund = false,
   });
 
   final String propertyName;
   final List<Map<String, dynamic>> payments;
   final bool landlordRejected;
   final bool administratorReview;
+  final bool bookingChangeRefund;
 
   @override
   State<RefundRequestScreen> createState() => _RefundRequestScreenState();
@@ -49,6 +51,8 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
     super.initState();
     if (widget.landlordRejected) {
       _reasonController.text = 'Landlord rejected this booking.';
+    } else if (widget.bookingChangeRefund) {
+      _reasonController.text = 'Refund of overpayment after approved booking date change.';
     }
     final payments = _payments;
     if (payments.isNotEmpty) {
@@ -192,6 +196,8 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
             Text(
               widget.landlordRejected
                   ? 'Because the landlord rejected this booking, your full remaining payment is guaranteed and approved automatically. Pearl Nest will manually transfer it to the destination you provide.'
+                  : widget.bookingChangeRefund
+                      ? 'This request is for an amount paid above the revised booking total. The refund is limited to the remaining overpayment and is paid manually after review.'
                   : widget.administratorReview
                       ? 'This visit fee was paid to Pearl Nest. Administrators review visit-fee refund requests, and approved refunds are paid manually.'
                   : 'The landlord reviews your request first, then an administrator makes the final decision. Approved refunds are paid manually to the destination you provide.',

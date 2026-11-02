@@ -38,8 +38,11 @@ class NewChatService {
     _socket?.disconnect();
   }
 
-  void emit(String event, dynamic data) {
-    _socket?.emit(event, data);
+  bool emit(String event, dynamic data) {
+    final socket = _socket;
+    if (socket?.connected != true) return false;
+    socket!.emit(event, data);
+    return true;
   }
 
   void on(String event, Function(dynamic) handler) {

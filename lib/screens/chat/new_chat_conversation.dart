@@ -234,6 +234,47 @@ class _NewChatConversationState extends State<NewChatConversation> {
           return Column(
             children: [
               if (widget.propertyId != null) _buildPropertyContext(),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: state.pendingMessage != null &&
+                        state.refreshError != null
+                    ? Container(
+                        key: const ValueKey('failed-chat-message'),
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        color: Colors.red.withValues(alpha: 0.08),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                state.refreshError!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () {
+                                final pending = state.pendingMessage!;
+                                context.read<NewChatBloc>().add(
+                                      FetchNewChat(
+                                        currentUserId: widget.fromUserId,
+                                        toUserId: widget.toUserId,
+                                        propertyId: widget.propertyId,
+                                        isSendMessage: true,
+                                        sendMessage: pending,
+                                      ),
+                                    );
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(key: ValueKey('no-chat-error')),
+              ),
               Expanded(
                 child: Chat(
             theme: ChatTheme(
@@ -289,6 +330,9 @@ class _NewChatConversationState extends State<NewChatConversation> {
           CustomSnackBar.showError(context, "Sorry, failed to fetch message.");
         } else if (state is NewChatLoadedState) {
           _chatController.setMessages(state.messages);
+          if (state.refreshError != null) {
+            CustomSnackBar.showError(context, state.refreshError!);
+          }
           if (_conversationStatus != state.conversationStatus) {
             setState(() => _conversationStatus = state.conversationStatus);
           }

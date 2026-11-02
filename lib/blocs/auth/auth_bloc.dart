@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pearlnest/apis/auth_service.dart';
@@ -5,6 +6,7 @@ import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/models/user.dart';
+import 'package:pearlnest/services/chat_cache_service.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   User? _currentUser;
@@ -122,16 +124,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await prefs.remove('token_expiry');
         await prefs.remove('user_id');
         await prefs.remove('role');
+        await _clearLocalChatCache();
         _currentUser = null;
         _currentToken = null;
         ApiClient.setAuthToken(null);
         emit(AuthLogOut());
       }
     } catch (e) {
+      await _clearLocalChatCache();
       _currentUser = null;
       _currentToken = null;
       ApiClient.setAuthToken(null);
       emit(AuthUnauthenticated());
+    }
+  }
+
+  Future<void> _clearLocalChatCache() async {
+    try {
+      await ChatCacheService.clearAll();
+    } catch (error) {
+      debugPrint('Could not clear local chat cache on logout: $error');
     }
   }
 
@@ -221,6 +233,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       //debugPrint('AuthBloc: Error clearing session data - $e');
     }
+    await _clearLocalChatCache();
 
     emit(AuthUnauthenticated());
   }

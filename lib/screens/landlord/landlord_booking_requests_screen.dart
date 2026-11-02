@@ -220,12 +220,59 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     }
   }
 
+  Future<void> _handleChangeRequestAction(
+    BookingChangeRequest request,
+    String decision,
+  ) async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      await BookingService.reviewBookingChange(
+        requestId: request.id,
+        decision: decision,
+      );
+      final bookings = widget.user.userType == UserType.admin
+          ? await BookingService.fetchAdminBookings()
+          : await BookingService.fetchLandlordBookings();
+      if (!mounted) return;
+      setState(() {
+        _allBookings = bookings;
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            decision == 'ACCEPT'
+                ? 'Change offer sent to the tenant. The current booking has not changed yet.'
+                : 'Change request declined. The current booking is unchanged.',
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } on BookingException catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not review the change request: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _showBookingDetails(Booking booking) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildBookingDetailsModal(booking),
+      builder: (context) => _buildBookingDetailsModal(booking, context),
     );
   }
 
@@ -768,7 +815,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
     );
   }
 
-  Widget _buildBookingDetailsModal(Booking booking) {
+  Widget _buildBookingDetailsModal(Booking booking, BuildContext sheetContext) {
     final tenantName = booking.tenantName;
     final tenantEmail = booking.tenantEmail;
     final tenantPhone = booking.tenantPhone;
@@ -866,6 +913,10 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                       _buildDetailRow('Created', '${_formatDate(booking.createdAt)} at ${_formatTime(booking.createdAt)}'),
                     ],
                   ),
+                  if (booking.changeRequests.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildChangeRequestsSection(booking, sheetContext),
+                  ],
                   if (booking.message != null && booking.message!.isNotEmpty) ...[
                     SizedBox(height: 24),
                     _buildDetailSection(
@@ -997,6 +1048,95 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildChangeRequestsSection(
+    Booking booking,
+    BuildContext sheetContext,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Date change requests',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.getTextColor(context),
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...booking.changeRequests.map((request) {
+          final quoteTotal = request.offeredQuote?['totalAmount'];
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${_formatDate(request.checkInDate)}'
+                    '${request.checkOutDate == null ? '' : ' – ${_formatDate(request.checkOutDate!)}'}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    switch (request.status) {
+                      'PENDING' => 'Awaiting your review',
+                      'OFFERED' => 'Waiting for tenant to accept the quote',
+                      'ACCEPTED' => 'Accepted; booking dates updated',
+                      'DECLINED' => 'Declined',
+                      'CANCELLED' => 'Cancelled by tenant',
+                      _ => request.status,
+                    },
+                    style: TextStyle(
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                  ),
+                  if (quoteTotal is num) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Offered total: ${ProfileService().currencyConverter(price: quoteTotal.toInt())}',
+                    ),
+                  ],
+                  if (request.status == 'PENDING') ...[
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Accepting sends the tenant a new quote. Their current dates and charges remain unchanged until they accept it.',
+                      style: TextStyle(height: 1.4),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        FilledButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () {
+                                  Navigator.of(sheetContext).pop();
+                                  _handleChangeRequestAction(request, 'ACCEPT');
+                                },
+                          child: const Text('Approve dates'),
+                        ),
+                        OutlinedButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () {
+                                  Navigator.of(sheetContext).pop();
+                                  _handleChangeRequestAction(request, 'DECLINE');
+                                },
+                          child: const Text('Decline'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 
