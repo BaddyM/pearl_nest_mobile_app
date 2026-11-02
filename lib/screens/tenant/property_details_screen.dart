@@ -4403,7 +4403,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   // Handle property sharing
   void _shareProperty() async {
     try {
-      SharePlus.instance.share(ShareParams(text: 'https://pearlnestestates.com/PropertyDetails/${widget.property.id}'));
+      await SharePlus.instance.share(
+        ShareParams(
+          text: 'https://pearlnestestates.com/property/${widget.property.id}',
+        ),
+      );
       //Share api counter
       context.read<ShareBloc>().add(SharePropertyEvent(propertyId: widget.property.id));
     } catch (e) {
