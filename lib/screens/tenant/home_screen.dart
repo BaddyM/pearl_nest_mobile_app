@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:async';
 import 'package:pearlnest/apis/app_config.dart';
@@ -10,9 +9,6 @@ import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/favorites_service.dart';
 import 'package:pearlnest/apis/payment_service.dart';
 import 'package:pearlnest/apis/auth_service.dart';
-import 'package:pearlnest/blocs/booking/booking_bloc.dart';
-import 'package:pearlnest/blocs/booking/booking_event.dart';
-import 'package:pearlnest/blocs/booking/booking_state.dart';
 import 'package:pearlnest/models/landlord.dart';
 import 'package:pearlnest/models/property.dart';
 import 'package:pearlnest/models/booking.dart';
@@ -30,6 +26,7 @@ import 'package:pearlnest/screens/landlord/landlord_dashboard_screen.dart';
 import 'package:pearlnest/services/profile_service.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
+import 'package:pearlnest/utils/booking_payment_navigation.dart';
 import 'package:pearlnest/widgets/property_promotion_price.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
@@ -142,7 +139,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // "All" list — category views are populated from a separate search call,
       // so appending general-list pages to them would mix in wrong results.
       if (_selectedCategory == 'All' &&
-          _scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+          _scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent * 0.8) {
         if (_hasNextPage && !_isLoadingMore) {
           _loadProperties(loadMore: true);
         }
@@ -176,11 +174,15 @@ class _HomeScreenState extends State<HomeScreen> {
       final unreadCount = (responseData['data'] as List)
           .whereType<Map>()
           .fold<int>(0, (total, conversation) {
-        final count = int.tryParse(conversation['unreadCount']?.toString() ?? '');
+        final count =
+            int.tryParse(conversation['unreadCount']?.toString() ?? '');
         final isCurrentUserSender =
             conversation['fromUserId']?.toString() == widget.user.id;
         return total +
-            (count ?? (isCurrentUserSender || conversation['isRead'] == true ? 0 : 1));
+            (count ??
+                (isCurrentUserSender || conversation['isRead'] == true
+                    ? 0
+                    : 1));
       });
       if (mounted && unreadCount != _unreadChatCount) {
         setState(() => _unreadChatCount = unreadCount);
@@ -203,7 +205,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Helper method to check if current user has favorited this property
   bool _isPropertyFavorited(Property property) {
-    return property.favourites.any((favourite) => favourite['userId'] == widget.user.id);
+    return property.favourites
+        .any((favourite) => favourite['userId'] == widget.user.id);
   }
 
   // Toggle favorite status for a property
@@ -215,7 +218,8 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         if (wasLiked) {
           // Remove from favorites
-          property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+          property.favourites.removeWhere(
+              (favourite) => favourite['userId'] == widget.user.id);
         } else {
           // Add to favorites
           property.favourites.add({
@@ -231,7 +235,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (result['success'] == true) {
         // Success - UI is already updated optimistically
-        final message = wasLiked ? 'Removed from favorites' : 'Added to favorites';
+        final message =
+            wasLiked ? 'Removed from favorites' : 'Added to favorites';
         // //debugPrint('✅ $message for property: ${property.id}');
 
         // Show success feedback
@@ -259,7 +264,8 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             } else {
               // Revert: remove from favorites
-              property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+              property.favourites.removeWhere(
+                  (favourite) => favourite['userId'] == widget.user.id);
             }
           });
         }
@@ -292,7 +298,8 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           } else {
             // Revert: remove from favorites
-            property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+            property.favourites.removeWhere(
+                (favourite) => favourite['userId'] == widget.user.id);
           }
         });
       }
@@ -336,7 +343,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _categoryProperties = List.from(cachedProperties);
               _featuredProperties = cachedProperties
                   .where((property) =>
-                      property.isFeatured && property.availabilityStatus == true)
+                      property.isFeatured &&
+                      property.availabilityStatus == true)
                   .toList();
               _totalProperties = cachedProperties.length;
               _totalPages = 1;
@@ -354,7 +362,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // Page to fetch: next page when loading more, otherwise the first page.
       final page = loadMore ? _currentPage + 1 : 1;
 
-      final List<Property> propertiesResult = await PropertyService.getProperties(
+      final List<Property> propertiesResult =
+          await PropertyService.getProperties(
         page: page,
         limit: _pageLimit,
       );
@@ -375,7 +384,8 @@ class _HomeScreenState extends State<HomeScreen> {
         try {
           await PropertyService.cacheProperties([..._properties, ...uniqueNew]);
         } catch (error, stackTrace) {
-          debugPrint('Could not save properties for offline use: $error\n$stackTrace');
+          debugPrint(
+              'Could not save properties for offline use: $error\n$stackTrace');
         }
 
         if (mounted) {
@@ -398,7 +408,8 @@ class _HomeScreenState extends State<HomeScreen> {
       try {
         await PropertyService.cacheProperties(propertiesResult);
       } catch (error, stackTrace) {
-        debugPrint('Could not save properties for offline use: $error\n$stackTrace');
+        debugPrint(
+            'Could not save properties for offline use: $error\n$stackTrace');
       }
 
       // Initial / refresh load: also fetch featured properties and bookings.
@@ -434,12 +445,15 @@ class _HomeScreenState extends State<HomeScreen> {
         List<Property> featuredProperties = [];
         if (featuredResult['success'] == true) {
           // Use dedicated featured properties if available
-          final filterFeaturedProperties = List<Property>.from(featuredResult['properties'] ?? []);
+          final filterFeaturedProperties =
+              List<Property>.from(featuredResult['properties'] ?? []);
           featuredProperties = filterFeaturedProperties.toList();
           featuredProperties.shuffle();
         } else {
           // Fallback to filtering general properties if featured API fails
-          featuredProperties = newProperties.where((p) => p.isFeatured && p.availabilityStatus == true).toList();
+          featuredProperties = newProperties
+              .where((p) => p.isFeatured && p.availabilityStatus == true)
+              .toList();
           // //debugPrint('🏠 Using ${featuredProperties.length} featured properties from general properties (fallback)');
         }
 
@@ -448,7 +462,8 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _properties = newProperties;
             _featuredProperties = featuredProperties;
-            _categoryProperties = List.from(newProperties); // Initialize with all properties
+            _categoryProperties =
+                List.from(newProperties); // Initialize with all properties
 
             // Reset pagination metadata for a fresh list.
             _currentPage = 1;
@@ -564,7 +579,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getFullImageUrl(String url) {
     // Handle comma-separated URLs and filter out invalid ones
     if (url.contains(',')) {
-      final urls = url.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty && e != 'undefined').toList();
+      final urls = url
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty && e != 'undefined')
+          .toList();
       if (urls.isNotEmpty) {
         url = urls.first;
       }
@@ -598,7 +617,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // Handle category selection and load properties for that category
   IconData _categoryIcon(String key, String label) {
     final identity = '$key $label'.toLowerCase();
-    if (identity.contains('air_bnb') || identity.contains('airbnb') || identity.contains('stay')) {
+    if (identity.contains('air_bnb') ||
+        identity.contains('airbnb') ||
+        identity.contains('stay')) {
       return Icons.weekend;
     }
     if (identity.contains('hostel') || identity.contains('hotel')) {
@@ -643,7 +664,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ..clear()
           ..add({'name': 'All', 'key': 'All', 'icon': Icons.apps})
           ..addAll(configuredCategories);
-        if (!_categories.any((category) => category['name'] == _selectedCategory)) {
+        if (!_categories
+            .any((category) => category['name'] == _selectedCategory)) {
           _selectedCategory = 'All';
           _categoryProperties = List.from(_properties);
         }
@@ -662,9 +684,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _categoryAutoScrollTimer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (!mounted || !_categoryScrollController.hasClients) return;
       final position = _categoryScrollController.position;
-      if (position.maxScrollExtent <= 0 || position.isScrollingNotifier.value) return;
+      if (position.maxScrollExtent <= 0 || position.isScrollingNotifier.value)
+        return;
 
-      final nextOffset = position.pixels + MediaQuery.of(context).size.width * 0.7;
+      final nextOffset =
+          position.pixels + MediaQuery.of(context).size.width * 0.7;
       _categoryScrollController.animateTo(
         nextOffset >= position.maxScrollExtent ? 0 : nextOffset,
         duration: const Duration(milliseconds: 700),
@@ -673,7 +697,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _onCategorySelected(String categoryName, [String? categoryKey]) async {
+  Future<void> _onCategorySelected(String categoryName,
+      [String? categoryKey]) async {
     if (_selectedCategory == categoryName) return; // Already selected
 
     setState(() {
@@ -693,10 +718,12 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         // Search for properties of the selected category
         debugPrint('🔍 Searching for properties of type: $categoryName');
-        final searchResult = await PropertyService.searchPropertiesByType(categoryKey ?? categoryName.toLowerCase(), 1, 100);
+        final searchResult = await PropertyService.searchPropertiesByType(
+            categoryKey ?? categoryName.toLowerCase(), 1, 100);
 
         if (searchResult['success'] == true) {
-          final categoryProps = List<Property>.from(searchResult['properties'] ?? []);
+          final categoryProps =
+              List<Property>.from(searchResult['properties'] ?? []);
           if (mounted) {
             setState(() {
               _categoryProperties = categoryProps;
@@ -733,7 +760,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Prioritize properties with pending bookings in the list
-  List<Property> _prioritizePropertiesWithPendingBookings(List<Property> properties) {
+  List<Property> _prioritizePropertiesWithPendingBookings(
+      List<Property> properties) {
     if (_pendingProperties.isEmpty) {
       // No pending bookings, return original list
       return properties;
@@ -774,7 +802,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (didPop) return;
         final now = DateTime.now();
         final lastPress = _lastBackPressTime;
-        if (lastPress != null && now.difference(lastPress) <= Duration(seconds: 2)) {
+        if (lastPress != null &&
+            now.difference(lastPress) <= Duration(seconds: 2)) {
           _lastBackPressTime = null;
           SystemNavigator.pop();
           return;
@@ -839,7 +868,9 @@ class _HomeScreenState extends State<HomeScreen> {
           0 => _buildHomeContent(),
           1 => SearchScreen(
               user: widget.user,
-              allProperties: _properties.where((property) => property.availabilityStatus == true).toList(),
+              allProperties: _properties
+                  .where((property) => property.availabilityStatus == true)
+                  .toList(),
             ),
           2 => FavoritesScreen(
               user: widget.user,
@@ -852,7 +883,9 @@ class _HomeScreenState extends State<HomeScreen> {
           // 3 => BookingsListScreen(user: widget.user),
           3 => ProfileScreen(
               user: widget.user,
-              landlord: widget.user.userType == UserType.landlord ? _createDummyLandlord() : null,
+              landlord: widget.user.userType == UserType.landlord
+                  ? _createDummyLandlord()
+                  : null,
             ),
           _ => _buildHomeContent(),
         },
@@ -931,7 +964,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -969,7 +1003,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   color: AppTheme.primaryblue.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.primaryblue.withValues(alpha: 0.2)),
+                  border: Border.all(
+                      color: AppTheme.primaryblue.withValues(alpha: 0.2)),
                 ),
                 child: Stack(
                   children: [
@@ -979,7 +1014,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => NotificationScreen(user: widget.user),
+                            builder: (context) =>
+                                NotificationScreen(user: widget.user),
                           ),
                         );
                         // Refresh notification count when returning from notification screen
@@ -1029,10 +1065,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: CircleAvatar(
                     radius: 25,
                     backgroundColor: AppTheme.lightGreyColor,
-                    child: widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty
+                    child: widget.user.profileImage != null &&
+                            widget.user.profileImage!.isNotEmpty
                         ? ClipOval(
                             child: CachedNetworkImage(
-                              imageUrl: _getFullImageUrl(widget.user.profileImage!),
+                              imageUrl:
+                                  _getFullImageUrl(widget.user.profileImage!),
                               width: 50,
                               height: 50,
                               fit: BoxFit.cover,
@@ -1045,7 +1083,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          AppTheme.primaryblue),
                                     ),
                                   ),
                                 ),
@@ -1078,10 +1117,13 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)),
+                border: Border.all(
+                    color: AppTheme.getSecondaryTextColor(context)
+                        .withValues(alpha: 0.2)),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
+                    color:
+                        AppTheme.getTextColor(context).withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: Offset(0, 2),
                   ),
@@ -1161,9 +1203,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
               return GestureDetector(
                   onTap: () => _onCategorySelected(
-                    category['name'] as String,
-                    category['key'] as String,
-                  ),
+                        category['name'] as String,
+                        category['key'] as String,
+                      ),
                   child: Container(
                     width: 70,
                     margin: EdgeInsets.only(right: 16),
@@ -1173,12 +1215,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 60,
                           height: 60,
                           decoration: BoxDecoration(
-                            color: isSelected ? AppTheme.primaryblue : AppTheme.getCardColor(context),
+                            color: isSelected
+                                ? AppTheme.primaryblue
+                                : AppTheme.getCardColor(context),
                             shape: BoxShape.circle,
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: AppTheme.primaryblue.withValues(alpha: 0.3),
+                                      color: AppTheme.primaryblue
+                                          .withValues(alpha: 0.3),
                                       blurRadius: 8,
                                       offset: Offset(0, 4),
                                     ),
@@ -1187,7 +1232,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           child: Icon(
                             category['icon'],
-                            color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
+                            color: isSelected
+                                ? AppTheme.whiteColor
+                                : AppTheme.getSecondaryTextColor(context),
                             size: 24,
                           ),
                         ),
@@ -1196,8 +1243,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           category['name'],
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                            color: isSelected ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? AppTheme.primaryblue
+                                : AppTheme.getSecondaryTextColor(context),
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 1,
@@ -1371,7 +1422,8 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppTheme.getCardColor(context),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+                color: AppTheme.getSecondaryTextColor(context)
+                    .withValues(alpha: 0.1),
               ),
             ),
             child: Center(
@@ -1420,7 +1472,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
                     child: Text(
                       'Explore All Properties',
@@ -1471,7 +1524,8 @@ class _HomeScreenState extends State<HomeScreen> {
               return Container(
                 width: 280,
                 margin: EdgeInsets.only(right: 16),
-                child: _buildPropertyCard(property, widget.user, featured: true),
+                child:
+                    _buildPropertyCard(property, widget.user, featured: true),
               );
             },
           ),
@@ -1482,10 +1536,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentProperties() {
     // Use category properties if a specific category is selected and loaded
-    List<Property> baseProperties = _selectedCategory == 'All' ? _properties : _categoryProperties;
+    List<Property> baseProperties =
+        _selectedCategory == 'All' ? _properties : _categoryProperties;
 
     // Prioritize properties with pending bookings
-    final filteredProperties = _prioritizePropertiesWithPendingBookings(baseProperties);
+    final filteredProperties =
+        _prioritizePropertiesWithPendingBookings(baseProperties);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1513,7 +1569,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
                   ),
                 ),
             ],
@@ -1553,7 +1610,8 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppTheme.getCardColor(context),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+                color: AppTheme.getSecondaryTextColor(context)
+                    .withValues(alpha: 0.1),
               ),
             ),
             child: Center(
@@ -1602,7 +1660,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   padding: EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: filteredProperties.length + (_isLoadingMore ? 1 : 0),
+                  itemCount:
+                      filteredProperties.length + (_isLoadingMore ? 1 : 0),
                   itemBuilder: (context, index) {
                     // Show loading indicator at the end when loading more
                     if (index == filteredProperties.length) {
@@ -1612,13 +1671,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Column(
                             children: [
                               CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.primaryblue),
                               ),
                               SizedBox(height: 8),
                               Text(
                                 'Loading more properties...',
                                 style: TextStyle(
-                                  color: AppTheme.getSecondaryTextColor(context),
+                                  color:
+                                      AppTheme.getSecondaryTextColor(context),
                                   fontSize: 14,
                                 ),
                               ),
@@ -1690,7 +1751,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPropertyCard(Property property, User user, {bool featured = false}) {
+  Widget _buildPropertyCard(Property property, User user,
+      {bool featured = false}) {
     final isBooked = property.availableUnits <= 0 ||
         property.status == PropertyStatus.booked;
     return GestureDetector(
@@ -1760,14 +1822,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                     end: Alignment.bottomRight,
                                     colors: [
                                       AppTheme.lightGreyColor,
-                                      AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                                      AppTheme.getSecondaryTextColor(context)
+                                          .withValues(alpha: 0.3),
                                     ],
                                   ),
                                 ),
                                 child: Center(
                                   child: Icon(
                                     Icons.image_not_supported,
-                                    color: AppTheme.getSecondaryTextColor(context),
+                                    color:
+                                        AppTheme.getSecondaryTextColor(context),
                                     size: 40,
                                   ),
                                 ),
@@ -1826,13 +1890,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: AppTheme.primaryblue,
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.primaryblue.withValues(alpha: 0.3),
+                                  color: AppTheme.primaryblue
+                                      .withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: Offset(0, 4),
                                 ),
@@ -1850,7 +1916,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           SizedBox(width: 8),
                           if (property.isFeatured)
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.orange,
                                 borderRadius: BorderRadius.circular(20),
@@ -1875,15 +1942,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.getTextColor(context).withValues(alpha: 0.1),
+                                color: AppTheme.getTextColor(context)
+                                    .withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: Offset(0, 4),
                               ),
                             ],
                           ),
                           child: Icon(
-                            _isPropertyFavorited(property) ? Icons.favorite : Icons.favorite_outline,
-                            color: _isPropertyFavorited(property) ? Colors.red : AppTheme.getSecondaryTextColor(context),
+                            _isPropertyFavorited(property)
+                                ? Icons.favorite
+                                : Icons.favorite_outline,
+                            color: _isPropertyFavorited(property)
+                                ? Colors.red
+                                : AppTheme.getSecondaryTextColor(context),
                             size: 20,
                           ),
                         ),
@@ -1905,7 +1977,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.getTextColor(context).withValues(alpha: 0.2),
+                          color: AppTheme.getTextColor(context)
+                              .withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: Offset(0, 4),
                         ),
@@ -1951,7 +2024,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.getTextColor(context).withValues(alpha: 0.1),
+                            color: AppTheme.getTextColor(context)
+                                .withValues(alpha: 0.1),
                             blurRadius: 8,
                             offset: Offset(0, 4),
                           ),
@@ -1967,7 +2041,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             Padding(
-              padding: EdgeInsets.all(16), // Reduced from 20 to prevent overflow
+              padding:
+                  EdgeInsets.all(16), // Reduced from 20 to prevent overflow
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1989,7 +2064,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(width: 12),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -2051,7 +2127,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   SizedBox(height: 12), // Reduced from 16
 
-                  if (property.availabilityStatus == false && property.availableFrom != null)
+                  if (property.availabilityStatus == false &&
+                      property.availableFrom != null)
                     Container(
                       margin: EdgeInsets.only(bottom: 16),
                       padding: EdgeInsets.all(12),
@@ -2105,23 +2182,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Expanded(
                           child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            PropertyPromotionPrice(
-                              property: property,
-                              fontSize: featured ? 18 : 20,
-                            ),
-                          SizedBox(height: 4),
-                          Text(
-                            '${property.reviewCount} reviews',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.getSecondaryTextColor(context),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              PropertyPromotionPrice(
+                                property: property,
+                                fontSize: featured ? 18 : 20,
                               ),
-                            ),
-                          ],
+                              SizedBox(height: 4),
+                              Text(
+                                '${property.reviewCount} reviews',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color:
+                                      AppTheme.getSecondaryTextColor(context),
+                                ),
+                              ),
+                            ],
                           ),
-                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -2214,6 +2292,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPendingPropertyCard(Property property, Booking? booking) {
     return GestureDetector(
       onTap: () {
+        if (booking != null &&
+            booking.status == BookingStatus.confirmed &&
+            !booking.isPaymentComplete) {
+          _openPendingBookingPayment(property, booking);
+          return;
+        }
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -2276,14 +2360,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                                      AppTheme.getSecondaryTextColor(context)
+                                          .withValues(alpha: 0.3),
                                     ],
                                   ),
                                 ),
                                 child: Center(
                                   child: Icon(
                                     Icons.image_not_supported,
-                                    color: AppTheme.getSecondaryTextColor(context),
+                                    color:
+                                        AppTheme.getSecondaryTextColor(context),
                                     size: 30,
                                   ),
                                 ),
@@ -2380,33 +2466,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       if (booking != null)
-                        GestureDetector(
-                          onTap: () => _showCancelBookingDialog(booking),
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                        OutlinedButton.icon(
+                          onPressed: () => _showCancelBookingDialog(booking),
+                          icon: const Icon(Icons.cancel_outlined, size: 14),
+                          label: const Text('Cancel'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: BorderSide(
+                              color: Colors.red.withValues(alpha: 0.3),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.cancel_outlined,
-                                  color: Colors.red,
-                                  size: 14,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                            backgroundColor: Colors.red.withValues(alpha: 0.1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -2419,6 +2501,43 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openPendingBookingPayment(
+    Property property,
+    Booking booking,
+  ) async {
+    final totalDue = booking.totalAmount ??
+        (property.deposit != 0 ? property.deposit : property.price);
+    final amountDue = booking.successfulPaymentsTotal <= 0
+        ? (booking.amount ?? totalDue)
+        : totalDue - booking.successfulPaymentsTotal;
+    final balance = amountDue.clamp(0, double.infinity).toDouble();
+    if (balance <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('There is no outstanding balance to pay.')),
+        );
+      }
+      return;
+    }
+
+    try {
+      await openBookingPayment(
+        context: context,
+        user: widget.user,
+        booking: booking,
+        property: property,
+        amount: balance,
+      );
+      if (mounted) _loadProperties();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start payment: $error')),
+      );
+    }
   }
 
   // Initiate payment for a pending booking
@@ -2445,7 +2564,8 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
                 ),
                 SizedBox(height: 16),
                 Text(
@@ -2485,7 +2605,8 @@ class _HomeScreenState extends State<HomeScreen> {
         // //debugPrint('🔍 AuthService.getUserId() returned: "$currentUserId"');
 
         if (currentUserId == null || currentUserId.isEmpty) {
-          _showPaymentError('User session invalid. Please logout and login again.');
+          _showPaymentError(
+              'User session invalid. Please logout and login again.');
           return;
         }
 
@@ -2504,7 +2625,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
                   ),
                   SizedBox(height: 16),
                   Text(
@@ -2547,7 +2669,9 @@ class _HomeScreenState extends State<HomeScreen> {
           final String? orderTrackingId = paymentResult['orderTrackingId'];
           final String? merchantReference = paymentResult['merchantReference'];
 
-          if (redirectUrl != null && orderTrackingId != null && merchantReference != null) {
+          if (redirectUrl != null &&
+              orderTrackingId != null &&
+              merchantReference != null) {
             // Navigate to payment screen
             final bool? paymentSuccess = await Navigator.push<bool>(
               context,
@@ -2587,7 +2711,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _showPaymentError('Payment setup incomplete. Please try again.');
           }
         } else {
-          _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
+          _showPaymentError(paymentResult['message'] ??
+              'Failed to create payment. Please try again.');
         }
 
         return; // Return early since we handled the payment with fallback ID
@@ -2597,7 +2722,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final paymentResult = await PaymentService.createPayment(
         bookingId: booking.id,
         propertyId: property.id,
-        amount: paymentAmount, // Use the user-specified amount instead of property.price
+        amount:
+            paymentAmount, // Use the user-specified amount instead of property.price
       );
 
       // Close loading dialog
@@ -2610,7 +2736,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final String? orderTrackingId = paymentResult['orderTrackingId'];
         final String? merchantReference = paymentResult['merchantReference'];
 
-        if (redirectUrl != null && orderTrackingId != null && merchantReference != null) {
+        if (redirectUrl != null &&
+            orderTrackingId != null &&
+            merchantReference != null) {
           // Navigate to payment screen
           final bool? paymentSuccess = await Navigator.push<bool>(
             context,
@@ -2650,7 +2778,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _showPaymentError('Payment setup incomplete. Please try again.');
         }
       } else {
-        _showPaymentError(paymentResult['message'] ?? 'Failed to create payment. Please try again.');
+        _showPaymentError(paymentResult['message'] ??
+            'Failed to create payment. Please try again.');
       }
     } catch (e) {
       // Close loading dialog if still showing
@@ -2659,7 +2788,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       // //debugPrint('❌ Payment initiation error: $e');
-      _showPaymentError('An error occurred while setting up payment. Please try again.');
+      _showPaymentError(
+          'An error occurred while setting up payment. Please try again.');
     }
   }
 
@@ -2728,7 +2858,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // Show dialog to get payment amount from user
   Future<double?> _showPaymentAmountDialog(Property property) async {
     final TextEditingController amountController = TextEditingController();
-    final formattedPropertyPrice = ProfileService().currencyConverter(price: property.price.toInt());
+    final formattedPropertyPrice =
+        ProfileService().currencyConverter(price: property.price.toInt());
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     return await showDialog<double>(
@@ -2822,16 +2953,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
+                      borderSide:
+                          BorderSide(color: AppTheme.primaryblue, width: 2),
                     ),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter an amount';
                     }
 
-                    final double? amount = double.tryParse(value.trim().replaceAll(',', ''));
+                    final double? amount =
+                        double.tryParse(value.trim().replaceAll(',', ''));
                     if (amount == null) {
                       return 'Please enter a valid number';
                     }
@@ -2840,7 +2974,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       return 'Amount must be greater than 0';
                     }
 
-                    if (ProfileService().toBaseCurrency(amount) > property.price) {
+                    if (ProfileService().toBaseCurrency(amount) >
+                        property.price) {
                       return 'Amount cannot exceed $formattedPropertyPrice';
                     }
 
@@ -2905,7 +3040,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (formKey.currentState!.validate()) {
-                        final String value = amountController.text.trim().replaceAll(',', '');
+                        final String value =
+                            amountController.text.trim().replaceAll(',', '');
                         final double amount = double.parse(value);
                         Navigator.of(context).pop(
                           ProfileService().toBaseCurrency(amount).toDouble(),
@@ -3042,7 +3178,9 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
-          color: isActive ? AppTheme.primaryblue.withValues(alpha: 0.1) : Colors.transparent,
+          color: isActive
+              ? AppTheme.primaryblue.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -3053,7 +3191,9 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(
                   isActive ? activeIcon : icon,
-                  color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+                  color: isActive
+                      ? AppTheme.primaryblue
+                      : AppTheme.getSecondaryTextColor(context),
                   size: 24,
                 ),
                 if (badgeCount > 0)
@@ -3061,12 +3201,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     top: -7,
                     right: -12,
                     child: Container(
-                      constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+                      constraints:
+                          const BoxConstraints(minWidth: 17, minHeight: 17),
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: Colors.red.shade600,
-                        border: Border.all(color: AppTheme.getCardColor(context), width: 1.5),
+                        border: Border.all(
+                            color: AppTheme.getCardColor(context), width: 1.5),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -3087,7 +3229,9 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                color: isActive ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+                color: isActive
+                    ? AppTheme.primaryblue
+                    : AppTheme.getSecondaryTextColor(context),
               ),
             ),
           ],
@@ -3096,59 +3240,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Show confirmation dialog for canceling a booking
-  void _showCancelBookingDialog(Booking booking) {
-    showDialog(
+  Future<void> _showCancelBookingDialog(Booking booking) async {
+    final cancelled = await showDialog<bool>(
       context: context,
-      builder: (context) => BlocProvider.value(
-        value: context.read<BookingBloc>(),
-        child: BlocListener<BookingBloc, BookingState>(
-          listener: (context, state) {
-            if (!mounted) return; // Safety check
-
-            if (state is BookingSuccess) {
-              Navigator.of(context).pop(); // Close dialog
-              _showSuccessSnackBar('Booking cancelled successfully');
-              // //debugPrint('✅ Booking cancellation successful, refreshing all data...');
-              // Add slight delay to ensure server has processed the update
-              Future.delayed(Duration(milliseconds: 1000), () {
-                if (mounted) {
-                  _onRefresh(); // Use full refresh instead of just pending bookings
-                }
-              });
-            } else if (state is BookingFailure) {
-              Navigator.of(context).pop(); // Close dialog
-              // //debugPrint('❌ Booking cancellation failed: ${state.error}');
-              _showErrorSnackBar(state.error);
-            }
-          },
-          child: AlertDialog(
-            backgroundColor: AppTheme.getCardColor(context),
+      builder: (dialogContext) {
+        var isCancelling = false;
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) => AlertDialog(
+            backgroundColor: AppTheme.getCardColor(dialogContext),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
             title: Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.cancel_outlined,
                     color: Colors.red,
                     size: 24,
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Cancel Booking',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.getTextColor(context),
+                      color: AppTheme.getTextColor(dialogContext),
                     ),
                   ),
                 ),
@@ -3162,12 +3286,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Are you sure you want to cancel this booking?',
                   style: TextStyle(
                     fontSize: 16,
-                    color: AppTheme.getTextColor(context),
+                    color: AppTheme.getTextColor(dialogContext),
                   ),
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Container(
-                  padding: EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryblue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -3180,29 +3304,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.getTextColor(context),
+                          color: AppTheme.getTextColor(dialogContext),
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'Check-in: ${booking.checkInDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkInDate!) : 'N/A'}',
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppTheme.getSecondaryTextColor(context),
+                          color: AppTheme.getSecondaryTextColor(dialogContext),
                         ),
                       ),
                       Text(
                         'Check-out: ${booking.checkOutDate != null ? DateFormat('MMM dd, yyyy').format(booking.checkOutDate!) : booking.bookingPurpose == 'RENTAL' ? 'Open-ended' : 'N/A'}',
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppTheme.getSecondaryTextColor(context),
+                          color: AppTheme.getSecondaryTextColor(dialogContext),
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 12),
-                Text(
+                const SizedBox(height: 12),
+                const Text(
                   'This action cannot be undone.',
                   style: TextStyle(
                     fontSize: 14,
@@ -3214,89 +3338,77 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: isCancelling
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(false),
                 child: Text(
                   'Keep Booking',
                   style: TextStyle(
-                    color: AppTheme.getSecondaryTextColor(context),
+                    color: AppTheme.getSecondaryTextColor(dialogContext),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              BlocBuilder<BookingBloc, BookingState>(
-                builder: (context, state) {
-                  final isLoading = state is BookingLoading;
-                  return ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            try {
-                              if (mounted) {
-                                context.read<BookingBloc>().add(
-                                      BookingStatusUpdateRequested(
-                                        bookingId: booking.id,
-                                        status: 'REJECTED',
-                                      ),
-                                    );
-                              }
-                            } catch (e) {
-                              // //debugPrint('❌ Error adding booking event: $e');
-                              Navigator.of(context).pop(); // Close dialog
-                              _showErrorSnackBar('Unable to cancel booking. Please try again.');
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+              ElevatedButton(
+                onPressed: isCancelling
+                    ? null
+                    : () async {
+                        setDialogState(() => isCancelling = true);
+                        try {
+                          await BookingService.cancelBooking(booking.id);
+                          if (dialogContext.mounted) {
+                            Navigator.of(dialogContext).pop(true);
+                          }
+                        } catch (error) {
+                          if (!dialogContext.mounted) return;
+                          setDialogState(() => isCancelling = false);
+                          CustomSnackBar.showError(
+                            dialogContext,
+                            error is BookingException
+                                ? error.message
+                                : 'Could not cancel this booking: $error',
+                          );
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: isCancelling
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Cancel Booking',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    child: isLoading
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            'Cancel Booking',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  );
-                },
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
+
+    if (cancelled == true && mounted) {
+      _showSuccessSnackBar('Booking cancelled successfully');
+      await _onRefresh();
+    }
   }
 
   // Helper methods for showing feedback
   void _showSuccessSnackBar(String message) {
     if (!mounted) return;
-
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   SnackBar(
-    //     content: Text(message),
-    //     backgroundColor: Colors.green,
-    //     behavior: SnackBarBehavior.floating,
-    //     shape: RoundedRectangleBorder(
-    //       borderRadius: BorderRadius.circular(8),
-    //     ),
-    //     margin: EdgeInsets.all(16),
-    //   ),
-    // );
-  }
-
-  void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-
-    CustomSnackBar.showError(context, message);
+    CustomSnackBar.showSuccess(context, message);
   }
 }

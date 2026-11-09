@@ -20,6 +20,10 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
   final _registrationNumberController = TextEditingController();
   final _physicalAddressController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _districtController = TextEditingController();
+  final _countyController = TextEditingController();
+  final _subCountyController = TextEditingController();
+  final _parishController = TextEditingController();
   final _zoneController = TextEditingController();
   final _villageController = TextEditingController();
 
@@ -38,31 +42,6 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
   };
 
   bool _isSubmittingApplication = false;
-
-  String? _selectedDistrict;
-  String? _selectedParish;
-
-  final List<String> _districts = [
-    'Kampala',
-    'Wakiso',
-    'Mukono',
-    'Jinja',
-    'Mbarara',
-    'Gulu',
-    'Lira',
-    'Masaka',
-  ];
-
-  final Map<String, List<String>> _parishes = {
-    'Kampala': ['Central Division', 'Kawempe Division', 'Makindye Division', 'Nakawa Division', 'Rubaga Division'],
-    'Wakiso': ['Busukuma', 'Katabi', 'Wakiso', 'Ssisa', 'Gombe'],
-    'Mukono': ['Mukono TC', 'Ntenjeru', 'Kyampisi', 'Nama', 'Ntunda'],
-    'Jinja': ['Jinja 1', 'Jinja 2', 'Jinja 3', 'Jinja 4', 'Jinja 5'],
-    'Mbarara': ['Mbarara 1', 'Mbarara 2', 'Mbarara 3', 'Mbarara 4', 'Mbarara 5'],
-    'Gulu': ['Gulu 1', 'Gulu 2', 'Gulu 3', 'Gulu 4', 'Gulu 5'],
-    'Lira': ['Lira 1', 'Lira 2', 'Lira 3', 'Lira 4', 'Lira 5'],
-    'Masaka': ['Masaka 1', 'Masaka 2', 'Masaka 3', 'Masaka 4', 'Masaka 5'],
-  };
 
   final List<String> _specializationOptions = [
     'Apartments',
@@ -149,43 +128,31 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: _buildSectionCard(
-                  title: 'After approval',
+                  title: 'What you get as a landlord',
                   icon: Icons.info_outline,
                   children: [
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.home_work_outlined),
-                      title: const Text('Manage property listings'),
-                      subtitle: const Text('Add properties and update their details.'),
+                      title: const Text('List and manage your properties'),
+                      subtitle: const Text(
+                        'Create listings and keep property information up to date.',
+                      ),
                     ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.calendar_today_outlined),
-                      title: const Text('Handle bookings and messages'),
-                      subtitle: const Text('Review booking requests and communicate with tenants.'),
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.account_balance_wallet_outlined),
-                      title: const Text('View earnings and request withdrawals'),
+                      title: const Text('Manage booking requests'),
                       subtitle: const Text(
-                        'Withdrawals require administrator approval and are paid manually.',
+                        'Review requests and keep track of booking activity.',
                       ),
                     ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.receipt_long_outlined),
-                      title: const Text('Review refund requests'),
+                      leading: const Icon(Icons.chat_bubble_outline),
+                      title: const Text('Communicate with tenants'),
                       subtitle: const Text(
-                        'You can recommend a decision; an administrator makes the final decision.',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'The landlord dashboard currently provides basic listing activity counts, not detailed financial analytics or expense tracking. PearlNest does not provide travel insurance.',
-                      style: TextStyle(
-                        color: AppTheme.getSecondaryTextColor(context),
-                        height: 1.4,
+                        'Use in-app messaging to discuss property and booking details.',
                       ),
                     ),
                   ],
@@ -233,30 +200,49 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
                         title: 'Business Address',
                         icon: Icons.location_on,
                         children: [
+                          Text(
+                            'Enter the address levels used in your area. You can provide details that are not in a fixed list.',
+                            style: TextStyle(
+                              color: AppTheme.getSecondaryTextColor(context),
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           Column(
                             children: [
-                              _buildDropdownField(
-                                value: _selectedDistrict,
-                                label: 'District',
+                              _buildTextField(
+                                controller: _districtController,
+                                label: 'District / City',
                                 icon: Icons.map,
-                                items: _districts,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedDistrict = value;
-                                    _selectedParish = null;
-                                  });
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter your district or city';
+                                  }
+                                  return null;
                                 },
                               ),
                               const SizedBox(height: 16),
-                              _buildDropdownField(
-                                value: _selectedParish,
-                                label: 'Parish',
+                              _buildTextField(
+                                controller: _countyController,
+                                label: 'County / Municipality (if applicable)',
+                                icon: Icons.account_balance,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _subCountyController,
+                                label: 'Sub-county / Town Council / Division',
                                 icon: Icons.location_city,
-                                items: _selectedDistrict != null ? _parishes[_selectedDistrict!] ?? [] : [],
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedParish = value;
-                                  });
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _parishController,
+                                label: 'Parish / Ward',
+                                icon: Icons.place_outlined,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter your parish or ward';
+                                  }
+                                  return null;
                                 },
                               ),
                             ],
@@ -473,46 +459,6 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
         ),
       ),
       validator: validator,
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String? value,
-    required String label,
-    required IconData icon,
-    required List<String> items,
-    required void Function(String?) onChanged,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-        prefixIcon: Icon(icon, color: AppTheme.primaryblue),
-        filled: true,
-        fillColor: AppTheme.getBackgroundColor(context).withOpacity(0.5),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.primaryblue, width: 2),
-        ),
-      ),
-      items: items.map((String item) {
-        return DropdownMenuItem<String>(
-          value: item,
-          child: Text(item),
-        );
-      }).toList(),
-      onChanged: onChanged,
-      style: TextStyle(color: AppTheme.getTextColor(context)),
-      dropdownColor: AppTheme.getCardColor(context),
     );
   }
 
@@ -789,10 +735,6 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
 
   void _handleSubmitApplication() async {
     if (_formKey.currentState!.validate()) {
-      if (_selectedDistrict == null) {
-        _showErrorSnackBar('Please select a district');
-        return;
-      }
       if (_selectedSpecializations.isEmpty) {
         _showErrorSnackBar('Please select at least one specialization');
         return;
@@ -1040,13 +982,25 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
     try {
       _showProgressSnackBar('Submitting application...');
 
-      final fullAddress = '${_selectedDistrict ?? ''}, ${_selectedParish ?? ''}';
+      final districtDetails = [
+        'District/City: ${_districtController.text.trim()}',
+        if (_countyController.text.trim().isNotEmpty)
+          'County/Municipality: ${_countyController.text.trim()}',
+        if (_subCountyController.text.trim().isNotEmpty)
+          'Sub-county/Town Council/Division: ${_subCountyController.text.trim()}',
+        if (_zoneController.text.trim().isNotEmpty)
+          'Zone: ${_zoneController.text.trim()}',
+        if (_villageController.text.trim().isNotEmpty)
+          'Village: ${_villageController.text.trim()}',
+        if (_physicalAddressController.text.trim().isNotEmpty)
+          'Physical address: ${_physicalAddressController.text.trim()}',
+      ].join(', ');
 
       final applicationResult = await LandlordService.submitLandlordApplication(
         businessName: _businessNameController.text.trim(),
         regNo: _registrationNumberController.text.trim(),
-        district: fullAddress,
-        parish: _selectedParish ?? '',
+        district: districtDetails,
+        parish: _parishController.text.trim(),
         propertySpecialization: _selectedSpecializations,
         about: _descriptionController.text.trim(),
       );
@@ -1260,6 +1214,10 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
     _registrationNumberController.dispose();
     _physicalAddressController.dispose();
     _descriptionController.dispose();
+    _districtController.dispose();
+    _countyController.dispose();
+    _subCountyController.dispose();
+    _parishController.dispose();
     _zoneController.dispose();
     _villageController.dispose();
     super.dispose();

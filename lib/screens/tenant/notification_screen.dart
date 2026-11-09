@@ -18,7 +18,8 @@ class NotificationScreen extends StatefulWidget {
   _NotificationScreenState createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> with SingleTickerProviderStateMixin {
+class _NotificationScreenState extends State<NotificationScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<NotificationItem> _notifications = [];
   bool _isLoading = true;
@@ -28,6 +29,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
   int _currentPage = 1;
   bool _hasMore = true;
   bool _isLoadingMore = false;
+  bool _isMarkingAllAsRead = false;
   int _totalCount = 0;
   int _unreadCount = 0;
 
@@ -96,9 +98,9 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           } else {
             _notifications.addAll(notifications);
           }
-          _totalCount = result['total'] is num
-              ? (result['total'] as num).toInt()
-              : 0;
+          _unreadCount = _notifications.where((item) => !item.isRead).length;
+          _totalCount =
+              result['total'] is num ? (result['total'] as num).toInt() : 0;
           _hasMore = result['hasMore'] == true;
           _isLoading = false;
           _hasError = false;
@@ -162,6 +164,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
 
         setState(() {
           _notifications.addAll(notifications);
+          _unreadCount = _notifications.where((item) => !item.isRead).length;
           _hasMore = result['hasMore'] == true;
           _isLoadingMore = false;
         });
@@ -169,13 +172,15 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         setState(() {
           _isLoadingMore = false;
         });
-        _showErrorSnackBar(result['message'] ?? 'Failed to load more notifications');
+        _showErrorSnackBar(
+            result['message'] ?? 'Failed to load more notifications');
       }
     } catch (e) {
       setState(() {
         _isLoadingMore = false;
       });
-      _showErrorSnackBar('An unexpected error occurred while loading more notifications');
+      _showErrorSnackBar(
+          'An unexpected error occurred while loading more notifications');
     }
   }
 
@@ -198,13 +203,25 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     // Only need to apply client-side filtering for types that aren't handled by the API
     switch (_selectedFilter) {
       case 'Properties':
-        return _notifications.where((n) => n.type == NotificationType.propertyUpdate || n.type == NotificationType.favorite).toList();
+        return _notifications
+            .where((n) =>
+                n.type == NotificationType.propertyUpdate ||
+                n.type == NotificationType.favorite)
+            .toList();
       case 'Messages':
-        return _notifications.where((n) => n.type == NotificationType.message).toList();
+        return _notifications
+            .where((n) => n.type == NotificationType.message)
+            .toList();
       case 'Bookings':
-        return _notifications.where((n) => n.type == NotificationType.booking || n.type == NotificationType.payment).toList();
+        return _notifications
+            .where((n) =>
+                n.type == NotificationType.booking ||
+                n.type == NotificationType.payment)
+            .toList();
       case 'System':
-        return _notifications.where((n) => n.type == NotificationType.system).toList();
+        return _notifications
+            .where((n) => n.type == NotificationType.system)
+            .toList();
       case 'All':
       case 'Unread':
       default:
@@ -236,9 +253,11 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
 
     try {
       final result = await NotificationApiService.markAsRead(notification.id);
+      if (!mounted) return;
       if (result['success'] == true) {
         setState(() {
-          final index = _notifications.indexWhere((n) => n.id == notification.id);
+          final index =
+              _notifications.indexWhere((n) => n.id == notification.id);
           if (index != -1) {
             _notifications[index] = notification.copyWith(isRead: true);
           }
@@ -248,16 +267,22 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         });
         if (showFeedback) {
           _showSuccessSnackBar(
-            isDeleted ? 'Notification deleted successfully' : 'Notification marked as read',
+            isDeleted
+                ? 'Notification deleted successfully'
+                : 'Notification marked as read',
           );
         }
       } else {
         if (showFeedback) {
-          _showErrorSnackBar(result['message'] ?? 'Failed to mark notification as read');
+          _showErrorSnackBar(
+              result['message'] ?? 'Failed to mark notification as read');
         }
       }
     } catch (e) {
-      if (showFeedback) _showErrorSnackBar('Could not update this notification. Please try again.');
+      if (showFeedback) {
+        _showErrorSnackBar(
+            'Could not update this notification. Please try again.');
+      }
     }
   }
 
@@ -269,6 +294,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       notification.toJson(),
       user: widget.user,
       fallbackToNotificationScreen: false,
+      replaceCurrentRoute: true,
     );
     if (!didNavigate && mounted) {
       _showNotificationModal(
@@ -280,20 +306,29 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     }
   }
 
-  void _markAllAsRead() async {
+  Future<void> _markAllAsRead() async {
+    if (_isMarkingAllAsRead) return;
+    setState(() => _isMarkingAllAsRead = true);
     try {
       final result = await NotificationApiService.markAllAsRead();
+      if (!mounted) return;
       if (result['success'] == true) {
         setState(() {
-          _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+          _notifications =
+              _notifications.map((n) => n.copyWith(isRead: true)).toList();
           _unreadCount = 0;
         });
         _showSuccessSnackBar('All notifications marked as read');
       } else {
-        _showErrorSnackBar(result['message'] ?? 'Failed to mark all notifications as read');
+        _showErrorSnackBar(
+            result['message'] ?? 'Failed to mark all notifications as read');
       }
     } catch (e) {
-      _showErrorSnackBar('Could not update notifications. Please try again.');
+      if (mounted) {
+        _showErrorSnackBar('Could not update notifications. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _isMarkingAllAsRead = false);
     }
   }
 
@@ -354,7 +389,8 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
 
   void _deleteNotification(String notificationId) async {
     try {
-      final result = await NotificationApiService.deleteNotification(notificationId);
+      final result =
+          await NotificationApiService.deleteNotification(notificationId);
       if (result['success'] == true) {
         setState(() {
           _notifications.removeWhere((n) => n.id == notificationId);
@@ -362,20 +398,25 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         });
         _showSuccessSnackBar('Notification deleted');
       } else {
-        _showErrorSnackBar(result['message'] ?? 'Failed to delete notification');
+        _showErrorSnackBar(
+            result['message'] ?? 'Failed to delete notification');
       }
     } catch (e) {
       _showErrorSnackBar('Could not delete notification. Please try again.');
     }
   }
 
-  void _showNotificationModal(BuildContext context, {required String title, required String data, required NotificationItem notification}) {
+  void _showNotificationModal(BuildContext context,
+      {required String title,
+      required String data,
+      required NotificationItem notification}) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Icon(Icons.home_work_outlined, color: AppTheme.primaryblue),
@@ -517,17 +558,25 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
         ],
       ),
       actions: [
-        if (_unreadCount > 0)
-          TextButton(
-            onPressed: _markAllAsRead,
-            child: Text(
-              'Mark all read',
-              style: TextStyle(
-                color: AppTheme.primaryblue,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+        TextButton(
+          onPressed: _isMarkingAllAsRead ? null : _markAllAsRead,
+          child: _isMarkingAllAsRead
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppTheme.primaryblue,
+                  ),
+                )
+              : Text(
+                  'Mark all read',
+                  style: TextStyle(
+                    color: AppTheme.primaryblue,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+        ),
         SizedBox(width: 8),
       ],
       bottom: PreferredSize(
@@ -556,16 +605,22 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
               margin: EdgeInsets.only(right: 12, bottom: 10),
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryblue : AppTheme.getCardColor(context),
+                color: isSelected
+                    ? AppTheme.primaryblue
+                    : AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? AppTheme.primaryblue : AppTheme.greyColor.withValues(alpha: 0.2),
+                  color: isSelected
+                      ? AppTheme.primaryblue
+                      : AppTheme.greyColor.withValues(alpha: 0.2),
                 ),
               ),
               child: Text(
                 filter,
                 style: TextStyle(
-                  color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
+                  color: isSelected
+                      ? AppTheme.whiteColor
+                      : AppTheme.getSecondaryTextColor(context),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   fontSize: 14,
                 ),
@@ -651,11 +706,14 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
               color: AppTheme.lightGreyColor,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.notifications_none_outlined, size: 60, color: AppTheme.getSecondaryTextColor(context)),
+            child: Icon(Icons.notifications_none_outlined,
+                size: 60, color: AppTheme.getSecondaryTextColor(context)),
           ),
           SizedBox(height: 24),
           Text(
-            _selectedFilter == 'All' ? 'No notifications yet' : 'No ${_selectedFilter.toLowerCase()} notifications',
+            _selectedFilter == 'All'
+                ? 'No notifications yet'
+                : 'No ${_selectedFilter.toLowerCase()} notifications',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -664,7 +722,9 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           ),
           SizedBox(height: 8),
           Text(
-            _selectedFilter == 'All' ? 'When you have notifications, they\'ll appear here' : 'Try selecting a different filter',
+            _selectedFilter == 'All'
+                ? 'When you have notifications, they\'ll appear here'
+                : 'Try selecting a different filter',
             style: TextStyle(
               fontSize: 16,
               color: AppTheme.getSecondaryTextColor(context),
@@ -704,10 +764,15 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           margin: EdgeInsets.only(bottom: 12),
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: notification.isRead ? AppTheme.getCardColor(context) : AppTheme.primaryblue.withValues(alpha: 0.05),
+            color: notification.isRead
+                ? AppTheme.getCardColor(context)
+                : AppTheme.primaryblue.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: notification.isRead ? AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2) : AppTheme.primaryblue.withValues(alpha: 0.3),
+              color: notification.isRead
+                  ? AppTheme.getSecondaryTextColor(context)
+                      .withValues(alpha: 0.2)
+                  : AppTheme.primaryblue.withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: [
@@ -725,7 +790,8 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: _getNotificationColor(notification.type).withValues(alpha: 0.1),
+                  color: _getNotificationColor(notification.type)
+                      .withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -778,7 +844,8 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                     SizedBox(height: 8),
                     if (notification.propertyTitle != null)
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppTheme.getCardColor(context),
                           borderRadius: BorderRadius.circular(12),
@@ -854,7 +921,8 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
                           SizedBox(width: 8),
                           Text(
                             'Mark as read',
-                            style: TextStyle(color: AppTheme.getTextColor(context)),
+                            style: TextStyle(
+                                color: AppTheme.getTextColor(context)),
                           ),
                         ],
                       ),

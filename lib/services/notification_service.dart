@@ -19,8 +19,10 @@ import 'package:pearlnest/screens/tenant/bookings_list_screen.dart';
 import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 
 class NotificationService {
-  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  static final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static final FirebaseMessaging _firebaseMessaging =
+      FirebaseMessaging.instance;
+  static final FlutterLocalNotificationsPlugin
+      _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   static bool _isInitialized = false;
   static String? _fcmToken;
   static GlobalKey<NavigatorState>? _navigatorKey;
@@ -67,14 +69,16 @@ class NotificationService {
   /// Initialize Flutter Local Notifications
   static Future<void> _initializeLocalNotifications() async {
     // Android initialization settings
-    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@drawable/ic_notification');
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@drawable/ic_notification');
 
     // iOS initialization settings
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings();
 
     // Combined initialization settings
-    const InitializationSettings initializationSettings = InitializationSettings(
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
@@ -97,7 +101,8 @@ class NotificationService {
     // Handle navigation based on notification payload
     if (notificationResponse.payload != null) {
       final payload = _asMap(notificationResponse.payload);
-      navigateFromNotification(payload ?? {'type': notificationResponse.payload});
+      navigateFromNotification(
+          payload ?? {'type': notificationResponse.payload});
     }
   }
 
@@ -143,7 +148,10 @@ class NotificationService {
     ];
 
     for (AndroidNotificationChannel channel in channels) {
-      await _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(channel);
+      await _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
     }
   }
 
@@ -227,7 +235,8 @@ class NotificationService {
 
   /// Handle initial message when app is launched from terminated state
   static Future<void> _handleInitialMessage() async {
-    RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+    RemoteMessage? initialMessage =
+        await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) {
       //debugPrint('📱 App launched from notification: ${initialMessage.messageId}');
       navigateFromNotification(Map<String, dynamic>.from(initialMessage.data));
@@ -238,10 +247,12 @@ class NotificationService {
   static Future<void> _showLocalNotification(RemoteMessage message) async {
     try {
       String channelId = _getChannelIdFromMessage(message);
-      int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+      int notificationId =
+          DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
       // Android notification details
-      AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
+      AndroidNotificationDetails androidNotificationDetails =
+          AndroidNotificationDetails(
         channelId,
         _getChannelNameFromId(channelId),
         channelDescription: _getChannelDescriptionFromId(channelId),
@@ -254,7 +265,8 @@ class NotificationService {
       );
 
       // iOS notification details
-      const DarwinNotificationDetails iOSNotificationDetails = DarwinNotificationDetails(
+      const DarwinNotificationDetails iOSNotificationDetails =
+          DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
@@ -272,7 +284,7 @@ class NotificationService {
         _brandedTitle(message.notification?.title ?? 'PearlNest'),
         message.notification?.body ?? 'You have a new notification',
         notificationDetails,
-        payload:         jsonEncode(message.data),
+        payload: jsonEncode(message.data),
       );
     } catch (e) {
       //debugPrint('❌ Error showing local notification: $e');
@@ -331,6 +343,7 @@ class NotificationService {
     Map<String, dynamic> notification, {
     User? user,
     bool fallbackToNotificationScreen = true,
+    bool replaceCurrentRoute = false,
   }) async {
     final navigator = _navigatorKey?.currentState;
     if (navigator == null) {
@@ -349,6 +362,15 @@ class NotificationService {
     }
     final currentUser = loadedUser;
     if (currentUser == null || currentUser.id.isEmpty) return false;
+
+    void pushDestination(WidgetBuilder builder) {
+      final route = MaterialPageRoute<void>(builder: builder);
+      if (replaceCurrentRoute) {
+        navigator.pushReplacement<void, void>(route);
+      } else {
+        navigator.push<void>(route);
+      }
+    }
 
     final data = <String, dynamic>{...notification};
     final metadata = _asMap(
@@ -377,8 +399,7 @@ class NotificationService {
     final propertyId = _stringValue(
       data['propertyId'] ?? data['property_id'] ?? propertyData?['id'],
     );
-    final bookingId =
-        _stringValue(data['bookingId'] ?? data['booking_id']);
+    final bookingId = _stringValue(data['bookingId'] ?? data['booking_id']);
     final destination = _isRecognizedDestination(action)
         ? action
         : type.isNotEmpty && type != 'system' && type != 'general'
@@ -420,34 +441,28 @@ class NotificationService {
         } catch (_) {
           // A legacy notification may arrive before chat providers are ready.
         }
-        navigator.push(
-          MaterialPageRoute(
-            builder: (_) => NewChatConversation(
-              fromUserId: currentUser.id,
-              toUserId: peerId,
-              userName: peerName,
-              userImageUrl: _stringValue(
-                data['profilePicture'] ?? data['profileImage'] ?? data['avatar'],
-              ),
-              propertyId: propertyId,
+        pushDestination(
+          (_) => NewChatConversation(
+            fromUserId: currentUser.id,
+            toUserId: peerId,
+            userName: peerName,
+            userImageUrl: _stringValue(
+              data['profilePicture'] ?? data['profileImage'] ?? data['avatar'],
             ),
+            propertyId: propertyId,
           ),
         );
       } else {
-        navigator.push(
-          MaterialPageRoute(builder: (_) => NewChatList(user: currentUser)),
-        );
+        pushDestination((_) => NewChatList(user: currentUser));
       }
       return true;
     }
 
     if (_containsAny(destination, ['booking', 'reservation', 'payment'])) {
-      navigator.push(
-        MaterialPageRoute(
-          builder: (_) => currentUser.userType == UserType.landlord
-              ? LandlordBookingRequestsScreen(user: currentUser)
-              : BookingsListScreen(user: currentUser),
-        ),
+      pushDestination(
+        (_) => currentUser.userType == UserType.landlord
+            ? LandlordBookingRequestsScreen(user: currentUser)
+            : BookingsListScreen(user: currentUser),
       );
       return true;
     }
@@ -457,13 +472,10 @@ class NotificationService {
       final result = await PropertyService.getPropertyById(propertyId);
       final loadedProperty = result['property'];
       if (result['success'] == true && loadedProperty is Property) {
-        navigator.push(
-          MaterialPageRoute(
-            builder: (_) =>
-                PropertyDetailsScreen(
-                  property: loadedProperty,
-                  user: currentUser,
-                ),
+        pushDestination(
+          (_) => PropertyDetailsScreen(
+            property: loadedProperty,
+            user: currentUser,
           ),
         );
         return true;
@@ -471,38 +483,22 @@ class NotificationService {
     }
 
     if (_containsAny(destination, ['help', 'support'])) {
-      navigator.push(
-        MaterialPageRoute(
-          builder: (_) => HelpSupportScreen(user: currentUser),
-        ),
-      );
+      pushDestination((_) => HelpSupportScreen(user: currentUser));
       return true;
     }
 
     if (_containsAny(destination, ['notification'])) {
-      navigator.push(
-        MaterialPageRoute(
-          builder: (_) => NotificationScreen(user: currentUser),
-        ),
-      );
+      pushDestination((_) => NotificationScreen(user: currentUser));
       return true;
     }
 
     // Keep legacy notifications useful even when they contain only a type.
     if (type.isNotEmpty && type != 'system' && type != 'general') {
-      navigator.push(
-        MaterialPageRoute(
-          builder: (_) => NotificationScreen(user: currentUser),
-        ),
-      );
+      pushDestination((_) => NotificationScreen(user: currentUser));
       return true;
     }
     if (fallbackToNotificationScreen) {
-      navigator.push(
-        MaterialPageRoute(
-          builder: (_) => NotificationScreen(user: currentUser),
-        ),
-      );
+      pushDestination((_) => NotificationScreen(user: currentUser));
       return true;
     }
     return false;
@@ -533,7 +529,13 @@ class NotificationService {
             nested?['type'],
       );
     }
-    return value?.toString().trim().toLowerCase().replaceAll('_', '').replaceAll('-', '') ?? '';
+    return value
+            ?.toString()
+            .trim()
+            .toLowerCase()
+            .replaceAll('_', '')
+            .replaceAll('-', '') ??
+        '';
   }
 
   static String? _stringValue(dynamic value) {
@@ -546,7 +548,9 @@ class NotificationService {
       options.any((option) => value.contains(option));
 
   static String _brandedTitle(String title) =>
-      title.toLowerCase().startsWith('pearlnest') ? title : 'PearlNest • $title';
+      title.toLowerCase().startsWith('pearlnest')
+          ? title
+          : 'PearlNest • $title';
 
   static bool _isRecognizedDestination(String value) => _containsAny(
         value,
@@ -626,10 +630,12 @@ class NotificationService {
   }) async {
     try {
       String selectedChannelId = channelId ?? _defaultChannelId;
-      int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+      int notificationId =
+          DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
       // Android notification details
-      AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
+      AndroidNotificationDetails androidNotificationDetails =
+          AndroidNotificationDetails(
         selectedChannelId,
         _getChannelNameFromId(selectedChannelId),
         channelDescription: _getChannelDescriptionFromId(selectedChannelId),
@@ -642,7 +648,8 @@ class NotificationService {
       );
 
       // iOS notification details
-      const DarwinNotificationDetails iOSNotificationDetails = DarwinNotificationDetails(
+      const DarwinNotificationDetails iOSNotificationDetails =
+          DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
@@ -679,7 +686,9 @@ class NotificationService {
 
   /// Check if notifications are allowed
   static Future<bool> areNotificationsAllowed() async {
-    final AndroidFlutterLocalNotificationsPlugin? androidImplementation = _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidImplementation != null) {
       return await androidImplementation.areNotificationsEnabled() ?? false;
@@ -690,10 +699,13 @@ class NotificationService {
 
   /// Request notification permissions
   static Future<bool> requestNotificationPermissions() async {
-    final AndroidFlutterLocalNotificationsPlugin? androidImplementation = _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidImplementation != null) {
-      return await androidImplementation.requestNotificationsPermission() ?? false;
+      return await androidImplementation.requestNotificationsPermission() ??
+          false;
     }
 
     return false;

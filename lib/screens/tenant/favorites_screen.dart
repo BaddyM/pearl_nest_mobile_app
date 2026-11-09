@@ -19,6 +19,7 @@ import 'package:pearlnest/widgets/cancellation_status_widget.dart';
 import 'package:pearlnest/widgets/login_required_widget.dart';
 import 'package:pearlnest/widgets/payment_summary_card.dart';
 import 'package:pearlnest/widgets/refund_policy.dart';
+import 'package:pearlnest/utils/booking_payment_navigation.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final User user;
@@ -787,6 +788,7 @@ class PropertyCard extends StatefulWidget {
   final int paid;
   final BookingStatus? status;
   final Booking? booking;
+  final User? user;
 
   const PropertyCard({
     super.key,
@@ -801,6 +803,7 @@ class PropertyCard extends StatefulWidget {
     this.paid = 0,
     this.status,
     this.booking,
+    this.user,
   });
 
   static String _getFullImageUrl(String url) {
@@ -862,12 +865,12 @@ class _PropertyCardState extends State<PropertyCard> {
     return grandTotal;
   }
 
-  void showPaymentSheet(BuildContext context, int totalAmount) {
+  Future<double?> showPaymentSheet(BuildContext context, int totalAmount) {
     double? customAmount;
     bool isFullPayment = true;
     double transactionFee = 1.4;
 
-    showModalBottomSheet(
+    return showModalBottomSheet<double>(
       context: context,
       isScrollControlled: true, // Allows keyboard to push the sheet up
       shape: const RoundedRectangleBorder(
@@ -962,17 +965,7 @@ class _PropertyCardState extends State<PropertyCard> {
                           // You could call your showErrorDialog here!
                           return;
                         } else {
-                          if (widget.bookingId != null) {
-                            context.read<BookingBloc>().add(
-                                  CreatePayment(
-                                    propertyId: widget.property.id,
-                                    bookingId: widget.bookingId!,
-                                    amount: basePay,
-                                    paid: widget.paid,
-                                  ),
-                                );
-                          }
-                          Navigator.pop(context, basePay);
+                          Navigator.pop<double>(context, basePay.toDouble());
                         }
                       },
                       child: const Text("Continue to Payment"),
@@ -1545,8 +1538,27 @@ class _PropertyCardState extends State<PropertyCard> {
         SizedBox(width: 10),
         Expanded(
           child: ElevatedButton(
-            onPressed: () {
-              showPaymentSheet(context, _pendingBalance);
+            onPressed: () async {
+              final amount = await showPaymentSheet(context, _pendingBalance);
+              final booking = widget.booking;
+              final user = widget.user;
+              if (amount == null || booking == null || user == null || !mounted) {
+                return;
+              }
+              try {
+                await openBookingPayment(
+                  context: context,
+                  user: user,
+                  booking: booking,
+                  property: widget.property,
+                  amount: amount,
+                );
+              } catch (error) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not start payment: $error')),
+                );
+              }
             },
             child: Text("Go to Payment"),
           ),

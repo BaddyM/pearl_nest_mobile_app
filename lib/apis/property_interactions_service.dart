@@ -161,7 +161,7 @@ class PropertyInteractionsService {
         'propertyId': propertyId,
       });
       
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
         if (data['success'] == true) {
           return {

@@ -4,7 +4,6 @@ import 'package:add_comma/add_comma.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:pearlnest/blocs/shares/share_bloc.dart';
 import 'package:pearlnest/blocs/views/views_bloc.dart';
 import 'package:pearlnest/models/user_type.dart';
 import 'package:pearlnest/screens/common/login_screen.dart';
@@ -58,11 +57,11 @@ class Review {
       userName: json['user']?['name']?.toString() ?? 'Anonymous',
       rating: (json['stars']?.toDouble() ?? 0.0),
       review: json['review']?.toString() ?? '',
-      propertyName: json['property']?['propertyName']?.toString() ?? 'Unknown Property',
+      propertyName:
+          json['property']?['propertyName']?.toString() ?? 'Unknown Property',
       propertyId: json['property']?['id']?.toString() ?? '',
     );
   }
-
 }
 
 class PropertyDetailsScreen extends StatefulWidget {
@@ -80,7 +79,8 @@ class PropertyDetailsScreen extends StatefulWidget {
   _PropertyDetailsScreenState createState() => _PropertyDetailsScreenState();
 }
 
-class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with TickerProviderStateMixin {
+class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
+    with TickerProviderStateMixin {
   late PageController _pageController;
   bool _isFavorite = false;
   late AnimationController _animationController;
@@ -103,7 +103,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   List<Booking> _pendingBookings = [];
   Booking? _pendingBookingForProperty;
   bool _hasBookedProperty = false;
-  Timer? _bookingExpiryTimer;
   String _landlordPhone = '';
   String? _contactError;
   bool _isLoadingPendingBookings = true;
@@ -125,7 +124,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   }
 
   void viewCounter() {
-    context.read<ViewsBloc>().add(CreateViewEvent(propertyId: widget.property.id));
+    context
+        .read<ViewsBloc>()
+        .add(CreateViewEvent(propertyId: widget.property.id));
   }
 
   @override
@@ -164,12 +165,25 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
   // Helper to get full image URL
   String _getFullImageUrl(String url) {
-    if (url.isEmpty || url == 'undefined' || url == 'null' || url.contains('undefined') || url.contains('null')) {
+    if (url.isEmpty ||
+        url == 'undefined' ||
+        url == 'null' ||
+        url.contains('undefined') ||
+        url.contains('null')) {
       return '';
     }
 
     if (url.contains(',')) {
-      final urls = url.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty && e != 'undefined' && e != 'null' && !e.contains('undefined') && !e.contains('null')).toList();
+      final urls = url
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) =>
+              e.isNotEmpty &&
+              e != 'undefined' &&
+              e != 'null' &&
+              !e.contains('undefined') &&
+              !e.contains('null'))
+          .toList();
       if (urls.isNotEmpty) {
         url = urls.first;
       } else {
@@ -177,7 +191,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       }
     }
 
-    if (url.isEmpty || url == 'undefined' || url == 'null' || url.contains('undefined') || url.contains('null')) {
+    if (url.isEmpty ||
+        url == 'undefined' ||
+        url == 'null' ||
+        url.contains('undefined') ||
+        url.contains('null')) {
       return '';
     }
 
@@ -221,7 +239,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     final promotion = _bookingFeePromotion;
     if (promotion == null) return;
 
-    final originalFee = (promotion['originalBookingFeeAmount'] as num?)?.toInt() ?? 0;
+    final originalFee =
+        (promotion['originalBookingFeeAmount'] as num?)?.toInt() ?? 0;
     final discount = (promotion['discountAmount'] as num?)?.toInt() ?? 0;
     final discountedFee = (promotion['bookingFeeAmount'] as num?)?.toInt() ??
         (originalFee - discount).clamp(0, originalFee).toInt();
@@ -333,17 +352,44 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       _likesCount = widget.property.favourites.length;
       _isLoadingStats = false;
     });
+    _loadShareCount();
+  }
+
+  Future<void> _loadShareCount() async {
+    final result =
+        await PropertyInteractionsService.getSharesCounter(widget.property.id);
+    if (!mounted || result['success'] != true) return;
+
+    final count = _parseShareCount(result['data']);
+    if (count != null) setState(() => _sharesCount = count);
+  }
+
+  int? _parseShareCount(dynamic data) {
+    if (data is num) return data.toInt();
+    if (data is String) return int.tryParse(data);
+    if (data is List) return data.length;
+    if (data is Map) {
+      final count = data['count'] ?? data['shareCount'] ?? data['total'];
+      if (count is num) return count.toInt();
+      if (count is String) return int.tryParse(count);
+      final shares = data['shares'];
+      if (shares is List) return shares.length;
+    }
+    return null;
   }
 
   // Load property reviews from API
   void _loadPropertyReviews() async {
     try {
-      final result = await PropertyInteractionsService.getPropertyReviews(widget.property.id);
+      final result = await PropertyInteractionsService.getPropertyReviews(
+          widget.property.id);
       if (result['success'] == true) {
         final reviewsData = result['data'] as List<dynamic>? ?? [];
         if (mounted) {
           setState(() {
-            _reviews = reviewsData.map((reviewJson) => Review.fromJson(reviewJson)).toList();
+            _reviews = reviewsData
+                .map((reviewJson) => Review.fromJson(reviewJson))
+                .toList();
           });
         }
       } else {
@@ -359,7 +405,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     try {
       //debugPrint('📚 Loading pending bookings for property: ${widget.property.id}');
       final bookings = await BookingService.fetchBookings();
-      final pendingBookings = bookings.where((booking) => booking.status == BookingStatus.pending).toList();
+      final pendingBookings = bookings
+          .where((booking) => booking.status == BookingStatus.pending)
+          .toList();
       final now = DateTime.now();
       final propertyBookings = bookings.where((booking) {
         if (booking.propertyId != widget.property.id ||
@@ -371,10 +419,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 booking.isPaymentComplete) ||
             booking.expiresAt.isAfter(now);
       }).toList()
-        ..sort((first, second) =>
-            (second.updatedAt ?? second.createdAt)
-                .compareTo(first.updatedAt ?? first.createdAt));
-      final currentBooking = propertyBookings.isEmpty ? null : propertyBookings.first;
+        ..sort((first, second) => (second.updatedAt ?? second.createdAt)
+            .compareTo(first.updatedAt ?? first.createdAt));
+      final currentBooking =
+          propertyBookings.isEmpty ? null : propertyBookings.first;
 
       if (mounted) {
         setState(() {
@@ -389,7 +437,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
           });
           _isLoadingPendingBookings = false;
         });
-        _startBookingExpiryTimer();
         if (_canContactLandlord) _loadPropertyContact();
       }
     } catch (e) {
@@ -401,7 +448,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
           _hasBookedProperty = false;
           _isLoadingPendingBookings = false;
         });
-        _bookingExpiryTimer?.cancel();
       }
     }
   }
@@ -409,43 +455,17 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   bool get _hasActivePropertyBooking {
     final booking = _pendingBookingForProperty;
     if (booking == null) return false;
-    if (booking.status == BookingStatus.confirmed && booking.isPaymentComplete) {
+    if (booking.status == BookingStatus.confirmed &&
+        booking.isPaymentComplete) {
       return true;
     }
     return booking.expiresAt.isAfter(DateTime.now());
   }
 
-  void _startBookingExpiryTimer() {
-    _bookingExpiryTimer?.cancel();
-    final booking = _pendingBookingForProperty;
-    if (booking == null ||
-        (booking.status == BookingStatus.confirmed &&
-            booking.isPaymentComplete)) {
-      return;
-    }
-
-    _bookingExpiryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (!booking.expiresAt.isAfter(DateTime.now())) {
-        timer.cancel();
-        setState(() {});
-        _loadPendingBookings();
-        return;
-      }
-      setState(() {});
-    });
-  }
-
-  String _bookingExpiryLabel(Booking booking) {
-    final remaining = booking.expiresAt.difference(DateTime.now());
-    if (remaining.isNegative) return 'Expired';
-    final hours = remaining.inHours.toString().padLeft(2, '0');
-    final minutes = (remaining.inMinutes % 60).toString().padLeft(2, '0');
-    final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-    return '$hours:$minutes:$seconds';
+  void _handleBookingExpiry(Booking booking) {
+    if (!mounted || _pendingBookingForProperty?.id != booking.id) return;
+    setState(() {});
+    _loadPendingBookings();
   }
 
   bool get _canContactLandlord =>
@@ -458,7 +478,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       return;
     }
     try {
-      final phone = await PropertyService.getPropertyContact(widget.property.id);
+      final phone =
+          await PropertyService.getPropertyContact(widget.property.id);
       if (mounted) {
         setState(() {
           _landlordPhone = phone;
@@ -477,7 +498,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
   @override
   void dispose() {
-    _bookingExpiryTimer?.cancel();
     _animationController.dispose();
     _tabController.dispose();
     _pageController.dispose();
@@ -487,7 +507,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
   // Helper method to check if current user has favorited this property
   bool _isPropertyFavorited() {
-    return widget.property.favourites.any((favourite) => favourite['userId'] == widget.user.id);
+    return widget.property.favourites
+        .any((favourite) => favourite['userId'] == widget.user.id);
   }
 
   void _toggleFavorite() {
@@ -510,7 +531,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         return AlertDialog(
           backgroundColor: AppTheme.getCardColor(context),
           surfaceTintColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(26),
           ),
@@ -558,7 +580,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.phone, color: AppTheme.primaryblue, size: 16),
+                        Icon(Icons.phone,
+                            color: AppTheme.primaryblue, size: 16),
                         SizedBox(width: 8),
                         Text(
                           _landlordPhone.isEmpty
@@ -581,7 +604,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                style:
+                    TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             ElevatedButton(
@@ -620,12 +644,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not launch phone call', style: TextStyle(color: AppTheme.whiteColor)),
+          content: Text('Could not launch phone call',
+              style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -691,7 +717,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         child: Container(
                           padding: EdgeInsets.all(4),
                           child: Icon(
-                            index < _userRating ? Icons.star : Icons.star_border,
+                            index < _userRating
+                                ? Icons.star
+                                : Icons.star_border,
                             color: Colors.amber,
                             size: 32,
                           ),
@@ -727,7 +755,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1)),
+                        borderSide: BorderSide(
+                            color: AppTheme.getSecondaryTextColor(context)
+                                .withValues(alpha: 0.1)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -748,11 +778,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   },
                   child: Text(
                     'Cancel',
-                    style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                    style: TextStyle(
+                        color: AppTheme.getSecondaryTextColor(context)),
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: _userRating > 0 && _reviewController.text.trim().isNotEmpty
+                  onPressed: _userRating > 0 &&
+                          _reviewController.text.trim().isNotEmpty
                       ? () {
                           _submitReview();
                           Navigator.of(context).pop();
@@ -782,11 +814,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     if (_userRating == 0 || _reviewController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please provide a rating and comment', style: TextStyle(color: AppTheme.whiteColor)),
+          content: Text('Please provide a rating and comment',
+              style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       return;
@@ -821,33 +855,39 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Review submitted successfully!', style: TextStyle(color: AppTheme.whiteColor)),
+            content: Text('Review submitted successfully!',
+                style: TextStyle(color: AppTheme.whiteColor)),
             backgroundColor: AppTheme.primaryblue,
             behavior: SnackBarBehavior.floating,
             duration: Duration(seconds: 2),
             margin: EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Failed to submit review', style: TextStyle(color: AppTheme.whiteColor)),
+            content: Text(result['message'] ?? 'Failed to submit review',
+                style: TextStyle(color: AppTheme.whiteColor)),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             margin: EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error submitting review. Please try again.', style: TextStyle(color: AppTheme.whiteColor)),
+          content: Text('Error submitting review. Please try again.',
+              style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -1142,7 +1182,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   // Show dialog to get payment amount from user
   Future<double?> _showPaymentAmountDialog() async {
     final TextEditingController amountController = TextEditingController();
-    final formattedPropertyPrice = ProfileService().currencyConverter(price: widget.property.price.toInt());
+    final formattedPropertyPrice = ProfileService()
+        .currencyConverter(price: widget.property.price.toInt());
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     return await showDialog<double>(
@@ -1237,16 +1278,19 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppTheme.primaryblue, width: 2),
+                      borderSide:
+                          BorderSide(color: AppTheme.primaryblue, width: 2),
                     ),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter an amount';
                     }
 
-                    final double? amount = double.tryParse(value.trim().replaceAll(',', ''));
+                    final double? amount =
+                        double.tryParse(value.trim().replaceAll(',', ''));
                     if (amount == null) {
                       return 'Please enter a valid number';
                     }
@@ -1255,7 +1299,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       return 'Amount must be greater than 0';
                     }
 
-                    if (ProfileService().toBaseCurrency(amount) > widget.property.price) {
+                    if (ProfileService().toBaseCurrency(amount) >
+                        widget.property.price) {
                       return 'Amount cannot exceed $formattedPropertyPrice';
                     }
 
@@ -1320,7 +1365,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   child: ElevatedButton(
                     onPressed: () {
                       if (formKey.currentState!.validate()) {
-                        final String value = amountController.text.trim().replaceAll(',', '');
+                        final String value =
+                            amountController.text.trim().replaceAll(',', '');
                         final double amount = double.parse(value);
                         Navigator.of(context).pop(
                           ProfileService().toBaseCurrency(amount).toDouble(),
@@ -1352,7 +1398,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     );
   }
 
-  void _showBookingConfirmationDialog({final bool isRent = false, final int deposit = 0}) {
+  void _showBookingConfirmationDialog(
+      {final bool isRent = false, final int deposit = 0}) {
     // Local state for the dialog
     DateTime? localCheckInDate = _checkInDate;
     DateTime? localCheckOutDate = _checkOutDate;
@@ -1367,7 +1414,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             listener: (context, state) {
               if (state is BookingSuccess) {
                 Navigator.of(context).pop(); // Close dialog
-                _showBookingSuccessBottomSheet(state.bookingData, state.message);
+                _showBookingSuccessBottomSheet(
+                    state.bookingData, state.message);
               } else if (state is BookingFailure) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -1393,7 +1441,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                           color: AppTheme.primaryblue.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.book_online, color: AppTheme.primaryblue),
+                        child: Icon(Icons.book_online,
+                            color: AppTheme.primaryblue),
                       ),
                       SizedBox(width: 12),
                       Expanded(
@@ -1419,7 +1468,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                             color: AppTheme.primaryblue.withValues(alpha: 0.07),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AppTheme.primaryblue.withValues(alpha: 0.12),
+                              color:
+                                  AppTheme.primaryblue.withValues(alpha: 0.12),
                             ),
                           ),
                           child: Column(
@@ -1436,14 +1486,16 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                               SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Icon(Icons.location_on, color: AppTheme.primaryblue, size: 16),
+                                  Icon(Icons.location_on,
+                                      color: AppTheme.primaryblue, size: 16),
                                   SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
                                       widget.property.address,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: AppTheme.getSecondaryTextColor(context),
+                                        color: AppTheme.getSecondaryTextColor(
+                                            context),
                                       ),
                                     ),
                                   ),
@@ -1478,17 +1530,21 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                 onTap: () async {
                                   final DateTime? picked = await showDatePicker(
                                     context: context,
-                                    initialDate: localCheckInDate ?? DateTime.now().add(Duration(days: 1)),
+                                    initialDate: localCheckInDate ??
+                                        DateTime.now().add(Duration(days: 1)),
                                     firstDate: DateTime.now(),
-                                    lastDate: DateTime.now().add(Duration(days: 365)),
+                                    lastDate:
+                                        DateTime.now().add(Duration(days: 365)),
                                     builder: (context, child) {
                                       return Theme(
                                         data: Theme.of(context).copyWith(
                                           colorScheme: ColorScheme.light(
                                             primary: AppTheme.primaryblue,
                                             onPrimary: AppTheme.whiteColor,
-                                            surface: AppTheme.getCardColor(context),
-                                            onSurface: AppTheme.getTextColor(context),
+                                            surface:
+                                                AppTheme.getCardColor(context),
+                                            onSurface:
+                                                AppTheme.getTextColor(context),
                                           ),
                                         ),
                                         child: child!,
@@ -1500,7 +1556,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                     setDialogState(() {
                                       localCheckInDate = picked;
                                       // Reset checkout date if it's before the new checkin date
-                                      if (localCheckOutDate != null && localCheckOutDate!.isBefore(picked)) {
+                                      if (localCheckOutDate != null &&
+                                          localCheckOutDate!.isBefore(picked)) {
                                         localCheckOutDate = null;
                                       }
                                     });
@@ -1509,17 +1566,25 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                 child: Container(
                                   padding: EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: AppTheme.lightGreyColor),
+                                    border: Border.all(
+                                        color: AppTheme.lightGreyColor),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
+                                      Icon(Icons.calendar_today,
+                                          color: AppTheme.primaryblue,
+                                          size: 20),
                                       SizedBox(width: 8),
                                       Text(
-                                        localCheckInDate != null ? 'Check-in: ${DateFormat('MMM dd, yyyy').format(localCheckInDate!)}' : 'Select check-in date',
+                                        localCheckInDate != null
+                                            ? 'Check-in: ${DateFormat('MMM dd, yyyy').format(localCheckInDate!)}'
+                                            : 'Select check-in date',
                                         style: TextStyle(
-                                          color: localCheckInDate != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
+                                          color: localCheckInDate != null
+                                              ? AppTheme.getTextColor(context)
+                                              : AppTheme.getSecondaryTextColor(
+                                                  context),
                                         ),
                                       ),
                                     ],
@@ -1531,21 +1596,26 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                               // Check-out date
                               GestureDetector(
                                 onTap: () async {
-                                  final DateTime minDate = localCheckInDate?.add(Duration(days: 1)) ?? DateTime.now().add(Duration(days: 2));
+                                  final DateTime minDate = localCheckInDate
+                                          ?.add(Duration(days: 1)) ??
+                                      DateTime.now().add(Duration(days: 2));
 
                                   final DateTime? picked = await showDatePicker(
                                     context: context,
                                     initialDate: localCheckOutDate ?? minDate,
                                     firstDate: minDate,
-                                    lastDate: DateTime.now().add(Duration(days: 365)),
+                                    lastDate:
+                                        DateTime.now().add(Duration(days: 365)),
                                     builder: (context, child) {
                                       return Theme(
                                         data: Theme.of(context).copyWith(
                                           colorScheme: ColorScheme.light(
                                             primary: AppTheme.primaryblue,
                                             onPrimary: AppTheme.whiteColor,
-                                            surface: AppTheme.getCardColor(context),
-                                            onSurface: AppTheme.getTextColor(context),
+                                            surface:
+                                                AppTheme.getCardColor(context),
+                                            onSurface:
+                                                AppTheme.getTextColor(context),
                                           ),
                                         ),
                                         child: child!,
@@ -1562,34 +1632,46 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                 child: Container(
                                   padding: EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: AppTheme.lightGreyColor),
+                                    border: Border.all(
+                                        color: AppTheme.lightGreyColor),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.calendar_today, color: AppTheme.primaryblue, size: 20),
+                                      Icon(Icons.calendar_today,
+                                          color: AppTheme.primaryblue,
+                                          size: 20),
                                       SizedBox(width: 8),
                                       Text(
-                                        localCheckOutDate != null ? 'Check-out: ${DateFormat('MMM dd, yyyy').format(localCheckOutDate!)}' : 'Select check-out date',
+                                        localCheckOutDate != null
+                                            ? 'Check-out: ${DateFormat('MMM dd, yyyy').format(localCheckOutDate!)}'
+                                            : 'Select check-out date',
                                         style: TextStyle(
-                                          color: localCheckOutDate != null ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
+                                          color: localCheckOutDate != null
+                                              ? AppTheme.getTextColor(context)
+                                              : AppTheme.getSecondaryTextColor(
+                                                  context),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
-                              if (localCheckInDate != null && localCheckOutDate != null) ...[
+                              if (localCheckInDate != null &&
+                                  localCheckOutDate != null) ...[
                                 SizedBox(height: 12),
                                 Container(
                                   padding: EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                                    color: AppTheme.primaryblue
+                                        .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.info_outline, color: AppTheme.primaryblue, size: 16),
+                                      Icon(Icons.info_outline,
+                                          color: AppTheme.primaryblue,
+                                          size: 16),
                                       SizedBox(width: 8),
                                       Text(
                                         '${localCheckOutDate!.difference(localCheckInDate!).inDays} nights\nTotal ${ProfileService().currencyConverter(price: (localCheckOutDate!.difference(localCheckInDate!).inDays * widget.property.price).toInt())}',
@@ -1607,7 +1689,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                             ],
                           ),
 
-                        if (widget.property.isRent) AppNoteWidget(note: "Check out date is optional"),
+                        if (widget.property.isRent)
+                          AppNoteWidget(note: "Check out date is optional"),
 
                         SizedBox(height: 16),
                         Text(
@@ -1625,7 +1708,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       onPressed: () => Navigator.of(context).pop(),
                       child: Text(
                         'Cancel',
-                        style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                        style: TextStyle(
+                            color: AppTheme.getSecondaryTextColor(context)),
                       ),
                     ),
                     BlocBuilder<BookingBloc, BookingState>(
@@ -1657,7 +1741,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppTheme.whiteColor),
                                   ),
                                 )
                               : Text(
@@ -1715,24 +1800,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         // Added Expanded to prevent overflow
                         child: _buildPropertyHeader(),
                       ),
-                      BlocListener<ShareBloc, ShareState>(
-                        listener: (context, state) {
-                          if (state is ShareError) {
-                            ScaffoldMessenger(
-                              child: SnackBar(
-                                backgroundColor: AppTheme.accentGreen,
-                                content: Text(
-                                  state.error,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        child: SizedBox(),
-                      ),
                       BlocListener<ViewsBloc, ViewsState>(
                         listener: (context, state) {
                           if (state is ViewsError) {
@@ -1762,7 +1829,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       color: AppTheme.getCardColor(context),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
+                          color: AppTheme.getTextColor(context)
+                              .withValues(alpha: 0.05),
                           blurRadius: 5,
                           offset: Offset(0, 2),
                         ),
@@ -1773,7 +1841,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       indicatorColor: AppTheme.primaryblue,
                       indicatorWeight: isSmallScreen ? 2 : 3,
                       labelColor: AppTheme.primaryblue,
-                      unselectedLabelColor: AppTheme.getSecondaryTextColor(context),
+                      unselectedLabelColor:
+                          AppTheme.getSecondaryTextColor(context),
                       labelStyle: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: isSmallScreen ? 14 : 16,
@@ -1827,7 +1896,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     final iconSize = isSmallScreen ? 24.0 : 28.0;
     final borderRadius = isSmallScreen ? 16.0 : 20.0;
 
-    final images = widget.property.images.isNotEmpty ? widget.property.images : ['assets/images/img1.jpg'];
+    final images = widget.property.images.isNotEmpty
+        ? widget.property.images
+        : ['assets/images/img1.jpg'];
 
     return SizedBox(
       height: imageHeight,
@@ -1856,13 +1927,15 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                             errorWidget: (context, url, error) {
                               return Container(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(borderRadius),
+                                  borderRadius:
+                                      BorderRadius.circular(borderRadius),
                                   gradient: LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
                                       AppTheme.lightGreyColor,
-                                      AppTheme.primaryblue.withValues(alpha: 0.3),
+                                      AppTheme.primaryblue
+                                          .withValues(alpha: 0.3),
                                     ],
                                   ),
                                 ),
@@ -1938,7 +2011,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               child: IconButton(
                 icon: Icon(
                   _isFavorite ? Icons.favorite : Icons.favorite_outline,
-                  color: _isFavorite ? Colors.red : AppTheme.getSecondaryTextColor(context),
+                  color: _isFavorite
+                      ? Colors.red
+                      : AppTheme.getSecondaryTextColor(context),
                   size: iconSize,
                 ),
                 onPressed: _toggleFavorite,
@@ -1953,7 +2028,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.getCardColor(context).withValues(alpha: 0.9),
+                      color:
+                          AppTheme.getCardColor(context).withValues(alpha: 0.9),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -1966,10 +2042,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   ),
                   if (widget.property.isFeatured)
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8 : 12, vertical: isSmallScreen ? 4 : 6),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 8 : 12,
+                          vertical: isSmallScreen ? 4 : 6),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryblue,
-                        borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
+                        borderRadius:
+                            BorderRadius.circular(isSmallScreen ? 16 : 20),
                         boxShadow: [
                           BoxShadow(
                             color: AppTheme.primaryblue.withValues(alpha: 0.3),
@@ -2049,10 +2128,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             children: [
               Flexible(
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 6 : 10,
+                      vertical: isSmallScreen ? 2 : 4),
                   decoration: BoxDecoration(
                     color: AppTheme.accentGreen.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
+                    borderRadius:
+                        BorderRadius.circular(isSmallScreen ? 10 : 16),
                   ),
                   child: Text(
                     widget.property.type.replaceAll("_", " "),
@@ -2069,16 +2151,23 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               SizedBox(width: 10),
               Flexible(
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 6 : 10,
+                      vertical: isSmallScreen ? 2 : 4),
                   decoration: BoxDecoration(
-                    color: widget.property.isRent ? Colors.orange.withOpacity(0.2) : Colors.purple.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 16),
+                    color: widget.property.isRent
+                        ? Colors.orange.withOpacity(0.2)
+                        : Colors.purple.withOpacity(0.2),
+                    borderRadius:
+                        BorderRadius.circular(isSmallScreen ? 10 : 16),
                   ),
                   child: Text(
                     widget.property.isRent ? "Rent" : "Sale",
                     style: TextStyle(
                       fontSize: tagFontSize,
-                      color: widget.property.isRent ? Colors.orange : Colors.purple,
+                      color: widget.property.isRent
+                          ? Colors.orange
+                          : Colors.purple,
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
@@ -2117,7 +2206,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
           SizedBox(height: spacing * 0.5),
           Row(
             children: [
-              Icon(Icons.location_on, color: AppTheme.primaryblue, size: isSmallScreen ? 12 : 16),
+              Icon(Icons.location_on,
+                  color: AppTheme.primaryblue, size: isSmallScreen ? 12 : 16),
               SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -2144,7 +2234,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       property: widget.property,
                       fontSize: priceFontSize,
                     ),
-                    if ((_bookingFeePromotion?['discountAmount'] as num? ?? 0) > 0)
+                    if ((_bookingFeePromotion?['discountAmount'] as num? ?? 0) >
+                        0)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: TextButton.icon(
@@ -2185,7 +2276,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
               if (widget.property.isVerified) ...[
                 SizedBox(width: 8),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 10, vertical: isSmallScreen ? 2 : 4),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 6 : 10,
+                      vertical: isSmallScreen ? 2 : 4),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryblue,
                     borderRadius: BorderRadius.circular(isSmallScreen ? 6 : 10),
@@ -2200,7 +2293,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.verified, color: AppTheme.whiteColor, size: isSmallScreen ? 10 : 14),
+                      Icon(Icons.verified,
+                          color: AppTheme.whiteColor,
+                          size: isSmallScreen ? 10 : 14),
                       SizedBox(width: 2),
                       Text(
                         'Verified',
@@ -2252,9 +2347,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             ),
             child: Column(
               children: [
-                _buildSafetyFeatures(Icons.security, "Safety & Security", widget.property.safetyAndSecurity == "true" ? true : false),
+                _buildSafetyFeatures(Icons.security, "Safety & Security",
+                    widget.property.safetyAndSecurity == "true" ? true : false),
                 SizedBox(height: 10),
-                _buildSafetyFeatures(Icons.local_parking, "Parking", widget.property.parking),
+                _buildSafetyFeatures(
+                    Icons.local_parking, "Parking", widget.property.parking),
               ],
             ),
           ),
@@ -2324,7 +2421,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
           Expanded(
             child: _buildStatCard(
               icon: Icons.schedule,
-              title: widget.property.totalUnits > 1 ? 'Units available' : 'Available',
+              title: widget.property.totalUnits > 1
+                  ? 'Units available'
+                  : 'Available',
               value: widget.property.totalUnits > 1
                   ? '${widget.property.availableUnits} of ${widget.property.totalUnits}'
                   : widget.property.availableUnits <= 0 ||
@@ -2455,12 +2554,17 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         Container(
           padding: EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: checked ? AppTheme.primaryblue.withValues(alpha: 0.1) : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color: checked
+                ? AppTheme.primaryblue.withValues(alpha: 0.1)
+                : AppTheme.getSecondaryTextColor(context)
+                    .withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(
             icon,
-            color: checked ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+            color: checked
+                ? AppTheme.primaryblue
+                : AppTheme.getSecondaryTextColor(context),
             size: 16,
           ),
         ),
@@ -2470,14 +2574,18 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             title,
             style: TextStyle(
               fontSize: 14,
-              color: checked ? AppTheme.getTextColor(context) : AppTheme.getSecondaryTextColor(context),
+              color: checked
+                  ? AppTheme.getTextColor(context)
+                  : AppTheme.getSecondaryTextColor(context),
               fontWeight: FontWeight.w500,
             ),
           ),
         ),
         Icon(
           checked ? Icons.check_circle : Icons.cancel,
-          color: checked ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context),
+          color: checked
+              ? AppTheme.primaryblue
+              : AppTheme.getSecondaryTextColor(context),
           size: 18,
         ),
       ],
@@ -2563,7 +2671,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     //   {'icon': Icons.local_gas_station, 'name': 'Gas Station', 'distance': '0.6 km', 'color': Colors.grey},
     // ];
 
-    final List<String> nearbyPlaces = (widget.property.nearbyPlaces!).toString().split(",");
+    final List<String> nearbyPlaces =
+        (widget.property.nearbyPlaces!).toString().split(",");
 
     return Container(
       margin: EdgeInsets.all(margin),
@@ -2573,7 +2682,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -2592,7 +2702,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   color: Colors.purple.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.place, color: Colors.purple, size: headerIconSize),
+                child: Icon(Icons.place,
+                    color: Colors.purple, size: headerIconSize),
               ),
               SizedBox(width: headerSpacing),
               Expanded(
@@ -2633,7 +2744,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   ),
                 ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center, // Added for better alignment
+                  crossAxisAlignment:
+                      CrossAxisAlignment.center, // Added for better alignment
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
@@ -2641,7 +2753,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                       color: Colors.green,
                       size: placeIconSize,
                     ),
-                    SizedBox(width: isVerySmallScreen ? 4.0 : 6.0), // Reduced spacing
+                    SizedBox(
+                        width:
+                            isVerySmallScreen ? 4.0 : 6.0), // Reduced spacing
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2722,7 +2836,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+                              color: AppTheme.getSecondaryTextColor(context)
+                                  .withValues(alpha: 0.1),
                               blurRadius: 8,
                               offset: Offset(0, 2),
                             ),
@@ -2730,7 +2845,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child:                           Image(
+                          child: Image(
                             image: CachedNetworkImageProvider(imageUrl),
                             fit: BoxFit.cover,
                             loadingBuilder: (context, child, loadingProgress) {
@@ -2756,7 +2871,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                     end: Alignment.bottomRight,
                                     colors: [
                                       AppTheme.lightGreyColor,
-                                      AppTheme.primaryblue.withValues(alpha: 0.3),
+                                      AppTheme.primaryblue
+                                          .withValues(alpha: 0.3),
                                     ],
                                   ),
                                 ),
@@ -2878,7 +2994,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   });
                 },
                 child: Text(
-                  _showAllReviews ? 'Show Less' : 'Show All Reviews (${_reviews.length})',
+                  _showAllReviews
+                      ? 'Show Less'
+                      : 'Show All Reviews (${_reviews.length})',
                   style: TextStyle(
                     color: AppTheme.primaryblue,
                     fontWeight: FontWeight.w600,
@@ -2909,7 +3027,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
 
                   return Center(
                     child: InteractiveViewer(
-                      child:                       Image(
+                      child: Image(
                         image: CachedNetworkImageProvider(imageUrl),
                         fit: BoxFit.contain,
                         loadingBuilder: (context, child, loadingProgress) {
@@ -2917,7 +3035,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                           return Center(
                             child: CircularProgressIndicator(
                               color: Colors.white,
-                              value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
                             ),
                           );
                         },
@@ -2930,14 +3051,16 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                 children: [
                                   Icon(
                                     Icons.image_not_supported,
-                                    color: AppTheme.getSecondaryTextColor(context),
+                                    color:
+                                        AppTheme.getSecondaryTextColor(context),
                                     size: 50,
                                   ),
                                   SizedBox(height: 16),
                                   Text(
                                     'Failed to load image',
                                     style: TextStyle(
-                                      color: AppTheme.getSecondaryTextColor(context),
+                                      color: AppTheme.getSecondaryTextColor(
+                                          context),
                                     ),
                                   ),
                                 ],
@@ -2980,7 +3103,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -3032,7 +3156,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                 child: _buildDetailItem(
                   Icons.local_parking,
                   'Parking',
-                  widget.property.parking == true ? 'Available' : 'Not Available',
+                  widget.property.parking == true
+                      ? 'Available'
+                      : 'Not Available',
                 ),
               ),
             ],
@@ -3085,7 +3211,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -3102,7 +3229,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   color: AppTheme.primaryblue.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.description, color: AppTheme.primaryblue, size: 20),
+                child: Icon(Icons.description,
+                    color: AppTheme.primaryblue, size: 20),
               ),
               SizedBox(width: 12),
               Text(
@@ -3246,7 +3374,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             : 25.0;
 
     // Parse amenities from property data first
-    final List<Map<String, dynamic>> amenities = _parseAmenities(widget.property.amenities);
+    final List<Map<String, dynamic>> amenities =
+        _parseAmenities(widget.property.amenities);
 
     // Keep amenity labels readable on narrow screens.
     final itemPadding = isVerySmallScreen ? 6.0 : 8.0;
@@ -3261,7 +3390,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -3345,7 +3475,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -3403,7 +3534,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: widget.property.propertyMap != null && widget.property.propertyMap!.isNotEmpty ? _buildMapWebView() : _buildMapPlaceholder(),
+              child: widget.property.propertyMap != null &&
+                      widget.property.propertyMap!.isNotEmpty
+                  ? _buildMapWebView()
+                  : _buildMapPlaceholder(),
             ),
           ),
         ],
@@ -3481,7 +3615,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     if (!iframeContent.startsWith('<iframe')) {
       // If it's just the src URL, wrap it in iframe tags
       if (iframeContent.contains('google.com/maps/embed')) {
-        iframeContent = '<iframe src="$iframeContent" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>';
+        iframeContent =
+            '<iframe src="$iframeContent" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>';
       }
     }
 
@@ -3521,7 +3656,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -3548,11 +3684,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                   shape: BoxShape.circle,
                   color: AppTheme.primaryblue.withValues(alpha: 0.1),
                 ),
-                child: widget.property.profilePicture != null || widget.property.profilePicture!.isNotEmpty || widget.property.profilePicture != ""
+                child: widget.property.profilePicture != null ||
+                        widget.property.profilePicture!.isNotEmpty ||
+                        widget.property.profilePicture != ""
                     ? ClipOval(
                         child: CachedNetworkImage(
                           cacheManager: DefaultCacheManager(),
-                          imageUrl: _getFullImageUrl(widget.property.profilePicture!),
+                          imageUrl:
+                              _getFullImageUrl(widget.property.profilePicture!),
                           fit: BoxFit.cover,
                         ),
                       )
@@ -3704,7 +3843,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -3751,7 +3891,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                         Row(
                           children: List.generate(5, (index) {
                             return Icon(
-                              index < review.rating ? Icons.star : Icons.star_border,
+                              index < review.rating
+                                  ? Icons.star
+                                  : Icons.star_border,
                               color: Colors.amber,
                               size: 16,
                             );
@@ -3803,11 +3945,18 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     if (amenitiesData is String) {
       // If it's a string, split by comma
       if (amenitiesData.isNotEmpty) {
-        amenityNames = amenitiesData.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        amenityNames = amenitiesData
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
       }
     } else if (amenitiesData is List) {
       // If it's already a list, convert to strings
-      amenityNames = amenitiesData.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+      amenityNames = amenitiesData
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
     }
 
     // If no amenities, return a default set with appropriate message
@@ -3836,7 +3985,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       return Icons.local_laundry_service;
     } else if (lowerName.contains('kitchen')) {
       return Icons.kitchen;
-    } else if (lowerName.contains('ac') || lowerName.contains('air condition') || lowerName.contains('cooling')) {
+    } else if (lowerName.contains('ac') ||
+        lowerName.contains('air condition') ||
+        lowerName.contains('cooling')) {
       return Icons.ac_unit;
     } else if (lowerName.contains('gym') || lowerName.contains('fitness')) {
       return Icons.fitness_center;
@@ -3854,7 +4005,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
       return Icons.balcony;
     } else if (lowerName.contains('garden') || lowerName.contains('landscap')) {
       return Icons.park;
-    } else if (lowerName.contains('pet') || lowerName.contains('animal') || lowerName.contains('friendly')) {
+    } else if (lowerName.contains('pet') ||
+        lowerName.contains('animal') ||
+        lowerName.contains('friendly')) {
       return Icons.pets;
     } else if (lowerName.contains('compound')) {
       return Icons.home_work;
@@ -3877,8 +4030,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     // Check if property is available for booking
     final isPropertyAvailable =
         widget.property.status == PropertyStatus.approved &&
-        widget.property.availabilityStatus &&
-        widget.property.availableUnits > 0;
+            widget.property.availabilityStatus &&
+            widget.property.availableUnits > 0;
     final isSale = widget.property.isSale ||
         widget.property.priceType.toLowerCase() == 'for_sale';
 
@@ -3922,85 +4075,90 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                               vertical: 9,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                              color:
+                                  AppTheme.primaryblue.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Text(
-                              currentBooking.status == BookingStatus.pending
-                                  ? 'Your request is awaiting approval. It expires in ${_bookingExpiryLabel(currentBooking)}.'
-                                  : 'Complete your payment within ${_bookingExpiryLabel(currentBooking)} to keep this booking.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: AppTheme.getTextColor(context),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
+                            child: _BookingExpiryNotice(
+                              key: ValueKey(currentBooking.id),
+                              booking: currentBooking,
+                              isPending: currentBooking.status ==
+                                  BookingStatus.pending,
+                              onExpired: () =>
+                                  _handleBookingExpiry(currentBooking),
+                              textColor: AppTheme.getTextColor(context),
                             ),
                           ),
                         ),
                       ElevatedButton(
-                    onPressed: _isLoadingPendingBookings ||
-                            (!isPropertyAvailable && !hasExistingBooking)
-                        ? null
-                        : () {
-                      if (widget.user.id != "") {
-                        hasExistingBooking
-                            ? _initiatePayment()
-                            : Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => BookingScreen(
-                                    property: widget.property,
-                                    user: widget.user,
-                                  ),
-                                ),
-                              );
-                      } else {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isLoadingPendingBookings ||
-                              (!isPropertyAvailable && !hasExistingBooking)
-                          ? Colors.grey
-                          : hasExistingBooking
-                              ? AppTheme.primaryblue
-                              : AppTheme.primaryblue,
-                      foregroundColor: AppTheme.whiteColor,
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
-                      shadowColor: AppTheme.primaryblue.withValues(alpha: 0.3),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          hasExistingBooking ? Icons.event_available : Icons.book_online,
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          hasExistingBooking
-                              ? currentBooking?.status == BookingStatus.confirmed &&
-                                      !currentBooking!.isPaymentComplete
-                                  ? 'Complete Payment'
-                                  : currentBooking?.status == BookingStatus.pending
-                                      ? 'View Request'
-                                      : 'View Booking'
-                              : isPropertyAvailable
-                                  ? (isSale
-                                      ? 'Request a tour'
-                                      : 'Request Booking')
-                                  : 'Unavailable',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        onPressed: _isLoadingPendingBookings ||
+                                (!isPropertyAvailable && !hasExistingBooking)
+                            ? null
+                            : () {
+                                if (widget.user.id != "") {
+                                  hasExistingBooking
+                                      ? _initiatePayment()
+                                      : Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => BookingScreen(
+                                              property: widget.property,
+                                              user: widget.user,
+                                            ),
+                                          ),
+                                        );
+                                } else {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (context) => LoginScreen()));
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isLoadingPendingBookings ||
+                                  (!isPropertyAvailable && !hasExistingBooking)
+                              ? Colors.grey
+                              : hasExistingBooking
+                                  ? AppTheme.primaryblue
+                                  : AppTheme.primaryblue,
+                          foregroundColor: AppTheme.whiteColor,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          elevation: 2,
+                          shadowColor:
+                              AppTheme.primaryblue.withValues(alpha: 0.3),
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              hasExistingBooking
+                                  ? Icons.event_available
+                                  : Icons.book_online,
+                              size: 20,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              hasExistingBooking
+                                  ? currentBooking?.status ==
+                                              BookingStatus.confirmed &&
+                                          !currentBooking!.isPaymentComplete
+                                      ? 'Complete Payment'
+                                      : currentBooking?.status ==
+                                              BookingStatus.pending
+                                          ? 'View Request'
+                                          : 'View Booking'
+                                  : isPropertyAvailable
+                                      ? (isSale
+                                          ? 'Request a tour'
+                                          : 'Request Booking')
+                                      : 'Unavailable',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       if (widget.property.isRent && !isSale)
                         OutlinedButton.icon(
@@ -4028,7 +4186,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.primaryblue,
                             side: BorderSide(
-                              color: AppTheme.primaryblue.withValues(alpha: 0.55),
+                              color:
+                                  AppTheme.primaryblue.withValues(alpha: 0.55),
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -4086,7 +4245,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     if (phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Phone number not available', style: TextStyle(color: AppTheme.whiteColor)),
+          content: Text('Phone number not available',
+              style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           duration: Duration(seconds: 2),
@@ -4109,7 +4269,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not open phone dialer', style: TextStyle(color: AppTheme.whiteColor)),
+          content: Text('Could not open phone dialer',
+              style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           duration: Duration(seconds: 2),
@@ -4174,12 +4335,18 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     // }
 
     // Format dates as ISO 8601 strings for API
-    final checkInFormatted = _checkInDate != null ? DateFormat('yyyy-MM-dd').format(_checkInDate!) : null;
-    final checkOutFormatted = _checkOutDate != null ? DateFormat('yyyy-MM-dd').format(_checkOutDate!) : null;
+    final checkInFormatted = _checkInDate != null
+        ? DateFormat('yyyy-MM-dd').format(_checkInDate!)
+        : null;
+    final checkOutFormatted = _checkOutDate != null
+        ? DateFormat('yyyy-MM-dd').format(_checkOutDate!)
+        : null;
 
     setState(() {
       if (_checkInDate != null && _checkOutDate != null) {
-        grandTotal = (_checkOutDate!.difference(_checkInDate!).inDays * widget.property.price).toInt();
+        grandTotal = (_checkOutDate!.difference(_checkInDate!).inDays *
+                widget.property.price)
+            .toInt();
       } else {
         grandTotal == deposit;
       }
@@ -4194,7 +4361,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
     ));
   }
 
-  void _showBookingSuccessBottomSheet(Map<String, dynamic> bookingData, String message) {
+  void _showBookingSuccessBottomSheet(
+      Map<String, dynamic> bookingData, String message) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -4203,8 +4371,10 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
         return Dialog(
           backgroundColor: AppTheme.getCardColor(context),
           surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -4288,7 +4458,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   if (_checkInDate != null && _checkOutDate != null) ...[
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -4309,7 +4478,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                 ),
                               ),
                               Text(
-                                DateFormat('MMM dd, yyyy').format(_checkInDate!),
+                                DateFormat('MMM dd, yyyy')
+                                    .format(_checkInDate!),
                                 style: TextStyle(
                                   color: AppTheme.primaryblue,
                                   fontWeight: FontWeight.w600,
@@ -4329,7 +4499,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                 ),
                               ),
                               Text(
-                                DateFormat('MMM dd, yyyy').format(_checkOutDate!),
+                                DateFormat('MMM dd, yyyy')
+                                    .format(_checkOutDate!),
                                 style: TextStyle(
                                   color: AppTheme.primaryblue,
                                   fontWeight: FontWeight.w600,
@@ -4349,7 +4520,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                                 ),
                               ),
                               Text(
-                                ProfileService().currencyConverter(price: grandTotal),
+                                ProfileService()
+                                    .currencyConverter(price: grandTotal),
                                 style: TextStyle(
                                   color: AppTheme.primaryblue,
                                   fontWeight: FontWeight.w600,
@@ -4362,33 +4534,32 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
                     ),
                     const SizedBox(height: 16),
                   ],
-
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => BookingsListScreen(
-                            user: widget.user,
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => BookingsListScreen(
+                              user: widget.user,
+                            ),
                           ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryblue,
+                        foregroundColor: AppTheme.whiteColor,
+                        minimumSize: const Size.fromHeight(52),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryblue,
-                      foregroundColor: AppTheme.whiteColor,
-                      minimumSize: const Size.fromHeight(52),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ),
-                    child: const Text(
-                      'View my bookings',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
+                      child: const Text(
+                        'View my bookings',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ],
@@ -4403,24 +4574,141 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> with Tick
   // Handle property sharing
   void _shareProperty() async {
     try {
-      await SharePlus.instance.share(
+      final result = await SharePlus.instance.share(
         ShareParams(
           text: 'https://pearlnestestates.com/property/${widget.property.id}',
         ),
       );
-      //Share api counter
-      context.read<ShareBloc>().add(SharePropertyEvent(propertyId: widget.property.id));
+      if (result.status != ShareResultStatus.success) return;
+
+      if (mounted) setState(() => _sharesCount++);
+      final counterResult =
+          await PropertyInteractionsService.incrementShareCounter(
+        widget.property.id,
+      );
+      if (counterResult['success'] != true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Property shared, but its share count could not be updated.'),
+          ),
+        );
+        return;
+      }
+
+      final count = _parseShareCount(counterResult['data']);
+      if (count != null && mounted) {
+        setState(() => _sharesCount = count);
+      }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to share property', style: TextStyle(color: AppTheme.whiteColor)),
+          content: Text('Failed to share property',
+              style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
+  }
+}
+
+class _BookingExpiryNotice extends StatefulWidget {
+  final Booking booking;
+  final bool isPending;
+  final VoidCallback onExpired;
+  final Color textColor;
+
+  const _BookingExpiryNotice({
+    super.key,
+    required this.booking,
+    required this.isPending,
+    required this.onExpired,
+    required this.textColor,
+  });
+
+  @override
+  State<_BookingExpiryNotice> createState() => _BookingExpiryNoticeState();
+}
+
+class _BookingExpiryNoticeState extends State<_BookingExpiryNotice> {
+  Timer? _timer;
+  bool _expiryReported = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _BookingExpiryNotice oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.booking.expiresAt != widget.booking.expiresAt) {
+      _expiryReported = false;
+      _timer?.cancel();
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    if (!widget.booking.expiresAt.isAfter(DateTime.now())) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _reportExpiry();
+      });
+      return;
+    }
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (!widget.booking.expiresAt.isAfter(DateTime.now())) {
+        _timer?.cancel();
+        _reportExpiry();
+      } else {
+        setState(() {});
+      }
+    });
+  }
+
+  void _reportExpiry() {
+    if (_expiryReported) return;
+    _expiryReported = true;
+    widget.onExpired();
+  }
+
+  String _expiryLabel() {
+    final remaining = widget.booking.expiresAt.difference(DateTime.now());
+    if (remaining.isNegative) return 'Expired';
+    final hours = remaining.inHours.toString().padLeft(2, '0');
+    final minutes = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final message = widget.isPending
+        ? 'Your request is awaiting approval. It expires in ${_expiryLabel()}.'
+        : 'Complete your payment within ${_expiryLabel()} to keep this booking.';
+
+    return Text(
+      message,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        color: widget.textColor,
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+    );
   }
 }
 

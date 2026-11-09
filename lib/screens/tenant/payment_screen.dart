@@ -3,6 +3,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/screens/tenant/home_screen.dart';
+import 'package:pearlnest/services/profile_service.dart';
+import 'package:pearlnest/apis/payment_service.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String redirectUrl;
@@ -12,6 +14,7 @@ class PaymentScreen extends StatefulWidget {
   final String propertyTitle;
   final User user;
   final String bookingStatus;
+  final Future<Map<String, dynamic>> Function()? preparePayment;
 
   const PaymentScreen({
     super.key,
@@ -22,7 +25,18 @@ class PaymentScreen extends StatefulWidget {
     required this.propertyTitle,
     required this.user,
     this.bookingStatus = 'PENDING',
-  });
+  }) : preparePayment = null;
+
+  const PaymentScreen.preparing({
+    super.key,
+    required this.preparePayment,
+    required this.amount,
+    required this.propertyTitle,
+    required this.user,
+    this.bookingStatus = 'PENDING',
+  })  : redirectUrl = '',
+        orderTrackingId = '',
+        merchantReference = '';
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -33,11 +47,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   bool _completionDialogShown = false;
+  bool _isPreparingCheckout = false;
   String? _errorMessage;
+  late String _redirectUrl;
+  late String _merchantReference;
 
   @override
   void initState() {
     super.initState();
+    _redirectUrl = widget.redirectUrl;
+    _merchantReference = widget.merchantReference;
+    _isPreparingCheckout = widget.preparePayment != null;
     _initializeWebView();
   }
 
@@ -103,8 +123,55 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
       );
 
-    // Load the payment URL
-    _controller.loadRequest(Uri.parse(widget.redirectUrl));
+    if (widget.preparePayment != null) {
+      _prepareCheckout();
+    } else {
+      _controller.loadRequest(Uri.parse(_redirectUrl));
+    }
+  }
+
+  Future<void> _prepareCheckout() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+        _isPreparingCheckout = true;
+        _errorMessage = null;
+      });
+    }
+    try {
+      final payment = await widget.preparePayment!();
+      final redirectUrl = payment['redirectUrl']?.toString();
+      final orderTrackingId = payment['orderTrackingId']?.toString();
+      final merchantReference = payment['merchantReference']?.toString();
+      if (payment['success'] != true ||
+          redirectUrl == null ||
+          redirectUrl.isEmpty ||
+          orderTrackingId == null ||
+          orderTrackingId.isEmpty ||
+          merchantReference == null ||
+          merchantReference.isEmpty) {
+        throw PaymentException(
+          payment['message']?.toString() ??
+              'Payment checkout could not be started.',
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        _redirectUrl = redirectUrl;
+        _merchantReference = merchantReference;
+        _isPreparingCheckout = false;
+      });
+      await _controller.loadRequest(Uri.parse(redirectUrl));
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+        _isPreparingCheckout = false;
+        _errorMessage = error.toString();
+      });
+    }
   }
 
   void _checkPaymentCompletion(String url) {
@@ -283,7 +350,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                         Expanded(
                           child: Text(
-                            widget.merchantReference,
+                            _merchantReference,
                             style: TextStyle(
                               fontSize: 12,
                               color: AppTheme.getSecondaryTextColor(context),
@@ -363,9 +430,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              _controller.reload();
-            },
+            onPressed: _isPreparingCheckout
+                ? null
+                : () {
+                    if (_redirectUrl.isEmpty && widget.preparePayment != null) {
+                      _prepareCheckout();
+                    } else {
+                      _controller.reload();
+                    }
+                  },
           ),
         ],
       ),
@@ -400,11 +473,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     const SizedBox(height: 20),
                     ElevatedButton.icon(
                       onPressed: () {
-                        setState(() {
-                          _hasError = false;
-                          _isLoading = true;
-                        });
-                        _controller.reload();
+                        if (_redirectUrl.isEmpty && widget.preparePayment != null) {
+                          _prepareCheckout();
+                        } else {
+                          setState(() {
+                            _hasError = false;
+                            _isLoading = true;
+                          });
+                          _controller.reload();
+                        }
                       },
                       icon: const Icon(Icons.refresh),
                       label: const Text('Try again'),

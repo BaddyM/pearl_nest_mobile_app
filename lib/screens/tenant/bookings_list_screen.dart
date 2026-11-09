@@ -7,7 +7,6 @@ import "package:pearlnest/blocs/booking/booking_event.dart";
 import "package:pearlnest/blocs/booking/booking_state.dart";
 import "package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart";
 import "package:pearlnest/apis/chat_service.dart";
-import "package:pearlnest/apis/payment_service.dart";
 import "package:pearlnest/screens/chat/new_chat_conversation.dart";
 import "package:pearlnest/models/booking.dart";
 import "package:pearlnest/models/property.dart";
@@ -16,13 +15,13 @@ import "package:pearlnest/screens/tenant/favorites_screen.dart";
 import "package:pearlnest/screens/tenant/booking_screen.dart";
 import "package:pearlnest/screens/tenant/booking_change_request_screen.dart";
 import "package:pearlnest/screens/tenant/home_screen.dart";
-import "package:pearlnest/screens/tenant/payment_screen.dart";
 import "package:pearlnest/screens/tenant/property_details_screen.dart";
 import "package:pearlnest/screens/tenant/refund_request_screen.dart";
 import "package:pearlnest/services/profile_service.dart";
 import "package:pearlnest/widgets/app_theme.dart";
 import "package:pearlnest/widgets/empty_properties.dart";
 import "package:pearlnest/widgets/loading_widget.dart";
+import "package:pearlnest/utils/booking_payment_navigation.dart";
 import "package:url_launcher/url_launcher.dart";
 
 class BookingsListScreen extends StatefulWidget {
@@ -215,37 +214,12 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
         ? (booking.amount ?? balance.toDouble()).round()
         : balance;
     try {
-      final payment = await PaymentService.createPayment(
-        propertyId: booking.propertyId,
-        bookingId: booking.id,
+      await openBookingPayment(
+        context: context,
+        user: widget.user,
+        booking: booking,
+        property: property,
         amount: amount.toDouble(),
-      );
-      final redirectUrl = payment['redirectUrl']?.toString();
-      final orderTrackingId = payment['orderTrackingId']?.toString();
-      final merchantReference = payment['merchantReference']?.toString();
-      if (payment['success'] != true ||
-          redirectUrl == null ||
-          redirectUrl.isEmpty ||
-          orderTrackingId == null ||
-          merchantReference == null) {
-        throw BookingException(
-          payment['message']?.toString() ??
-              'Payment checkout could not be started.',
-        );
-      }
-      if (!mounted) return;
-      await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => PaymentScreen(
-            redirectUrl: redirectUrl,
-            orderTrackingId: orderTrackingId,
-            merchantReference: merchantReference,
-            amount: amount.toDouble(),
-            propertyTitle: booking.propertyTitle,
-            user: widget.user,
-            bookingStatus: 'APPROVED',
-          ),
-        ),
       );
       if (mounted) context.read<BookingBloc>().add(FetchBookings());
     } catch (error) {
