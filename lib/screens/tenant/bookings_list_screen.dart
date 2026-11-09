@@ -588,6 +588,90 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                         status: booking.status,
                                         booking: booking,
                                       ),
+                                      if (booking.status == BookingStatus.completed &&
+                                          booking.propertyOutcome == 'AWAITING_USER')
+                                        Card(
+                                          margin: const EdgeInsets.only(top: 10),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(14),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                  'Did you take this property?',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Let us know whether you are interested. Your answer does not reserve the property; the team will confirm availability.',
+                                                  style: TextStyle(
+                                                    color: AppTheme
+                                                        .getSecondaryTextColor(
+                                                            context),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 10),
+                                                Wrap(
+                                                  spacing: 8,
+                                                  runSpacing: 8,
+                                                  children: [
+                                                    FilledButton.icon(
+                                                      onPressed: () =>
+                                                          _submitPropertyOutcome(
+                                                        booking,
+                                                        'INTERESTED',
+                                                      ),
+                                                      icon: const Icon(
+                                                        Icons.home_work_outlined,
+                                                      ),
+                                                      label: const Text(
+                                                        'I’m interested',
+                                                      ),
+                                                    ),
+                                                    OutlinedButton(
+                                                      onPressed: () =>
+                                                          _submitPropertyOutcome(
+                                                        booking,
+                                                        'NOT_TAKING',
+                                                      ),
+                                                      child: const Text(
+                                                        'Not taking it',
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      if (booking.propertyOutcome == 'INTERESTED')
+                                        const ListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          leading: Icon(Icons.hourglass_top),
+                                          title: Text('Interest sent to Pearl Nest'),
+                                          subtitle: Text(
+                                            'The admin team will confirm the booking and availability.',
+                                          ),
+                                        ),
+                                      if (booking.propertyOutcome == 'NOT_TAKING')
+                                        const ListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          leading: Icon(Icons.check_circle_outline),
+                                          title: Text(
+                                            'You decided not to take this property',
+                                          ),
+                                        ),
+                                      if (booking.propertyOutcome == 'TAKEN')
+                                        const ListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          leading: Icon(Icons.verified_outlined),
+                                          title: Text(
+                                            'Property booking confirmed',
+                                          ),
+                                        ),
                                       if (_canRequestBookingChange(booking))
                                         Padding(
                                           padding:

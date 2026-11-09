@@ -30,6 +30,7 @@ class Booking {
   final double? totalAmountValue;
   final String? paymentOption;
   final String? bookingPurpose;
+  final String? propertyOutcome;
   final bool landlordRejected;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -59,6 +60,7 @@ class Booking {
     this.totalAmountValue,
     this.paymentOption,
     this.bookingPurpose,
+    this.propertyOutcome,
     this.landlordRejected = false,
     required this.createdAt,
     this.updatedAt,
@@ -129,6 +131,7 @@ class Booking {
       totalAmountValue: json['totalAmount'] is num ? (json['totalAmount'] as num).toDouble() : null,
       paymentOption: json['paymentOption']?.toString(),
       bookingPurpose: json['bookingPurpose']?.toString(),
+      propertyOutcome: json['propertyOutcome']?.toString(),
       landlordRejected:
           json['bookingStatus']?.toString().toUpperCase() == 'REJECTED',
       createdAt: parseDate(json['createdAt']?.toString() ?? json['bookingDate']?.toString()),

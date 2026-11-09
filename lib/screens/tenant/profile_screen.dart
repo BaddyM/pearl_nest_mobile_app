@@ -19,6 +19,7 @@ import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart
 import 'package:pearlnest/screens/landlord/landlord_dashboard_screen.dart';
 import 'package:pearlnest/screens/landlord/landlord_property_management_screen.dart';
 import 'package:pearlnest/screens/tenant/edit_profile_screen.dart';
+import 'package:pearlnest/screens/tenant/experience_reviews_screen.dart';
 import 'package:pearlnest/screens/tenant/help_and_support_screen.dart';
 import 'package:pearlnest/screens/tenant/privacy_policy_screen.dart';
 import 'package:pearlnest/screens/tenant/settings_screen.dart';
@@ -480,6 +481,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Widget _buildMenuItems() {
     final workspaceItems = <Widget>[];
+    workspaceItems.add(
+      _buildMenuItem(
+        Icons.rate_review_outlined,
+        'Community Reviews',
+        () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ExperienceReviewsScreen(user: widget.user),
+          ),
+        ),
+      ),
+    );
     if (widget.user.userType == UserType.landlord) {
       workspaceItems.addAll([
         _buildMenuItem(

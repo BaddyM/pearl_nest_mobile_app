@@ -184,6 +184,33 @@ class BookingService {
     }
   }
 
+  static Future<void> submitPropertyOutcome({
+    required String bookingId,
+    required String decision,
+  }) async {
+    if (decision != 'INTERESTED' && decision != 'NOT_TAKING') {
+      throw BookingException('Choose whether you are interested in the property.');
+    }
+    try {
+      final response = await ApiClient.patch(
+        '/booking/$bookingId/property-outcome',
+        {'decision': decision},
+      );
+      final data = response.data;
+      if (response.statusCode != 200 || data is! Map || data['success'] != true) {
+        throw BookingException(
+          data is Map
+              ? data['message']?.toString() ?? 'Could not save your decision.'
+              : 'Could not save your decision.',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (error) {
+      if (error is BookingException) rethrow;
+      throw BookingException('Could not save your decision: $error');
+    }
+  }
+
   static Future<Map<String, dynamic>> requestBookingChange({
     required String bookingId,
     required DateTime checkInDate,
