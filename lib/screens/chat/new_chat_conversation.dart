@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pearlnest/apis/property_service.dart';
@@ -70,7 +71,9 @@ class _NewChatConversationState extends State<NewChatConversation> {
 
   Future<void> _loadPropertyContext() async {
     final result = await PropertyService.getPropertyById(widget.propertyId!);
-    if (!mounted || result['success'] != true || result['property'] is! Property) {
+    if (!mounted ||
+        result['success'] != true ||
+        result['property'] is! Property) {
       return;
     }
     final property = result['property'] as Property;
@@ -142,6 +145,17 @@ class _NewChatConversationState extends State<NewChatConversation> {
     }
   }
 
+  void _onMessageLongPress(
+    BuildContext messageContext,
+    Message message, {
+    int index = 0,
+    LongPressStartDetails details = const LongPressStartDetails(),
+  }) {
+    if (message is TextMessage && message.text.trim().isNotEmpty) {
+      _showMessageActions(message.text);
+    }
+  }
+
   @override
   void dispose() {
     _chatController.dispose();
@@ -154,8 +168,8 @@ class _NewChatConversationState extends State<NewChatConversation> {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: AppTheme.getBackgroundColor(context),
-        foregroundColor: AppTheme.getTextColor(context),
+        backgroundColor: AppTheme.primaryblue,
+        foregroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: BackButton(
@@ -179,8 +193,7 @@ class _NewChatConversationState extends State<NewChatConversation> {
                     backgroundImage: imageProvider,
                   ),
                   placeholder: (context, url) => _buildHeaderAvatar(),
-                  errorWidget: (context, url, error) =>
-                      _buildHeaderAvatar(),
+                  errorWidget: (context, url, error) => _buildHeaderAvatar(),
                 ),
               )
             else
@@ -189,12 +202,32 @@ class _NewChatConversationState extends State<NewChatConversation> {
                 child: _buildHeaderAvatar(),
               ),
             Flexible(
-              child: Text(
-                widget.userName,
-                style: TextStyle(
-                  color: AppTheme.getTextColor(context),
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.userName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    _conversationStatus == 'COMPLETED'
+                        ? 'Conversation closed'
+                        : widget.propertyId != null
+                            ? 'Property conversation'
+                            : 'PearlNest chat',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.82),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -236,88 +269,89 @@ class _NewChatConversationState extends State<NewChatConversation> {
               if (widget.propertyId != null) _buildPropertyContext(),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 220),
-                child: state.pendingMessage != null &&
-                        state.refreshError != null
-                    ? Container(
-                        key: const ValueKey('failed-chat-message'),
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        color: Colors.red.withValues(alpha: 0.08),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                state.refreshError!,
-                                style: const TextStyle(color: Colors.red),
-                              ),
+                child:
+                    state.pendingMessage != null && state.refreshError != null
+                        ? Container(
+                            key: const ValueKey('failed-chat-message'),
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
                             ),
-                            TextButton.icon(
-                              onPressed: () {
-                                final pending = state.pendingMessage!;
-                                context.read<NewChatBloc>().add(
-                                      FetchNewChat(
-                                        currentUserId: widget.fromUserId,
-                                        toUserId: widget.toUserId,
-                                        propertyId: widget.propertyId,
-                                        isSendMessage: true,
-                                        sendMessage: pending,
-                                      ),
-                                    );
-                              },
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Retry'),
+                            color: Colors.red.withValues(alpha: 0.08),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    state.refreshError!,
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  onPressed: () {
+                                    final pending = state.pendingMessage!;
+                                    context.read<NewChatBloc>().add(
+                                          FetchNewChat(
+                                            currentUserId: widget.fromUserId,
+                                            toUserId: widget.toUserId,
+                                            propertyId: widget.propertyId,
+                                            isSendMessage: true,
+                                            sendMessage: pending,
+                                          ),
+                                        );
+                                  },
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Retry'),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      )
-                    : const SizedBox.shrink(key: ValueKey('no-chat-error')),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('no-chat-error')),
               ),
               Expanded(
                 child: Chat(
-            theme: ChatTheme(
-              colors: ChatColors(
-                primary: AppTheme.primaryblue,
-                onPrimary: Colors.white,
-                surface: AppTheme.getCardColor(context),
-                onSurface: AppTheme.getTextColor(context),
-                surfaceContainer: AppTheme.getBackgroundColor(context),
-                surfaceContainerLow: isDarkMode
-                    ? AppTheme.darkSurface
-                    : AppTheme.whiteColor,
-                surfaceContainerHigh: AppTheme.getCardColor(context),
-              ),
-              typography: ChatTypography.fromThemeData(Theme.of(context)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ).borderRadius,
-            ),
-            chatController: _chatController,
-            currentUserId: widget.fromUserId,
-            onMessageSend: _conversationStatus == 'COMPLETED'
-                ? null
-                : (text) {
-                    context.read<NewChatBloc>().add(
-                          FetchNewChat(
-                            currentUserId: widget.fromUserId,
-                            toUserId: widget.toUserId,
-                            propertyId: widget.propertyId,
-                            isSendMessage: true,
-                            sendMessage: {
-                              "fromUserId": widget.fromUserId,
-                              "toUserId": widget.toUserId,
-                              "text": text,
-                              if (widget.propertyId != null)
-                                "propertyId": widget.propertyId,
-                            },
-                          ),
-                        );
+                  theme: ChatTheme(
+                    colors: ChatColors(
+                      primary: AppTheme.primaryblue,
+                      onPrimary: Colors.white,
+                      surface: AppTheme.getCardColor(context),
+                      onSurface: AppTheme.getTextColor(context),
+                      surfaceContainer: isDarkMode
+                          ? AppTheme.darkBackground
+                          : const Color(0xFFF2F7F5),
+                      surfaceContainerLow: isDarkMode
+                          ? AppTheme.darkSurface
+                          : const Color(0xFFF7FAF8),
+                      surfaceContainerHigh: AppTheme.getCardColor(context),
+                    ),
+                    typography: ChatTypography.fromThemeData(Theme.of(context)),
+                    shape: const BorderRadius.all(Radius.circular(18)),
+                  ),
+                  chatController: _chatController,
+                  currentUserId: widget.fromUserId,
+                  onMessageSend: _conversationStatus == 'COMPLETED'
+                      ? null
+                      : (text) {
+                          context.read<NewChatBloc>().add(
+                                FetchNewChat(
+                                  currentUserId: widget.fromUserId,
+                                  toUserId: widget.toUserId,
+                                  propertyId: widget.propertyId,
+                                  isSendMessage: true,
+                                  sendMessage: {
+                                    "fromUserId": widget.fromUserId,
+                                    "toUserId": widget.toUserId,
+                                    "text": text,
+                                    if (widget.propertyId != null)
+                                      "propertyId": widget.propertyId,
+                                  },
+                                ),
+                              );
+                        },
+                  resolveUser: (UserID id) async {
+                    return User(id: widget.fromUserId, name: widget.userName);
                   },
-            resolveUser: (UserID id) async {
-              return User(id: widget.fromUserId, name: widget.userName);
-            },
+                  onMessageLongPress: _onMessageLongPress,
                 ),
               ),
             ],
@@ -341,28 +375,68 @@ class _NewChatConversationState extends State<NewChatConversation> {
     );
   }
 
+  Future<void> _showMessageActions(String text) async {
+    final shouldCopy = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListTile(
+          leading: const Icon(Icons.copy_rounded),
+          title: const Text('Copy message'),
+          onTap: () => Navigator.pop(sheetContext, true),
+        ),
+      ),
+    );
+    if (shouldCopy == true && mounted) {
+      await Clipboard.setData(ClipboardData(text: text));
+      if (mounted) CustomSnackBar.showSuccess(context, 'Message copied');
+    }
+  }
+
   Widget _buildPropertyContext() {
     final title = _propertyTitle ?? 'Property conversation';
     final address = _propertyAddress;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: AppTheme.primaryblue.withValues(alpha: 0.08),
-        border: Border(
-          bottom: BorderSide(
-            color: AppTheme.primaryblue.withValues(alpha: 0.18),
-          ),
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.primaryblue.withValues(alpha: 0.16),
         ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.home_work_outlined, color: AppTheme.primaryblue),
-          const SizedBox(width: 10),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryblue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.home_work_outlined,
+              color: AppTheme.primaryblue,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'PROPERTY DISCUSSION',
+                  style: TextStyle(
+                    color: AppTheme.primaryblue,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
                 Text(
                   title,
                   maxLines: 1,
@@ -395,11 +469,11 @@ class _NewChatConversationState extends State<NewChatConversation> {
   Widget _buildHeaderAvatar() {
     return CircleAvatar(
       radius: 17,
-      backgroundColor: AppTheme.primaryblue.withValues(alpha: 0.15),
+      backgroundColor: Colors.white.withValues(alpha: 0.18),
       child: Text(
         widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
         style: const TextStyle(
-          color: AppTheme.primaryblue,
+          color: Colors.white,
           fontWeight: FontWeight.w600,
         ),
       ),

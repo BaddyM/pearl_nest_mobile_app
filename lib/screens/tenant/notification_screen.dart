@@ -50,7 +50,8 @@ class _NotificationScreenState extends State<NotificationScreen>
     super.dispose();
   }
 
-  void _loadNotifications({bool isRefresh = false}) async {
+  Future<void> _loadNotifications({bool isRefresh = false}) async {
+    if (!mounted) return;
     if (isRefresh) {
       setState(() {
         _currentPage = 1;
@@ -81,6 +82,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         filter: filterParam,
       );
 
+      if (!mounted) return;
       if (result['success'] == true) {
         final notificationsData = result['notifications'];
         final notifications = notificationsData is List
@@ -116,6 +118,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -246,7 +249,6 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   void _markAsRead(
     NotificationItem notification, {
-    bool isDeleted = false,
     bool showFeedback = true,
   }) async {
     if (notification.isRead) return;
@@ -266,11 +268,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           }
         });
         if (showFeedback) {
-          _showSuccessSnackBar(
-            isDeleted
-                ? 'Notification deleted successfully'
-                : 'Notification marked as read',
-          );
+          _showSuccessSnackBar('Notification marked as read');
         }
       } else {
         if (showFeedback) {
@@ -391,8 +389,13 @@ class _NotificationScreenState extends State<NotificationScreen>
     try {
       final result =
           await NotificationApiService.deleteNotification(notificationId);
+      if (!mounted) return;
       if (result['success'] == true) {
         setState(() {
+          final deleted = _notifications.where((n) => n.id == notificationId);
+          if (deleted.isNotEmpty && !deleted.first.isRead && _unreadCount > 0) {
+            _unreadCount--;
+          }
           _notifications.removeWhere((n) => n.id == notificationId);
           _totalCount = _totalCount > 0 ? _totalCount - 1 : 0;
         });
@@ -655,14 +658,25 @@ class _NotificationScreenState extends State<NotificationScreen>
     final filteredNotifications = _filteredNotifications;
 
     if (filteredNotifications.isEmpty && !_isLoading) {
-      return _buildEmptyState();
+      return RefreshIndicator(
+        onRefresh: () => _loadNotifications(isRefresh: true),
+        color: AppTheme.primaryblue,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.65,
+              child: _buildEmptyState(),
+            ),
+          ],
+        ),
+      );
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        _loadNotifications(isRefresh: true);
-      },
+      onRefresh: () => _loadNotifications(isRefresh: true),
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.all(20),
         itemCount: filteredNotifications.length + (_hasMore ? 1 : 0),
         itemBuilder: (context, index) {
@@ -756,7 +770,6 @@ class _NotificationScreenState extends State<NotificationScreen>
       ),
       onDismissed: (direction) {
         _deleteNotification(notification.id);
-        _markAsRead(notification, isDeleted: true);
       },
       child: GestureDetector(
         onTap: () => _openNotification(notification),

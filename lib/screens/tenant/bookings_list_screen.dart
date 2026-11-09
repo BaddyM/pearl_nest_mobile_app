@@ -94,10 +94,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
       booking.status == BookingStatus.confirmed;
 
   bool _canAskAboutBookingChange(Booking booking) {
-    final bookingIsChatEligible =
-        booking.status == BookingStatus.confirmed ||
-            (booking.isViewingRequest &&
-                booking.status == BookingStatus.pending);
+    final bookingIsChatEligible = booking.status == BookingStatus.confirmed ||
+        (booking.isViewingRequest && booking.status == BookingStatus.pending);
     return bookingIsChatEligible &&
         (booking.hasSuccessfulPayment || (booking.amount ?? 0) <= 0);
   }
@@ -313,7 +311,14 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
   }
 
   Future<void> onRefresh() async {
-    context.read<BookingBloc>().add(FetchBookings());
+    final bookingBloc = context.read<BookingBloc>();
+    bookingBloc.add(FetchBookings());
+    await bookingBloc.stream.firstWhere(
+      (state) =>
+          state is BookingLoaded ||
+          state is BookingEmpty ||
+          state is BookingError,
+    );
   }
 
   Widget _buildBody() {
@@ -326,14 +331,17 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
           child: RefreshIndicator(
             onRefresh: onRefresh,
             child: SingleChildScrollView(
-              child: BlocConsumer<BookingBloc, BookingState>(builder: (context, state) {
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: BlocConsumer<BookingBloc, BookingState>(
+                  builder: (context, state) {
                 if (state is BookingLoading) {
                   return LoadingWidget();
                 } else if (state is BookingLoaded) {
                   final bookings = state.bookings.where((booking) {
-                    final isHistory = booking.status == BookingStatus.cancelled ||
-                        booking.status == BookingStatus.completed ||
-                        booking.status == BookingStatus.expired;
+                    final isHistory =
+                        booking.status == BookingStatus.cancelled ||
+                            booking.status == BookingStatus.completed ||
+                            booking.status == BookingStatus.expired;
                     return (_showBookingHistory ? isHistory : !isHistory) &&
                         (widget.propertyId == null ||
                             booking.propertyId == widget.propertyId);
@@ -382,190 +390,232 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemBuilder: (context, index) {
-                          Property? property = bookings[index].property;
-                          String? bookingId = bookings[index].id;
-                          Booking booking = bookings[index];
-                          if (property != null) {
-                            final successfulPayments = booking.payments.where((item) {
-                              final paymentStatus = item["paymentStatus"]?.toString().toUpperCase();
-                              return paymentStatus == "APPROVED" || paymentStatus == "BOOKED";
-                            }).toList();
-                            final amount = successfulPayments.fold<num>(0, (sum, item) => sum + ((item["amount"] as num?) ?? 0));
-                            final totalDue = booking.totalAmount ?? (property.deposit != 0 ? property.deposit : property.price);
-                            final initialDue = booking.amount ?? totalDue;
-                            final balance = (amount == 0
-                                    ? initialDue - amount.toDouble()
-                                    : totalDue - amount.toDouble())
-                                .clamp(0, double.infinity);
-                            return Container(
-                              margin: EdgeInsets.only(bottom: 20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  if (booking.landlordRejected)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: Text(
-                                        'The landlord rejected this booking. Any completed payment is guaranteed a full refund. Add your payout details below; the refund is approved automatically and paid manually.',
-                                        style: TextStyle(
-                                          color: AppTheme.getSecondaryTextColor(context),
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ),
-                                  PropertyCard(
-                                    bookingId: bookingId,
-                                    isBooking: true,
-                                    balance: balance.toInt(),
-                                    paid: amount.toInt(),
-                                    property: property,
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => PropertyDetailsScreen(
-                                            property: property,
-                                            user: widget.user,
+                              Property? property = bookings[index].property;
+                              String? bookingId = bookings[index].id;
+                              Booking booking = bookings[index];
+                              if (property != null) {
+                                final successfulPayments =
+                                    booking.payments.where((item) {
+                                  final paymentStatus = item["paymentStatus"]
+                                      ?.toString()
+                                      .toUpperCase();
+                                  return paymentStatus == "APPROVED" ||
+                                      paymentStatus == "BOOKED";
+                                }).toList();
+                                final amount = successfulPayments.fold<num>(
+                                    0,
+                                    (sum, item) =>
+                                        sum + ((item["amount"] as num?) ?? 0));
+                                final totalDue = booking.totalAmount ??
+                                    (property.deposit != 0
+                                        ? property.deposit
+                                        : property.price);
+                                final initialDue = booking.amount ?? totalDue;
+                                final balance = (amount == 0
+                                        ? initialDue - amount.toDouble()
+                                        : totalDue - amount.toDouble())
+                                    .clamp(0, double.infinity);
+                                return Container(
+                                  margin: EdgeInsets.only(bottom: 20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      if (booking.landlordRejected)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 8),
+                                          child: Text(
+                                            'The landlord rejected this booking. Any completed payment is guaranteed a full refund. Add your payout details below; the refund is approved automatically and paid manually.',
+                                            style: TextStyle(
+                                              color: AppTheme
+                                                  .getSecondaryTextColor(
+                                                      context),
+                                              height: 1.4,
+                                            ),
                                           ),
                                         ),
-                                      );
-                                    },
-                                    onFavorite: () {},
-                                    isFavorite: false,
-                                    status: booking.status,
-                                    booking: booking,
-                                  ),
-                                  if (_canRequestBookingChange(booking))
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: OutlinedButton.icon(
-                                        onPressed: () =>
-                                            _openBookingChangeRequest(booking),
-                                        icon: const Icon(Icons.edit_calendar_outlined),
-                                        label: const Text('Request date change'),
-                                      ),
-                                    ),
-                                  if (booking.changeRequests.isNotEmpty)
-                                    _buildBookingChangeStatus(
-                                      booking,
-                                      booking.changeRequests.first,
-                                    ),
-                                  if (booking.status == BookingStatus.confirmed &&
-                                      balance > 0)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: OutlinedButton.icon(
-                                        onPressed: () =>
-                                            _payBookingBalance(booking, balance.toInt()),
-                                        icon: const Icon(Icons.payment_outlined),
-                                        label: Text(
-                                          'Pay remaining balance (${ProfileService().currencyConverter(price: balance.toInt())})',
-                                        ),
-                                      ),
-                                    ),
-                                  if (booking.status == BookingStatus.cancelled ||
-                                      booking.status == BookingStatus.expired)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: SizedBox(
-                                        width: double.infinity,
-                                        child: OutlinedButton.icon(
-                                          onPressed: _canRebook(property)
-                                              ? () => _rebook(property, booking)
-                                              : null,
-                                          icon: Icon(
-                                            booking.isViewingRequest
-                                                ? Icons.event_available_outlined
-                                                : Icons.replay_outlined,
-                                          ),
-                                          label: Text(
-                                            _canRebook(property)
-                                                ? booking.isViewingRequest
-                                                    ? 'Request tour again'
-                                                    : 'Book this property again'
-                                                : 'Property currently unavailable',
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  if (_canContactLandlord(booking))
-                                    _buildLandlordContactActions(booking),
-                                  if (_canCancelBooking(booking))
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Wrap(
-                                        alignment: WrapAlignment.end,
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: [
-                                          if (_canAskAboutBookingChange(booking) &&
-                                              property.landlordId.isNotEmpty)
-                                            OutlinedButton.icon(
-                                              onPressed: () =>
-                                                  _openLandlordChat(booking),
-                                              icon: const Icon(
-                                                Icons.edit_calendar_outlined,
-                                              ),
-                                              label: const Text(
-                                                'Message landlord',
+                                      PropertyCard(
+                                        bookingId: bookingId,
+                                        isBooking: true,
+                                        balance: balance.toInt(),
+                                        paid: amount.toInt(),
+                                        property: property,
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  PropertyDetailsScreen(
+                                                property: property,
+                                                user: widget.user,
                                               ),
                                             ),
-                                          OutlinedButton.icon(
-                                            onPressed: () =>
-                                                _confirmCancellation(booking),
-                                            icon: const Icon(
-                                              Icons.cancel_outlined,
-                                            ),
-                                            label: const Text(
-                                              'Cancel booking',
-                                            ),
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: Colors.red,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  if (successfulPayments.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: OutlinedButton.icon(
-                                        icon: const Icon(Icons.currency_exchange),
-                                        label: Text(
-                                          booking.landlordRejected
-                                              ? 'Claim guaranteed refund'
-                                              : booking.changeRequests.any(
-                                                      (item) =>
-                                                          item.status == 'ACCEPTED' &&
-                                                          item.refundAmount > 0)
-                                                  ? 'Request price-difference refund'
-                                              : 'Request a refund',
-                                        ),
-                                        onPressed: () {
-                                          Navigator.of(context).push(MaterialPageRoute(
-                                            builder: (_) => RefundRequestScreen(
-                                              propertyName: booking.propertyTitle,
-                                              payments: successfulPayments,
-                                              landlordRejected: booking.landlordRejected,
-                                              administratorReview:
-                                                  booking.isViewingRequest,
-                                              bookingChangeRefund:
-                                                  booking.changeRequests.any(
-                                                (item) =>
-                                                    item.status == 'ACCEPTED' &&
-                                                    item.refundAmount > 0,
-                                              ),
-                                            ),
-                                          ));
+                                          );
                                         },
+                                        onFavorite: () {},
+                                        isFavorite: false,
+                                        status: booking.status,
+                                        booking: booking,
                                       ),
-                                    ),
-                                ],
-                              ),
-                            );
-                          } else {
-                            return SizedBox();
-                          }
-
+                                      if (_canRequestBookingChange(booking))
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 8),
+                                          child: OutlinedButton.icon(
+                                            onPressed: () =>
+                                                _openBookingChangeRequest(
+                                                    booking),
+                                            icon: const Icon(
+                                                Icons.edit_calendar_outlined),
+                                            label: const Text(
+                                                'Request date change'),
+                                          ),
+                                        ),
+                                      if (booking.changeRequests.isNotEmpty)
+                                        _buildBookingChangeStatus(
+                                          booking,
+                                          booking.changeRequests.first,
+                                        ),
+                                      if (booking.status ==
+                                              BookingStatus.confirmed &&
+                                          balance > 0)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 8),
+                                          child: OutlinedButton.icon(
+                                            onPressed: () => _payBookingBalance(
+                                                booking, balance.toInt()),
+                                            icon: const Icon(
+                                                Icons.payment_outlined),
+                                            label: Text(
+                                              'Pay remaining balance (${ProfileService().currencyConverter(price: balance.toInt())})',
+                                            ),
+                                          ),
+                                        ),
+                                      if (booking.status ==
+                                              BookingStatus.cancelled ||
+                                          booking.status ==
+                                              BookingStatus.expired)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 8),
+                                          child: SizedBox(
+                                            width: double.infinity,
+                                            child: OutlinedButton.icon(
+                                              onPressed: _canRebook(property)
+                                                  ? () =>
+                                                      _rebook(property, booking)
+                                                  : null,
+                                              icon: Icon(
+                                                booking.isViewingRequest
+                                                    ? Icons
+                                                        .event_available_outlined
+                                                    : Icons.replay_outlined,
+                                              ),
+                                              label: Text(
+                                                _canRebook(property)
+                                                    ? booking.isViewingRequest
+                                                        ? 'Request tour again'
+                                                        : 'Book this property again'
+                                                    : 'Property currently unavailable',
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      if (_canContactLandlord(booking))
+                                        _buildLandlordContactActions(booking),
+                                      if (_canCancelBooking(booking))
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 8),
+                                          child: Wrap(
+                                            alignment: WrapAlignment.end,
+                                            spacing: 8,
+                                            runSpacing: 8,
+                                            children: [
+                                              if (_canAskAboutBookingChange(
+                                                      booking) &&
+                                                  property
+                                                      .landlordId.isNotEmpty)
+                                                OutlinedButton.icon(
+                                                  onPressed: () =>
+                                                      _openLandlordChat(
+                                                          booking),
+                                                  icon: const Icon(
+                                                    Icons
+                                                        .edit_calendar_outlined,
+                                                  ),
+                                                  label: const Text(
+                                                    'Message landlord',
+                                                  ),
+                                                ),
+                                              OutlinedButton.icon(
+                                                onPressed: () =>
+                                                    _confirmCancellation(
+                                                        booking),
+                                                icon: const Icon(
+                                                  Icons.cancel_outlined,
+                                                ),
+                                                label: const Text(
+                                                  'Cancel booking',
+                                                ),
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor: Colors.red,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      if (successfulPayments.isNotEmpty)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 8),
+                                          child: OutlinedButton.icon(
+                                            icon: const Icon(
+                                                Icons.currency_exchange),
+                                            label: Text(
+                                              booking.landlordRejected
+                                                  ? 'Claim guaranteed refund'
+                                                  : booking.changeRequests.any(
+                                                          (item) =>
+                                                              item.status ==
+                                                                  'ACCEPTED' &&
+                                                              item.refundAmount >
+                                                                  0)
+                                                      ? 'Request price-difference refund'
+                                                      : 'Request a refund',
+                                            ),
+                                            onPressed: () {
+                                              Navigator.of(context)
+                                                  .push(MaterialPageRoute(
+                                                builder: (_) =>
+                                                    RefundRequestScreen(
+                                                  propertyName:
+                                                      booking.propertyTitle,
+                                                  payments: successfulPayments,
+                                                  landlordRejected:
+                                                      booking.landlordRejected,
+                                                  administratorReview:
+                                                      booking.isViewingRequest,
+                                                  bookingChangeRefund: booking
+                                                      .changeRequests
+                                                      .any(
+                                                    (item) =>
+                                                        item.status ==
+                                                            'ACCEPTED' &&
+                                                        item.refundAmount > 0,
+                                                  ),
+                                                ),
+                                              ));
+                                            },
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              } else {
+                                return SizedBox();
+                              }
                             },
                           ),
                       ],
@@ -583,7 +633,9 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                           SizedBox(height: 10),
                           TextButton(
                             onPressed: () {
-                              context.read<BookingBloc>().add(FetchBookings()); // Closes the dialog
+                              context
+                                  .read<BookingBloc>()
+                                  .add(FetchBookings()); // Closes the dialog
                             },
                             child: const Text('Refresh'),
                           ),
@@ -594,10 +646,15 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                 } else if (state is BookingEmpty) {
                   return EmptyPropertiesWidget(
                     title: "No recent bookings found",
-                    message: "We couldn't find any recent bookings, kindly go to the properties page and book a property.",
+                    message:
+                        "We couldn't find any recent bookings, kindly go to the properties page and book a property.",
                     buttonText: "Home",
                     onButtonPressed: () {
-                      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => HomeScreen(user: widget.user)), (route) => false);
+                      Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  HomeScreen(user: widget.user)),
+                          (route) => false);
                     },
                   );
                 } else {
@@ -610,12 +667,15 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                     builder: (ctx) => AlertDialog(
                       title: const Text('An Error Occurred'),
                       content: Text(state.message),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15)),
                       actions: <Widget>[
                         TextButton(
                           onPressed: () {
                             Navigator.of(ctx).pop();
-                            context.read<BookingBloc>().add(FetchBookings()); // Closes the dialog
+                            context
+                                .read<BookingBloc>()
+                                .add(FetchBookings()); // Closes the dialog
                           },
                           child: const Text('Okay'),
                         ),
@@ -629,23 +689,27 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                     context: context,
                     builder: (BuildContext context) {
                       return Dialog(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0)),
                         child: Padding(
                           padding: const EdgeInsets.all(24.0),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
+                              const Icon(Icons.check_circle_outline,
+                                  color: Colors.green, size: 80),
                               const SizedBox(height: 16),
                               const Text(
                                 "Booking Cancelled",
-                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 22, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 12),
                               const Text(
                                 "Your booking was cancelled and a confirmation email has been sent. Any completed payment needs a separate refund request; cancellation does not automatically refund it.",
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey, fontSize: 16),
+                                style:
+                                    TextStyle(color: Colors.grey, fontSize: 16),
                               ),
                               const SizedBox(height: 24),
                               SizedBox(
@@ -653,14 +717,20 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppTheme.primaryblue,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
                                   ),
                                   onPressed: () {
-                                    context.read<BookingBloc>().add(FetchBookings());
+                                    context
+                                        .read<BookingBloc>()
+                                        .add(FetchBookings());
                                     Navigator.pop(context);
                                   },
-                                  child: const Text("Got it", style: TextStyle(color: Colors.white)),
+                                  child: const Text("Got it",
+                                      style: TextStyle(color: Colors.white)),
                                 ),
                               ),
                             ],
@@ -771,7 +841,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -784,7 +855,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
               BackButton(
                 onPressed: () {
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => HomeScreen(user: widget.user)),
+                    MaterialPageRoute(
+                        builder: (context) => HomeScreen(user: widget.user)),
                     (route) => false,
                   );
                 },

@@ -42,6 +42,21 @@ class _NewChatListState extends State<NewChatList> {
         );
   }
 
+  Future<void> _refreshChatList() async {
+    final bloc = context.read<NewChatBloc>();
+    bloc.add(
+      FetchNewChatList(
+        loadAdminsIfEmpty: widget.user.userType != UserType.landlord,
+      ),
+    );
+    await bloc.stream.firstWhere(
+      (state) =>
+          state is NewChatListLoadedState ||
+          state is NewChatListInitState ||
+          state is NewChatListErrorState,
+    );
+  }
+
   String convertUserType(UserType userType) {
     switch (userType) {
       case UserType.landlord:
@@ -57,21 +72,23 @@ class _NewChatListState extends State<NewChatList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: AppTheme.primaryblue,
+        foregroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: widget.showBackButton,
-        leading: widget.showBackButton ? BackButton() : null,
-        title: Text("Chat"),
+        leading: widget.showBackButton ? const BackButton() : null,
+        title: const Text("Messages"),
         centerTitle: false,
         actions: [
           if (widget.user.id != "")
-            GestureDetector(
-              onTap: _fetchChatList,
-              child: Icon(
-                Icons.refresh,
-                color: Colors.white,
-                size: 30,
+            IconButton(
+              tooltip: 'Refresh conversations',
+              onPressed: _fetchChatList,
+              icon: const Icon(
+                Icons.refresh_rounded,
               ),
             ),
-          SizedBox(width: 10),
+          const SizedBox(width: 4),
         ],
       ),
       body: widget.user.id != ""
@@ -85,79 +102,118 @@ class _NewChatListState extends State<NewChatList> {
                       );
                     } else if (state is NewChatListLoadedState) {
                       return Expanded(
-                        child: state.data.isEmpty
-                            ? _buildEmptyConversations()
-                            : ListView.builder(
-                                padding: const EdgeInsets.all(16),
-                                itemCount: state.data.length,
-                                itemBuilder: (context, index) {
-                                  final item = state.data[index];
-                                  final isCurrentUserSender =
-                                      item["fromUserId"] == widget.user.id;
-                                  final peer = isCurrentUserSender
-                                      ? item["toUser"]
-                                      : item["fromUser"];
-                                  final peerData = peer is Map
-                                      ? Map<String, dynamic>.from(peer)
-                                      : <String, dynamic>{};
-                                  final name =
-                                      peerData["name"]?.toString() ?? "User";
-                                  final role =
-                                      peerData["role"]?.toString() ?? "";
-                                  final isOnline =
-                                      peerData["isOnline"] == true;
-                                  final profilePhoto =
-                                      _profilePhotoUrl(peerData);
-                                  final property = item["property"] is Map
-                                      ? Map<String, dynamic>.from(item["property"])
-                                      : <String, dynamic>{};
-                                  final id = isCurrentUserSender
-                                      ? item["toUserId"]?.toString() ?? ""
-                                      : item["fromUserId"]?.toString() ?? "";
-                                  final unreadCount =
-                                      int.tryParse(item["unreadCount"]?.toString() ?? '');
-                                  final isUnread = unreadCount != null
-                                      ? unreadCount > 0
-                                      : !isCurrentUserSender && item["isRead"] != true;
-                                  return _buildChatListCard(
-                                    name,
-                                    widget.user.id,
-                                    role,
-                                    id,
-                                    imageUrl: profilePhoto,
-                                    propertyId: item["propertyId"]?.toString(),
-                                    propertyTitle: property["propertyName"]?.toString(),
-                                    propertyAddress: property["fullAddress"]?.toString(),
-                                    isOnline: isOnline,
-                                    unread: isUnread,
-                                  );
-                                },
-                              ),
+                        child: RefreshIndicator(
+                          onRefresh: _refreshChatList,
+                          color: AppTheme.primaryblue,
+                          child: state.data.isEmpty
+                              ? ListView(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.7,
+                                      child: _buildEmptyConversations(),
+                                    ),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: state.data.length,
+                                  itemBuilder: (context, index) {
+                                    final item = state.data[index];
+                                    final isCurrentUserSender =
+                                        item["fromUserId"] == widget.user.id;
+                                    final peer = isCurrentUserSender
+                                        ? item["toUser"]
+                                        : item["fromUser"];
+                                    final peerData = peer is Map
+                                        ? Map<String, dynamic>.from(peer)
+                                        : <String, dynamic>{};
+                                    final name =
+                                        peerData["name"]?.toString() ?? "User";
+                                    final role =
+                                        peerData["role"]?.toString() ?? "";
+                                    final isOnline =
+                                        peerData["isOnline"] == true;
+                                    final profilePhoto =
+                                        _profilePhotoUrl(peerData);
+                                    final property = item["property"] is Map
+                                        ? Map<String, dynamic>.from(
+                                            item["property"])
+                                        : <String, dynamic>{};
+                                    final id = isCurrentUserSender
+                                        ? item["toUserId"]?.toString() ?? ""
+                                        : item["fromUserId"]?.toString() ?? "";
+                                    final unreadCount = int.tryParse(
+                                        item["unreadCount"]?.toString() ?? '');
+                                    final isUnread = unreadCount != null
+                                        ? unreadCount > 0
+                                        : !isCurrentUserSender &&
+                                            item["isRead"] != true;
+                                    return _buildChatListCard(
+                                      name,
+                                      widget.user.id,
+                                      role,
+                                      id,
+                                      imageUrl: profilePhoto,
+                                      propertyId:
+                                          item["propertyId"]?.toString(),
+                                      propertyTitle:
+                                          property["propertyName"]?.toString(),
+                                      propertyAddress:
+                                          property["fullAddress"]?.toString(),
+                                      isOnline: isOnline,
+                                      unread: isUnread,
+                                    );
+                                  },
+                                ),
+                        ),
                       );
                     } else if (state is NewChatListInitState) {
                       return Expanded(
-                        child: state.data.isEmpty
-                            ? _buildEmptyConversations()
-                            : ListView.builder(
-                                padding: const EdgeInsets.all(16),
-                                itemCount: state.data.length,
-                                itemBuilder: (context, index) {
-                                  final admin = state.data[index];
-                                  return _buildChatListCard(
-                                    admin["name"]?.toString() ?? "Support",
-                                    widget.user.id,
-                                    admin["role"]?.toString() ?? "",
-                                    admin["id"]?.toString() ?? "",
-                                    imageUrl: _profilePhotoUrl(
-                                      Map<String, dynamic>.from(admin),
+                        child: RefreshIndicator(
+                          onRefresh: _refreshChatList,
+                          color: AppTheme.primaryblue,
+                          child: state.data.isEmpty
+                              ? ListView(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.7,
+                                      child: _buildEmptyConversations(),
                                     ),
-                                    propertyTitle: null,
-                                    propertyAddress: null,
-                                    isOnline: admin["isOnline"] == true,
-                                    unread: false,
-                                  );
-                                },
-                              ),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: state.data.length,
+                                  itemBuilder: (context, index) {
+                                    final admin = state.data[index];
+                                    return _buildChatListCard(
+                                      admin["name"]?.toString() ?? "Support",
+                                      widget.user.id,
+                                      admin["role"]?.toString() ?? "",
+                                      admin["id"]?.toString() ?? "",
+                                      imageUrl: _profilePhotoUrl(
+                                        Map<String, dynamic>.from(admin),
+                                      ),
+                                      propertyTitle: null,
+                                      propertyAddress: null,
+                                      isOnline: admin["isOnline"] == true,
+                                      unread: false,
+                                    );
+                                  },
+                                ),
+                        ),
                       );
                     } else {
                       return SizedBox();
@@ -251,152 +307,186 @@ class _NewChatListState extends State<NewChatList> {
     bool isOnline = false,
     bool unread = false,
   }) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+    Future<void> openConversation() async {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => NewChatConversation(
+            fromUserId: currentUserId,
+            toUserId: toUserId,
+            userName: userName,
+            userImageUrl: imageUrl,
+            propertyId: propertyId,
+            propertyTitle: propertyTitle,
+            propertyAddress: propertyAddress,
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => NewChatConversation(
-                  fromUserId: currentUserId,
-                  toUserId: toUserId,
-                  userName: userName,
-                  userImageUrl: imageUrl,
-                  propertyId: propertyId,
-                  propertyTitle: propertyTitle,
-                  propertyAddress: propertyAddress,
-                ),
-              ),
-            );
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Avatar
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppTheme.primaryblue.withValues(alpha: 0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: imageUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          imageBuilder: (context, imageProvider) => CircleAvatar(
-                            radius: 24,
-                            backgroundColor:
-                                AppTheme.primaryblue.withValues(alpha: 0.1),
-                            backgroundImage: imageProvider,
-                          ),
-                          placeholder: (context, url) =>
-                              _buildDefaultAvatar(userName),
-                          errorWidget: (context, url, error) =>
-                              _buildDefaultAvatar(userName),
-                        )
-                      : _buildDefaultAvatar(userName),
-                ),
-                SizedBox(width: 16),
+        ),
+      );
+    }
 
-                // Admin Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return Dismissible(
+      key: ValueKey('$toUserId-${propertyId ?? propertyTitle ?? 'general'}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryblue,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.chat_bubble_outline, color: Colors.white),
+            SizedBox(height: 4),
+            Text(
+              'Open',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      confirmDismiss: (_) async {
+        await openConversation();
+        return false;
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: unread
+                ? AppTheme.primaryblue.withValues(alpha: 0.24)
+                : AppTheme.getSecondaryTextColor(context)
+                    .withValues(alpha: 0.1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryblue.withValues(alpha: 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: openConversation,
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Stack(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            flex: 3,
+                      SizedBox(
+                        width: 52,
+                        height: 52,
+                        child: imageUrl != null
+                            ? CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                fit: BoxFit.cover,
+                                imageBuilder: (context, imageProvider) =>
+                                    CircleAvatar(
+                                  radius: 26,
+                                  backgroundColor: AppTheme.primaryblue
+                                      .withValues(alpha: 0.1),
+                                  backgroundImage: imageProvider,
+                                ),
+                                placeholder: (context, url) =>
+                                    _buildDefaultAvatar(userName),
+                                errorWidget: (context, url, error) =>
+                                    _buildDefaultAvatar(userName),
+                              )
+                            : _buildDefaultAvatar(userName),
+                      ),
+                      if (isOnline)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 13,
+                            height: 13,
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppTheme.getCardColor(context),
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+
+                  // Admin Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                userName,
+                                style: TextStyle(
+                                  color: AppTheme.getTextColor(context),
+                                  fontSize: 16,
+                                  fontWeight: unread
+                                      ? FontWeight.w700
+                                      : FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            // Online status indicator
+                          ],
+                        ),
+                        if (role.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
                             child: Text(
-                              userName,
+                              role,
                               style: TextStyle(
-                                color: AppTheme.getTextColor(context),
-                                fontSize: 16,
+                                color: AppTheme.primaryblue,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                          // Online status indicator
-                        ],
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        role.toUpperCase(),
-                        style: TextStyle(
-                          color: AppTheme.primaryblue,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (propertyTitle != null && propertyTitle.trim().isNotEmpty) ...[
-                        SizedBox(height: 4),
-                        Text(
-                          propertyTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppTheme.getSecondaryTextColor(context),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                      SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            isOnline ? Icons.check_circle : Icons.schedule,
-                            size: 14,
-                            color: isOnline ? Colors.green : Colors.orange,
-                          ),
-                          SizedBox(width: 4),
+                        if (propertyTitle != null &&
+                            propertyTitle.trim().isNotEmpty) ...[
+                          SizedBox(height: role.trim().isNotEmpty ? 3 : 6),
                           Text(
-                            isOnline ? 'Available' : 'Offline',
+                            propertyTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: isOnline ? Colors.green : Colors.orange,
+                              color: AppTheme.getSecondaryTextColor(context),
                               fontSize: 12,
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-
-                // Chat arrow
-                unread == true
-                    ? Container(
-                        width: 15,
-                        height: 15,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                      )
-                    : SizedBox(),
-              ],
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

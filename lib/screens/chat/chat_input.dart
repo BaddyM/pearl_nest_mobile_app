@@ -49,51 +49,49 @@ class _ChatInputState extends State<ChatInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
+        color: AppTheme.getBackgroundColor(context),
         border: Border(
           top: BorderSide(
-            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
-            width: 1,
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
           ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.getTextColor(context).withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
-        ],
       ),
       child: SafeArea(
+        top: false,
         child: Row(
           children: [
-           
             Expanded(
               child: Container(
-                constraints: BoxConstraints(maxHeight: 120),
+                constraints: const BoxConstraints(maxHeight: 120),
                 decoration: BoxDecoration(
                   color: AppTheme.getCardColor(context),
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: AppTheme.getSecondaryTextColor(context)
+                        .withValues(alpha: 0.12),
+                  ),
                 ),
                 child: TextField(
                   controller: widget.controller,
                   enabled: widget.isEnabled,
                   decoration: InputDecoration(
-                    hintText: 'Type a message...',
+                    hintText:
+                        widget.isEnabled ? 'Message' : 'Connecting to chat...',
                     hintStyle: TextStyle(
                       color: AppTheme.getSecondaryTextColor(context),
-                      fontSize: 16,
+                      fontSize: 15,
                     ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 13,
                     ),
                   ),
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     color: AppTheme.getTextColor(context),
                   ),
                   maxLines: null,
@@ -106,24 +104,23 @@ class _ChatInputState extends State<ChatInput> {
                 ),
               ),
             ),
-            SizedBox(width: 8),
-            AnimatedContainer(
-              duration: Duration(milliseconds: 200),
-              child: GestureDetector(
-                onTap: (_isTyping && widget.isEnabled) ? widget.onSend : null,
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: (_isTyping && widget.isEnabled) ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.send,
-                    color: AppTheme.whiteColor,
-                    size: 20,
-                  ),
+            const SizedBox(width: 8),
+            AnimatedScale(
+              scale: _isTyping ? 1 : 0.94,
+              duration: const Duration(milliseconds: 180),
+              child: IconButton.filled(
+                tooltip: 'Send message',
+                onPressed:
+                    (_isTyping && widget.isEnabled) ? widget.onSend : null,
+                style: IconButton.styleFrom(
+                  backgroundColor: AppTheme.primaryblue,
+                  disabledBackgroundColor:
+                      AppTheme.getSecondaryTextColor(context)
+                          .withValues(alpha: 0.25),
+                  foregroundColor: AppTheme.whiteColor,
+                  fixedSize: const Size(48, 48),
                 ),
+                icon: const Icon(Icons.send_rounded, size: 20),
               ),
             ),
           ],

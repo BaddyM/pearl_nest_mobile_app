@@ -8,7 +8,6 @@ import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/blocs/chat/chat_event.dart';
-import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
 import 'package:pearlnest/widgets/login_required_widget.dart';
@@ -77,7 +76,8 @@ class _ChatScreenState extends State<ChatScreen> {
       if (adminConversations.isNotEmpty) {
         // Avoid duplicates by checking if admin conversations are already in API conversations
         for (final adminConv in adminConversations) {
-          final isDuplicate = allConversations.any((conv) => conv.landlordId == adminConv.landlordId);
+          final isDuplicate = allConversations
+              .any((conv) => conv.landlordId == adminConv.landlordId);
           if (!isDuplicate) {
             allConversations.add(adminConv);
           }
@@ -102,7 +102,8 @@ class _ChatScreenState extends State<ChatScreen> {
       // Fallback to admin conversation on error
       try {
         final fallbackConv = await ChatService.getAdminConversation();
-        final fallbackConversations = fallbackConv != null ? [fallbackConv] : <ChatConversation>[];
+        final fallbackConversations =
+            fallbackConv != null ? [fallbackConv] : <ChatConversation>[];
 
         setState(() {
           _allConversations = fallbackConversations;
@@ -120,8 +121,10 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load conversations. ${_allConversations.isEmpty ? 'No admin available.' : 'Showing available chats.'}'),
-            backgroundColor: _allConversations.isEmpty ? Colors.red : Colors.orange,
+            content: Text(
+                'Failed to load conversations. ${_allConversations.isEmpty ? 'No admin available.' : 'Showing available chats.'}'),
+            backgroundColor:
+                _allConversations.isEmpty ? Colors.red : Colors.orange,
             behavior: SnackBarBehavior.floating,
             margin: EdgeInsets.all(16),
           ),
@@ -138,7 +141,9 @@ class _ChatScreenState extends State<ChatScreen> {
         _filteredConversations = List.from(_allConversations);
       } else {
         _filteredConversations = _allConversations.where((conversation) {
-          return conversation.landlordName.toLowerCase().contains(query) || conversation.propertyTitle.toLowerCase().contains(query) || conversation.lastMessage.toLowerCase().contains(query);
+          return conversation.landlordName.toLowerCase().contains(query) ||
+              conversation.propertyTitle.toLowerCase().contains(query) ||
+              conversation.lastMessage.toLowerCase().contains(query);
         }).toList();
       }
     });
@@ -157,30 +162,20 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: AppTheme.getBackgroundColor(context),
+        backgroundColor: AppTheme.primaryblue,
+        foregroundColor: AppTheme.whiteColor,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: true,
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Chat',
-                style: TextStyle(
-                  color: AppTheme.getTextColor(context),
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
+        title: const Text(
+          'Messages',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
         actions: [
           // Debug button for development (only show in debug mode)
           if (kDebugMode && widget.user.id != "")
             PopupMenuButton<String>(
-              icon: Icon(Icons.bug_report, color: AppTheme.getTextColor(context)),
+              icon: Icon(Icons.bug_report, color: AppTheme.whiteColor),
               onSelected: (value) {
                 if (value == 'debug_chat') {
                   _showDebugInfo();
@@ -255,12 +250,23 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           )
                         : _filteredConversations.isEmpty
-                            ? _buildEmptyState()
+                            ? ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: [
+                                  SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.65,
+                                    child: _buildEmptyState(),
+                                  ),
+                                ],
+                              )
                             : ListView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(),
                                 padding: EdgeInsets.symmetric(vertical: 8),
                                 itemCount: _filteredConversations.length,
                                 itemBuilder: (context, index) {
-                                  final conversation = _filteredConversations[index];
+                                  final conversation =
+                                      _filteredConversations[index];
                                   return _buildConversationTile(conversation);
                                 },
                               ),
@@ -286,7 +292,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             decoration: BoxDecoration(
               color: AppTheme.getCardColor(context),
-              borderRadius: BorderRadius.circular(25),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
               ),
@@ -372,7 +378,9 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           SizedBox(height: 8),
           Text(
-            _isSearching ? 'Try searching with different keywords' : 'Start browsing properties to connect\nwith landlords',
+            _isSearching
+                ? 'Try searching with different keywords'
+                : 'Start browsing properties to connect\nwith landlords',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -386,20 +394,23 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildConversationTile(ChatConversation conversation) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.whiteColor,
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.blackColor.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            color: AppTheme.primaryblue.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: ListTile(
-        contentPadding: EdgeInsets.all(16),
+        contentPadding: const EdgeInsets.all(16),
         leading: Stack(
           children: [
             Container(
@@ -439,7 +450,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     color: Colors.green,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppTheme.whiteColor,
+                      color: AppTheme.getCardColor(context),
                       width: 2,
                     ),
                   ),
@@ -455,7 +466,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.blackColor,
+                  color: AppTheme.getTextColor(context),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -465,7 +476,7 @@ class _ChatScreenState extends State<ChatScreen> {
               _formatTime(conversation.lastMessageTime),
               style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.greyColor,
+                color: AppTheme.getSecondaryTextColor(context),
               ),
             ),
           ],
@@ -492,8 +503,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     conversation.lastMessage,
                     style: TextStyle(
                       fontSize: 14,
-                      color: conversation.unreadCount > 0 ? AppTheme.blackColor : AppTheme.greyColor,
-                      fontWeight: conversation.unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
+                      color: AppTheme.getSecondaryTextColor(context),
+                      fontWeight: conversation.unreadCount > 0
+                          ? FontWeight.w500
+                          : FontWeight.normal,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

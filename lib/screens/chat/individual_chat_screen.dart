@@ -50,7 +50,18 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     // Initialize chat and load messages for this conversation
     final chatBloc = context.read<ChatBloc>();
     chatBloc.add(const ChatInitialize());
-    chatBloc.add(ChatLoadMessages(chatWithUserId: widget.conversation.landlordId));
+    chatBloc
+        .add(ChatLoadMessages(chatWithUserId: widget.conversation.landlordId));
+  }
+
+  Future<void> _refreshMessages() async {
+    final bloc = context.read<ChatBloc>();
+    bloc.add(
+      ChatLoadMessages(chatWithUserId: widget.conversation.landlordId),
+    );
+    await bloc.stream.firstWhere(
+      (state) => state is ChatConnected || state is ChatError,
+    );
   }
 
   @override
@@ -124,11 +135,12 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      elevation: 1,
-      shadowColor: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
+      backgroundColor: AppTheme.primaryblue,
+      foregroundColor: AppTheme.whiteColor,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: AppTheme.getTextColor(context)),
+        icon: const Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.pop(context, "popped"),
       ),
       title: Row(
@@ -154,8 +166,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                             radius: 20,
                             backgroundImage: imageProvider,
                           ),
-                          placeholder: (context, url) =>
-                              _buildDefaultAvatar(),
+                          placeholder: (context, url) => _buildDefaultAvatar(),
                           errorWidget: (context, url, error) =>
                               _buildDefaultAvatar(),
                         )
@@ -188,8 +199,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               children: [
                 Text(
                   widget.conversation.landlordName,
-                  style: TextStyle(
-                    color: AppTheme.getTextColor(context),
+                  style: const TextStyle(
+                    color: AppTheme.whiteColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -199,7 +210,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 Text(
                   widget.isOnline ? 'Online' : 'Offline',
                   style: TextStyle(
-                    color: AppTheme.getSecondaryTextColor(context),
+                    color: AppTheme.whiteColor.withValues(alpha: 0.82),
                     fontSize: 12,
                   ),
                 ),
@@ -210,13 +221,15 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       ),
       actions: [
         IconButton(
-          icon: Icon(Icons.phone, color: AppTheme.primaryblue),
+          tooltip: 'Call',
+          icon: const Icon(Icons.call_outlined, color: AppTheme.whiteColor),
           onPressed: () {
             _showCallDialog();
           },
         ),
         IconButton(
-          icon: Icon(Icons.more_vert, color: AppTheme.getTextColor(context)),
+          tooltip: 'More options',
+          icon: const Icon(Icons.more_vert, color: AppTheme.whiteColor),
           onPressed: () {
             _showMoreOptions();
           },
@@ -240,7 +253,9 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
       ),
       child: Center(
         child: Text(
-          widget.conversation.landlordName.isNotEmpty ? widget.conversation.landlordName[0].toUpperCase() : '?',
+          widget.conversation.landlordName.isNotEmpty
+              ? widget.conversation.landlordName[0].toUpperCase()
+              : '?',
           style: TextStyle(
             color: AppTheme.whiteColor,
             fontSize: 18,
@@ -253,29 +268,37 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
   Widget _buildPropertyInfo() {
     return Container(
-      margin: EdgeInsets.all(16),
-      padding: EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.primaryblue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.primaryblue.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppTheme.primaryblue.withOpacity(0.2),
+          color: AppTheme.primaryblue.withValues(alpha: 0.16),
         ),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.home,
-            color: AppTheme.primaryblue,
-            size: 20,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryblue.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.home_work_outlined,
+              color: AppTheme.primaryblue,
+              size: 20,
+            ),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Property Discussion',
+                  'PROPERTY CHAT',
                   style: TextStyle(
                     color: AppTheme.primaryblue,
                     fontSize: 12,
@@ -284,7 +307,9 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  widget.conversation.propertyTitle,
+                  widget.conversation.propertyTitle.isEmpty
+                      ? 'General conversation'
+                      : widget.conversation.propertyTitle,
                   style: TextStyle(
                     color: AppTheme.getTextColor(context),
                     fontSize: 14,
@@ -296,11 +321,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               ],
             ),
           ),
-          Icon(
-            Icons.arrow_forward_ios,
-            color: AppTheme.primaryblue,
-            size: 16,
-          ),
+          const Icon(Icons.chat_bubble_outline, color: AppTheme.primaryblue),
         ],
       ),
     );
@@ -314,57 +335,77 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     }
 
     if (messages.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      return RefreshIndicator(
+        onRefresh: _refreshMessages,
+        color: AppTheme.primaryblue,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: 60,
-              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Start the conversation',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.getTextColor(context),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Send a message to ${widget.conversation.landlordName}',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.getSecondaryTextColor(context),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.55,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 56,
+                      color: AppTheme.primaryblue.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Start the conversation',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.getTextColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Send a message to ${widget.conversation.landlordName}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.getSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       );
     } else {
-      return ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: messages.length,
-        itemBuilder: (context, index) {
-          final message = messages[index];
-          final isFromCurrentUser = message.fromUserId == widget.currentUser.id.toString();
-          final showTimestamp = _shouldShowTimestamp(index, messages);
+      return RefreshIndicator(
+        onRefresh: _refreshMessages,
+        color: AppTheme.primaryblue,
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          itemCount: messages.length,
+          itemBuilder: (context, index) {
+            final message = messages[index];
+            final isFromCurrentUser =
+                message.fromUserId == widget.currentUser.id.toString();
+            final showTimestamp = _shouldShowTimestamp(index, messages);
 
-          return Column(
-            children: [
-              if (showTimestamp) _buildTimestamp(message.timestamp),
-              MessageBubble(
-                message: _convertToMessage(message, message.messageType!),
-                isFromCurrentUser: isFromCurrentUser,
-                senderAvatar: isFromCurrentUser ? null : widget.conversation.landlordProfilePic,
-                senderName: widget.conversation.landlordName,
-              ),
-            ],
-          );
-        },
+            return Column(
+              children: [
+                if (showTimestamp) _buildTimestamp(message.timestamp),
+                MessageBubble(
+                  message: _convertToMessage(message, message.messageType!),
+                  isFromCurrentUser: isFromCurrentUser,
+                  senderAvatar: isFromCurrentUser
+                      ? null
+                      : widget.conversation.landlordProfilePic,
+                  senderName: widget.conversation.landlordName,
+                ),
+              ],
+            );
+          },
+        ),
       );
     }
   }
@@ -420,8 +461,10 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
   }
 
   Widget _buildMessageInput(ChatState state) {
-    final isConnected = state.runtimeType.toString() == "ChatConnected" ? true : false;
-    final isLoading = state.runtimeType.toString() == "ChatLoading" || state.runtimeType.toString() == "ChatMessageSending";
+    final isConnected =
+        state.runtimeType.toString() == "ChatConnected" ? true : false;
+    final isLoading = state.runtimeType.toString() == "ChatLoading" ||
+        state.runtimeType.toString() == "ChatMessageSending";
 
     return ChatInput(
       controller: _messageController,
@@ -433,7 +476,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    final messageDate =
+        DateTime(timestamp.year, timestamp.month, timestamp.day);
     final dayDifference = today.difference(messageDate).inDays;
 
     if (dayDifference == 0) {
@@ -474,7 +518,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                style:
+                    TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             ElevatedButton(
@@ -483,7 +528,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
 
                 String phoneNumber = widget.adminContact;
 
-                String cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+                String cleanedNumber =
+                    phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
 
                 // Create the tel URL
                 final Uri phoneUri = Uri(scheme: 'tel', path: cleanedNumber);
@@ -538,7 +584,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
+                  color:
+                      AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -684,7 +731,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+                style:
+                    TextStyle(color: AppTheme.getSecondaryTextColor(context)),
               ),
             ),
             ElevatedButton(
@@ -714,7 +762,8 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
   }
 
   Widget _buildConnectionStatus(ChatState state) {
-    final bool isConnected = state.runtimeType.toString() == "ChatConnected" ? true : false;
+    final bool isConnected =
+        state.runtimeType.toString() == "ChatConnected" ? true : false;
 
     if (isConnected) return const SizedBox.shrink();
 

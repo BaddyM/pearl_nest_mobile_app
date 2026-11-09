@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -33,13 +31,13 @@ class MessageBubble extends StatelessWidget {
       },
       child: Container(
         margin: EdgeInsets.only(
-          bottom: 8,
-          left: isFromCurrentUser ? 50 : 0,
-          right: isFromCurrentUser ? 0 : 50,
+          bottom: 6,
+          left: isFromCurrentUser ? 52 : 0,
+          right: isFromCurrentUser ? 0 : 52,
         ),
         child: Row(
-          mainAxisAlignment: isFromCurrentUser 
-              ? MainAxisAlignment.end 
+          mainAxisAlignment: isFromCurrentUser
+              ? MainAxisAlignment.end
               : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -47,7 +45,7 @@ class MessageBubble extends StatelessWidget {
               Container(
                 width: 24,
                 height: 24,
-                margin: EdgeInsets.only(right: 8, bottom: 4),
+                margin: const EdgeInsets.only(right: 8, bottom: 4),
                 child: ClipOval(
                   child: senderAvatar != null && senderAvatar!.isNotEmpty
                       ? CachedNetworkImage(
@@ -63,22 +61,24 @@ class MessageBubble extends StatelessWidget {
             ],
             Flexible(
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                 decoration: BoxDecoration(
                   color: isFromCurrentUser
                       ? AppTheme.primaryblue
                       : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(18),
-                    topRight: Radius.circular(18),
-                    bottomLeft: Radius.circular(isFromCurrentUser ? 18 : 4),
-                    bottomRight: Radius.circular(isFromCurrentUser ? 4 : 18),
+                    topLeft: const Radius.circular(20),
+                    topRight: const Radius.circular(20),
+                    bottomLeft: Radius.circular(isFromCurrentUser ? 20 : 6),
+                    bottomRight: Radius.circular(isFromCurrentUser ? 6 : 20),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.getTextColor(context).withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: Offset(0, 1),
+                      color: AppTheme.getTextColor(context)
+                          .withValues(alpha: 0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -91,7 +91,7 @@ class MessageBubble extends StatelessWidget {
                         color: isFromCurrentUser
                             ? AppTheme.whiteColor
                             : AppTheme.getTextColor(context),
-                        fontSize: 16,
+                        fontSize: 15,
                         height: 1.3,
                       ),
                     ),
@@ -103,9 +103,9 @@ class MessageBubble extends StatelessWidget {
                           _formatMessageTime(message.timestamp),
                           style: TextStyle(
                             color: isFromCurrentUser
-                                ? AppTheme.whiteColor.withOpacity(0.75)
+                                ? AppTheme.whiteColor.withValues(alpha: 0.76)
                                 : AppTheme.getSecondaryTextColor(context),
-                            fontSize: 12,
+                            fontSize: 10,
                           ),
                         ),
                         if (isFromCurrentUser) ...[
@@ -142,9 +142,7 @@ class MessageBubble extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          senderName.isNotEmpty 
-              ? senderName[0].toUpperCase() 
-              : '?',
+          senderName.isNotEmpty ? senderName[0].toUpperCase() : '?',
           style: TextStyle(
             color: AppTheme.whiteColor,
             fontSize: 12,
