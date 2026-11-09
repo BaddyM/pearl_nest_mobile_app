@@ -35,7 +35,8 @@ class FavoritesScreen extends StatefulWidget {
   _FavoritesScreenState createState() => _FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderStateMixin {
+class _FavoritesScreenState extends State<FavoritesScreen>
+    with TickerProviderStateMixin {
   List<Property> _favoriteProperties = [];
   List<Property> _filteredProperties = [];
   bool _isLoading = true;
@@ -108,12 +109,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
     };
   }
 
-  void _loadFavoriteProperties() async {
+  Future<void> _loadFavoriteProperties({bool showLoading = true}) async {
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (showLoading) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
     try {
       final favorites = await FavoritesService.fetchFavorites();
 
@@ -121,7 +124,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
 
       setState(() {
         _favoriteProperties = favorites;
-        _filteredProperties = List.from(_favoriteProperties);
+        _filteredProperties = _getFilteredProperties(favorites);
         _isLoading = false;
       });
       _animationController.forward();
@@ -181,7 +184,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppTheme.whiteColor),
                 ),
               ),
               SizedBox(width: 16),
@@ -268,17 +272,20 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
     if (!mounted) return;
 
     setState(() {
-      List<Property> filtered = _favoriteProperties;
-      if (_selectedCategory != 'All') {
-        filtered = filtered.where((property) => property.type == _selectedCategory).toList();
-      }
-
-      if (_searchQuery.isNotEmpty) {
-        filtered = filtered.where((property) => property.title.toLowerCase().contains(_searchQuery.toLowerCase()) || property.location.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
-      }
-
-      _filteredProperties = filtered;
+      _filteredProperties = _getFilteredProperties(_favoriteProperties);
     });
+  }
+
+  List<Property> _getFilteredProperties(Iterable<Property> properties) {
+    return properties.where((property) {
+      final matchesCategory =
+          _selectedCategory == 'All' || property.type == _selectedCategory;
+      final query = _searchQuery.toLowerCase();
+      final matchesSearch = query.isEmpty ||
+          property.title.toLowerCase().contains(query) ||
+          property.location.toLowerCase().contains(query);
+      return matchesCategory && matchesSearch;
+    }).toList();
   }
 
   @override
@@ -294,7 +301,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                     child: _isLoading
                         ? _buildLoadingState()
                         : _favoriteProperties.isEmpty
-                            ? _buildEmptyState()
+                            ? RefreshIndicator(
+                                onRefresh: () => _loadFavoriteProperties(
+                                  showLoading: false,
+                                ),
+                                color: AppTheme.primaryblue,
+                                child: ListView(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          MediaQuery.sizeOf(context).height *
+                                              0.65,
+                                      child: _buildEmptyState(),
+                                    ),
+                                  ],
+                                ),
+                              )
                             : _buildFavoritesContent(),
                   )
                 : LoginRequiredWidget(),
@@ -327,7 +351,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -366,7 +391,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
               Container(
                 decoration: BoxDecoration(
                   color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(responsive['borderRadius'] - 4),
+                  borderRadius:
+                      BorderRadius.circular(responsive['borderRadius'] - 4),
                 ),
                 child: IconButton(
                   onPressed: () {
@@ -399,7 +425,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         borderRadius: BorderRadius.circular(responsive['borderRadius'] - 1),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -550,7 +577,22 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         children: [
           _buildCategoriesRow(),
           Expanded(
-            child: _filteredProperties.isEmpty ? _buildNoResultsState() : _buildFavoritesList(),
+            child: _filteredProperties.isEmpty
+                ? RefreshIndicator(
+                    onRefresh: () =>
+                        _loadFavoriteProperties(showLoading: false),
+                    color: AppTheme.primaryblue,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.sizeOf(context).height * 0.55,
+                          child: _buildNoResultsState(),
+                        ),
+                      ],
+                    ),
+                  )
+                : _buildFavoritesList(),
           ),
         ],
       ),
@@ -566,12 +608,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         height: responsive['isSmallScreen'] ? 40 : 45,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.symmetric(horizontal: responsive['horizontalPadding']),
+          padding:
+              EdgeInsets.symmetric(horizontal: responsive['horizontalPadding']),
           itemCount: _categories.length,
           itemBuilder: (context, index) {
             final category = _categories[index];
             final isSelected = _selectedCategory == category;
-            final count = category == 'All' ? _favoriteProperties.length : _favoriteProperties.where((p) => p.type == category).length;
+            final count = category == 'All'
+                ? _favoriteProperties.length
+                : _favoriteProperties.where((p) => p.type == category).length;
 
             return GestureDetector(
               onTap: () {
@@ -582,16 +627,22 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
               },
               child: AnimatedContainer(
                 duration: Duration(milliseconds: 200),
-                margin: EdgeInsets.only(right: responsive['isSmallScreen'] ? 8 : 12),
+                margin: EdgeInsets.only(
+                    right: responsive['isSmallScreen'] ? 8 : 12),
                 padding: EdgeInsets.symmetric(
                   horizontal: responsive['isSmallScreen'] ? 12 : 16,
                   vertical: responsive['isSmallScreen'] ? 8 : 10,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryblue : AppTheme.getCardColor(context),
+                  color: isSelected
+                      ? AppTheme.primaryblue
+                      : AppTheme.getCardColor(context),
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
-                    color: isSelected ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.3),
+                    color: isSelected
+                        ? AppTheme.primaryblue
+                        : AppTheme.getSecondaryTextColor(context)
+                            .withValues(alpha: 0.3),
                     width: 1,
                   ),
                   boxShadow: isSelected
@@ -612,8 +663,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                         category,
                         style: TextStyle(
                           fontSize: responsive['isSmallScreen'] ? 12 : 14,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color: isSelected ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isSelected
+                              ? AppTheme.whiteColor
+                              : AppTheme.getSecondaryTextColor(context),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -627,7 +681,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.whiteColor.withValues(alpha: 0.2) : AppTheme.primaryblue.withValues(alpha: 0.1),
+                          color: isSelected
+                              ? AppTheme.whiteColor.withValues(alpha: 0.2)
+                              : AppTheme.primaryblue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -635,7 +691,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
                           style: TextStyle(
                             fontSize: responsive['isSmallScreen'] ? 8 : 10,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? AppTheme.whiteColor : AppTheme.primaryblue,
+                            color: isSelected
+                                ? AppTheme.whiteColor
+                                : AppTheme.primaryblue,
                           ),
                         ),
                       ),
@@ -664,7 +722,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           ),
           SizedBox(height: 16),
           Text(
-            _searchQuery.isNotEmpty ? 'No results found' : 'No $_selectedCategory properties',
+            _searchQuery.isNotEmpty
+                ? 'No results found'
+                : 'No $_selectedCategory properties',
             style: TextStyle(
               fontSize: responsive['isSmallScreen'] ? 18 : 20,
               fontWeight: FontWeight.w600,
@@ -673,7 +733,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
           ),
           SizedBox(height: 8),
           Text(
-            _searchQuery.isNotEmpty ? 'Try adjusting your search terms' : 'No $_selectedCategory properties in your favorites yet',
+            _searchQuery.isNotEmpty
+                ? 'Try adjusting your search terms'
+                : 'No $_selectedCategory properties in your favorites yet',
             style: TextStyle(
               fontSize: responsive['subtitleFontSize'],
               color: AppTheme.getSecondaryTextColor(context),
@@ -699,79 +761,89 @@ class _FavoritesScreenState extends State<FavoritesScreen> with TickerProviderSt
         childAspectRatio = 1.2;
       }
 
-      return GridView.builder(
+      return RefreshIndicator(
+        onRefresh: () => _loadFavoriteProperties(showLoading: false),
+        color: AppTheme.primaryblue,
+        child: GridView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            responsive['horizontalPadding'],
+            responsive['verticalPadding'],
+            responsive['horizontalPadding'],
+            100,
+          ),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: childAspectRatio,
+            crossAxisSpacing: crossAxisSpacing,
+            mainAxisSpacing: mainAxisSpacing,
+          ),
+          itemCount: _filteredProperties.length,
+          itemBuilder: (context, index) {
+            final property = _filteredProperties[index];
+            return PropertyCard(
+              property: property,
+              isHorizontal: false,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PropertyDetailsScreen(
+                      property: property,
+                      user: widget.user,
+                    ),
+                  ),
+                );
+              },
+              onFavorite: () {
+                _toggleFavorite(property);
+              },
+              isFavorite: true,
+            );
+          },
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => _loadFavoriteProperties(showLoading: false),
+      color: AppTheme.primaryblue,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
           responsive['horizontalPadding'],
           responsive['verticalPadding'],
           responsive['horizontalPadding'],
           100,
         ),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          childAspectRatio: childAspectRatio,
-          crossAxisSpacing: crossAxisSpacing,
-          mainAxisSpacing: mainAxisSpacing,
-        ),
         itemCount: _filteredProperties.length,
         itemBuilder: (context, index) {
           final property = _filteredProperties[index];
-          return PropertyCard(
-            property: property,
-            isHorizontal: false,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PropertyDetailsScreen(
-                    property: property,
-                    user: widget.user,
+          return AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            margin: EdgeInsets.only(bottom: responsive['cardSpacing']),
+            child: PropertyCard(
+              property: property,
+              isHorizontal: true,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PropertyDetailsScreen(
+                      property: property,
+                      user: widget.user,
+                    ),
                   ),
-                ),
-              );
-            },
-            onFavorite: () {
-              _toggleFavorite(property);
-            },
-            isFavorite: true,
+                );
+              },
+              onFavorite: () {
+                _toggleFavorite(property);
+              },
+              isFavorite: true,
+            ),
           );
         },
-      );
-    }
-
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(
-        responsive['horizontalPadding'],
-        responsive['verticalPadding'],
-        responsive['horizontalPadding'],
-        100,
       ),
-      itemCount: _filteredProperties.length,
-      itemBuilder: (context, index) {
-        final property = _filteredProperties[index];
-        return AnimatedContainer(
-          duration: Duration(milliseconds: 300),
-          margin: EdgeInsets.only(bottom: responsive['cardSpacing']),
-          child: PropertyCard(
-            property: property,
-            isHorizontal: true,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PropertyDetailsScreen(
-                    property: property,
-                    user: widget.user,
-                  ),
-                ),
-              );
-            },
-            onFavorite: () {
-              _toggleFavorite(property);
-            },
-            isFavorite: true,
-          ),
-        );
-      },
     );
   }
 }
@@ -849,9 +921,15 @@ class _PropertyCardState extends State<PropertyCard> {
               : isSmallScreen
                   ? 140.0
                   : 150.0),
-      'imageWidth': widget.isHorizontal ? (isSmallScreen ? 100.0 : 120.0) : double.infinity,
-      'titleFontSize': widget.isHorizontal ? (isSmallScreen ? 13.0 : 14.0) : (isSmallScreen ? 13.0 : 14.0),
-      'priceFontSize': widget.isHorizontal ? (isSmallScreen ? 11.0 : 12.0) : (isSmallScreen ? 14.0 : 16.0),
+      'imageWidth': widget.isHorizontal
+          ? (isSmallScreen ? 100.0 : 120.0)
+          : double.infinity,
+      'titleFontSize': widget.isHorizontal
+          ? (isSmallScreen ? 13.0 : 14.0)
+          : (isSmallScreen ? 13.0 : 14.0),
+      'priceFontSize': widget.isHorizontal
+          ? (isSmallScreen ? 11.0 : 12.0)
+          : (isSmallScreen ? 14.0 : 16.0),
       'subtitleFontSize': isSmallScreen ? 10.0 : 11.0,
       'iconSize': isSmallScreen ? 12.0 : 13.0,
       'favIconSize': isSmallScreen ? 18.0 : 20.0,
@@ -859,7 +937,8 @@ class _PropertyCardState extends State<PropertyCard> {
     };
   }
 
-  int calculateGrandTotal({required int totalAmount, required double transactionFee}) {
+  int calculateGrandTotal(
+      {required int totalAmount, required double transactionFee}) {
     double transactionFeeAmount = ((transactionFee / 100) * totalAmount);
     int grandTotal = (totalAmount + transactionFeeAmount).toInt();
     return grandTotal;
@@ -903,7 +982,8 @@ class _PropertyCardState extends State<PropertyCard> {
                   if (widget.isBooking)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('The booking quote already includes transaction fees.'),
+                      child: Text(
+                          'The booking quote already includes transaction fees.'),
                     ),
                   const SizedBox(height: 15),
 
@@ -914,7 +994,8 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                     value: true,
                     groupValue: isFullPayment,
-                    onChanged: (val) => setModalState(() => isFullPayment = val!),
+                    onChanged: (val) =>
+                        setModalState(() => isFullPayment = val!),
                   ),
 
                   // Option 2: Custom Amount
@@ -923,7 +1004,8 @@ class _PropertyCardState extends State<PropertyCard> {
                           title: const Text("Pay Custom Amount"),
                           value: false,
                           groupValue: isFullPayment,
-                          onChanged: (val) => setModalState(() => isFullPayment = val!),
+                          onChanged: (val) =>
+                              setModalState(() => isFullPayment = val!),
                         )
                       : SizedBox(),
 
@@ -957,10 +1039,15 @@ class _PropertyCardState extends State<PropertyCard> {
                       ),
                       onPressed: () {
                         final basePay = isFullPayment
-                            ? (widget.isBooking ? totalAmount : calculateGrandTotal(totalAmount: totalAmount, transactionFee: transactionFee))
+                            ? (widget.isBooking
+                                ? totalAmount
+                                : calculateGrandTotal(
+                                    totalAmount: totalAmount,
+                                    transactionFee: transactionFee))
                             : customAmount == null
                                 ? null
-                                : ProfileService().toBaseCurrency(customAmount!);
+                                : ProfileService()
+                                    .toBaseCurrency(customAmount!);
                         if (basePay == null || basePay <= 0) {
                           // You could call your showErrorDialog here!
                           return;
@@ -1007,7 +1094,8 @@ class _PropertyCardState extends State<PropertyCard> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 15),
-                  Text("Do you still wish to continue with this action?\nThis action is irreversible."),
+                  Text(
+                      "Do you still wish to continue with this action?\nThis action is irreversible."),
                   const SizedBox(height: 20),
                   // Action Button
                   SizedBox(
@@ -1019,7 +1107,9 @@ class _PropertyCardState extends State<PropertyCard> {
                       ),
                       onPressed: () {
                         if (widget.bookingId != null) {
-                          context.read<BookingBloc>().add(CancelBooking(bookingId: widget.bookingId!));
+                          context
+                              .read<BookingBloc>()
+                              .add(CancelBooking(bookingId: widget.bookingId!));
                         }
                         Navigator.pop(context);
                       },
@@ -1048,8 +1138,11 @@ class _PropertyCardState extends State<PropertyCard> {
         _pendingBalance = widget.balance;
         if (widget.property.isRent) {
           if (widget.booking != null) {
-            if (widget.booking!.checkInDate != null && widget.booking!.checkOutDate != null) {
-              _nights = widget.booking!.checkOutDate!.difference(widget.booking!.checkInDate!).inDays;
+            if (widget.booking!.checkInDate != null &&
+                widget.booking!.checkOutDate != null) {
+              _nights = widget.booking!.checkOutDate!
+                  .difference(widget.booking!.checkInDate!)
+                  .inDays;
             }
           }
         }
@@ -1081,7 +1174,9 @@ class _PropertyCardState extends State<PropertyCard> {
             ),
           ],
         ),
-        child: widget.isHorizontal ? _buildHorizontalLayout() : _buildVerticalLayout(),
+        child: widget.isHorizontal
+            ? _buildHorizontalLayout()
+            : _buildVerticalLayout(),
       ),
     );
   }
@@ -1139,7 +1234,9 @@ class _PropertyCardState extends State<PropertyCard> {
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(responsive['borderRadius']),
                 topRight: Radius.circular(responsive['borderRadius']),
-                bottomLeft: widget.isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
+                bottomLeft: widget.isHorizontal
+                    ? Radius.circular(responsive['borderRadius'])
+                    : Radius.zero,
                 bottomRight: widget.isHorizontal ? Radius.zero : Radius.zero,
               ),
               color: AppTheme.lightGreyColor,
@@ -1149,12 +1246,16 @@ class _PropertyCardState extends State<PropertyCard> {
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(responsive['borderRadius']),
                       topRight: Radius.circular(responsive['borderRadius']),
-                      bottomLeft: widget.isHorizontal ? Radius.circular(responsive['borderRadius']) : Radius.zero,
-                      bottomRight: widget.isHorizontal ? Radius.zero : Radius.zero,
+                      bottomLeft: widget.isHorizontal
+                          ? Radius.circular(responsive['borderRadius'])
+                          : Radius.zero,
+                      bottomRight:
+                          widget.isHorizontal ? Radius.zero : Radius.zero,
                     ),
-                    child:                     Image(
+                    child: Image(
                       image: CachedNetworkImageProvider(
-                        PropertyCard._getFullImageUrl(widget.property.images.first),
+                        PropertyCard._getFullImageUrl(
+                            widget.property.images.first),
                       ),
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
@@ -1165,7 +1266,10 @@ class _PropertyCardState extends State<PropertyCard> {
                             child: CircularProgressIndicator(
                               color: AppTheme.primaryblue,
                               strokeWidth: 2,
-                              value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
                             ),
                           ),
                         );
@@ -1229,7 +1333,8 @@ class _PropertyCardState extends State<PropertyCard> {
                 ),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryblue,
-                  borderRadius: BorderRadius.circular(responsive['isSmallScreen'] ? 6 : 8),
+                  borderRadius: BorderRadius.circular(
+                      responsive['isSmallScreen'] ? 6 : 8),
                 ),
                 child: Text(
                   'Featured',
@@ -1245,7 +1350,9 @@ class _PropertyCardState extends State<PropertyCard> {
           // Verified badge
           if (widget.property.isVerified)
             Positioned(
-              bottom: widget.isHorizontal ? (responsive['isSmallScreen'] ? 8 : 12) : -8,
+              bottom: widget.isHorizontal
+                  ? (responsive['isSmallScreen'] ? 8 : 12)
+                  : -8,
               left: responsive['isSmallScreen'] ? 8 : 12,
               child: Container(
                 padding: EdgeInsets.all(responsive['isSmallScreen'] ? 3 : 4),
@@ -1365,9 +1472,12 @@ class _PropertyCardState extends State<PropertyCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildCompactFeature(Icons.bed_outlined, '${widget.property.bedrooms}', context, responsive),
-                _buildCompactFeature(Icons.bathroom_outlined, '${widget.property.bathrooms}', context, responsive),
-                _buildCompactFeature(Icons.square_foot, '${widget.property.area.toInt()}m²', context, responsive),
+                _buildCompactFeature(Icons.bed_outlined,
+                    '${widget.property.bedrooms}', context, responsive),
+                _buildCompactFeature(Icons.bathroom_outlined,
+                    '${widget.property.bathrooms}', context, responsive),
+                _buildCompactFeature(Icons.square_foot,
+                    '${widget.property.area.toInt()}m²', context, responsive),
               ],
             ),
           ],
@@ -1381,9 +1491,11 @@ class _PropertyCardState extends State<PropertyCard> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Amount Paid: ${ProfileService().currencyConverter(price: widget.paid)}"),
+                        Text(
+                            "Amount Paid: ${ProfileService().currencyConverter(price: widget.paid)}"),
                         SizedBox(height: 10),
-                        Text("Pending Balance: ${ProfileService().currencyConverter(price: _pendingBalance)}"),
+                        Text(
+                            "Pending Balance: ${ProfileService().currencyConverter(price: _pendingBalance)}"),
                         SizedBox(height: 10),
                         if (_nights != 0)
                           Column(
@@ -1394,7 +1506,8 @@ class _PropertyCardState extends State<PropertyCard> {
                           ),
                         SizedBox(
                           width: MediaQuery.of(context).size.width,
-                          child: _buttonToShow(widget.status ?? BookingStatus.pending),
+                          child: _buttonToShow(
+                              widget.status ?? BookingStatus.pending),
                         ),
                       ],
                     )
@@ -1481,7 +1594,8 @@ class _PropertyCardState extends State<PropertyCard> {
       children: const [
         Icon(Icons.check_circle_outline, color: AppTheme.accentGreen),
         SizedBox(width: 6),
-        Text('Booking completed', style: TextStyle(color: AppTheme.accentGreen)),
+        Text('Booking completed',
+            style: TextStyle(color: AppTheme.accentGreen)),
       ],
     );
   }
@@ -1542,7 +1656,10 @@ class _PropertyCardState extends State<PropertyCard> {
               final amount = await showPaymentSheet(context, _pendingBalance);
               final booking = widget.booking;
               final user = widget.user;
-              if (amount == null || booking == null || user == null || !mounted) {
+              if (amount == null ||
+                  booking == null ||
+                  user == null ||
+                  !mounted) {
                 return;
               }
               try {

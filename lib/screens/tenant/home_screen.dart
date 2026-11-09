@@ -1106,66 +1106,71 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           SizedBox(height: 20),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _currentIndex = 1;
-              });
-            },
-            child: Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.getCardColor(context),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                    color: AppTheme.getSecondaryTextColor(context)
-                        .withValues(alpha: 0.2)),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        AppTheme.getTextColor(context).withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () {
+                setState(() {
+                  _currentIndex = 1;
+                });
+              },
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.getCardColor(context),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                      color: AppTheme.getSecondaryTextColor(context)
+                          .withValues(alpha: 0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.getTextColor(context)
+                          .withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
                     ),
-                    child: Icon(
-                      Icons.search,
-                      color: AppTheme.primaryblue,
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Search properties, locations...',
-                      style: TextStyle(
-                        color: AppTheme.getSecondaryTextColor(context),
-                        fontSize: 16,
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.search,
+                        color: AppTheme.primaryblue,
+                        size: 20,
                       ),
                     ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryblue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Search properties, locations...',
+                        style: TextStyle(
+                          color: AppTheme.getSecondaryTextColor(context),
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      Icons.tune,
-                      color: AppTheme.primaryblue,
-                      size: 20,
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryblue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.tune,
+                        color: AppTheme.primaryblue,
+                        size: 20,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

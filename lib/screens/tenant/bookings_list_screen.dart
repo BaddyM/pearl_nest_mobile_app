@@ -24,6 +24,15 @@ import "package:pearlnest/widgets/loading_widget.dart";
 import "package:pearlnest/utils/booking_payment_navigation.dart";
 import "package:url_launcher/url_launcher.dart";
 
+enum _BookingHistoryPeriod {
+  last30Days,
+  last3Months,
+  last6Months,
+  lastYear,
+  allTime,
+  custom,
+}
+
 class BookingsListScreen extends StatefulWidget {
   const BookingsListScreen({super.key, required this.user, this.propertyId});
   final User user;
@@ -36,6 +45,8 @@ class BookingsListScreen extends StatefulWidget {
 class _BookingsListScreenState extends State<BookingsListScreen> {
   bool _isGridView = false;
   bool _showBookingHistory = false;
+  _BookingHistoryPeriod _historyPeriod = _BookingHistoryPeriod.last3Months;
+  DateTimeRange? _customHistoryRange;
 
   Map<String, dynamic> _getResponsiveValues(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -321,6 +332,120 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
     );
   }
 
+  Future<void> _selectHistoryPeriod(_BookingHistoryPeriod period) async {
+    if (period != _BookingHistoryPeriod.custom) {
+      setState(() {
+        _historyPeriod = period;
+        _customHistoryRange = null;
+      });
+      return;
+    }
+
+    final now = DateTime.now();
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year, now.month, now.day),
+      initialDateRange: _customHistoryRange ??
+          DateTimeRange(
+            start: now.subtract(const Duration(days: 90)),
+            end: DateTime(now.year, now.month, now.day),
+          ),
+      helpText: 'Choose booking history dates',
+    );
+    if (range == null || !mounted) return;
+
+    setState(() {
+      _historyPeriod = _BookingHistoryPeriod.custom;
+      _customHistoryRange = range;
+    });
+  }
+
+  bool _isWithinHistoryPeriod(Booking booking) {
+    final createdAt = booking.createdAt;
+    final now = DateTime.now();
+    switch (_historyPeriod) {
+      case _BookingHistoryPeriod.last30Days:
+        return !createdAt.isBefore(now.subtract(const Duration(days: 30)));
+      case _BookingHistoryPeriod.last3Months:
+        return !createdAt.isBefore(now.subtract(const Duration(days: 90)));
+      case _BookingHistoryPeriod.last6Months:
+        return !createdAt.isBefore(now.subtract(const Duration(days: 180)));
+      case _BookingHistoryPeriod.lastYear:
+        return !createdAt.isBefore(now.subtract(const Duration(days: 365)));
+      case _BookingHistoryPeriod.allTime:
+        return true;
+      case _BookingHistoryPeriod.custom:
+        final range = _customHistoryRange;
+        if (range == null) return true;
+        final start = DateTime(
+          range.start.year,
+          range.start.month,
+          range.start.day,
+        );
+        final endExclusive = DateTime(
+          range.end.year,
+          range.end.month,
+          range.end.day + 1,
+        );
+        return !createdAt.isBefore(start) && createdAt.isBefore(endExclusive);
+    }
+  }
+
+  String _historyPeriodLabel(_BookingHistoryPeriod period) {
+    switch (period) {
+      case _BookingHistoryPeriod.last30Days:
+        return 'Last 30 days';
+      case _BookingHistoryPeriod.last3Months:
+        return 'Last 90 days';
+      case _BookingHistoryPeriod.last6Months:
+        return 'Last 180 days';
+      case _BookingHistoryPeriod.lastYear:
+        return 'Last 365 days';
+      case _BookingHistoryPeriod.allTime:
+        return 'All time';
+      case _BookingHistoryPeriod.custom:
+        final range = _customHistoryRange;
+        return range == null
+            ? 'Custom dates'
+            : '${DateFormat('d MMM yyyy').format(range.start)} – ${DateFormat('d MMM yyyy').format(range.end)}';
+    }
+  }
+
+  Widget _buildHistoryPeriodSelector() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        children: [
+          Text(
+            'Show:',
+            style: TextStyle(
+              color: AppTheme.getSecondaryTextColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          DropdownButton<_BookingHistoryPeriod>(
+            value: _historyPeriod,
+            borderRadius: BorderRadius.circular(14),
+            items: _BookingHistoryPeriod.values
+                .map(
+                  (period) => DropdownMenuItem(
+                    value: period,
+                    child: Text(_historyPeriodLabel(period)),
+                  ),
+                )
+                .toList(),
+            onChanged: (period) {
+              if (period != null) _selectHistoryPeriod(period);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBody() {
     return SafeArea(
         child: Column(
@@ -343,6 +468,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                             booking.status == BookingStatus.completed ||
                             booking.status == BookingStatus.expired;
                     return (_showBookingHistory ? isHistory : !isHistory) &&
+                        (!_showBookingHistory ||
+                            _isWithinHistoryPeriod(booking)) &&
                         (widget.propertyId == null ||
                             booking.propertyId == widget.propertyId);
                   }).toList()
@@ -370,6 +497,10 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                             () => _showBookingHistory = selection.first,
                           ),
                         ),
+                        if (_showBookingHistory) ...[
+                          const SizedBox(height: 8),
+                          _buildHistoryPeriodSelector(),
+                        ],
                         const SizedBox(height: 12),
                         if (bookings.isEmpty)
                           Padding(

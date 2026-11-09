@@ -82,6 +82,7 @@ class PropertyDetailsScreen extends StatefulWidget {
 class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     with TickerProviderStateMixin {
   late PageController _pageController;
+  int _currentImageIndex = 0;
   bool _isFavorite = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -1899,6 +1900,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     final images = widget.property.images.isNotEmpty
         ? widget.property.images
         : ['assets/images/img1.jpg'];
+    final galleryImages = widget.property.images
+        .where((image) => _getFullImageUrl(image).isNotEmpty)
+        .toList();
 
     return SizedBox(
       height: imageHeight,
@@ -1909,7 +1913,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
-                setState(() {});
+                setState(() => _currentImageIndex = index);
               },
               itemCount: images.length,
               itemBuilder: (context, index) {
@@ -2020,6 +2024,50 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               ),
             ),
           ),
+          if (galleryImages.isNotEmpty)
+            Positioned(
+              bottom: bottomPadding + 8,
+              left: horizontalPadding,
+              child: Material(
+                color: Colors.black.withValues(alpha: 0.58),
+                borderRadius: BorderRadius.circular(24),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(24),
+                  onTap: () {
+                    final currentImage =
+                        images[_currentImageIndex.clamp(0, images.length - 1)];
+                    final initialIndex = galleryImages.indexOf(currentImage);
+                    _showImageViewer(
+                      galleryImages,
+                      initialIndex < 0 ? 0 : initialIndex,
+                    );
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.photo_library_outlined,
+                          color: Colors.white,
+                          size: 17,
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          '${_currentImageIndex + 1} / ${images.length}  ·  View photos',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           SafeArea(
             child: Padding(
               padding: EdgeInsets.all(horizontalPadding),

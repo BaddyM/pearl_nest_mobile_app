@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
@@ -25,6 +26,10 @@ class NewChatList extends StatefulWidget {
 }
 
 class _NewChatListState extends State<NewChatList> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _showUnreadOnly = false;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +37,12 @@ class _NewChatListState extends State<NewChatList> {
       context.read<NewChatBloc>().socket.connect(widget.user.id);
       _fetchChatList();
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _fetchChatList() {
@@ -92,152 +103,55 @@ class _NewChatListState extends State<NewChatList> {
         ],
       ),
       body: widget.user.id != ""
-          ? Column(
-              children: [
-                BlocConsumer<NewChatBloc, NewChatState>(
-                  builder: (context, state) {
-                    if (state is NewChatListLoadingState) {
-                      return LoadingWidget(
-                        height: MediaQuery.of(context).size.height * 0.8,
-                      );
-                    } else if (state is NewChatListLoadedState) {
-                      return Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: _refreshChatList,
-                          color: AppTheme.primaryblue,
-                          child: state.data.isEmpty
-                              ? ListView(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  children: [
-                                    SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.7,
-                                      child: _buildEmptyConversations(),
-                                    ),
-                                  ],
-                                )
-                              : ListView.builder(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: state.data.length,
-                                  itemBuilder: (context, index) {
-                                    final item = state.data[index];
-                                    final isCurrentUserSender =
-                                        item["fromUserId"] == widget.user.id;
-                                    final peer = isCurrentUserSender
-                                        ? item["toUser"]
-                                        : item["fromUser"];
-                                    final peerData = peer is Map
-                                        ? Map<String, dynamic>.from(peer)
-                                        : <String, dynamic>{};
-                                    final name =
-                                        peerData["name"]?.toString() ?? "User";
-                                    final role =
-                                        peerData["role"]?.toString() ?? "";
-                                    final isOnline =
-                                        peerData["isOnline"] == true;
-                                    final profilePhoto =
-                                        _profilePhotoUrl(peerData);
-                                    final property = item["property"] is Map
-                                        ? Map<String, dynamic>.from(
-                                            item["property"])
-                                        : <String, dynamic>{};
-                                    final id = isCurrentUserSender
-                                        ? item["toUserId"]?.toString() ?? ""
-                                        : item["fromUserId"]?.toString() ?? "";
-                                    final unreadCount = int.tryParse(
-                                        item["unreadCount"]?.toString() ?? '');
-                                    final isUnread = unreadCount != null
-                                        ? unreadCount > 0
-                                        : !isCurrentUserSender &&
-                                            item["isRead"] != true;
-                                    return _buildChatListCard(
-                                      name,
-                                      widget.user.id,
-                                      role,
-                                      id,
-                                      imageUrl: profilePhoto,
-                                      propertyId:
-                                          item["propertyId"]?.toString(),
-                                      propertyTitle:
-                                          property["propertyName"]?.toString(),
-                                      propertyAddress:
-                                          property["fullAddress"]?.toString(),
-                                      isOnline: isOnline,
-                                      unread: isUnread,
-                                    );
-                                  },
-                                ),
+          ? BlocConsumer<NewChatBloc, NewChatState>(
+              builder: (context, state) {
+                if (state is NewChatListLoadingState) {
+                  return Column(
+                    children: [
+                      _buildConversationTools(const []),
+                      Expanded(
+                        child: LoadingWidget(
+                          height: MediaQuery.of(context).size.height * 0.8,
                         ),
-                      );
-                    } else if (state is NewChatListInitState) {
-                      return Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: _refreshChatList,
-                          color: AppTheme.primaryblue,
-                          child: state.data.isEmpty
-                              ? ListView(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  children: [
-                                    SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.7,
-                                      child: _buildEmptyConversations(),
-                                    ),
-                                  ],
-                                )
-                              : ListView.builder(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: state.data.length,
-                                  itemBuilder: (context, index) {
-                                    final admin = state.data[index];
-                                    return _buildChatListCard(
-                                      admin["name"]?.toString() ?? "Support",
-                                      widget.user.id,
-                                      admin["role"]?.toString() ?? "",
-                                      admin["id"]?.toString() ?? "",
-                                      imageUrl: _profilePhotoUrl(
-                                        Map<String, dynamic>.from(admin),
-                                      ),
-                                      propertyTitle: null,
-                                      propertyAddress: null,
-                                      isOnline: admin["isOnline"] == true,
-                                      unread: false,
-                                    );
-                                  },
-                                ),
-                        ),
-                      );
-                    } else {
-                      return SizedBox();
-                    }
-                  },
-                  listener: (context, state) {
-                    if (state is NewChatListErrorState) {
-                      CustomSnackBar.showError(context, state.error);
-                    } else if (state is NewChatListLoadedState &&
-                        state.refreshError != null) {
-                      CustomSnackBar.showError(
-                        context,
-                        state.refreshError!,
-                      );
-                    } else if (state is NewChatListInitState &&
-                        state.refreshError != null) {
-                      CustomSnackBar.showError(
-                        context,
-                        state.refreshError!,
-                      );
-                    }
-                  },
-                ),
-              ],
+                      ),
+                    ],
+                  );
+                } else if (state is NewChatListLoadedState) {
+                  return _buildConversationList(
+                    state.data,
+                    isAdminList: false,
+                  );
+                } else if (state is NewChatListInitState) {
+                  return _buildConversationList(
+                    state.data,
+                    isAdminList: true,
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      _buildConversationTools(const []),
+                      Expanded(child: _buildEmptyConversations()),
+                    ],
+                  );
+                }
+              },
+              listener: (context, state) {
+                if (state is NewChatListErrorState) {
+                  CustomSnackBar.showError(context, state.error);
+                } else if (state is NewChatListLoadedState &&
+                    state.refreshError != null) {
+                  CustomSnackBar.showError(
+                    context,
+                    state.refreshError!,
+                  );
+                } else if (state is NewChatListInitState &&
+                    state.refreshError != null) {
+                  CustomSnackBar.showError(
+                    context,
+                    state.refreshError!,
+                  );
+                }
+              },
             )
           : Container(
               height: MediaQuery.of(context).size.height * 0.8,
@@ -245,6 +159,355 @@ class _NewChatListState extends State<NewChatList> {
               alignment: Alignment.center,
               child: LoginRequiredWidget(),
             ),
+    );
+  }
+
+  Widget _buildConversationList(
+    List<Map<String, dynamic>> data, {
+    required bool isAdminList,
+  }) {
+    final visibleItems = _filteredItems(data, isAdminList: isAdminList);
+    final unreadCount =
+        isAdminList ? 0 : data.where(_isUnreadConversation).length;
+
+    return Column(
+      children: [
+        _buildConversationTools(
+          data,
+          unreadCount: unreadCount,
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _refreshChatList,
+            color: AppTheme.primaryblue,
+            child: visibleItems.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.62,
+                        child: data.isEmpty
+                            ? _buildEmptyConversations()
+                            : _buildNoMatchingConversations(),
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    itemCount: visibleItems.length,
+                    itemBuilder: (context, index) {
+                      final item = visibleItems[index];
+                      if (isAdminList) {
+                        return _buildChatListCard(
+                          item["name"]?.toString() ?? "Support",
+                          widget.user.id,
+                          item["role"]?.toString() ?? "",
+                          item["id"]?.toString() ?? "",
+                          imageUrl: _profilePhotoUrl(item),
+                          isOnline: item["isOnline"] == true,
+                          preview: 'Chat with our support team',
+                        );
+                      }
+
+                      final isCurrentUserSender =
+                          item["fromUserId"]?.toString() == widget.user.id;
+                      final peer = isCurrentUserSender
+                          ? item["toUser"]
+                          : item["fromUser"];
+                      final peerData = peer is Map
+                          ? Map<String, dynamic>.from(peer)
+                          : <String, dynamic>{};
+                      final property = item["property"] is Map
+                          ? Map<String, dynamic>.from(item["property"])
+                          : <String, dynamic>{};
+                      final id = isCurrentUserSender
+                          ? item["toUserId"]?.toString() ?? ""
+                          : item["fromUserId"]?.toString() ?? "";
+                      final unread =
+                          int.tryParse(item["unreadCount"]?.toString() ?? '') ??
+                              (_isUnreadConversation(item) ? 1 : 0);
+
+                      return _buildChatListCard(
+                        peerData["name"]?.toString() ?? "User",
+                        widget.user.id,
+                        peerData["role"]?.toString() ?? "",
+                        id,
+                        imageUrl: _profilePhotoUrl(peerData),
+                        propertyId: item["propertyId"]?.toString(),
+                        propertyTitle: property["propertyName"]?.toString(),
+                        propertyAddress: property["fullAddress"]?.toString(),
+                        isOnline: peerData["isOnline"] == true,
+                        unread: unread > 0,
+                        unreadCount: unread,
+                        preview:
+                            _conversationPreview(item, isCurrentUserSender),
+                        timestamp: _conversationTimestamp(item),
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConversationTools(
+    List<Map<String, dynamic>> items, {
+    int unreadCount = 0,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your conversations',
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(context),
+                        fontSize: 21,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${items.length} ${items.length == 1 ? 'conversation' : 'conversations'}'
+                      '${unreadCount > 0 ? ' · $unreadCount unread' : ''}',
+                      style: TextStyle(
+                        color: AppTheme.getSecondaryTextColor(context),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryblue.withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.forum_outlined,
+                  color: AppTheme.primaryblue,
+                  size: 21,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _searchController,
+            onChanged: (value) => setState(() => _searchQuery = value.trim()),
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Search people or properties',
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: _searchQuery.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Clear search',
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+              filled: true,
+              fillColor: AppTheme.getCardColor(context),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: AppTheme.getSecondaryTextColor(context)
+                      .withValues(alpha: 0.12),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: AppTheme.getSecondaryTextColor(context)
+                      .withValues(alpha: 0.12),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: AppTheme.primaryblue.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildFilterChip(
+                label: 'All',
+                selected: !_showUnreadOnly,
+                onTap: () => setState(() => _showUnreadOnly = false),
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                label: unreadCount > 0 ? 'Unread $unreadCount' : 'Unread',
+                selected: _showUnreadOnly,
+                onTap: () => setState(() => _showUnreadOnly = true),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      showCheckmark: false,
+      labelStyle: TextStyle(
+        color:
+            selected ? Colors.white : AppTheme.getSecondaryTextColor(context),
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+      selectedColor: AppTheme.primaryblue,
+      backgroundColor: AppTheme.getCardColor(context),
+      side: BorderSide(
+        color: selected
+            ? AppTheme.primaryblue
+            : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.16),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  List<Map<String, dynamic>> _filteredItems(
+    List<Map<String, dynamic>> items, {
+    required bool isAdminList,
+  }) {
+    final query = _searchQuery.toLowerCase();
+    return items.where((item) {
+      if (_showUnreadOnly && (isAdminList || !_isUnreadConversation(item))) {
+        return false;
+      }
+      if (query.isEmpty) return true;
+
+      final isCurrentUserSender =
+          item["fromUserId"]?.toString() == widget.user.id;
+      final peer = isAdminList
+          ? item
+          : isCurrentUserSender
+              ? item["toUser"]
+              : item["fromUser"];
+      final peerData =
+          peer is Map ? Map<String, dynamic>.from(peer) : <String, dynamic>{};
+      final property = item["property"] is Map
+          ? Map<String, dynamic>.from(item["property"])
+          : <String, dynamic>{};
+      final searchable = [
+        peerData["name"],
+        peerData["role"],
+        property["propertyName"],
+        property["fullAddress"],
+        item["lastMessage"],
+        item["message"],
+      ].whereType<Object>().join(' ').toLowerCase();
+      return searchable.contains(query);
+    }).toList();
+  }
+
+  bool _isUnreadConversation(Map<String, dynamic> item) {
+    final unreadCount = int.tryParse(item["unreadCount"]?.toString() ?? '');
+    if (unreadCount != null) return unreadCount > 0;
+    return item["fromUserId"]?.toString() != widget.user.id &&
+        item["isRead"] != true;
+  }
+
+  String _conversationPreview(
+    Map<String, dynamic> item,
+    bool isCurrentUserSender,
+  ) {
+    final message = (item["lastMessage"] ?? item["message"])?.toString().trim();
+    if (message != null && message.isNotEmpty) {
+      return isCurrentUserSender ? 'You: $message' : message;
+    }
+
+    final property = item["property"] is Map
+        ? Map<String, dynamic>.from(item["property"])
+        : <String, dynamic>{};
+    final title = property["propertyName"]?.toString().trim();
+    return title != null && title.isNotEmpty
+        ? 'Conversation about $title'
+        : 'Tap to continue your conversation';
+  }
+
+  String? _conversationTimestamp(Map<String, dynamic> item) {
+    final rawValue =
+        item["lastMessageTime"] ?? item["createdAt"] ?? item["updatedAt"];
+    if (rawValue == null) return null;
+    final timestamp = DateTime.tryParse(rawValue.toString())?.toLocal();
+    if (timestamp == null) return null;
+
+    final now = DateTime.now();
+    if (timestamp.year == now.year &&
+        timestamp.month == now.month &&
+        timestamp.day == now.day) {
+      return DateFormat('h:mm a').format(timestamp);
+    }
+    if (now.difference(timestamp).inDays < 7) {
+      return DateFormat('EEE').format(timestamp);
+    }
+    return DateFormat('d MMM').format(timestamp);
+  }
+
+  Widget _buildNoMatchingConversations() {
+    final message = _showUnreadOnly
+        ? 'You’re all caught up.'
+        : 'Try another name or property.';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _showUnreadOnly
+                  ? Icons.mark_chat_read_outlined
+                  : Icons.search_off_rounded,
+              size: 44,
+              color: AppTheme.primaryblue.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _showUnreadOnly ? 'No unread messages' : 'No matches found',
+              style: TextStyle(
+                color: AppTheme.getTextColor(context),
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -306,6 +569,9 @@ class _NewChatListState extends State<NewChatList> {
     String? imageUrl,
     bool isOnline = false,
     bool unread = false,
+    int unreadCount = 0,
+    String? preview,
+    String? timestamp,
   }) {
     Future<void> openConversation() async {
       await Navigator.of(context).push(
@@ -379,7 +645,7 @@ class _NewChatListState extends State<NewChatList> {
             onTap: openConversation,
             borderRadius: BorderRadius.circular(18),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
               child: Row(
                 children: [
                   Stack(
@@ -424,23 +690,19 @@ class _NewChatListState extends State<NewChatList> {
                         ),
                     ],
                   ),
-                  const SizedBox(width: 14),
-
-                  // Admin Info
+                  const SizedBox(width: 13),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              flex: 3,
                               child: Text(
                                 userName,
                                 style: TextStyle(
                                   color: AppTheme.getTextColor(context),
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   fontWeight: unread
                                       ? FontWeight.w700
                                       : FontWeight.w600,
@@ -449,41 +711,113 @@ class _NewChatListState extends State<NewChatList> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            // Online status indicator
+                            if (timestamp != null) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                timestamp,
+                                style: TextStyle(
+                                  color: unread
+                                      ? AppTheme.primaryblue
+                                      : AppTheme.getSecondaryTextColor(context),
+                                  fontSize: 11,
+                                  fontWeight: unread
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
-                        if (role.trim().isNotEmpty)
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            if (propertyTitle != null &&
+                                propertyTitle.trim().isNotEmpty)
+                              Expanded(
+                                child: Text(
+                                  propertyTitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color:
+                                        AppTheme.getSecondaryTextColor(context),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              )
+                            else if (role.trim().isNotEmpty)
+                              Expanded(
+                                child: Text(
+                                  role,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: AppTheme.primaryblue,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            if (unread && unreadCount > 0) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                constraints: const BoxConstraints(
+                                  minWidth: 20,
+                                  minHeight: 20,
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryblue,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  unreadCount > 99 ? '99+' : '$unreadCount',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          preview?.trim().isNotEmpty == true
+                              ? preview!
+                              : propertyAddress?.trim().isNotEmpty == true
+                                  ? propertyAddress!
+                                  : 'Tap to open conversation',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: unread
+                                ? AppTheme.getTextColor(context)
+                                : AppTheme.getSecondaryTextColor(context),
+                            fontSize: 12,
+                            fontWeight:
+                                unread ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                        if (propertyTitle != null &&
+                            propertyTitle.trim().isNotEmpty &&
+                            role.trim().isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 3),
                             child: Text(
                               role,
                               style: TextStyle(
                                 color: AppTheme.primaryblue,
-                                fontSize: 12,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                        if (propertyTitle != null &&
-                            propertyTitle.trim().isNotEmpty) ...[
-                          SizedBox(height: role.trim().isNotEmpty ? 3 : 6),
-                          Text(
-                            propertyTitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppTheme.getSecondaryTextColor(context),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppTheme.getSecondaryTextColor(context),
                   ),
                 ],
               ),
