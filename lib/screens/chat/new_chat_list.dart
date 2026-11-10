@@ -589,11 +589,12 @@ class _NewChatListState extends State<NewChatList> {
         lastMessageTime: DateTime.now(),
         unreadCount: unreadCount,
         isOnline: isOnline,
+        isAdmin: role.trim().toUpperCase() == 'ADMIN',
         propertyTitle: propertyTitle?.trim().isNotEmpty == true
             ? propertyTitle!
             : 'General conversation',
       );
-      await Navigator.of(context).push(
+      final result = await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => IndividualChatScreen(
             conversation: conversation,
@@ -605,6 +606,9 @@ class _NewChatListState extends State<NewChatList> {
           ),
         ),
       );
+      if (result == 'blocked' && mounted) {
+        _fetchChatList();
+      }
     }
 
     return Dismissible(

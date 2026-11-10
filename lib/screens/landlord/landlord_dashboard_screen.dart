@@ -7,6 +7,7 @@ import 'package:pearlnest/screens/landlord/landlord_booking_requests_screen.dart
 import 'package:pearlnest/screens/landlord/landlord_property_upload_screen.dart';
 import 'package:pearlnest/screens/chat/new_chat_list.dart';
 import 'package:pearlnest/screens/tenant/profile_screen.dart';
+import 'package:pearlnest/screens/tenant/search_screen.dart';
 import 'package:pearlnest/utils/image_helper.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/apis/property_service.dart';
@@ -119,37 +120,43 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       body: _buildBody(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar: NavigationBar(
+        height: 68,
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) =>
+            setState(() => _currentIndex = index),
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         backgroundColor: AppTheme.getCardColor(context),
-        selectedItemColor: AppTheme.primaryblue,
-        unselectedItemColor: AppTheme.getSecondaryTextColor(context),
-        items: const [
-          BottomNavigationBarItem(
+        indicatorColor: AppTheme.primaryblue.withValues(alpha: 0.12),
+        destinations: const [
+          NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
+            selectedIcon: Icon(Icons.dashboard),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: 'Explore',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.home_work_outlined),
-            activeIcon: Icon(Icons.home_work),
+            selectedIcon: Icon(Icons.home_work),
             label: 'Listings',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
+            selectedIcon: Icon(Icons.calendar_today),
             label: 'Bookings',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: 'Messages',
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Chats',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+            selectedIcon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
@@ -162,18 +169,20 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
       case 0:
         return _buildDashboardContent();
       case 1:
+        return SearchScreen(user: widget.user);
+      case 2:
         return LandlordPropertyManagementScreen(
           user: widget.user,
           landlord: widget.landlord,
           properties: [],
         );
-      case 2:
+      case 3:
         return LandlordBookingRequestsScreen(
           user: widget.user,
         );
-      case 3:
-        return NewChatList(user: widget.user, showBackButton: false);
       case 4:
+        return NewChatList(user: widget.user, showBackButton: false);
+      case 5:
         return LandlordProfileScreen(
           user: widget.user,
           landlord: widget.landlord,
@@ -232,13 +241,6 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
         children: [
           Row(
             children: [
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: AppTheme.blackColor,
-                ),
-              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -603,14 +605,36 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
               SizedBox(width: 16),
               Expanded(
                 child: _buildActionCard(
+                  'Explore Listings',
+                  Icons.explore_outlined,
+                  Colors.teal,
+                  () => setState(() => _currentIndex = 1),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionCard(
                   'View Bookings',
                   Icons.calendar_view_day,
                   Colors.blue,
                   () {
                     setState(() {
-                      _currentIndex = 2;
+                      _currentIndex = 3;
                     });
                   },
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: _buildActionCard(
+                  'Manage Listings',
+                  Icons.home_work_outlined,
+                  AppTheme.primaryblue,
+                  () => setState(() => _currentIndex = 2),
                 ),
               ),
             ],
@@ -690,6 +714,10 @@ class LandlordProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ProfileScreen(user: user, landlord: landlord);
+    return ProfileScreen(
+      user: user,
+      landlord: landlord,
+      showBackButton: false,
+    );
   }
 }

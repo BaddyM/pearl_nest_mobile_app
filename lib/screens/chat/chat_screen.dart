@@ -594,6 +594,8 @@ class _ChatScreenState extends State<ChatScreen> {
           currentUser: widget.user,
           isOnline: conversation.isOnline,
           adminContact: '',
+          propertyId: conversation.propertyId,
+          propertyAddress: conversation.propertyAddress,
         ),
       ),
     ).then((_) {

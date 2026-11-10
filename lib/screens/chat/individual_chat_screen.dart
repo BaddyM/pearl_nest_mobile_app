@@ -14,6 +14,10 @@ import 'package:pearlnest/screens/chat/chat_input.dart';
 import 'package:pearlnest/screens/chat/chat_reply.dart';
 import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/screens/chat/message_bubble.dart';
+import 'package:pearlnest/apis/chat_service.dart';
+import 'package:pearlnest/apis/property_service.dart';
+import 'package:pearlnest/models/property.dart';
+import 'package:pearlnest/screens/tenant/property_details_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
@@ -648,22 +652,25 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                 ),
               ),
               SizedBox(height: 20),
-              _buildOptionTile(
-                icon: Icons.home_outlined,
-                title: 'View Property',
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-              _buildOptionTile(
-                icon: Icons.block,
-                title: 'Block User',
-                onTap: () {
-                  Navigator.pop(context);
-                  _showBlockDialog();
-                },
-                isDestructive: true,
-              ),
+              if (widget.propertyId?.trim().isNotEmpty == true)
+                _buildOptionTile(
+                  icon: Icons.home_outlined,
+                  title: 'View Property',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _openProperty();
+                  },
+                ),
+              if (!widget.conversation.isAdmin)
+                _buildOptionTile(
+                  icon: Icons.block,
+                  title: 'Block User',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showBlockDialog();
+                  },
+                  isDestructive: true,
+                ),
               _buildOptionTile(
                 icon: Icons.report_outlined,
                 title: 'Report',
@@ -706,8 +713,40 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     );
   }
 
-  void _showBlockDialog() {
-    showDialog(
+  Future<void> _openProperty() async {
+    final propertyId = widget.propertyId?.trim();
+    if (propertyId == null || propertyId.isEmpty) return;
+
+    try {
+      final result = await PropertyService.getPropertyById(propertyId);
+      if (!mounted) return;
+      final property = result['property'];
+      if (result['success'] != true || property is! Property) {
+        CustomSnackBar.showError(
+          context,
+          result['message']?.toString() ?? 'Could not load this property.',
+        );
+        return;
+      }
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PropertyDetailsScreen(
+            property: property,
+            user: widget.currentUser,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        CustomSnackBar.showError(context, 'Could not load this property: $error');
+      }
+    }
+  }
+
+  Future<void> _showBlockDialog() async {
+    if (widget.conversation.isAdmin) return;
+    final shouldBlock = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -737,14 +776,7 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-
-                CustomSnackBar.showWarning(
-                  context,
-                  '${widget.conversation.landlordName} has been blocked',
-                );
-              },
+              onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 shape: RoundedRectangleBorder(
@@ -760,63 +792,122 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
         );
       },
     );
+    if (shouldBlock != true || !mounted) return;
+
+    try {
+      await ChatService.blockUser(peerId: widget.conversation.landlordId);
+      if (!mounted) return;
+      CustomSnackBar.showSuccess(
+        context,
+        '${widget.conversation.landlordName} has been blocked.',
+      );
+      Navigator.pop(context, 'blocked');
+    } catch (error) {
+      if (mounted) {
+        CustomSnackBar.showError(context, 'Could not block this user: $error');
+      }
+    }
   }
 
-  void _showReportDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.getCardColor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'Report ${widget.conversation.landlordName}?',
-            style: TextStyle(
-              color: AppTheme.getTextColor(context),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'Help us understand what\'s happening. We\'ll review this conversation.',
-            style: TextStyle(
-              color: AppTheme.getSecondaryTextColor(context),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style:
-                    TextStyle(color: AppTheme.getSecondaryTextColor(context)),
+  Future<void> _showReportDialog() async {
+    final reasonController = TextEditingController();
+    String? validationError;
+    try {
+      final reason = await showDialog<String>(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) => AlertDialog(
+              backgroundColor: AppTheme.getCardColor(context),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-
-                CustomSnackBar.showSuccess(
-                  context,
-                  'Report submitted. Thank you for your feedback.',
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+              title: Text(
+                'Report ${widget.conversation.landlordName}?',
+                style: TextStyle(
+                  color: AppTheme.getTextColor(context),
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              child: Text(
-                'Report',
-                style: TextStyle(color: AppTheme.whiteColor),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Help us understand what\'s happening. We\'ll review this conversation.',
+                    style: TextStyle(
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonController,
+                    autofocus: true,
+                    maxLength: 500,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'Reason',
+                      errorText: validationError,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final reportReason = reasonController.text.trim();
+                    if (reportReason.isEmpty) {
+                      setDialogState(() => validationError = 'Enter a reason.');
+                      return;
+                    }
+                    Navigator.pop(dialogContext, reportReason);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'Submit report',
+                    style: TextStyle(color: AppTheme.whiteColor),
+                  ),
+                ),
+              ],
             ),
-          ],
+          );
+        },
+      );
+      if (reason == null || !mounted) return;
+
+      await ChatService.reportUser(
+        peerId: widget.conversation.landlordId,
+        reason: reason,
+        propertyId: widget.propertyId,
+      );
+      if (mounted) {
+        CustomSnackBar.showSuccess(
+          context,
+          'Report submitted. Thank you for your feedback.',
         );
-      },
-    );
+      }
+    } catch (error) {
+      if (mounted) {
+        CustomSnackBar.showError(context, 'Could not submit the report: $error');
+      }
+    } finally {
+      reasonController.dispose();
+    }
   }
 
   Widget _buildConnectionStatus(ChatState state) {

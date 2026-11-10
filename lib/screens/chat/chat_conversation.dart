@@ -8,6 +8,9 @@ class ChatConversation {
   final int unreadCount;
   final bool isOnline;
   final String propertyTitle;
+  final bool isAdmin;
+  final String? propertyId;
+  final String? propertyAddress;
 
   ChatConversation({
     required this.id,
@@ -19,6 +22,9 @@ class ChatConversation {
     this.unreadCount = 0,
     this.isOnline = false,
     required this.propertyTitle,
+    this.isAdmin = false,
+    this.propertyId,
+    this.propertyAddress,
   });
 
   static List<ChatConversation> getSampleConversations() {

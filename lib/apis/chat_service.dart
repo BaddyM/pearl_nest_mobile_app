@@ -70,6 +70,44 @@ class ChatService {
     }
   }
 
+  static Future<void> blockUser({required String peerId}) async {
+    final response = await ApiClient.post('/chat/users/$peerId/block', {});
+    final data = response.data;
+    if ((response.statusCode != 200 && response.statusCode != 201) ||
+        data is! Map ||
+        data['success'] != true) {
+      throw Exception(
+        data is Map
+            ? data['message']?.toString() ?? 'Could not block this user.'
+            : 'Could not block this user.',
+      );
+    }
+  }
+
+  static Future<void> reportUser({
+    required String peerId,
+    required String reason,
+    String? propertyId,
+  }) async {
+    final response = await ApiClient.post(
+      '/chat/users/$peerId/report',
+      {
+        'reason': reason.trim(),
+        if (propertyId != null) 'propertyId': propertyId,
+      },
+    );
+    final data = response.data;
+    if ((response.statusCode != 200 && response.statusCode != 201) ||
+        data is! Map ||
+        data['success'] != true) {
+      throw Exception(
+        data is Map
+            ? data['message']?.toString() ?? 'Could not submit the report.'
+            : 'Could not submit the report.',
+      );
+    }
+  }
+
   // Initialize and connect to socket with comprehensive debugging
   static Future<void> connect() async {
     if (_socket != null && _socket!.connected) {
@@ -535,6 +573,7 @@ class ChatService {
               lastMessageTime: DateTime.now(),
               unreadCount: 0,
               isOnline: admin.isOnline,
+              isAdmin: true,
               propertyTitle: propertyTitle != null
                   ? 'Support Chat - $propertyTitle'
                   : 'Support Chat',
@@ -575,6 +614,7 @@ class ChatService {
       lastMessageTime: DateTime.now(),
       unreadCount: 0,
       isOnline: firstAdmin.isOnline,
+      isAdmin: true,
       propertyTitle: propertyTitle != null
           ? 'Support Chat - $propertyTitle'
           : 'Support Chat',
@@ -602,6 +642,7 @@ class ChatService {
         lastMessageTime: DateTime.now(),
         unreadCount: 0,
         isOnline: isOnline,
+        isAdmin: true,
         propertyTitle: propertyTitle ?? 'General Support',
       );
 
@@ -675,6 +716,9 @@ class ChatService {
               final otherUser = isCurrentUserSender ? toUser : fromUser;
               final otherUserId =
                   isCurrentUserSender ? chat['toUserId'] : chat['fromUserId'];
+              final property = chat['property'] is Map
+                  ? Map<String, dynamic>.from(chat['property'] as Map)
+                  : <String, dynamic>{};
 
               //debugPrint('   - isCurrentUserSender: $isCurrentUserSender');
               //debugPrint('   - otherUser: $otherUser');
@@ -698,9 +742,14 @@ class ChatService {
                 unreadCount: 0, // TODO: Get from API when available
                 isOnline: otherUser['role'] ==
                     'ADMIN', // Assume admin is always online
-                propertyTitle: otherUser['role'] == 'ADMIN'
+                isAdmin:
+                    otherUser['role']?.toString().toUpperCase() == 'ADMIN',
+                propertyId: chat['propertyId']?.toString(),
+                propertyAddress: property['fullAddress']?.toString(),
+                propertyTitle: property['propertyName']?.toString() ??
+                    (otherUser['role'] == 'ADMIN'
                     ? 'Support Chat'
-                    : 'Property Discussion',
+                    : 'Property Discussion'),
               );
 
               conversations.add(conversation);

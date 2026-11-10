@@ -33,11 +33,13 @@ import 'package:pearlnest/widgets/registration_status_card.dart';
 class ProfileScreen extends StatefulWidget {
   final User user;
   final Landlord? landlord;
+  final bool showBackButton;
 
   const ProfileScreen({
     super.key,
     required this.user,
     this.landlord,
+    this.showBackButton = true,
   });
 
   @override
@@ -92,7 +94,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         title: Text('Profile'),
         backgroundColor: AppTheme.primaryblue,
         elevation: 0,
-        automaticallyImplyLeading: true,
+        automaticallyImplyLeading: widget.showBackButton,
         actions: [
           widget.user.id != ""
               ? IconButton(

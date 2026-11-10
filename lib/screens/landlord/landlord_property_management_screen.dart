@@ -300,13 +300,6 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
         children: [
           Row(
             children: [
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: AppTheme.blackColor,
-                ),
-              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
