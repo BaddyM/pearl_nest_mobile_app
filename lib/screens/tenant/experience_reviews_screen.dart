@@ -172,7 +172,9 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
 
   String _date(dynamic value) {
     final parsed = DateTime.tryParse(value?.toString() ?? '');
-    return parsed == null ? '' : DateFormat('d MMM yyyy').format(parsed.toLocal());
+    return parsed == null
+        ? ''
+        : DateFormat('d MMM yyyy').format(parsed.toLocal());
   }
 
   Widget _avatar(Map<String, dynamic>? user, {double size = 40}) {
@@ -196,7 +198,7 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
     );
   }
 
-  Widget _stars(int count, {double size = 16}) => Row(
+  Widget _buildStars(int count, {double size = 16}) => Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(
           5,
@@ -294,7 +296,7 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          _stars((review['stars'] as num?)?.toInt() ?? 0),
+                          _buildStars((review['stars'] as num?)?.toInt() ?? 0),
                           const SizedBox(width: 8),
                           Text(
                             _date(review['createdAt']),
@@ -325,10 +327,12 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
               children: [
                 TextButton.icon(
                   onPressed: () => setState(
-                    () => _replyingTo = _replyingTo == reviewId ? null : reviewId,
+                    () =>
+                        _replyingTo = _replyingTo == reviewId ? null : reviewId,
                   ),
                   icon: const Icon(Icons.reply_rounded, size: 18),
-                  label: Text('Reply${replies.isEmpty ? '' : ' · ${replies.length}'}'),
+                  label: Text(
+                      'Reply${replies.isEmpty ? '' : ' · ${replies.length}'}'),
                 ),
               ],
             ),
@@ -348,7 +352,8 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                   ),
                   IconButton(
                     tooltip: 'Post reply',
-                    onPressed: _isSavingReply ? null : () => _sendReply(reviewId),
+                    onPressed:
+                        _isSavingReply ? null : () => _sendReply(reviewId),
                     icon: _isSavingReply
                         ? const SizedBox(
                             width: 18,
@@ -401,7 +406,8 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                           ),
                     ),
                     const SizedBox(height: 8),
-                    const Text('Your review is public and helps the community.'),
+                    const Text(
+                        'Your review is public and helps the community.'),
                     const SizedBox(height: 8),
                     Row(
                       children: List.generate(
@@ -438,9 +444,12 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : Text(myReview == null ? 'Post review' : 'Update review'),
+                            : Text(myReview == null
+                                ? 'Post review'
+                                : 'Update review'),
                       ),
                     ),
                   ],

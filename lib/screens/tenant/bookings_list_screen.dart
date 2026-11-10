@@ -216,6 +216,34 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
     }
   }
 
+  Future<void> _submitPropertyOutcome(
+    Booking booking,
+    String decision,
+  ) async {
+    try {
+      await BookingService.submitPropertyOutcome(
+        bookingId: booking.id,
+        decision: decision,
+      );
+      if (!mounted) return;
+      context.read<BookingBloc>().add(FetchBookings());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            decision == 'INTERESTED'
+                ? 'Your interest has been sent to the Pearl Nest team.'
+                : 'Your decision has been recorded.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save your decision: $error')),
+      );
+    }
+  }
+
   Future<void> _payBookingBalance(Booking booking, int balance) async {
     final property = booking.property;
     if (property == null || balance <= 0) return;
@@ -588,10 +616,13 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                         status: booking.status,
                                         booking: booking,
                                       ),
-                                      if (booking.status == BookingStatus.completed &&
-                                          booking.propertyOutcome == 'AWAITING_USER')
+                                      if (booking.status ==
+                                              BookingStatus.completed &&
+                                          booking.propertyOutcome ==
+                                              'AWAITING_USER')
                                         Card(
-                                          margin: const EdgeInsets.only(top: 10),
+                                          margin:
+                                              const EdgeInsets.only(top: 10),
                                           child: Padding(
                                             padding: const EdgeInsets.all(14),
                                             child: Column(
@@ -625,7 +656,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                                         'INTERESTED',
                                                       ),
                                                       icon: const Icon(
-                                                        Icons.home_work_outlined,
+                                                        Icons
+                                                            .home_work_outlined,
                                                       ),
                                                       label: const Text(
                                                         'I’m interested',
@@ -647,19 +679,23 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                             ),
                                           ),
                                         ),
-                                      if (booking.propertyOutcome == 'INTERESTED')
+                                      if (booking.propertyOutcome ==
+                                          'INTERESTED')
                                         const ListTile(
                                           contentPadding: EdgeInsets.zero,
                                           leading: Icon(Icons.hourglass_top),
-                                          title: Text('Interest sent to Pearl Nest'),
+                                          title: Text(
+                                              'Interest sent to Pearl Nest'),
                                           subtitle: Text(
                                             'The admin team will confirm the booking and availability.',
                                           ),
                                         ),
-                                      if (booking.propertyOutcome == 'NOT_TAKING')
+                                      if (booking.propertyOutcome ==
+                                          'NOT_TAKING')
                                         const ListTile(
                                           contentPadding: EdgeInsets.zero,
-                                          leading: Icon(Icons.check_circle_outline),
+                                          leading:
+                                              Icon(Icons.check_circle_outline),
                                           title: Text(
                                             'You decided not to take this property',
                                           ),
@@ -667,7 +703,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                                       if (booking.propertyOutcome == 'TAKEN')
                                         const ListTile(
                                           contentPadding: EdgeInsets.zero,
-                                          leading: Icon(Icons.verified_outlined),
+                                          leading:
+                                              Icon(Icons.verified_outlined),
                                           title: Text(
                                             'Property booking confirmed',
                                           ),
