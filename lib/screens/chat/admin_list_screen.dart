@@ -66,11 +66,13 @@ class _AdminListScreenState extends State<AdminListScreen> {
           if (widget.randomAdminOnly && availableAdmins.isNotEmpty) {
             _isStartingRandomChat = true;
           } else if (widget.randomAdminOnly) {
-            _errorMessage = 'No support agents are available right now. Please try again later.';
+            _errorMessage =
+                'No support agents are available right now. Please try again later.';
           }
         });
         if (widget.randomAdminOnly && availableAdmins.isNotEmpty) {
-          final admin = availableAdmins[Random().nextInt(availableAdmins.length)];
+          final admin =
+              availableAdmins[Random().nextInt(availableAdmins.length)];
           await _startChatWithAdmin(admin);
         }
       }
@@ -132,7 +134,8 @@ class _AdminListScreenState extends State<AdminListScreen> {
       if (widget.randomAdminOnly && mounted) {
         setState(() {
           _isStartingRandomChat = false;
-          _errorMessage = 'Unable to connect to support right now. Please try again.';
+          _errorMessage =
+              'Unable to connect to support right now. Please try again.';
         });
       }
       _showErrorSnackBar('Failed to start chat. Please try again.');
@@ -193,7 +196,8 @@ class _AdminListScreenState extends State<AdminListScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.support_agent, size: 48, color: AppTheme.primaryblue),
+              const Icon(Icons.support_agent,
+                  size: 48, color: AppTheme.primaryblue),
               const SizedBox(height: 12),
               Text(
                 _errorMessage!,
@@ -306,7 +310,8 @@ class _AdminListScreenState extends State<AdminListScreen> {
             Icon(
               Icons.support_agent_outlined,
               size: 64,
-              color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.6),
+              color: AppTheme.getSecondaryTextColor(context)
+                  .withValues(alpha: 0.6),
             ),
             SizedBox(height: 16),
             Text(
@@ -433,7 +438,8 @@ class _AdminListScreenState extends State<AdminListScreen> {
           onTap: () async {
             unread = true;
             final userId = ChatService.getCurrentUserId();
-            context.read<ChatBloc>().add(ChatMarkAsRead(fromUserId: admin.id, toUserId: userId.toString()));
+            context.read<ChatBloc>().add(ChatMarkAsRead(
+                fromUserId: admin.id, toUserId: userId.toString()));
             _startChatWithAdmin(admin);
           },
           borderRadius: BorderRadius.circular(12),
@@ -453,7 +459,8 @@ class _AdminListScreenState extends State<AdminListScreen> {
                       width: 1,
                     ),
                   ),
-                  child: admin.profilePicture != null && admin.profilePicture!.isNotEmpty
+                  child: admin.profilePicture != null &&
+                          admin.profilePicture!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(24),
                           child: Image.network(
@@ -463,7 +470,8 @@ class _AdminListScreenState extends State<AdminListScreen> {
                             width: 48,
                             height: 48,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(admin),
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildDefaultAvatar(admin),
                           ),
                         )
                       : _buildDefaultAvatar(admin),
@@ -501,7 +509,8 @@ class _AdminListScreenState extends State<AdminListScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (admin.department != null && admin.department!.isNotEmpty) ...[
+                      if (admin.department != null &&
+                          admin.department!.isNotEmpty) ...[
                         SizedBox(height: 2),
                         Text(
                           admin.department!,
@@ -515,15 +524,21 @@ class _AdminListScreenState extends State<AdminListScreen> {
                       Row(
                         children: [
                           Icon(
-                            admin.isAvailable ? Icons.check_circle : Icons.schedule,
+                            admin.isAvailable
+                                ? Icons.check_circle
+                                : Icons.schedule,
                             size: 14,
-                            color: admin.isAvailable ? Colors.green : Colors.orange,
+                            color: admin.isAvailable
+                                ? Colors.green
+                                : Colors.orange,
                           ),
                           SizedBox(width: 4),
                           Text(
                             admin.isAvailable ? 'Available' : 'Offline',
                             style: TextStyle(
-                              color: admin.isAvailable ? Colors.green : Colors.orange,
+                              color: admin.isAvailable
+                                  ? Colors.green
+                                  : Colors.orange,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),

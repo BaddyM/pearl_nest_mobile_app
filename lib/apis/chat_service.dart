@@ -16,13 +16,17 @@ class ChatService {
   static List<Admin> _availableAdmins = [];
 
   // Stream controllers for real-time updates
-  static final _messageStreamController = StreamController<ChatMessage>.broadcast();
+  static final _messageStreamController =
+      StreamController<ChatMessage>.broadcast();
   static final _connectionStreamController = StreamController<bool>.broadcast();
-  static final _adminsStreamController = StreamController<List<Admin>>.broadcast();
+  static final _adminsStreamController =
+      StreamController<List<Admin>>.broadcast();
 
   // Getters for streams
-  static Stream<ChatMessage> get messageStream => _messageStreamController.stream;
-  static Stream<bool> get connectionStream => _connectionStreamController.stream;
+  static Stream<ChatMessage> get messageStream =>
+      _messageStreamController.stream;
+  static Stream<bool> get connectionStream =>
+      _connectionStreamController.stream;
   static Stream<List<Admin>> get adminsStream => _adminsStreamController.stream;
 
   // Get connection status
@@ -42,9 +46,8 @@ class ChatService {
     if ((response.statusCode != 200 && response.statusCode != 201) ||
         response.data is! Map ||
         response.data['success'] != true) {
-      final message = response.data is Map
-          ? response.data['message']?.toString()
-          : null;
+      final message =
+          response.data is Map ? response.data['message']?.toString() : null;
       throw Exception(message ?? 'Could not open the property conversation.');
     }
   }
@@ -60,10 +63,10 @@ class ChatService {
     if ((response.statusCode != 200 && response.statusCode != 201) ||
         response.data is! Map ||
         response.data['success'] != true) {
-      final message = response.data is Map
-          ? response.data['message']?.toString()
-          : null;
-      throw Exception(message ?? 'Could not complete the property conversation.');
+      final message =
+          response.data is Map ? response.data['message']?.toString() : null;
+      throw Exception(
+          message ?? 'Could not complete the property conversation.');
     }
   }
 
@@ -301,12 +304,8 @@ class ChatService {
     required String toUserId,
     required String text,
     bool? isMedia,
+    String? propertyId,
   }) async {
-    // Validate that message is only sent to admin users
-    if (!isAdminUser(toUserId)) {
-      throw Exception('Only admin communication is allowed');
-    }
-
     // Socket connectivity checks
     if (_socket == null || !_socket!.connected) {
       try {
@@ -355,6 +354,7 @@ class ChatService {
         'text': text,
         'timestamp': timestamp,
         "type": isMedia != null ? "media" : "text",
+        if (propertyId != null) 'propertyId': propertyId,
       };
 
       //debugPrint('📡 Emitting "sendMessage" event to socket...');
@@ -462,8 +462,9 @@ class ChatService {
                 responseData['success'] == null) &&
             responseData['data'] is List) {
           final adminData = responseData['data'] as List;
-          final unreadData =
-              responseData['unread'] is List ? responseData['unread'] as List : [];
+          final unreadData = responseData['unread'] is List
+              ? responseData['unread'] as List
+              : [];
 
           final admins = <Admin>[];
           final unread = <UnreadChat>[];
@@ -514,7 +515,8 @@ class ChatService {
   }
 
   // Get admin conversations for chat - returns all available admins
-  static Future<List<ChatConversation>> getAdminConversations({String? propertyTitle}) async {
+  static Future<List<ChatConversation>> getAdminConversations(
+      {String? propertyTitle}) async {
     final admins = await fetchAvailableAdmins();
 
     if (admins.isEmpty) {
@@ -526,13 +528,16 @@ class ChatService {
         .map((admin) => ChatConversation(
               id: 'chat_admin_${admin.id}',
               landlordId: admin.id,
-              landlordName: admin.name.isNotEmpty ? admin.name : 'Pearl Nest Support',
+              landlordName:
+                  admin.name.isNotEmpty ? admin.name : 'Pearl Nest Support',
               landlordProfilePic: admin.profilePicture ?? '',
               lastMessage: 'Start your conversation with ${admin.name}',
               lastMessageTime: DateTime.now(),
               unreadCount: 0,
               isOnline: admin.isOnline,
-              propertyTitle: propertyTitle != null ? 'Support Chat - $propertyTitle' : 'Support Chat',
+              propertyTitle: propertyTitle != null
+                  ? 'Support Chat - $propertyTitle'
+                  : 'Support Chat',
             ))
         .toList();
   }
@@ -551,7 +556,8 @@ class ChatService {
   }
 
   // Get admin conversation for chat (backward compatibility - returns first available admin)
-  static Future<ChatConversation?> getAdminConversation({String? propertyTitle}) async {
+  static Future<ChatConversation?> getAdminConversation(
+      {String? propertyTitle}) async {
     final admins = await fetchAvailableAdmins();
     if (admins.isEmpty) {
       //debugPrint('⚠️ No admins available for conversation');
@@ -562,13 +568,16 @@ class ChatService {
     return ChatConversation(
       id: 'chat_admin_${firstAdmin.id}',
       landlordId: firstAdmin.id,
-      landlordName: firstAdmin.name.isNotEmpty ? firstAdmin.name : 'PearlNest Support',
+      landlordName:
+          firstAdmin.name.isNotEmpty ? firstAdmin.name : 'PearlNest Support',
       landlordProfilePic: firstAdmin.profilePicture ?? '',
       lastMessage: 'Start your conversation with our support team',
       lastMessageTime: DateTime.now(),
       unreadCount: 0,
       isOnline: firstAdmin.isOnline,
-      propertyTitle: propertyTitle != null ? 'Support Chat - $propertyTitle' : 'Support Chat',
+      propertyTitle: propertyTitle != null
+          ? 'Support Chat - $propertyTitle'
+          : 'Support Chat',
     );
   }
 
@@ -587,7 +596,9 @@ class ChatService {
         landlordId: adminId,
         landlordName: adminName,
         landlordProfilePic: adminProfilePic ?? '',
-        lastMessage: propertyTitle != null ? 'Chat about: $propertyTitle' : 'Chat with $adminName',
+        lastMessage: propertyTitle != null
+            ? 'Chat about: $propertyTitle'
+            : 'Chat with $adminName',
         lastMessageTime: DateTime.now(),
         unreadCount: 0,
         isOnline: isOnline,
@@ -631,7 +642,9 @@ class ChatService {
 
     try {
       //debugPrint('📤 Making GET request to /chat/chatList... with role $role');
-      final response = (role == "ADMIN") ? await ApiClient.get('/chat/userList') : await ApiClient.get('/chat/adminList');
+      final response = (role == "ADMIN")
+          ? await ApiClient.get('/chat/userList')
+          : await ApiClient.get('/chat/adminList');
 
       if (response.statusCode == 200) {
         //debugPrint('✅ HTTP 200 - Success response received');
@@ -660,7 +673,8 @@ class ChatService {
               // Determine if current user is sender or receiver
               final isCurrentUserSender = chat['fromUserId'] == currentUserId;
               final otherUser = isCurrentUserSender ? toUser : fromUser;
-              final otherUserId = isCurrentUserSender ? chat['toUserId'] : chat['fromUserId'];
+              final otherUserId =
+                  isCurrentUserSender ? chat['toUserId'] : chat['fromUserId'];
 
               //debugPrint('   - isCurrentUserSender: $isCurrentUserSender');
               //debugPrint('   - otherUser: $otherUser');
@@ -674,15 +688,19 @@ class ChatService {
                 landlordId: otherUserId?.toString() ?? '',
                 landlordName: otherUser['name']?.toString() ?? 'Unknown User',
                 landlordProfilePic: (otherUser['profilePicture'] ??
-                        otherUser['profileImage'] ??
-                        otherUser['profilePhoto'])
-                    ?.toString() ??
+                            otherUser['profileImage'] ??
+                            otherUser['profilePhoto'])
+                        ?.toString() ??
                     '',
                 lastMessage: chat['message']?.toString() ?? '',
-                lastMessageTime: DateTime.now(), // TODO: Parse actual timestamp if available
+                lastMessageTime:
+                    DateTime.now(), // TODO: Parse actual timestamp if available
                 unreadCount: 0, // TODO: Get from API when available
-                isOnline: otherUser['role'] == 'ADMIN', // Assume admin is always online
-                propertyTitle: otherUser['role'] == 'ADMIN' ? 'Support Chat' : 'Property Discussion',
+                isOnline: otherUser['role'] ==
+                    'ADMIN', // Assume admin is always online
+                propertyTitle: otherUser['role'] == 'ADMIN'
+                    ? 'Support Chat'
+                    : 'Property Discussion',
               );
 
               conversations.add(conversation);
@@ -741,7 +759,8 @@ class ChatService {
         //debugPrint('   - Check internet connection');
         //debugPrint('   - Verify server is running');
         //debugPrint('   - Check if base URL is correct: ${AppConfig.getCurrentBaseUrl()}');
-      } else if (e.toString().contains('401') || e.toString().contains('unauthorized')) {
+      } else if (e.toString().contains('401') ||
+          e.toString().contains('unauthorized')) {
         //debugPrint('🔍 Authentication issue detected');
         //debugPrint('   - Auth token may be invalid or expired');
         //debugPrint('   - Current token: ${ApiClient.currentAuthToken}');

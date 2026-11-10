@@ -6,6 +6,7 @@ import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/apis/chat_service.dart';
 import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
 import 'package:pearlnest/models/property.dart';
+import 'package:pearlnest/screens/chat/chat_reply.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/widgets/loading_widget.dart';
@@ -44,6 +45,7 @@ class _NewChatConversationState extends State<NewChatConversation> {
   String? _propertyAddress;
   String _conversationStatus = 'OPEN';
   bool _isUpdatingConversation = false;
+  ChatReply? _replyingTo;
 
   @override
   void initState() {
@@ -154,6 +156,42 @@ class _NewChatConversationState extends State<NewChatConversation> {
     if (message is TextMessage && message.text.trim().isNotEmpty) {
       _showMessageActions(message.text);
     }
+  }
+
+  void _startReply(Message message) {
+    if (message is! TextMessage || message.text.trim().isEmpty) return;
+    setState(() {
+      _replyingTo = ChatReply(
+        sender: message.authorId == widget.fromUserId ? 'You' : widget.userName,
+        quotedText: ChatReply.parse(message.text)?.message ?? message.text,
+        message: '',
+      );
+    });
+  }
+
+  void _sendMessage(String text) {
+    final reply = _replyingTo;
+    context.read<NewChatBloc>().add(
+          FetchNewChat(
+            currentUserId: widget.fromUserId,
+            toUserId: widget.toUserId,
+            propertyId: widget.propertyId,
+            isSendMessage: true,
+            sendMessage: {
+              "fromUserId": widget.fromUserId,
+              "toUserId": widget.toUserId,
+              "text": reply == null
+                  ? text
+                  : ChatReply.format(
+                      sender: reply.sender,
+                      quotedText: reply.quotedText,
+                      message: text,
+                    ),
+              if (widget.propertyId != null) "propertyId": widget.propertyId,
+            },
+          ),
+        );
+    if (reply != null) setState(() => _replyingTo = null);
   }
 
   @override
@@ -329,29 +367,109 @@ class _NewChatConversationState extends State<NewChatConversation> {
                   ),
                   chatController: _chatController,
                   currentUserId: widget.fromUserId,
-                  onMessageSend: _conversationStatus == 'COMPLETED'
-                      ? null
-                      : (text) {
-                          context.read<NewChatBloc>().add(
-                                FetchNewChat(
-                                  currentUserId: widget.fromUserId,
-                                  toUserId: widget.toUserId,
-                                  propertyId: widget.propertyId,
-                                  isSendMessage: true,
-                                  sendMessage: {
-                                    "fromUserId": widget.fromUserId,
-                                    "toUserId": widget.toUserId,
-                                    "text": text,
-                                    if (widget.propertyId != null)
-                                      "propertyId": widget.propertyId,
-                                  },
-                                ),
-                              );
-                        },
+                  onMessageSend:
+                      _conversationStatus == 'COMPLETED' ? null : _sendMessage,
                   resolveUser: (UserID id) async {
                     return User(id: widget.fromUserId, name: widget.userName);
                   },
                   onMessageLongPress: _onMessageLongPress,
+                  builders: Builders(
+                    chatMessageBuilder: (
+                      context,
+                      message,
+                      index,
+                      animation,
+                      child, {
+                      isRemoved,
+                      required isSentByMe,
+                      groupStatus,
+                    }) {
+                      return SwipeToReply(
+                        onReply: () => _startReply(message),
+                        child: child,
+                      );
+                    },
+                    textMessageBuilder: (
+                      context,
+                      message,
+                      index, {
+                      required isSentByMe,
+                      groupStatus,
+                    }) {
+                      final reply = ChatReply.parse(message.text);
+                      if (reply == null) {
+                        return SimpleTextMessage(
+                          message: message,
+                          index: index,
+                        );
+                      }
+                      final theme = Theme.of(context);
+                      final quoteWidget = Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.only(
+                          left: 8,
+                          top: 2,
+                          bottom: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: isSentByMe
+                                  ? theme.colorScheme.onPrimary.withValues(
+                                      alpha: 0.7,
+                                    )
+                                  : AppTheme.primaryblue,
+                              width: 3,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              reply.sender,
+                              style: TextStyle(
+                                color: isSentByMe
+                                    ? theme.colorScheme.onPrimary
+                                    : AppTheme.primaryblue,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              reply.quotedText,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isSentByMe
+                                    ? theme.colorScheme.onPrimary.withValues(
+                                        alpha: 0.8,
+                                      )
+                                    : AppTheme.getSecondaryTextColor(context),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      return SimpleTextMessage(
+                        message: message.copyWith(text: reply.message),
+                        index: index,
+                        topWidget: quoteWidget,
+                      );
+                    },
+                    composerBuilder: (context) => Composer(
+                      sendButtonDisabled: _conversationStatus == 'COMPLETED',
+                      topWidget: _replyingTo == null
+                          ? null
+                          : ChatReplyPreview(
+                              reply: _replyingTo!,
+                              onCancel: () =>
+                                  setState(() => _replyingTo = null),
+                            ),
+                    ),
+                  ),
                 ),
               ),
             ],

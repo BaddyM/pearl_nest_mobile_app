@@ -11,6 +11,7 @@ import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/blocs/chat/chat_state.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
 import 'package:pearlnest/screens/chat/chat_input.dart';
+import 'package:pearlnest/screens/chat/chat_reply.dart';
 import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/screens/chat/message_bubble.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
@@ -23,6 +24,8 @@ class IndividualChatScreen extends StatefulWidget {
   final User currentUser;
   final bool isOnline;
   final String adminContact;
+  final String? propertyId;
+  final String? propertyAddress;
 
   const IndividualChatScreen({
     super.key,
@@ -30,6 +33,8 @@ class IndividualChatScreen extends StatefulWidget {
     required this.currentUser,
     required this.isOnline,
     required this.adminContact,
+    this.propertyId,
+    this.propertyAddress,
   });
 
   @override
@@ -39,6 +44,7 @@ class IndividualChatScreen extends StatefulWidget {
 class _IndividualChatScreenState extends State<IndividualChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  ChatReply? _replyingTo;
 
   @override
   void initState() {
@@ -50,14 +56,24 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     // Initialize chat and load messages for this conversation
     final chatBloc = context.read<ChatBloc>();
     chatBloc.add(const ChatInitialize());
-    chatBloc
-        .add(ChatLoadMessages(chatWithUserId: widget.conversation.landlordId));
+    chatBloc.add(ChatLoadMessages(
+      chatWithUserId: widget.conversation.landlordId,
+      propertyId: widget.propertyId,
+    ));
+    chatBloc.add(ChatMarkAsRead(
+      fromUserId: widget.conversation.landlordId,
+      toUserId: widget.currentUser.id,
+      propertyId: widget.propertyId,
+    ));
   }
 
   Future<void> _refreshMessages() async {
     final bloc = context.read<ChatBloc>();
     bloc.add(
-      ChatLoadMessages(chatWithUserId: widget.conversation.landlordId),
+      ChatLoadMessages(
+        chatWithUserId: widget.conversation.landlordId,
+        propertyId: widget.propertyId,
+      ),
     );
     await bloc.stream.firstWhere(
       (state) => state is ChatConnected || state is ChatError,
@@ -79,10 +95,18 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
     final chatBloc = context.read<ChatBloc>();
     chatBloc.add(ChatSendMessage(
       toUserId: widget.conversation.landlordId,
-      text: messageText,
+      text: _replyingTo == null
+          ? messageText
+          : ChatReply.format(
+              sender: _replyingTo!.sender,
+              quotedText: _replyingTo!.quotedText,
+              message: messageText,
+            ),
+      propertyId: widget.propertyId,
     ));
 
     _messageController.clear();
+    setState(() => _replyingTo = null);
     _scrollToBottom();
   }
 
@@ -125,7 +149,17 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
               _buildConnectionStatus(state),
               _buildPropertyInfo(),
               Expanded(child: _buildMessagesList(state)),
-              _buildMessageInput(state),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_replyingTo != null)
+                    ChatReplyPreview(
+                      reply: _replyingTo!,
+                      onCancel: () => setState(() => _replyingTo = null),
+                    ),
+                  _buildMessageInput(state),
+                ],
+              ),
             ],
           );
         },
@@ -220,13 +254,12 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
         ],
       ),
       actions: [
-        IconButton(
-          tooltip: 'Call',
-          icon: const Icon(Icons.call_outlined, color: AppTheme.whiteColor),
-          onPressed: () {
-            _showCallDialog();
-          },
-        ),
+        if (widget.adminContact.trim().isNotEmpty)
+          IconButton(
+            tooltip: 'Call',
+            icon: const Icon(Icons.call_outlined, color: AppTheme.whiteColor),
+            onPressed: _showCallDialog,
+          ),
         IconButton(
           tooltip: 'More options',
           icon: const Icon(Icons.more_vert, color: AppTheme.whiteColor),
@@ -318,6 +351,16 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (widget.propertyAddress?.trim().isNotEmpty == true)
+                  Text(
+                    widget.propertyAddress!,
+                    style: TextStyle(
+                      color: AppTheme.getSecondaryTextColor(context),
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
           ),
@@ -401,6 +444,21 @@ class _IndividualChatScreenState extends State<IndividualChatScreen> {
                       ? null
                       : widget.conversation.landlordProfilePic,
                   senderName: widget.conversation.landlordName,
+                  onReply: () {
+                    final content =
+                        (ChatReply.parse(message.text)?.message ?? message.text)
+                            .trim();
+                    if (content.isEmpty) return;
+                    setState(() {
+                      _replyingTo = ChatReply(
+                        sender: isFromCurrentUser
+                            ? 'You'
+                            : widget.conversation.landlordName,
+                        quotedText: content,
+                        message: '',
+                      );
+                    });
+                  },
                 ),
               ],
             );

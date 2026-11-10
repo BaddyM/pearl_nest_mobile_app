@@ -53,10 +53,17 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
     });
     try {
       final reviews = await ExperienceReviewService.getReviews();
+      final sortedReviews = [...reviews]
+        ..sort((a, b) {
+          final aTime = DateTime.tryParse(a['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bTime = DateTime.tryParse(b['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return bTime.compareTo(aTime);
+        });
+
       if (!mounted) return;
       setState(() {
         if (!_initializedReview) {
-          final ownReviews = reviews.where((review) {
+          final ownReviews = sortedReviews.where((review) {
             final user = review['user'];
             return user is Map && user['id']?.toString() == widget.user.id;
           }).toList();
@@ -67,7 +74,7 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
           }
           _initializedReview = true;
         }
-        _reviews = reviews;
+        _reviews = sortedReviews;
         _isLoading = false;
       });
     } catch (error) {
@@ -323,6 +330,7 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
               review['message']?.toString() ?? '',
               style: const TextStyle(height: 1.45),
             ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 TextButton.icon(
@@ -364,7 +372,24 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                   ),
                 ],
               ),
-            ...replies.map(_replyTile),
+            if (replies.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(left: 8, top: 8),
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  children: replies.map(_replyTile).toList(),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -378,6 +403,18 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
       return user is Map && user['id']?.toString() == widget.user.id;
     }).toList();
     final myReview = ownReviews.isEmpty ? null : ownReviews.first;
+    final communityReviews = _reviews.where((review) {
+      final user = review['user'];
+      return !(user is Map && user['id']?.toString() == widget.user.id);
+    }).toList();
+    final averageRating = _reviews.isEmpty
+        ? 0.0
+        : _reviews.fold<double>(
+            0,
+            (total, review) => total + ((review['stars'] as num?)?.toDouble() ?? 0),
+          ) /
+            _reviews.length;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Community reviews')),
       backgroundColor: AppTheme.getBackgroundColor(context),
@@ -397,18 +434,49 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      myReview == null
-                          ? 'How has Pearl Nest been for you?'
-                          : 'Update your experience review',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            myReview == null
+                                ? 'How has Pearl Nest been for you?'
+                                : 'Update your experience review',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
                           ),
+                        ),
+                        if (_reviews.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryblue.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                                const SizedBox(width: 4),
+                                Text(
+                                  averageRating.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                        'Your review is public and helps the community.'),
-                    const SizedBox(height: 8),
+                    const Text('Your review is public and helps the community.'),
+                    const SizedBox(height: 12),
                     Row(
                       children: List.generate(
                         5,
@@ -436,6 +504,7 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                         border: const OutlineInputBorder(),
                       ),
                     ),
+                    const SizedBox(height: 10),
                     Align(
                       alignment: Alignment.centerRight,
                       child: FilledButton(
@@ -444,24 +513,34 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : Text(myReview == null
-                                ? 'Post review'
-                                : 'Update review'),
+                            : Text(myReview == null ? 'Post review' : 'Update review'),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 14),
-            Text(
-              'From the community',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+            const SizedBox(height: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'From the community',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                if (_reviews.isNotEmpty)
+                  Text(
+                    '${_reviews.length} review${_reviews.length == 1 ? '' : 's'}',
+                    style: TextStyle(
+                      color: AppTheme.getSecondaryTextColor(context),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+              ],
             ),
             const SizedBox(height: 10),
             if (_isLoading)
@@ -483,7 +562,7 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                   ),
                 ),
               )
-            else if (_reviews.isEmpty)
+            else if (communityReviews.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(28),
                 child: Center(
@@ -491,7 +570,7 @@ class _ExperienceReviewsScreenState extends State<ExperienceReviewsScreen> {
                 ),
               )
             else
-              ..._reviews.map(_reviewCard),
+              ...communityReviews.map(_reviewCard),
           ],
         ),
       ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../services/permission_service.dart';
 import '../widgets/app_theme.dart';
 
@@ -278,7 +277,7 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppTheme.getSecondaryTextColor(context).withOpacity(0.1),
+          color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
         ),
       ),
       child: Column(

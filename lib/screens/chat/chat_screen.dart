@@ -10,6 +10,7 @@ import 'package:pearlnest/blocs/chat/chat_bloc.dart';
 import 'package:pearlnest/blocs/chat/chat_event.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/screens/chat/chat_conversation.dart';
+import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
 import 'package:pearlnest/widgets/login_required_widget.dart';
 import 'package:pearlnest/utils/image_helper.dart';
 
@@ -585,17 +586,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _openChatDetail(ChatConversation conversation) {
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => IndividualChatScreen(
-    //       conversation: conversation,
-    //       currentUser: widget.user,
-    //     ),
-    //   ),
-    // ).then((_) {
-    //   _loadConversations();
-    // });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => IndividualChatScreen(
+          conversation: conversation,
+          currentUser: widget.user,
+          isOnline: conversation.isOnline,
+          adminContact: '',
+        ),
+      ),
+    ).then((_) {
+      if (mounted) _loadConversations();
+    });
   }
 
   // Debug methods for development - output to terminal only

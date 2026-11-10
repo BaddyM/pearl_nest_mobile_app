@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:pearlnest/screens/chat/message.dart';
 import 'package:pearlnest/screens/chat/message_status.dart';
+import 'package:pearlnest/screens/chat/chat_reply.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/utils/image_helper.dart';
@@ -13,6 +14,7 @@ class MessageBubble extends StatelessWidget {
   final bool isFromCurrentUser;
   final String? senderAvatar;
   final String senderName;
+  final VoidCallback? onReply;
 
   const MessageBubble({
     super.key,
@@ -20,11 +22,13 @@ class MessageBubble extends StatelessWidget {
     required this.isFromCurrentUser,
     this.senderAvatar,
     required this.senderName,
+    this.onReply,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final reply = ChatReply.parse(message.content);
+    final bubble = InkWell(
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: message.content));
         CustomSnackBar.showSuccess(context, 'Message copied');
@@ -85,8 +89,52 @@ class MessageBubble extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (reply != null) ...[
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 7),
+                        padding:
+                            const EdgeInsets.only(left: 9, top: 2, bottom: 2),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: isFromCurrentUser
+                                  ? Colors.white70
+                                  : AppTheme.primaryblue,
+                              width: 3,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              reply.sender,
+                              style: TextStyle(
+                                color: isFromCurrentUser
+                                    ? AppTheme.whiteColor
+                                    : AppTheme.primaryblue,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              reply.quotedText,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isFromCurrentUser
+                                    ? AppTheme.whiteColor.withValues(alpha: 0.8)
+                                    : AppTheme.getSecondaryTextColor(context),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     Text(
-                      message.content,
+                      reply?.message ?? message.content,
                       style: TextStyle(
                         color: isFromCurrentUser
                             ? AppTheme.whiteColor
@@ -125,6 +173,9 @@ class MessageBubble extends StatelessWidget {
         ),
       ),
     );
+    return onReply == null
+        ? bubble
+        : SwipeToReply(onReply: onReply!, child: bubble);
   }
 
   Widget _buildSmallAvatar() {

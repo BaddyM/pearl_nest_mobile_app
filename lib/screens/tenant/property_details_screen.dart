@@ -3000,7 +3000,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Reviews',
+                'Tenant reviews',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -3030,6 +3030,18 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           SizedBox(height: 16),
           _buildReviewsSummary(),
           SizedBox(height: 20),
+          if (_reviews.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'What tenants say',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.getTextColor(context),
+                ),
+              ),
+            ),
           ..._reviews.take(_showAllReviews ? _reviews.length : 3).map((review) {
             return _buildReviewCard(review);
           }),
@@ -3873,7 +3885,112 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
       );
     }
 
-    return SizedBox();
+    final averageRating =
+        _reviews.fold<double>(0, (total, review) => total + review.rating) /
+            _reviews.length;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.primaryblue.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 104,
+            child: Column(
+              children: [
+                Text(
+                  averageRating.toStringAsFixed(1),
+                  style: TextStyle(
+                    color: AppTheme.getTextColor(context),
+                    fontSize: 38,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    5,
+                    (index) => Icon(
+                      index < averageRating.round()
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      color: Colors.amber.shade700,
+                      size: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${_reviews.length} review${_reviews.length == 1 ? '' : 's'}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              children: List.generate(5, (index) {
+                final stars = 5 - index;
+                final percentage = _getStarPercentage(stars);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 12,
+                        child: Text(
+                          '$stars',
+                          style: TextStyle(
+                            color: AppTheme.getSecondaryTextColor(context),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 14,
+                        color: Colors.amber,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(99),
+                          child: LinearProgressIndicator(
+                            value: percentage,
+                            minHeight: 7,
+                            backgroundColor: AppTheme.primaryblue.withValues(
+                              alpha: 0.1,
+                            ),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppTheme.primaryblue,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   double _getStarPercentage(int stars) {

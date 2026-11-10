@@ -105,11 +105,8 @@ class MyApp extends StatelessWidget {
         BlocProvider<NewChatBloc>(
           create: (context) => NewChatBloc(NewChatService(), userId ?? ""),
         ),
-        BlocProvider(
+        BlocProvider<NotificationCubit>(
           create: (context) => NotificationCubit()..initSocket(),
-          child: MyApp(
-            userId: userId,
-          ),
         ),
       ],
       child: MultiProvider(

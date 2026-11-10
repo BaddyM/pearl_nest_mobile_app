@@ -120,6 +120,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       await ChatService.sendMessage(
         toUserId: event.toUserId,
         text: event.text,
+        propertyId: event.propertyId,
       );
 
       emit(ChatMessageSent(
@@ -162,7 +163,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       emit(ChatLoading());
       _messages.clear();
       _currentChatUserId = event.chatWithUserId;
-      final data = await ApiClient.get("/chat/messagesList/$_currentChatUserId");
+      final propertyQuery = event.propertyId == null
+          ? ''
+          : '?propertyId=${Uri.encodeQueryComponent(event.propertyId!)}';
+      final data = await ApiClient.get(
+        "/chat/messagesList/$_currentChatUserId$propertyQuery",
+      );
       List messagesFromDB = data.data["data"];
       for (int i = 0; i < messagesFromDB.length; i++) {
         DateTime dateTime = DateTime.parse(messagesFromDB[i]["createdAt"]);
@@ -192,7 +198,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onMarkAsRead(ChatMarkAsRead event, Emitter<ChatState> emit) async {
     try {
-      await ApiClient.patchWithoutData("/chat/readMessage/${event.fromUserId}/${event.toUserId}");
+      final propertyQuery = event.propertyId == null
+          ? ''
+          : '?propertyId=${Uri.encodeQueryComponent(event.propertyId!)}';
+      await ApiClient.patchWithoutData(
+        "/chat/readMessage/${event.fromUserId}/${event.toUserId}$propertyQuery",
+      );
       emit(ChatConnected(
         messages: List.from(_messages),
         isConnected: _isConnected,

@@ -24,15 +24,17 @@ class ChatSendMessage extends ChatEvent {
   final String toUserId;
   final String text;
   final bool fromProperty;
+  final String? propertyId;
 
   const ChatSendMessage({
     required this.toUserId,
     required this.text,
     this.fromProperty = false,
+    this.propertyId,
   });
 
   @override
-  List<Object?> get props => [toUserId, text, fromProperty];
+  List<Object?> get props => [toUserId, text, fromProperty, propertyId];
 }
 
 class ChatReceiveMessage extends ChatEvent {
@@ -46,21 +48,27 @@ class ChatReceiveMessage extends ChatEvent {
 
 class ChatLoadMessages extends ChatEvent {
   final String chatWithUserId;
+  final String? propertyId;
 
-  const ChatLoadMessages({required this.chatWithUserId});
+  const ChatLoadMessages({required this.chatWithUserId, this.propertyId});
 
   @override
-  List<Object?> get props => [chatWithUserId];
+  List<Object?> get props => [chatWithUserId, propertyId];
 }
 
 class ChatMarkAsRead extends ChatEvent {
   final String fromUserId;
   final String toUserId;
+  final String? propertyId;
 
-  const ChatMarkAsRead({required this.fromUserId, required this.toUserId});
+  const ChatMarkAsRead({
+    required this.fromUserId,
+    required this.toUserId,
+    this.propertyId,
+  });
 
   @override
-  List<Object?> get props => [fromUserId, toUserId];
+  List<Object?> get props => [fromUserId, toUserId, propertyId];
 }
 
 class ChatConnectionChanged extends ChatEvent {

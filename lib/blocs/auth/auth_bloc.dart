@@ -28,8 +28,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegistrationOtpRequested>(_onRegistrationOtpRequested);
     on<AuthRegistrationOtpResendRequested>(_onRegistrationOtpResendRequested);
 
-    // Initialize session check
-    add(AuthCheckSessionRequested());
+    // Session initialization is handled by the startup screen so it runs once
+    // and stays aligned with the app's boot flow.
 
     // Set up automatic logout callback
     ApiClient.onTokenExpired = () {
@@ -88,9 +88,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ////debugPrint('AuthBloc: Login failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
-    } catch (e, stackTrace) {
-      print("Error:Bloc = $e");
-      print("Location:Bloc = $stackTrace");
+    } catch (e) {
+      debugPrint('AuthBloc: Login error: $e');
       String errorMessage;
       if (e.toString().contains('timeout') || e.toString().contains('Connection timeout')) {
         errorMessage = 'Connection timeout. Please check your internet connection and try again.';
@@ -192,9 +191,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         //debugPrint('AuthBloc: Registration failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       //debugPrint('AuthBloc: Registration error - $e');
-      //debugPrint('AuthBloc: Stack trace - $stackTrace');
 
       // Provide more specific error messages based on error type
       String errorMessage;
@@ -274,9 +272,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         //debugPrint('AuthBloc: Profile update failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       //debugPrint('AuthBloc: Profile update error - $e');
-      //debugPrint('AuthBloc: Stack trace - $stackTrace');
 
       // Provide more specific error messages based on error type
       String errorMessage;
@@ -365,7 +362,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         //debugPrint('AuthBloc: OTP verification failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       // Provide more specific error messages based on error type
       String errorMessage;
       if (e.toString().contains('Invalid OTP') || e.toString().contains('INVALID_OTP')) {
@@ -409,7 +406,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         //debugPrint('AuthBloc: OTP resend failed - $errorMessage');
         emit(AuthFailure(message: errorMessage));
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       // Provide more specific error messages based on error type
       String errorMessage;
       if (e.toString().contains('Too many requests') || e.toString().contains('TOO_MANY_REQUESTS')) {

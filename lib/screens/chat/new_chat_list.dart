@@ -5,7 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:pearlnest/blocs/new_chat_bloc/new_chat_bloc.dart';
 import 'package:pearlnest/models/user.dart';
 import 'package:pearlnest/models/user_type.dart';
-import 'package:pearlnest/screens/chat/new_chat_conversation.dart';
+import 'package:pearlnest/screens/chat/chat_conversation.dart';
+import 'package:pearlnest/screens/chat/individual_chat_screen.dart';
 import 'package:pearlnest/utils/custom_snackbar.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 import 'package:pearlnest/widgets/loading_widget.dart';
@@ -205,6 +206,7 @@ class _NewChatListState extends State<NewChatList> {
                           item["role"]?.toString() ?? "",
                           item["id"]?.toString() ?? "",
                           imageUrl: _profilePhotoUrl(item),
+                          adminContact: item["contact"]?.toString() ?? "",
                           isOnline: item["isOnline"] == true,
                           preview: 'Chat with our support team',
                         );
@@ -233,6 +235,9 @@ class _NewChatListState extends State<NewChatList> {
                         widget.user.id,
                         peerData["role"]?.toString() ?? "",
                         id,
+                        adminContact: peerData["contact"]?.toString() ??
+                            peerData["phone"]?.toString() ??
+                            "",
                         imageUrl: _profilePhotoUrl(peerData),
                         propertyId: item["propertyId"]?.toString(),
                         propertyTitle: property["propertyName"]?.toString(),
@@ -567,6 +572,7 @@ class _NewChatListState extends State<NewChatList> {
     String? propertyTitle,
     String? propertyAddress,
     String? imageUrl,
+    String adminContact = '',
     bool isOnline = false,
     bool unread = false,
     int unreadCount = 0,
@@ -574,15 +580,27 @@ class _NewChatListState extends State<NewChatList> {
     String? timestamp,
   }) {
     Future<void> openConversation() async {
+      final conversation = ChatConversation(
+        id: '$currentUserId-$toUserId-${propertyId ?? 'general'}',
+        landlordId: toUserId,
+        landlordName: userName,
+        landlordProfilePic: imageUrl ?? '',
+        lastMessage: preview ?? '',
+        lastMessageTime: DateTime.now(),
+        unreadCount: unreadCount,
+        isOnline: isOnline,
+        propertyTitle: propertyTitle?.trim().isNotEmpty == true
+            ? propertyTitle!
+            : 'General conversation',
+      );
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => NewChatConversation(
-            fromUserId: currentUserId,
-            toUserId: toUserId,
-            userName: userName,
-            userImageUrl: imageUrl,
+          builder: (context) => IndividualChatScreen(
+            conversation: conversation,
+            currentUser: widget.user,
+            isOnline: isOnline,
+            adminContact: adminContact,
             propertyId: propertyId,
-            propertyTitle: propertyTitle,
             propertyAddress: propertyAddress,
           ),
         ),

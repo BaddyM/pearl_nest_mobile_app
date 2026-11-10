@@ -10,7 +10,6 @@ import 'package:pearlnest/blocs/auth/auth_bloc.dart';
 import 'package:pearlnest/blocs/auth/auth_event.dart';
 import 'package:pearlnest/blocs/auth/auth_state.dart';
 import 'package:pearlnest/screens/common/onboarding_screen.dart';
-import 'package:pearlnest/screens/common/login_screen.dart';
 import 'package:pearlnest/widgets/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -83,6 +82,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Future<void> _handleAppInitialization() async {
     debugPrint('🚀 Checking app initialization status...');
 
+    final authBloc = context.read<AuthBloc>();
+    final navigator = Navigator.of(context);
+
     // Wait for animations to complete
     await Future.delayed(const Duration(seconds: 2));
 
@@ -97,21 +99,20 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       if (isFirstLaunch) {
         debugPrint('🎯 First time user - navigating to onboarding');
         if (mounted && !_isDisposed) {
-          Navigator.pushReplacement(
-            context,
+          navigator.pushReplacement(
             MaterialPageRoute(builder: (context) => const OnboardingScreen()),
           );
         }
       } else {
         debugPrint('🔄 Returning user - checking auth status');
         // Trigger auth check for returning users
-        context.read<AuthBloc>().add(AuthCheckSessionRequested());
+        authBloc.add(AuthCheckSessionRequested());
       }
     } catch (e) {
       debugPrint('❌ Error checking first launch: $e');
       // Fallback to auth check if SharedPreferences fails
       if (mounted && !_isDisposed) {
-        context.read<AuthBloc>().add(AuthCheckSessionRequested());
+        authBloc.add(AuthCheckSessionRequested());
       }
     }
   }
