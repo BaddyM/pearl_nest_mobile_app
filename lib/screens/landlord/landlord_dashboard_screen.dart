@@ -27,7 +27,8 @@ class LandlordDashboardScreen extends StatefulWidget {
 
   @override
   // ignore: library_private_types_in_public_api
-  _LandlordDashboardScreenState createState() => _LandlordDashboardScreenState();
+  _LandlordDashboardScreenState createState() =>
+      _LandlordDashboardScreenState();
 }
 
 class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
@@ -82,8 +83,10 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             if (property is! Property) continue;
             totalViews += property.views.length;
             totalComments += property.reviews.length;
-            totalInteractions += property.views.length + property.shares.length +
-                property.favourites.length + property.reviews.length;
+            totalInteractions += property.views.length +
+                property.shares.length +
+                property.favourites.length +
+                property.reviews.length;
           }
           //debugPrint('🏠 Dashboard - Property count: $propertyCount');
         }
@@ -119,47 +122,104 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
-      body: _buildBody(),
-      bottomNavigationBar: NavigationBar(
-        height: 68,
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) =>
-            setState(() => _currentIndex = index),
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        backgroundColor: AppTheme.getCardColor(context),
-        indicatorColor: AppTheme.primaryblue.withValues(alpha: 0.12),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Explore',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.home_work_outlined),
-            selectedIcon: Icon(Icons.home_work),
-            label: 'Listings',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_today_outlined),
-            selectedIcon: Icon(Icons.calendar_today),
-            label: 'Bookings',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble),
-            label: 'Chats',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+      body: Stack(
+        children: [
+          _buildBody(),
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: 8,
+            child: SafeArea(
+              top: false,
+              child: _buildFloatingNavigationBar(),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingNavigationBar() {
+    const destinations = [
+      (Icons.dashboard_outlined, Icons.dashboard, 'Home'),
+      (Icons.explore_outlined, Icons.explore, 'Explore'),
+      (Icons.home_work_outlined, Icons.home_work, 'Listings'),
+      (Icons.calendar_today_outlined, Icons.calendar_today, 'Bookings'),
+      (Icons.chat_bubble_outline, Icons.chat_bubble, 'Chats'),
+      (Icons.person_outline, Icons.person, 'Profile'),
+    ];
+
+    return Container(
+      height: 68,
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.getTextColor(context).withValues(alpha: 0.14),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Row(
+          children: List.generate(destinations.length, (index) {
+            final destination = destinations[index];
+            final isSelected = _currentIndex == index;
+            return Expanded(
+              child: Semantics(
+                button: true,
+                selected: isSelected,
+                label: destination.$3,
+                child: InkWell(
+                  onTap: () => setState(() => _currentIndex = index),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppTheme.primaryblue.withValues(alpha: 0.12)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          isSelected ? destination.$2 : destination.$1,
+                          color: isSelected
+                              ? AppTheme.primaryblue
+                              : AppTheme.getSecondaryTextColor(context),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        destination.$3,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 9,
+                          height: 1.1,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isSelected
+                              ? AppTheme.primaryblue
+                              : AppTheme.getSecondaryTextColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
@@ -198,6 +258,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
         onRefresh: _loadDashboardData,
         child: SingleChildScrollView(
           physics: AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -230,7 +291,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -243,15 +305,17 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             children: [
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome back,',
+                      'LANDLORD OVERVIEW',
                       style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.getSecondaryTextColor(context),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primaryblue,
                       ),
                     ),
+                    SizedBox(height: 4),
                     Text(
                       widget.user.name.split(' ').first,
                       style: TextStyle(
@@ -264,9 +328,11 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                     Text(
                       widget.landlord.businessName,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: AppTheme.getSecondaryTextColor(context),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -279,10 +345,12 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                 child: CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.transparent,
-                  child: widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty
+                  child: widget.user.profileImage != null &&
+                          widget.user.profileImage!.isNotEmpty
                       ? ClipOval(
                           child: Image.network(
-                            ImageHelper.getFullImageUrl(widget.user.profileImage!),
+                            ImageHelper.getFullImageUrl(
+                                widget.user.profileImage!),
                             width: 60,
                             height: 60,
                             fit: BoxFit.cover,
@@ -290,18 +358,25 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                               if (loadingProgress == null) return child;
                               return Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryblue),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppTheme.primaryblue),
                                 ),
                               );
                             },
                             errorBuilder: (context, error, stackTrace) {
-                              return Icon(Icons.business, color: AppTheme.primaryblue, size: 30);
+                              return Icon(Icons.business,
+                                  color: AppTheme.primaryblue, size: 30);
                             },
                           ),
                         )
-                      : Icon(Icons.business, color: AppTheme.primaryblue, size: 30),
+                      : Icon(Icons.business,
+                          color: AppTheme.primaryblue, size: 30),
                 ),
               ),
             ],
@@ -314,7 +389,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+                  color: AppTheme.getSecondaryTextColor(context)
+                      .withValues(alpha: 0.1),
                   blurRadius: 5,
                   offset: Offset(0, 1),
                 ),
@@ -337,7 +413,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                 if (widget.landlord.isVerified)
                   Row(
                     children: [
-                      Icon(Icons.verified, color: AppTheme.primaryblue, size: 16),
+                      Icon(Icons.verified,
+                          color: AppTheme.primaryblue, size: 16),
                       SizedBox(width: 4),
                       Text(
                         'Verified',
@@ -369,6 +446,14 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppTheme.getTextColor(context),
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'A snapshot of your rental activity',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
           SizedBox(height: 16),
@@ -408,7 +493,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             children: [
               Expanded(
                 child: _isLoading
-                    ? _buildLoadingStatCard('Properties', Icons.home_work, AppTheme.primaryblue)
+                    ? _buildLoadingStatCard(
+                        'Properties', Icons.home_work, AppTheme.primaryblue)
                     : _buildStatCard(
                         'Properties',
                         '$_totalProperties',
@@ -419,7 +505,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
               SizedBox(width: 16),
               Expanded(
                 child: _isLoading
-                    ? _buildLoadingStatCard('Bookings', Icons.calendar_today, Colors.blue)
+                    ? _buildLoadingStatCard(
+                        'Bookings', Icons.calendar_today, Colors.blue)
                     : _buildStatCard(
                         'Bookings',
                         '$_totalBookings',
@@ -434,14 +521,18 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             children: [
               Expanded(
                 child: _isLoading
-                    ? _buildLoadingStatCard('Property views', Icons.visibility, Colors.teal)
-                    : _buildStatCard('Property views', '$_totalViews', Icons.visibility, Colors.teal),
+                    ? _buildLoadingStatCard(
+                        'Property views', Icons.visibility, Colors.teal)
+                    : _buildStatCard('Property views', '$_totalViews',
+                        Icons.visibility, Colors.teal),
               ),
               SizedBox(width: 16),
               Expanded(
                 child: _isLoading
-                    ? _buildLoadingStatCard('Comments', Icons.comment_outlined, Colors.deepPurple)
-                    : _buildStatCard('Comments', '$_totalComments', Icons.comment_outlined, Colors.deepPurple),
+                    ? _buildLoadingStatCard(
+                        'Comments', Icons.comment_outlined, Colors.deepPurple)
+                    : _buildStatCard('Comments', '$_totalComments',
+                        Icons.comment_outlined, Colors.deepPurple),
               ),
             ],
           ),
@@ -450,7 +541,9 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 '$_totalInteractions total interactions across your listings',
-                style: TextStyle(color: AppTheme.getSecondaryTextColor(context), fontSize: 12),
+                style: TextStyle(
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontSize: 12),
               ),
             ),
         ],
@@ -458,12 +551,13 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
@@ -506,10 +600,10 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
 
   Widget _buildLoadingStatCard(String title, IconData icon, Color color) {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
@@ -534,7 +628,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             width: 40,
             height: 20,
             decoration: BoxDecoration(
-              color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2),
+              color: AppTheme.getSecondaryTextColor(context)
+                  .withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Center(
@@ -649,7 +744,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                   AppTheme.primaryblue,
                   () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const LandlordWalletScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const LandlordWalletScreen()),
                   ),
                 ),
               ),
@@ -661,7 +757,8 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
                   Colors.orange,
                   () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const LandlordRefundsScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const LandlordRefundsScreen()),
                   ),
                 ),
               ),
@@ -672,19 +769,20 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
     );
   }
 
-  Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionCard(
+      String title, IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(20),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 32),
+            Icon(icon, color: color, size: 28),
             SizedBox(height: 8),
             Text(
               title,

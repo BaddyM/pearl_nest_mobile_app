@@ -193,7 +193,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             themeProvider.toggleTheme();
           },
         ),
-        _buildDropdownItem(Icons.attach_money_outlined, 'Currency', '$_selectedCurrency is active', _selectedCurrency, ['UGX', 'USD'], (value) async {
+        _buildDropdownItem(
+            Icons.attach_money_outlined,
+            'Currency',
+            '$_selectedCurrency is active',
+            _selectedCurrency,
+            ['UGX', 'USD'], (value) async {
           final SharedPreferences prefs = await SharedPreferences.getInstance();
           Response response = await ApiClient.get("/currency");
           if (response.statusCode == 200 || response.statusCode == 201) {
@@ -205,10 +210,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _selectedCurrency = value ?? "UGX";
               });
             } else {
-              CustomSnackBar.showInfo(context, "Sorr, failed to update the currency.\nCurrency hasn't been set yet by Pearl Nest Estates.");
+              CustomSnackBar.showInfo(context,
+                  "Sorr, failed to update the currency.\nCurrency hasn't been set yet by Pearl Nest Estates.");
             }
           } else {
-            CustomSnackBar.showError(context, "Sorr, failed to update the currency.\nPlease try again later");
+            CustomSnackBar.showError(context,
+                "Sorr, failed to update the currency.\nPlease try again later");
           }
         }),
       ],
@@ -303,7 +310,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: Container(
         padding: EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isDestructive ? Colors.red.withOpacity(0.1) : AppTheme.primaryblue.withOpacity(0.1),
+          color: isDestructive
+              ? Colors.red.withOpacity(0.1)
+              : AppTheme.primaryblue.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -434,7 +443,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         decoration: BoxDecoration(
           color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5)),
+          border: Border.all(
+              color: AppTheme.getSecondaryTextColor(context).withOpacity(0.5)),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
@@ -473,7 +483,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_isUpdatingNotifications) return;
 
     if (preferenceType == 'push' && value) {
-      final permissionGranted = await NotificationService.requestPushPermission();
+      final permissionGranted =
+          await NotificationService.requestPushPermission();
       if (!mounted) return;
       if (!permissionGranted) {
         _showSnackBar(
@@ -500,15 +511,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       setState(() {});
 
-      // Call the updateProfile method with all current values and the updated notification preferences
-      final result = await AuthService.updateProfile(
-        name: widget.user.name,
-        email: widget.user.email,
-        phone: widget.user.phone,
-        bio: widget.user.bio,
-        pushNotifications: _pushNotifications,
-        smsNotifications: false,
-        emailNotifications: _emailNotifications,
+      final result = await AuthService.updateNotificationPreference(
+        preferenceType: preferenceType,
+        value: value,
       );
 
       if (result['success'] == true) {
@@ -668,7 +673,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (context) => ForgotPasswordScreen(
           isChangePassword: true,
           onPasswordChangeSuccess: () {
-            CustomSnackBar.showSuccess(context, 'Password changed successfully');
+            CustomSnackBar.showSuccess(
+                context, 'Password changed successfully');
           },
         ),
       ),

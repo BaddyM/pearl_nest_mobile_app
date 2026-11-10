@@ -125,12 +125,14 @@ class _SearchScreenState extends State<SearchScreen> {
       // Apply local filters for features not supported by API
       properties = _applyLocalFilters(properties);
 
+      if (!mounted) return;
       setState(() {
         _filteredProperties = properties;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('❌ Error performing search: $e');
+      if (!mounted) return;
       setState(() {
         _filteredProperties = [];
         _errorMessage = 'An error occurred while searching. Please try again.';

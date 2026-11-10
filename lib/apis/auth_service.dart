@@ -20,7 +20,8 @@ class AuthService {
   static const int _maxSessionDays = 60;
 
   // Logging helper
-  static void _logRequest(String endpoint, Map<String, dynamic>? data, {String? token}) {
+  static void _logRequest(String endpoint, Map<String, dynamic>? data,
+      {String? token}) {
     if (kDebugMode) {
       // //debugPrint('🚀 AUTH REQUEST: $endpoint');
       if (data != null) {
@@ -81,7 +82,8 @@ class AuthService {
   }
 
   // Private method to validate API response structure
-  static Map<String, dynamic> _validateResponse(Response response, {List<String> requiredFields = const []}) {
+  static Map<String, dynamic> _validateResponse(Response response,
+      {List<String> requiredFields = const []}) {
     final data = response.data as Map<String, dynamic>;
 
     for (String field in requiredFields) {
@@ -105,10 +107,12 @@ class AuthService {
     } else if (error.toString().contains('userId should not be empty')) {
       message = 'User session expired. Please login again.';
       code = 'USER_ID_MISSING';
-    } else if (error.toString().contains('SocketException') || error.toString().contains('Please check your internet connection')) {
+    } else if (error.toString().contains('SocketException') ||
+        error.toString().contains('Please check your internet connection')) {
       message = 'No internet connection. Please check your network.';
       code = 'NO_INTERNET';
-    } else if (error.toString().contains('TimeoutException') || error.toString().contains('Connection timeout')) {
+    } else if (error.toString().contains('TimeoutException') ||
+        error.toString().contains('Connection timeout')) {
       message = 'Request timed out. Please try again.';
       code = 'TIMEOUT';
     } else if (error.toString().contains('HandshakeException')) {
@@ -117,12 +121,15 @@ class AuthService {
     } else if (error.toString().contains('FormatException')) {
       message = 'Invalid server response. Please try again later.';
       code = 'FORMAT_ERROR';
-    } else if (error.toString().contains('Cannot POST') || error.toString().contains('Cannot GET')) {
+    } else if (error.toString().contains('Cannot POST') ||
+        error.toString().contains('Cannot GET')) {
       // Handle HTTP method errors - likely server is down or endpoint doesn't exist
       if (operation == 'login') {
-        message = 'Login service is temporarily unavailable. Please try again later.';
+        message =
+            'Login service is temporarily unavailable. Please try again later.';
       } else if (operation == 'registration') {
-        message = 'Registration service is temporarily unavailable. Please try again later.';
+        message =
+            'Registration service is temporarily unavailable. Please try again later.';
       } else {
         message = 'Service is temporarily unavailable. Please try again later.';
       }
@@ -130,10 +137,12 @@ class AuthService {
     } else if (error.toString().contains('XMLHttpRequest error')) {
       message = 'Connection failed. Please check your internet connection.';
       code = 'CONNECTION_ERROR';
-    } else if (error.toString().contains('Connection refused') || error.toString().contains('Connection failed')) {
+    } else if (error.toString().contains('Connection refused') ||
+        error.toString().contains('Connection failed')) {
       message = 'Unable to connect to server. Please try again later.';
       code = 'CONNECTION_REFUSED';
-    } else if (error.toString().contains('Server error') || error.toString().contains('500 Internal Server Error')) {
+    } else if (error.toString().contains('Server error') ||
+        error.toString().contains('500 Internal Server Error')) {
       message = 'Server error. Please try again later.';
       code = 'SERVER_ERROR';
     } else {
@@ -166,7 +175,9 @@ class AuthService {
     await prefs.setString(_tokenKey, token);
 
     // Calculate expiry time (default to 60 days if not provided)
-    final expiryDuration = expiresIn != null ? Duration(seconds: expiresIn) : Duration(days: _maxSessionDays);
+    final expiryDuration = expiresIn != null
+        ? Duration(seconds: expiresIn)
+        : Duration(days: _maxSessionDays);
 
     final expiryTime = DateTime.now().add(expiryDuration);
     await prefs.setInt(_tokenExpiryKey, expiryTime.millisecondsSinceEpoch);
@@ -268,11 +279,14 @@ class AuthService {
       if (name.trim().isEmpty) throw ValidationException('Name is required');
       if (email.trim().isEmpty) throw ValidationException('Email is required');
       if (password.length < _passwordMinLength) {
-        throw ValidationException('Password must be at least $_passwordMinLength characters');
+        throw ValidationException(
+            'Password must be at least $_passwordMinLength characters');
       }
-      if (phone.trim().isEmpty) throw ValidationException('Phone number is required');
+      if (phone.trim().isEmpty)
+        throw ValidationException('Phone number is required');
       if (!acceptedTermsAndPrivacyPolicy) {
-        throw ValidationException('Agree to the Terms of Service and acknowledge the Privacy Policy to continue');
+        throw ValidationException(
+            'Agree to the Terms of Service and acknowledge the Privacy Policy to continue');
       }
 
       // Create request data according to API specification
@@ -319,7 +333,8 @@ class AuthService {
     try {
       if (email.trim().isEmpty) throw ValidationException('Email is required');
       if (!RegExp(r'^\d{6}$').hasMatch(otp.trim())) {
-        throw ValidationException('Enter the six-digit code sent to your email');
+        throw ValidationException(
+            'Enter the six-digit code sent to your email');
       }
 
       final response = await ApiClient.post('/user/verify-registration', {
@@ -338,11 +353,14 @@ class AuthService {
       await _saveToken(token);
       ApiClient.setAuthToken(token);
       final profileResponse = await ApiClient.get('/user/userProfile/fetch');
-      final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
-      final user = User.fromJson(Map<String, dynamic>.from(profileData['data'] as Map));
+      final profileData =
+          _validateResponse(profileResponse, requiredFields: ['data']);
+      final user =
+          User.fromJson(Map<String, dynamic>.from(profileData['data'] as Map));
       await saveUserData(user);
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('role', user.userType.toString().split('.').last.toUpperCase());
+      await prefs.setString(
+          'role', user.userType.toString().split('.').last.toUpperCase());
       return {
         'success': true,
         'user': user,
@@ -354,7 +372,8 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> resendRegistrationOtp(String email) async {
+  static Future<Map<String, dynamic>> resendRegistrationOtp(
+      String email) async {
     try {
       if (email.trim().isEmpty) throw ValidationException('Email is required');
       final response = await ApiClient.post('/user/resend-registration-otp', {
@@ -363,20 +382,23 @@ class AuthService {
       final responseData = _validateResponse(response);
       if (response.statusCode != 200 || responseData['success'] != true) {
         throw AuthException(
-          responseData['message']?.toString() ?? 'Could not resend the verification code',
+          responseData['message']?.toString() ??
+              'Could not resend the verification code',
           statusCode: response.statusCode,
         );
       }
       return {
         'success': true,
-        'message': responseData['message'] ?? 'A new verification code has been sent.',
+        'message':
+            responseData['message'] ?? 'A new verification code has been sent.',
       };
     } catch (error) {
       return _handleError(error, 'registration OTP resend');
     }
   }
 
-  static Future<Map<String, dynamic>> login(String email, String password) async {
+  static Future<Map<String, dynamic>> login(
+      String email, String password) async {
     try {
       // Input validation
       if (email.trim().isEmpty) throw ValidationException('Email is required');
@@ -402,7 +424,8 @@ class AuthService {
       Response response = await ApiClient.post('/user/login', requestData);
 
       if (response.statusCode == 200) {
-        final responseData = _validateResponse(response, requiredFields: ['accessToken']);
+        final responseData =
+            _validateResponse(response, requiredFields: ['accessToken']);
 
         // Save userId if provided in the response
         if (responseData['userId'] != null) {
@@ -419,31 +442,37 @@ class AuthService {
             'role': response.data["role"],
             'tempToken': responseData['accessToken'],
             'email': email.trim().toLowerCase(),
-            'otp': responseData['otp'].toString(), // Include the OTP from response
-            'message': 'An OTP has been sent to your email. Please verify your login.',
+            'otp':
+                responseData['otp'].toString(), // Include the OTP from response
+            'message':
+                'An OTP has been sent to your email. Please verify your login.',
             'statusCode': response.statusCode,
           };
         }
 
         // If no OTP required, save token and proceed with normal login
-        await _saveToken(responseData['accessToken'], expiresIn: responseData['expiresIn']);
+        await _saveToken(responseData['accessToken'],
+            expiresIn: responseData['expiresIn']);
 
         // Set the token for subsequent requests
         ApiClient.setAuthToken(responseData['accessToken']);
 
         // Fetch user profile data after successful login
         try {
-          Response profileResponse = await ApiClient.get('/user/userProfile/fetch');
+          Response profileResponse =
+              await ApiClient.get('/user/userProfile/fetch');
           _logResponse('/user/userProfile/fetch', profileResponse);
 
           if (profileResponse.statusCode == 200) {
-            final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
+            final profileData =
+                _validateResponse(profileResponse, requiredFields: ['data']);
 
             // Create user object from profile data
             final userData = profileData['data'];
 
             // If profile data doesn't have ID, use the one from login response
-            if ((userData['id'] == null || userData['id'].toString().isEmpty) && responseData['userId'] != null) {
+            if ((userData['id'] == null || userData['id'].toString().isEmpty) &&
+                responseData['userId'] != null) {
               userData['id'] = responseData['userId'].toString();
               if (kDebugMode) {
                 // //debugPrint('🔧 Profile data missing ID, using login userId: ${responseData['userId']}');
@@ -504,13 +533,17 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> verifyOtp(String email, String userInputOtp, String serverOtp, String tempToken) async {
+  static Future<Map<String, dynamic>> verifyOtp(String email,
+      String userInputOtp, String serverOtp, String tempToken) async {
     try {
       // Input validation
       if (email.trim().isEmpty) throw ValidationException('Email is required');
-      if (userInputOtp.trim().isEmpty) throw ValidationException('OTP is required');
-      if (serverOtp.isEmpty) throw ValidationException('Server OTP is required');
-      if (tempToken.isEmpty) throw ValidationException('Temporary token is required');
+      if (userInputOtp.trim().isEmpty)
+        throw ValidationException('OTP is required');
+      if (serverOtp.isEmpty)
+        throw ValidationException('Server OTP is required');
+      if (tempToken.isEmpty)
+        throw ValidationException('Temporary token is required');
 
       //debugPrint('🔐 Client-side OTP verification:');
       //debugPrint('User Input: ${userInputOtp.trim()}');
@@ -532,11 +565,13 @@ class AuthService {
         ApiClient.setAuthToken(tempToken);
         // Fetch user profile data after successful OTP verification
         try {
-          final profileResponse = await ApiClient.get('/user/userProfile/fetch');
+          final profileResponse =
+              await ApiClient.get('/user/userProfile/fetch');
           _logResponse('/user/userProfile/fetch', profileResponse);
 
           if (profileResponse.statusCode == 200) {
-            final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
+            final profileData =
+                _validateResponse(profileResponse, requiredFields: ['data']);
 
             // Create user object from profile data
             final userData = profileData['data'];
@@ -569,7 +604,8 @@ class AuthService {
 
       // Client-side OTP verification
       if (userInputOtp.trim() != serverOtp.trim()) {
-        throw AuthException('Invalid OTP. Please check the code and try again.', code: 'INVALID_OTP');
+        throw AuthException('Invalid OTP. Please check the code and try again.',
+            code: 'INVALID_OTP');
       }
 
       // //debugPrint('✅ OTP verification successful - proceeding with user profile fetch');
@@ -585,7 +621,8 @@ class AuthService {
       _logResponse('/user/userProfile/fetch', profileResponse);
 
       if (profileResponse.statusCode == 200) {
-        final profileData = _validateResponse(profileResponse, requiredFields: ['data']);
+        final profileData =
+            _validateResponse(profileResponse, requiredFields: ['data']);
 
         // Create user object from profile data
         final userData = profileData['data'];
@@ -615,11 +652,13 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> resendOtp(String email, String tempToken) async {
+  static Future<Map<String, dynamic>> resendOtp(
+      String email, String tempToken) async {
     try {
       // Input validation
       if (email.trim().isEmpty) throw ValidationException('Email is required');
-      if (tempToken.isEmpty) throw ValidationException('Temporary token is required');
+      if (tempToken.isEmpty)
+        throw ValidationException('Temporary token is required');
 
       final requestData = {
         'email': email.trim().toLowerCase(),
@@ -640,13 +679,15 @@ class AuthService {
 
           return {
             'success': true,
-            'message': responseData['message'] ?? 'OTP has been resent to your email',
+            'message':
+                responseData['message'] ?? 'OTP has been resent to your email',
             'statusCode': response.statusCode,
           };
         } else if (response.statusCode == 429) {
           final errorData = response.data;
           throw AuthException(
-            errorData['message'] ?? 'Too many requests. Please wait before requesting another OTP.',
+            errorData['message'] ??
+                'Too many requests. Please wait before requesting another OTP.',
             code: 'TOO_MANY_REQUESTS',
           );
         } else {
@@ -691,7 +732,8 @@ class AuthService {
         _logResponse('/auth/validate', response);
 
         if (response.statusCode == 200) {
-          final responseData = _validateResponse(response, requiredFields: ['data']);
+          final responseData =
+              _validateResponse(response, requiredFields: ['data']);
 
           return {
             'success': true,
@@ -722,7 +764,8 @@ class AuthService {
 
   static Future<Map<String, dynamic>> refreshToken(String currentToken) async {
     try {
-      if (currentToken.isEmpty) throw ValidationException('Current token is required');
+      if (currentToken.isEmpty)
+        throw ValidationException('Current token is required');
 
       _logRequest('/auth/refresh', {}, token: currentToken);
 
@@ -749,7 +792,8 @@ class AuthService {
             'statusCode': response.statusCode,
           };
         } else if (response.statusCode == 401) {
-          throw AuthException('Refresh token has expired', code: 'REFRESH_TOKEN_EXPIRED');
+          throw AuthException('Refresh token has expired',
+              code: 'REFRESH_TOKEN_EXPIRED');
         } else {
           throw AuthException('Token refresh failed');
         }
@@ -789,7 +833,14 @@ class AuthService {
       }
 
       // Always clear local storage
-      await Future.wait([prefs.remove(_tokenKey), prefs.remove(_userDataKey), prefs.remove(_lastLoginKey), prefs.remove(_tokenExpiryKey), prefs.remove(_userIdKey), prefs.remove('role')]);
+      await Future.wait([
+        prefs.remove(_tokenKey),
+        prefs.remove(_userDataKey),
+        prefs.remove(_lastLoginKey),
+        prefs.remove(_tokenExpiryKey),
+        prefs.remove(_userIdKey),
+        prefs.remove('role')
+      ]);
       try {
         await ChatCacheService.clearAll();
       } catch (error) {
@@ -822,24 +873,29 @@ class AuthService {
   }) async {
     try {
       // Input validation
-      if (currentPassword.isEmpty) throw ValidationException('Current password is required');
+      if (currentPassword.isEmpty)
+        throw ValidationException('Current password is required');
       if (newPassword.length < _passwordMinLength) {
-        throw ValidationException('New password must be at least $_passwordMinLength characters');
+        throw ValidationException(
+            'New password must be at least $_passwordMinLength characters');
       }
       if (currentPassword == newPassword) {
-        throw ValidationException('New password must be different from current password');
+        throw ValidationException(
+            'New password must be different from current password');
       }
 
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(_tokenKey);
 
       if (token == null || token.isEmpty) {
-        throw AuthException('Authentication required', code: 'NOT_AUTHENTICATED');
+        throw AuthException('Authentication required',
+            code: 'NOT_AUTHENTICATED');
       }
 
       // Check if token is expired locally
       if (await isTokenExpired()) {
-        throw AuthException('Session expired. Please login again.', code: 'TOKEN_EXPIRED');
+        throw AuthException('Session expired. Please login again.',
+            code: 'TOKEN_EXPIRED');
       }
 
       final requestData = {
@@ -854,7 +910,8 @@ class AuthService {
       ApiClient.setAuthToken(token);
 
       try {
-        final response = await ApiClient.post('/auth/change-password', requestData);
+        final response =
+            await ApiClient.post('/auth/change-password', requestData);
         _logResponse('/auth/change-password', response);
 
         if (response.statusCode == 200) {
@@ -865,9 +922,11 @@ class AuthService {
           };
         } else if (response.statusCode == 400) {
           final errorData = response.data;
-          throw AuthException(errorData['message'] ?? 'Invalid current password');
+          throw AuthException(
+              errorData['message'] ?? 'Invalid current password');
         } else if (response.statusCode == 401) {
-          throw AuthException('Session expired. Please login again.', code: 'TOKEN_EXPIRED');
+          throw AuthException('Session expired. Please login again.',
+              code: 'TOKEN_EXPIRED');
         } else {
           final errorData = response.data;
           throw AuthException(errorData['message'] ?? 'Password change failed');
@@ -939,7 +998,8 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       final userJson = jsonEncode(user.toJson());
       await prefs.setString(_userDataKey, userJson);
-      await prefs.setString("role", user.userType.toString().split('.').last.toUpperCase());
+      await prefs.setString(
+          "role", user.userType.toString().split('.').last.toUpperCase());
       await prefs.setInt(_lastLoginKey, DateTime.now().millisecondsSinceEpoch);
 
       // Only save user ID if it's not empty to avoid overwriting existing valid ID
@@ -975,7 +1035,8 @@ class AuthService {
 
       // Check if session is older than configured max days
       final sessionAge = DateTime.now().millisecondsSinceEpoch - lastLogin;
-      final maxSessionAge = _maxSessionDays * 24 * 60 * 60 * 1000; // days in milliseconds
+      final maxSessionAge =
+          _maxSessionDays * 24 * 60 * 60 * 1000; // days in milliseconds
 
       return sessionAge < maxSessionAge;
     } catch (e) {
@@ -1001,7 +1062,8 @@ class AuthService {
       _logResponse('/user/userProfile/fetch', response);
 
       if (response.statusCode == 200) {
-        final responseData = _validateResponse(response, requiredFields: ['data']);
+        final responseData =
+            _validateResponse(response, requiredFields: ['data']);
         //debugPrint("User profile data: $responseData");
         // Create user object from fresh profile data
         final userData = responseData['data'];
@@ -1054,7 +1116,8 @@ class AuthService {
         // Try to get user again after fixing
         final updatedUser = await getCurrentUser();
         if (updatedUser == null || updatedUser.id.isEmpty) {
-          throw AuthException('Unable to retrieve user ID. Please login again.');
+          throw AuthException(
+              'Unable to retrieve user ID. Please login again.');
         }
       }
 
@@ -1064,16 +1127,22 @@ class AuthService {
 
       // Create multipart form data for the image
       final formData = FormData();
-      formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath, filename: 'profile_image.jpg')));
+      formData.files.add(MapEntry(
+          'image',
+          await MultipartFile.fromFile(imagePath,
+              filename: 'profile_image.jpg')));
 
-      _logRequest('/user/profilePicture/$userId', {'multipart': 'true', 'hasImage': true});
+      _logRequest('/user/profilePicture/$userId',
+          {'multipart': 'true', 'hasImage': true});
 
       // Use the dedicated profile picture endpoint
-      final response = await ApiClient.patchMultipart('/user/profilePicture/$userId', formData);
+      final response = await ApiClient.patchMultipart(
+          '/user/profilePicture/$userId', formData);
       _logResponse('/user/profilePicture/$userId', response);
 
       if (response.statusCode == 200) {
-        final responseData = _validateResponse(response, requiredFields: ['data']);
+        final responseData =
+            _validateResponse(response, requiredFields: ['data']);
 
         // Update stored user data with new profile image
         final updatedUser = User.fromJson(responseData['data']);
@@ -1082,7 +1151,8 @@ class AuthService {
         return {
           'success': true,
           'user': updatedUser,
-          'message': responseData['message'] ?? 'Profile picture updated successfully',
+          'message':
+              responseData['message'] ?? 'Profile picture updated successfully',
           'statusCode': response.statusCode,
         };
       } else {
@@ -1112,7 +1182,8 @@ class AuthService {
       // Input validation
       if (name.trim().isEmpty) throw ValidationException('Name is required');
       if (email.trim().isEmpty) throw ValidationException('Email is required');
-      if (phone.trim().isEmpty) throw ValidationException('Phone number is required');
+      if (phone.trim().isEmpty)
+        throw ValidationException('Phone number is required');
 
       // Get current user data to get userId and role
       final currentUser = await getCurrentUser();
@@ -1130,7 +1201,8 @@ class AuthService {
         // Try to get user again after fixing
         final updatedUser = await getCurrentUser();
         if (updatedUser == null || updatedUser.id.isEmpty) {
-          throw AuthException('Unable to retrieve user ID. Please login again.');
+          throw AuthException(
+              'Unable to retrieve user ID. Please login again.');
         }
         // //debugPrint('🔧 Using updated user with ID: ${updatedUser.id}');
       }
@@ -1159,17 +1231,22 @@ class AuthService {
 
       // Add optional fields if provided
       if (bio != null) requestData['bio'] = bio;
-      if (pushNotifications != null) requestData['pushNotifications'] = pushNotifications;
-      if (smsNotifications != null) requestData['smsNotifications'] = smsNotifications;
-      if (emailNotifications != null) requestData['emailNotifications'] = emailNotifications;
+      if (pushNotifications != null)
+        requestData['pushNotifications'] = pushNotifications;
+      if (smsNotifications != null)
+        requestData['smsNotifications'] = smsNotifications;
+      if (emailNotifications != null)
+        requestData['emailNotifications'] = emailNotifications;
 
       _logRequest('/user/userProfile/update', requestData);
 
-      final response = await ApiClient.patch('/user/userProfile/update', requestData);
+      final response =
+          await ApiClient.patch('/user/userProfile/update', requestData);
       _logResponse('/user/userProfile/update', response);
 
       if (response.statusCode == 200) {
-        final responseData = _validateResponse(response, requiredFields: ['data']);
+        final responseData =
+            _validateResponse(response, requiredFields: ['data']);
 
         // Update stored user data
         final finalUpdatedUser = User.fromJson(responseData['data']);
@@ -1190,6 +1267,53 @@ class AuthService {
       }
     } catch (e) {
       return _handleError(e, 'profile update');
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateNotificationPreference({
+    required String preferenceType,
+    required bool value,
+  }) async {
+    try {
+      final preferenceField = switch (preferenceType) {
+        'push' => 'pushNotifications',
+        'sms' => 'smsNotifications',
+        'email' => 'emailNotifications',
+        _ => throw ValidationException('Unknown notification preference'),
+      };
+      final currentUser = await getCurrentUser();
+      if (currentUser == null) {
+        throw AuthException('User not found. Please login again.');
+      }
+
+      final response = await ApiClient.patch(
+        '/user/userProfile/update',
+        {preferenceField: value},
+      );
+
+      if (response.statusCode != 200) {
+        final errorData = response.data;
+        throw AuthException(
+          errorData['message'] ?? 'Notification preference update failed',
+          statusCode: response.statusCode,
+        );
+      }
+
+      final responseData =
+          _validateResponse(response, requiredFields: ['data']);
+      final updatedUserData = Map<String, dynamic>.from(currentUser.toJson())
+        ..addAll(Map<String, dynamic>.from(responseData['data']));
+      final updatedUser = User.fromJson(updatedUserData);
+      await saveUserData(updatedUser);
+
+      return {
+        'success': true,
+        'user': updatedUser,
+        'message': responseData['message'] ?? 'Notification preference updated',
+        'statusCode': response.statusCode,
+      };
+    } catch (e) {
+      return _handleError(e, 'notification preference update');
     }
   }
 
@@ -1247,7 +1371,8 @@ class AuthService {
         final updatedUser = await getCurrentUser();
         if (updatedUser == null || updatedUser.id.isEmpty) {
           // //print('❌ User ID still empty after fix attempt');
-          throw AuthException('Unable to retrieve user ID. Please login again.');
+          throw AuthException(
+              'Unable to retrieve user ID. Please login again.');
         }
         // //print('✅ User ID fixed: "${updatedUser.id}"');
       }
@@ -1262,7 +1387,9 @@ class AuthService {
       // //print('🚀 Making API call to /currency/update...');
 
       // Log API client configuration
-      final baseUrl = ApiClient.currentAuthToken != null ? "authenticated" : "not authenticated";
+      final baseUrl = ApiClient.currentAuthToken != null
+          ? "authenticated"
+          : "not authenticated";
       // //print('🚀 Auth status: $baseUrl');
       // //print('🚀 Current auth token in ApiClient: ${ApiClient.currentAuthToken?.substring(0, 20) ?? "none"}...');
 
@@ -1278,7 +1405,8 @@ class AuthService {
       _logResponse('/currency/update', response);
 
       // Handle both 200 and 400 status codes if response contains success=true
-      if (response.statusCode == 200 || (response.statusCode == 400 && response.data?['success'] == true)) {
+      if (response.statusCode == 200 ||
+          (response.statusCode == 400 && response.data?['success'] == true)) {
         //debugPrint('✅ Currency update successful (status: ${response.statusCode})');
         final responseData = response.data ?? {};
 
@@ -1345,10 +1473,12 @@ class AuthService {
 
         return {
           'success': true,
-          'message': response.data?['message'] ?? 'Account deleted successfully',
+          'message':
+              response.data?['message'] ?? 'Account deleted successfully',
         };
       } else {
-        final errorMessage = response.data?['message'] ?? 'Failed to delete account';
+        final errorMessage =
+            response.data?['message'] ?? 'Failed to delete account';
         if (kDebugMode) {
           // //debugPrint('❌ Account deletion failed: $errorMessage');
         }
@@ -1371,7 +1501,8 @@ class AuthService {
       } else if (e.response?.statusCode == 409) {
         errorMessage = 'Account cannot be deleted due to pending transactions.';
       } else {
-        errorMessage = e.response?.data?['message'] ?? 'Network error occurred while deleting account. Please try again.';
+        errorMessage = e.response?.data?['message'] ??
+            'Network error occurred while deleting account. Please try again.';
       }
 
       return {
@@ -1383,7 +1514,8 @@ class AuthService {
       _logError('deleteAccount', e);
       return {
         'success': false,
-        'message': 'An unexpected error occurred while deleting account. Please try again.',
+        'message':
+            'An unexpected error occurred while deleting account. Please try again.',
       };
     }
   }
@@ -1465,11 +1597,14 @@ class AuthService {
           String? userIdFromData;
           if (userData['id'] != null && userData['id'].toString().isNotEmpty) {
             userIdFromData = userData['id'].toString();
-          } else if (userData['_id'] != null && userData['_id'].toString().isNotEmpty) {
+          } else if (userData['_id'] != null &&
+              userData['_id'].toString().isNotEmpty) {
             userIdFromData = userData['_id'].toString();
-          } else if (userData['userId'] != null && userData['userId'].toString().isNotEmpty) {
+          } else if (userData['userId'] != null &&
+              userData['userId'].toString().isNotEmpty) {
             userIdFromData = userData['userId'].toString();
-          } else if (userData['user_id'] != null && userData['user_id'].toString().isNotEmpty) {
+          } else if (userData['user_id'] != null &&
+              userData['user_id'].toString().isNotEmpty) {
             userIdFromData = userData['user_id'].toString();
           }
 
@@ -1505,7 +1640,8 @@ class AuthService {
 
   static Future<String?> _getFcmToken() async {
     try {
-      return NotificationService.fcmToken ?? await NotificationService.refreshFCMToken();
+      return NotificationService.fcmToken ??
+          await NotificationService.refreshFCMToken();
     } catch (e, stack) {
       // //debugPrint('FCM token fetch error: $e');
       // //debugPrint('Stack trace: $stack');
@@ -1530,7 +1666,8 @@ class AuthService {
 
       _logRequest('/user/sendResetPasswordOTP', requestData);
 
-      final response = await ApiClient.patch('/user/sendResetPasswordOTP', requestData);
+      final response =
+          await ApiClient.patch('/user/sendResetPasswordOTP', requestData);
       _logResponse('/user/sendResetPasswordOTP', response);
 
       if (response.statusCode == 200 && response.data != null) {
@@ -1557,8 +1694,11 @@ class AuthService {
     } on DioException catch (e) {
       _logError('send reset password OTP', e);
 
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.sendTimeout) {
-        throw TimeoutException('Connection timeout. Please check your internet connection.');
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw TimeoutException(
+            'Connection timeout. Please check your internet connection.');
       }
 
       if (e.response?.statusCode == 404) {
@@ -1582,14 +1722,16 @@ class AuthService {
   }
 
   /// Reset password with new password
-  static Future<Map<String, dynamic>> resetPassword(String newPassword, String email) async {
+  static Future<Map<String, dynamic>> resetPassword(
+      String newPassword, String email) async {
     try {
       // Validate password
       if (newPassword.trim().isEmpty) {
         throw ValidationException('Password is required');
       }
       if (newPassword.length < _passwordMinLength) {
-        throw ValidationException('Password must be at least $_passwordMinLength characters long');
+        throw ValidationException(
+            'Password must be at least $_passwordMinLength characters long');
       }
 
       final requestData = {
@@ -1625,8 +1767,11 @@ class AuthService {
     } on DioException catch (e) {
       _logError('reset password', e);
 
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.sendTimeout) {
-        throw TimeoutException('Connection timeout. Please check your internet connection.');
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw TimeoutException(
+            'Connection timeout. Please check your internet connection.');
       }
 
       throw AuthException(
