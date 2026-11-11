@@ -428,50 +428,110 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
             ),
           SizedBox(height: 16),
           Container(
-            padding: EdgeInsets.all(16),
+            margin: const EdgeInsets.only(top: 16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppTheme.getCardColor(context),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppTheme.primaryblue.withValues(alpha: 0.16),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: AppTheme.getSecondaryTextColor(context)
-                      .withValues(alpha: 0.1),
-                  blurRadius: 5,
-                  offset: Offset(0, 1),
+                      .withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (widget.landlord.rating > 0) ...[
-                  Icon(Icons.star, color: Colors.amber, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    '${widget.landlord.rating} Rating',
-                    style: TextStyle(
-                      color: AppTheme.getTextColor(context),
-                      fontWeight: FontWeight.w600,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.workspace_premium_outlined,
+                      color: AppTheme.primaryblue,
+                      size: 18,
                     ),
-                  ),
-                  Spacer(),
-                ],
-                if (widget.landlord.isVerified)
-                  Row(
-                    children: [
-                      Icon(Icons.verified,
-                          color: AppTheme.primaryblue, size: 16),
-                      SizedBox(width: 4),
-                      Text(
-                        'Verified',
-                        style: TextStyle(
-                          color: AppTheme.primaryblue,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    SizedBox(width: 7),
+                    Text(
+                      'GUEST TRUST',
+                      style: TextStyle(
+                        color: AppTheme.primaryblue,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Text(
+                  widget.landlord.rating > 0
+                      ? 'A ${widget.landlord.rating.toStringAsFixed(1)} guest rating helps your listings stand out.'
+                      : 'Guest ratings will appear here after your first review.',
+                  style: TextStyle(
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontSize: 12,
                   ),
+                ),
+                SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (widget.landlord.rating > 0)
+                      _buildTrustBadge(
+                        icon: Icons.star_rounded,
+                        label:
+                            '${widget.landlord.rating.toStringAsFixed(1)} rating',
+                        color: Colors.amber.shade800,
+                      ),
+                    _buildTrustBadge(
+                      icon: widget.landlord.isVerified
+                          ? Icons.verified
+                          : Icons.verified_outlined,
+                      label: widget.landlord.isVerified
+                          ? 'Verified host'
+                          : 'Not verified',
+                      color: widget.landlord.isVerified
+                          ? AppTheme.primaryblue
+                          : AppTheme.getSecondaryTextColor(context),
+                    ),
+                  ],
+                ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrustBadge({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 15),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

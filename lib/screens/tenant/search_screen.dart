@@ -55,7 +55,11 @@ class SearchFilters {
   }
 
   bool get hasActiveFilters {
-    return propertyType != 'All' || priceRange.start != 0 || priceRange.end != 5000 || bedrooms != null || selectedAmenities.isNotEmpty;
+    return propertyType != 'All' ||
+        priceRange.start != 0 ||
+        priceRange.end != 5000 ||
+        bedrooms != null ||
+        selectedAmenities.isNotEmpty;
   }
 
   void clear() {
@@ -97,7 +101,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // Helper method to check if current user has favorited this property
   bool _isPropertyFavorited(Property property) {
-    return property.favourites.any((favourite) => favourite['userId'] == widget.user.id);
+    return property.favourites
+        .any((favourite) => favourite['userId'] == widget.user.id);
   }
 
   Future<void> _performSearch() async {
@@ -120,7 +125,9 @@ class _SearchScreenState extends State<SearchScreen> {
       );
 
       List<Property> apiProperties = List<Property>.from(result);
-      List<Property> properties = apiProperties.where((property) => property.availabilityStatus == true).toList();
+      List<Property> properties = apiProperties
+          .where((property) => property.availabilityStatus == true)
+          .toList();
 
       // Apply local filters for features not supported by API
       properties = _applyLocalFilters(properties);
@@ -212,26 +219,38 @@ class _SearchScreenState extends State<SearchScreen> {
 
     // Apply property type filter locally if needed
     if (_filters.propertyType != 'All') {
-      filtered = filtered.where((property) => property.type.toString().split('.').last.toLowerCase() == _filters.propertyType.toLowerCase()).toList();
+      filtered = filtered
+          .where((property) =>
+              property.type.toString().split('.').last.toLowerCase() ==
+              _filters.propertyType.toLowerCase())
+          .toList();
     }
 
     // Apply bedrooms filter locally if needed
     if (_filters.bedrooms != null) {
-      filtered = filtered.where((property) => property.bedrooms == _filters.bedrooms).toList();
+      filtered = filtered
+          .where((property) => property.bedrooms == _filters.bedrooms)
+          .toList();
     }
 
     // Apply amenities filter locally if needed
     if (_filters.selectedAmenities.isNotEmpty) {
       filtered = filtered.where((property) {
-        final propertyAmenities = property.amenities.map((a) => a.toLowerCase()).toList();
-        return _filters.selectedAmenities.every((amenity) => propertyAmenities.contains(amenity.toLowerCase()));
+        final propertyAmenities =
+            property.amenities.map((a) => a.toLowerCase()).toList();
+        return _filters.selectedAmenities.every(
+            (amenity) => propertyAmenities.contains(amenity.toLowerCase()));
       }).toList();
     }
 
     // Apply price range filter locally if we're doing text search
     // (price search API handles this, but text search might need local filtering)
     if (_filters.priceRange.start != 0 || _filters.priceRange.end != 5000) {
-      filtered = filtered.where((property) => property.price >= _filters.priceRange.start && property.price <= _filters.priceRange.end).toList();
+      filtered = filtered
+          .where((property) =>
+              property.price >= _filters.priceRange.start &&
+              property.price <= _filters.priceRange.end)
+          .toList();
     }
 
     return filtered;
@@ -246,7 +265,8 @@ class _SearchScreenState extends State<SearchScreen> {
       setState(() {
         if (wasLiked) {
           // Remove from favorites
-          property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+          property.favourites.removeWhere(
+              (favourite) => favourite['userId'] == widget.user.id);
         } else {
           // Add to favorites
           property.favourites.add({
@@ -262,7 +282,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
       if (result['success'] == true) {
         // Success - UI is already updated optimistically
-        final message = wasLiked ? 'Removed from favorites' : 'Added to favorites';
+        final message =
+            wasLiked ? 'Removed from favorites' : 'Added to favorites';
         //debugPrint('✅ $message for property: ${property.id}');
       } else {
         // API call failed, revert the optimistic update
@@ -275,7 +296,8 @@ class _SearchScreenState extends State<SearchScreen> {
             });
           } else {
             // Revert: remove from favorites
-            property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+            property.favourites.removeWhere(
+                (favourite) => favourite['userId'] == widget.user.id);
           }
         });
 
@@ -289,7 +311,8 @@ class _SearchScreenState extends State<SearchScreen> {
               behavior: SnackBarBehavior.floating,
               duration: Duration(seconds: 3),
               margin: EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
           );
         }
@@ -308,7 +331,8 @@ class _SearchScreenState extends State<SearchScreen> {
           });
         } else {
           // Revert: remove from favorites
-          property.favourites.removeWhere((favourite) => favourite['userId'] == widget.user.id);
+          property.favourites.removeWhere(
+              (favourite) => favourite['userId'] == widget.user.id);
         }
       });
 
@@ -320,7 +344,8 @@ class _SearchScreenState extends State<SearchScreen> {
             behavior: SnackBarBehavior.floating,
             duration: Duration(seconds: 3),
             margin: EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -342,7 +367,8 @@ class _SearchScreenState extends State<SearchScreen> {
           behavior: SnackBarBehavior.floating,
           duration: Duration(seconds: 2),
           margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       return;
@@ -424,7 +450,8 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.1),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -487,7 +514,9 @@ class _SearchScreenState extends State<SearchScreen> {
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)),
+        border: Border.all(
+            color:
+                AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
             color: AppTheme.getTextColor(context).withValues(alpha: 0.05),
@@ -510,7 +539,8 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear, color: AppTheme.getSecondaryTextColor(context)),
+                  icon: Icon(Icons.clear,
+                      color: AppTheme.getSecondaryTextColor(context)),
                   onPressed: () {
                     _searchController.clear();
                   },
@@ -533,10 +563,15 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: _filters.hasActiveFilters ? AppTheme.primaryblue : AppTheme.getCardColor(context),
+                color: _filters.hasActiveFilters
+                    ? AppTheme.primaryblue
+                    : AppTheme.getCardColor(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _filters.hasActiveFilters ? AppTheme.primaryblue : AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
+                  color: _filters.hasActiveFilters
+                      ? AppTheme.primaryblue
+                      : AppTheme.getSecondaryTextColor(context)
+                          .withOpacity(0.3),
                 ),
               ),
               child: Row(
@@ -545,14 +580,18 @@ class _SearchScreenState extends State<SearchScreen> {
                   Icon(
                     Icons.filter_list,
                     size: 18,
-                    color: _filters.hasActiveFilters ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
+                    color: _filters.hasActiveFilters
+                        ? AppTheme.whiteColor
+                        : AppTheme.getSecondaryTextColor(context),
                   ),
                   SizedBox(width: 8),
                   Text(
                     _filters.hasActiveFilters ? 'Filters Applied' : 'Filters',
                     style: TextStyle(
                       fontSize: 14,
-                      color: _filters.hasActiveFilters ? AppTheme.whiteColor : AppTheme.getSecondaryTextColor(context),
+                      color: _filters.hasActiveFilters
+                          ? AppTheme.whiteColor
+                          : AppTheme.getSecondaryTextColor(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -617,7 +656,8 @@ class _SearchScreenState extends State<SearchScreen> {
   int _getActiveFiltersCount() {
     int count = 0;
     if (_filters.propertyType != 'All') count++;
-    if (_filters.priceRange.start != 0 || _filters.priceRange.end != 5000) count++;
+    if (_filters.priceRange.start != 0 || _filters.priceRange.end != 5000)
+      count++;
     if (_filters.bedrooms != null) count++;
     if (_filters.selectedAmenities.isNotEmpty) count++;
     return count;
@@ -751,7 +791,8 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildSearchResults() {
     if (_isLoading) return _buildLoadingState();
     if (_errorMessage != null) {
-      return Center(child: Text(_errorMessage!, style: TextStyle(color: Colors.red)));
+      return Center(
+          child: Text(_errorMessage!, style: TextStyle(color: Colors.red)));
     }
     return Column(
       children: [
@@ -760,7 +801,8 @@ class _SearchScreenState extends State<SearchScreen> {
             ? _buildEmptyState()
             : ListView.builder(
                 shrinkWrap: true, // Important: allows ListView to size itself
-                physics: NeverScrollableScrollPhysics(), // Disable ListView scrolling since parent ScrollView handles it
+                physics:
+                    NeverScrollableScrollPhysics(), // Disable ListView scrolling since parent ScrollView handles it
                 padding: EdgeInsets.only(
                   left: 20,
                   right: 20,
@@ -877,7 +919,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             topLeft: Radius.circular(16),
                             topRight: Radius.circular(16),
                           ),
-                          child:                           Image(
+                          child: Image(
                             image: CachedNetworkImageProvider(
                               _getFullImageUrl(property.images.first),
                             ),
@@ -894,14 +936,16 @@ class _SearchScreenState extends State<SearchScreen> {
                                     end: Alignment.bottomRight,
                                     colors: [
                                       AppTheme.lightGreyColor,
-                                      AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
+                                      AppTheme.getSecondaryTextColor(context)
+                                          .withOpacity(0.3),
                                     ],
                                   ),
                                 ),
                                 child: Center(
                                   child: Icon(
                                     Icons.image_not_supported,
-                                    color: AppTheme.getSecondaryTextColor(context),
+                                    color:
+                                        AppTheme.getSecondaryTextColor(context),
                                     size: 40,
                                   ),
                                 ),
@@ -943,7 +987,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: AppTheme.primaryblue,
                               borderRadius: BorderRadius.circular(12),
@@ -960,7 +1005,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           if (property.isFeatured) ...[
                             SizedBox(width: 6),
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.orange,
                                 borderRadius: BorderRadius.circular(12),
@@ -986,15 +1032,20 @@ class _SearchScreenState extends State<SearchScreen> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.getTextColor(context).withOpacity(0.1),
+                                color: AppTheme.getTextColor(context)
+                                    .withOpacity(0.1),
                                 blurRadius: 4,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
                           child: Icon(
-                            _isPropertyFavorited(property) ? Icons.favorite : Icons.favorite_outline,
-                            color: _isPropertyFavorited(property) ? Colors.red : AppTheme.getSecondaryTextColor(context),
+                            _isPropertyFavorited(property)
+                                ? Icons.favorite
+                                : Icons.favorite_outline,
+                            color: _isPropertyFavorited(property)
+                                ? Colors.red
+                                : AppTheme.getSecondaryTextColor(context),
                             size: 18,
                           ),
                         ),
@@ -1068,7 +1119,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       SizedBox(width: 8),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.amber.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
@@ -1186,7 +1238,8 @@ class _SearchScreenState extends State<SearchScreen> {
                             property: property,
                             fontSize: 20,
                           ),
-                          if (property.availabilityStatus == false && property.availableFrom != null)
+                          if (property.availabilityStatus == false &&
+                              property.availableFrom != null)
                             Text(
                               'Available from ${_formatDate(property.availableFrom!)}',
                               style: TextStyle(

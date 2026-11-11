@@ -224,38 +224,148 @@ class _LandlordWalletScreenState extends State<LandlordWalletScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [AppTheme.primaryblue, Color(0xFF208B73)],
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF176B69),
+                                AppTheme.primaryblue,
+                                Color(0xFF208B73),
+                              ],
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Available to withdraw', style: TextStyle(color: Colors.white70)),
-                            const SizedBox(height: 8),
-                            Text(
-                              _formatAmount(availableToWithdraw),
-                              style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              '${_formatAmount(summary['grossPayments'])} paid  ·  ${_formatAmount(summary['commission'])} platform commission',
-                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                            ),
-                            Text(
-                              '${_formatAmount(summary['refunds'])} refunds completed',
-                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'After commission and completed refunds. Pending and approved requests reserve funds; paid withdrawals are deducted.',
-                              style: TextStyle(color: Colors.white70, fontSize: 11),
-                            ),
-                          ],
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                top: -54,
+                                right: -28,
+                                child: Container(
+                                  width: 170,
+                                  height: 170,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: -82,
+                                right: 64,
+                                child: Container(
+                                  width: 150,
+                                  height: 150,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.1),
+                                      width: 24,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(9),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.14),
+                                            borderRadius:
+                                                BorderRadius.circular(13),
+                                          ),
+                                          child: const Icon(
+                                            Icons
+                                                .account_balance_wallet_outlined,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Text(
+                                          'WALLET BALANCE',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 1.1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Text(
+                                      'Available to withdraw',
+                                      style: TextStyle(color: Colors.white70),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _formatAmount(availableToWithdraw),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.12),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${_formatAmount(summary['grossPayments'])} paid  ·  ${_formatAmount(summary['commission'])} platform commission',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${_formatAmount(summary['refunds'])} refunds completed',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'Pending requests reserve funds; paid withdrawals are deducted.',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
