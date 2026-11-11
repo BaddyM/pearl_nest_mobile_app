@@ -72,30 +72,18 @@ class PropertyUploadBloc extends Bloc<PropertyUploadEvent, PropertyUploadState> 
           errorCode: result['code'],
         ));
       }
-    } catch (e, stackTrace) {
-      //debugPrint('PropertyUploadBloc: Upload error - $e');
-      //debugPrint('Stack trace: $stackTrace');
-
-      String errorMessage = 'An unexpected error occurred';
-      String? errorCode;
-
-      if (e.toString().contains('network') || e.toString().contains('connection')) {
-        errorMessage = 'Network error. Please check your connection and try again.';
-        errorCode = 'NETWORK_ERROR';
-      } else if (e.toString().contains('timeout')) {
-        errorMessage = 'Request timeout. Please try again.';
-        errorCode = 'TIMEOUT_ERROR';
-      } else if (e.toString().contains('validation')) {
-        errorMessage = 'Invalid data provided. Please check all fields.';
-        errorCode = 'VALIDATION_ERROR';
-      } else if (e.toString().contains('unauthorized')) {
-        errorMessage = 'You are not authorized to perform this action.';
-        errorCode = 'UNAUTHORIZED';
-      }
-
+    } on PropertyException catch (error) {
       emit(PropertyUploadError(
-        message: errorMessage,
-        errorCode: errorCode,
+        message: error.message,
+        errorCode: error.code,
+      ));
+    } catch (error, stackTrace) {
+      debugPrint('Property upload failed: $error\n$stackTrace');
+      emit(PropertyUploadError(
+        message: error.toString().replaceFirst(
+              RegExp(r'^(Exception|Error):\s*'),
+              '',
+            ),
       ));
     }
   }

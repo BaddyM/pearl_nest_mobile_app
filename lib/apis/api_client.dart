@@ -134,10 +134,6 @@ class ApiClient {
     if (error.type == DioExceptionType.connectionError) {
       return 'Unable to connect to the server. Please check your internet connection.';
     }
-    if (error.response!.statusCode! >= 500) {
-      return error.response?.data["message"] ?? 'Server error. Please try again later.';
-    }
-
     // HTTP errors with response
     if (error.response != null) {
       final statusCode = error.response!.statusCode;

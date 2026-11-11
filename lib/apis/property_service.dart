@@ -935,9 +935,13 @@ class PropertyService {
         e.response?.data?['message'] ?? 'Failed to upload property',
         statusCode: e.response?.statusCode,
       );
+    } on PropertyException {
+      rethrow;
     } catch (e) {
       _logError('upload property', e);
-      throw PropertyException('Unexpected error: $e');
+      throw PropertyException(
+        e.toString().replaceFirst(RegExp(r'^(Exception|Error):\s*'), ''),
+      );
     }
   }
 
