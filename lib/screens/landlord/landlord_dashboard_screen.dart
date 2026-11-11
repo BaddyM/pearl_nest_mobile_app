@@ -35,6 +35,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
   int _currentIndex = 0;
   bool _isLoading = true;
   int _totalProperties = 0;
+  int _pendingProperties = 0;
   int _totalBookings = 0;
   int _totalViews = 0;
   int _totalComments = 0;
@@ -68,6 +69,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
       //debugPrint('🏠 Dashboard - Properties content: $properties');
 
       int propertyCount = 0;
+      int pendingPropertyCount = 0;
       int totalViews = 0;
       int totalComments = 0;
       int totalInteractions = 0;
@@ -81,6 +83,9 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
           propertyCount = propertiesList.length;
           for (final property in propertiesList.whereType<dynamic>()) {
             if (property is! Property) continue;
+            if (property.status == PropertyStatus.pending) {
+              pendingPropertyCount++;
+            }
             totalViews += property.views.length;
             totalComments += property.reviews.length;
             totalInteractions += property.views.length +
@@ -98,6 +103,7 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
       if (mounted) {
         setState(() {
           _totalProperties = propertyCount;
+          _pendingProperties = pendingPropertyCount;
           _totalBookings = bookings is List ? bookings.length : 0;
           _totalViews = totalViews;
           _totalComments = totalComments;
@@ -381,6 +387,45 @@ class _LandlordDashboardScreenState extends State<LandlordDashboardScreen> {
               ),
             ],
           ),
+          if (!_isLoading && _pendingProperties > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.amber.withValues(alpha: 0.45),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.hourglass_top,
+                        color: Colors.amber,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '$_pendingProperties ${_pendingProperties == 1 ? 'property' : 'properties'} under review',
+                        style: TextStyle(
+                          color: AppTheme.getTextColor(context),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           SizedBox(height: 16),
           Container(
             padding: EdgeInsets.all(16),
