@@ -64,11 +64,7 @@
 		
 		<!-- Photo Library Permission -->
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>PearlNest needs access to your photo library to select and share property images during listing creation or communication with landlords. This enables you to showcase properties and communicate effectively about rental properties.</string>
-		
-		<!-- Photo Library Add Permission -->
-		<key>NSPhotoLibraryAddUsageDescription</key>
-		<string>PearlNest needs permission to save property photos to your photo library for your records and future reference when managing property listings and communications.</string>
+		<string>PearlNest lets you choose photos for your profile, property listings, and messages. Only photos you select are shared with the app.</string>
 		
 		<!-- Location Permission -->
 		<key>NSLocationWhenInUseUsageDescription</key>

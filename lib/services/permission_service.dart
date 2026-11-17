@@ -70,32 +70,6 @@ class PermissionService {
     }
   }
 
-  static Future<bool> requestPhotoLibraryPermission() async {
-    try {
-      final status = await permission_handler.Permission.photos.request();
-      debugPrint('$_tag: Photo library permission status: ${status.toString()}');
-      return status.isGranted;
-    } catch (e) {
-      debugPrint('$_tag: Error requesting photo library permission: $e');
-      return false;
-    }
-  }
-
-  static Future<bool> requestStoragePermission() async {
-    try {
-      if (Platform.isAndroid) {
-        final status = await permission_handler.Permission.storage.request();
-        debugPrint('$_tag: Storage permission status: ${status.toString()}');
-        return status.isGranted;
-      }
-
-      return await requestPhotoLibraryPermission();
-    } catch (e) {
-      debugPrint('$_tag: Error requesting storage permission: $e');
-      return false;
-    }
-  }
-
   static Future<bool> requestLocationPermission() async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -204,16 +178,11 @@ class PermissionService {
 
     try {
       permissions['camera'] = await permission_handler.Permission.camera.isGranted;
-      permissions['photos'] = await permission_handler.Permission.photos.isGranted;
       permissions['microphone'] = await permission_handler.Permission.microphone.isGranted;
       permissions['notification'] = await permission_handler.Permission.notification.isGranted;
       permissions['phone'] = await permission_handler.Permission.phone.isGranted;
       permissions['contacts'] = await permission_handler.Permission.contacts.isGranted;
       permissions['location'] = await requestLocationPermission();
-
-      if (Platform.isAndroid) {
-        permissions['storage'] = await permission_handler.Permission.storage.isGranted;
-      }
 
       debugPrint('$_tag: All permissions status: $permissions');
       return permissions;
@@ -228,15 +197,10 @@ class PermissionService {
       final results = <String, bool>{};
 
       results['camera'] = await requestCameraPermission();
-      results['photos'] = await requestPhotoLibraryPermission();
       results['microphone'] = await requestMicrophonePermission();
       results['notification'] = await requestNotificationPermission();
       results['phone'] = await requestPhonePermission();
       results['location'] = await requestLocationPermission();
-
-      if (Platform.isAndroid) {
-        results['storage'] = await requestStoragePermission();
-      }
 
       var allCriticalGranted = true;
       const criticalPermissions = ['notification', 'phone'];

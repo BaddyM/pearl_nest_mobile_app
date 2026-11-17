@@ -258,11 +258,6 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
         'description': 'Take photos of properties',
       },
       {
-        'icon': Icons.photo_library,
-        'title': 'Photo Library',
-        'description': 'Select and share property images',
-      },
-      {
         'icon': Icons.location_on,
         'title': 'Location',
         'description': 'Find properties near you',
