@@ -263,7 +263,7 @@ class Property {
       isFeatured: isFeatured ?? this.isFeatured,
       isVerified: isVerified ?? this.isVerified,
       isAdminUploaded: isAdminUploaded ?? this.isAdminUploaded,
-      availabilityStatus: this.availabilityStatus,
+      availabilityStatus: availabilityStatus ?? this.availabilityStatus,
       totalUnits: totalUnits ?? this.totalUnits,
       availableUnits: availableUnits ?? this.availableUnits,
       availableFrom: availableFrom ?? this.availableFrom,

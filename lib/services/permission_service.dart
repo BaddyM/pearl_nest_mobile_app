@@ -47,13 +47,12 @@ class PermissionService {
   }
 
   static Future<List<permission_handler.Permission>> _getEssentialPermissions() async {
-    final permissions = <permission_handler.Permission>[];
+    final permissions = <permission_handler.Permission>[
+      permission_handler.Permission.notification,
+    ];
 
     if (Platform.isAndroid) {
-      permissions.addAll([
-        permission_handler.Permission.phone,
-        permission_handler.Permission.notification,
-      ]);
+      permissions.add(permission_handler.Permission.phone);
     }
 
     return permissions;

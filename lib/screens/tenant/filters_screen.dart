@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, library_private_types_in_public_api
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pearlnest/apis/api_client.dart';
 import 'package:pearlnest/apis/property_service.dart';
 import 'package:pearlnest/models/property.dart';
@@ -25,6 +26,10 @@ class FiltersScreen extends StatefulWidget {
 class _FiltersScreenState extends State<FiltersScreen> {
   late SearchFilters _filters;
   late Future<Map<String, dynamic>> summary;
+  final TextEditingController _minPriceController = TextEditingController();
+  final TextEditingController _maxPriceController = TextEditingController();
+  double _priceSliderMax = 5000;
+  String? _priceRangeError;
 
   List<String> _propertyTypes = ['All'];
   Map<String, String> _propertyTypeLabels = {'All': 'All'};
@@ -48,16 +53,39 @@ class _FiltersScreenState extends State<FiltersScreen> {
   void _clearAllFilters() {
     setState(() {
       _filters.clear();
+      _minPriceController.text = '0';
+      _maxPriceController.clear();
+      _priceRangeError = null;
     });
   }
 
   void _applyFilters() {
+    final minimum = _parsedPrice(_minPriceController.text) ?? 0;
+    final maximumIsUnlimited = _maxPriceController.text.trim().isEmpty;
+    final maximum = maximumIsUnlimited
+        ? (_priceSliderMax > minimum ? _priceSliderMax : minimum)
+        : _parsedPrice(_maxPriceController.text);
+    if (maximum == null || (!maximumIsUnlimited && minimum > maximum)) {
+      setState(() {
+        _priceRangeError =
+            'Enter a maximum price greater than or equal to the minimum.';
+      });
+      return;
+    }
+
+    _filters.priceRange = RangeValues(minimum, maximum);
+    _filters.maxPriceUnlimited = maximumIsUnlimited;
     Navigator.pop(context, _filters);
   }
 
   Future<Map<String, dynamic>> fetchFilterSummary() async {
     Response response = await ApiClient.get("/property/filter/summary");
-    return response.data;
+    final data = Map<String, dynamic>.from(response.data as Map);
+    final maximum = data['maxPrice'];
+    if (maximum is num && maximum > 0) {
+      _priceSliderMax = maximum.toDouble();
+    }
+    return data;
   }
 
   @override
@@ -66,12 +94,53 @@ class _FiltersScreenState extends State<FiltersScreen> {
     _filters = SearchFilters(
       propertyType: widget.currentFilters.propertyType,
       priceRange: widget.currentFilters.priceRange,
+      maxPriceUnlimited: widget.currentFilters.maxPriceUnlimited,
       bedrooms: widget.currentFilters.bedrooms,
       selectedAmenities: List.from(widget.currentFilters.selectedAmenities),
     );
+    _minPriceController.text = _filters.priceRange.start.round().toString();
+    if (!_filters.maxPriceUnlimited) {
+      _maxPriceController.text = _filters.priceRange.end.round().toString();
+    }
 
     summary = fetchFilterSummary();
     _loadPropertyTypes();
+  }
+
+  @override
+  void dispose() {
+    _minPriceController.dispose();
+    _maxPriceController.dispose();
+    super.dispose();
+  }
+
+  double? _parsedPrice(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return 0;
+    return double.tryParse(trimmed);
+  }
+
+  void _updatePriceRangeFromFields(double sliderMax) {
+    final minimum = _parsedPrice(_minPriceController.text);
+    final maximumIsUnlimited = _maxPriceController.text.trim().isEmpty;
+    final maximum =
+        maximumIsUnlimited
+            ? (minimum != null && minimum > sliderMax ? minimum : sliderMax)
+            : _parsedPrice(_maxPriceController.text);
+
+    setState(() {
+      if (minimum == null ||
+          maximum == null ||
+          (!maximumIsUnlimited && minimum > maximum)) {
+        _priceRangeError =
+            'Enter a maximum price greater than or equal to the minimum.';
+        return;
+      }
+
+      _filters.priceRange = RangeValues(minimum, maximum);
+      _filters.maxPriceUnlimited = maximumIsUnlimited;
+      _priceRangeError = null;
+    });
   }
 
   Future<void> _loadPropertyTypes() async {
@@ -161,9 +230,12 @@ class _FiltersScreenState extends State<FiltersScreen> {
                           );
                         }
                         if (snapshot.hasData) {
-                          int? minPrice = snapshot.data?["minPrice"];
-                          int? maxPrice = snapshot.data?["maxPrice"];
-                          return _buildPriceRangeFilter(minPrice: 0, maxPrice: maxPrice ?? 0);
+                          final maxPrice = snapshot.data?['maxPrice'];
+                          return _buildPriceRangeFilter(
+                            maxPrice: maxPrice is num && maxPrice > 0
+                                ? maxPrice.toDouble()
+                                : _priceSliderMax,
+                          );
                         } else {
                           return Text(
                             "Sorry, failed to get price range",
@@ -234,7 +306,18 @@ class _FiltersScreenState extends State<FiltersScreen> {
     );
   }
 
-  Widget _buildPriceRangeFilter({required int minPrice, required int maxPrice}) {
+  Widget _buildPriceRangeFilter({required double maxPrice}) {
+    final sliderMax = [
+      maxPrice,
+      _priceSliderMax,
+      _filters.priceRange.end,
+      1.0,
+    ].reduce((left, right) => left > right ? left : right);
+    final sliderStart = _filters.priceRange.start.clamp(0, sliderMax).toDouble();
+    final sliderEnd = _filters.maxPriceUnlimited
+        ? sliderMax
+        : _filters.priceRange.end.clamp(sliderStart, sliderMax).toDouble();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -257,44 +340,98 @@ class _FiltersScreenState extends State<FiltersScreen> {
           child: Column(
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '${ProfileService().currencyConverter(price: _filters.priceRange.start.round())}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryblue,
+                  Expanded(
+                    child: Text(
+                      ProfileService().currencyConverter(
+                        price: _filters.priceRange.start.round(),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryblue,
+                      ),
                     ),
                   ),
-                  Text(
-                    'to',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.getSecondaryTextColor(context),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      'to',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.getSecondaryTextColor(context),
+                      ),
                     ),
                   ),
-                  Text(
-                    '${ProfileService().currencyConverter(price: _filters.priceRange.end.round())}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryblue,
+                  Expanded(
+                    child: Text(
+                      _filters.maxPriceUnlimited
+                          ? 'No maximum'
+                          : ProfileService().currencyConverter(
+                              price: _filters.priceRange.end.round(),
+                            ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryblue,
+                      ),
                     ),
                   ),
                 ],
               ),
+              SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildPriceInput(
+                      controller: _minPriceController,
+                      label: 'Min price',
+                      onChanged: (_) => _updatePriceRangeFromFields(sliderMax),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: _buildPriceInput(
+                      controller: _maxPriceController,
+                      label: 'Max price',
+                      onChanged: (_) => _updatePriceRangeFromFields(sliderMax),
+                    ),
+                  ),
+                ],
+              ),
+              if (_priceRangeError != null) ...[
+                SizedBox(height: 8),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    _priceRangeError!,
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
               SizedBox(height: 8),
               RangeSlider(
-                values: _filters.priceRange,
+                values: RangeValues(sliderStart, sliderEnd),
                 min: 0,
-                max: maxPrice.toDouble(),
+                max: sliderMax,
                 divisions: 5000,
                 activeColor: AppTheme.primaryblue,
                 inactiveColor: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
                 onChanged: (RangeValues values) {
                   setState(() {
                     _filters.priceRange = values;
+                    _filters.maxPriceUnlimited = false;
+                    _minPriceController.text = values.start.round().toString();
+                    _maxPriceController.text = values.end.round().toString();
+                    _priceRangeError = null;
                   });
                 },
               ),
@@ -302,6 +439,50 @@ class _FiltersScreenState extends State<FiltersScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPriceInput({
+    required TextEditingController controller,
+    required String label,
+    required ValueChanged<String> onChanged,
+  }) {
+    final borderRadius = BorderRadius.circular(10);
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(15),
+      ],
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: '0',
+        labelStyle: TextStyle(
+          color: AppTheme.getSecondaryTextColor(context),
+          fontSize: 13,
+        ),
+        filled: true,
+        fillColor: AppTheme.getBackgroundColor(context),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(
+            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(
+            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(color: AppTheme.primaryblue),
+        ),
+      ),
     );
   }
 
@@ -558,7 +739,9 @@ class _FiltersScreenState extends State<FiltersScreen> {
     return widget.allProperties.where((property) {
       final matchesType = _filters.propertyType == 'All' || property.type == _filters.propertyType;
 
-      final matchesPrice = property.price >= _filters.priceRange.start && property.price <= _filters.priceRange.end;
+      final matchesPrice = property.price >= _filters.priceRange.start &&
+          (_filters.maxPriceUnlimited ||
+              property.price <= _filters.priceRange.end);
 
       final matchesBedrooms = _filters.bedrooms == null || (_filters.bedrooms == 6 ? property.bedrooms >= 5 : property.bedrooms == _filters.bedrooms);
 

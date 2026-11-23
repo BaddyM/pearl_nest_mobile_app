@@ -30,12 +30,14 @@ class SearchScreen extends StatefulWidget {
 class SearchFilters {
   String propertyType;
   RangeValues priceRange;
+  bool maxPriceUnlimited;
   int? bedrooms;
   List<String> selectedAmenities;
 
   SearchFilters({
     this.propertyType = 'All',
     this.priceRange = const RangeValues(0, 5000),
+    this.maxPriceUnlimited = true,
     this.bedrooms,
     List<String>? selectedAmenities,
   }) : selectedAmenities = selectedAmenities ?? [];
@@ -43,12 +45,14 @@ class SearchFilters {
   SearchFilters copyWith({
     String? propertyType,
     RangeValues? priceRange,
+    bool? maxPriceUnlimited,
     int? bedrooms,
     List<String>? selectedAmenities,
   }) {
     return SearchFilters(
       propertyType: propertyType ?? this.propertyType,
       priceRange: priceRange ?? this.priceRange,
+      maxPriceUnlimited: maxPriceUnlimited ?? this.maxPriceUnlimited,
       bedrooms: bedrooms ?? this.bedrooms,
       selectedAmenities: selectedAmenities ?? List.from(this.selectedAmenities),
     );
@@ -57,7 +61,7 @@ class SearchFilters {
   bool get hasActiveFilters {
     return propertyType != 'All' ||
         priceRange.start != 0 ||
-        priceRange.end != 5000 ||
+        !maxPriceUnlimited ||
         bedrooms != null ||
         selectedAmenities.isNotEmpty;
   }
@@ -65,6 +69,7 @@ class SearchFilters {
   void clear() {
     propertyType = 'All';
     priceRange = RangeValues(0, 5000);
+    maxPriceUnlimited = true;
     bedrooms = null;
     selectedAmenities.clear();
   }
@@ -200,10 +205,11 @@ class _SearchScreenState extends State<SearchScreen> {
       filters['bedrooms'] = _filters.bedrooms;
     }
 
-    // Price range is handled by the price search API, not as a filter
-    // For text search, we'll apply price filtering locally
-
-    filters['priceRange'] = _filters.priceRange.end.toInt();
+    filters['minPrice'] = _filters.priceRange.start.round();
+    filters['maxPriceUnlimited'] = _filters.maxPriceUnlimited;
+    if (!_filters.maxPriceUnlimited) {
+      filters['maxPrice'] = _filters.priceRange.end.round();
+    }
 
     // Amenities filter - let's handle this locally for now
     if (_filters.selectedAmenities.isNotEmpty) {
@@ -245,11 +251,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
     // Apply price range filter locally if we're doing text search
     // (price search API handles this, but text search might need local filtering)
-    if (_filters.priceRange.start != 0 || _filters.priceRange.end != 5000) {
+    if (_filters.priceRange.start != 0 || !_filters.maxPriceUnlimited) {
       filtered = filtered
           .where((property) =>
               property.price >= _filters.priceRange.start &&
-              property.price <= _filters.priceRange.end)
+              (_filters.maxPriceUnlimited ||
+                  property.price <= _filters.priceRange.end))
           .toList();
     }
 
@@ -308,9 +315,8 @@ class _SearchScreenState extends State<SearchScreen> {
             SnackBar(
               content: Text('Failed to update favorites. Please try again.'),
               backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
+              behavior: SnackBarBehavior.fixed,
               duration: Duration(seconds: 3),
-              margin: EdgeInsets.all(16),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
@@ -341,9 +347,8 @@ class _SearchScreenState extends State<SearchScreen> {
           SnackBar(
             content: Text('An error occurred. Please try again.'),
             backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
+            behavior: SnackBarBehavior.fixed,
             duration: Duration(seconds: 3),
-            margin: EdgeInsets.all(16),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
@@ -364,9 +369,8 @@ class _SearchScreenState extends State<SearchScreen> {
         SnackBar(
           content: Text('No filters to clear'),
           backgroundColor: AppTheme.getSecondaryTextColor(context),
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           duration: Duration(seconds: 2),
-          margin: EdgeInsets.all(16),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
@@ -386,9 +390,8 @@ class _SearchScreenState extends State<SearchScreen> {
       SnackBar(
         content: Text('Filters cleared successfully'),
         backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.fixed,
         duration: Duration(seconds: 2),
-        margin: EdgeInsets.all(16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );

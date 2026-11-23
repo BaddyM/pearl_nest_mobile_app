@@ -295,8 +295,7 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
         content: Text('Copied to clipboard'),
         backgroundColor: AppTheme.primaryblue,
         duration: Duration(milliseconds: 500),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(16),
+        behavior: SnackBarBehavior.fixed,
       ),
     );
   }

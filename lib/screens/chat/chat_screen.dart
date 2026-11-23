@@ -126,8 +126,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 'Failed to load conversations. ${_allConversations.isEmpty ? 'No admin available.' : 'Showing available chats.'}'),
             backgroundColor:
                 _allConversations.isEmpty ? Colors.red : Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
+            behavior: SnackBarBehavior.fixed,
           ),
         );
       }

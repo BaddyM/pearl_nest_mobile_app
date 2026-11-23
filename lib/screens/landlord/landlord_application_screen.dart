@@ -709,8 +709,7 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
             ),
             duration: const Duration(milliseconds: 2000),
             backgroundColor: AppTheme.primaryblue,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
+            behavior: SnackBarBehavior.fixed,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -1061,9 +1060,8 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           ],
         ),
         backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.fixed,
         duration: const Duration(milliseconds: 6000), // Longer duration for detailed messages
-        margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -1089,9 +1087,8 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           ],
         ),
         backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.fixed,
         duration: const Duration(milliseconds: 1200), // Shorter for progress updates
-        margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -1110,9 +1107,8 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           ],
         ),
         backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.fixed,
         duration: const Duration(milliseconds: 3000), // Longer for success to celebrate
-        margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -1131,9 +1127,8 @@ class _LandlordApplicationScreenState extends State<LandlordApplicationScreen> {
           ],
         ),
         backgroundColor: Colors.orange,
-        behavior: SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.fixed,
         duration: const Duration(milliseconds: 4000), // Longer for warnings so user can read
-        margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),

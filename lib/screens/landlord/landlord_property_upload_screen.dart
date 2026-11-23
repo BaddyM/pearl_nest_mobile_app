@@ -446,8 +446,7 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
               ),
               duration: Duration(milliseconds: 1500),
               backgroundColor: AppTheme.primaryblue,
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
+              behavior: SnackBarBehavior.fixed,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
           );
@@ -460,10 +459,9 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                 style: TextStyle(color: Colors.white),
               ),
               backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
+              behavior: SnackBarBehavior.fixed,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               duration: Duration(milliseconds: 2000),
-              margin: EdgeInsets.all(16),
             ),
           );
         } else if (state is PropertyUploadValidationError) {
@@ -476,10 +474,9 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
                 style: TextStyle(color: Colors.white),
               ),
               backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
+              behavior: SnackBarBehavior.fixed,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               duration: Duration(milliseconds: 2000),
-              margin: EdgeInsets.all(16),
             ),
           );
         }
@@ -1933,11 +1930,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             'Maximum 10 photos allowed',
             style: TextStyle(color: AppTheme.lightGreyColor),
           ),
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           duration: Duration(milliseconds: 500),
           backgroundColor: AppTheme.primaryblue,
-          margin: EdgeInsets.all(16),
         ),
       );
       return;
@@ -2051,10 +2047,9 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
           SnackBar(
             content: Text('Maximum 10 photos allowed', style: TextStyle(color: Colors.white)),
             backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
+            behavior: SnackBarBehavior.fixed,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             duration: Duration(milliseconds: 1500),
-            margin: EdgeInsets.all(16),
           ),
         );
         return;
@@ -2082,10 +2077,9 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
             style: TextStyle(color: AppTheme.lightGreyColor),
           ),
           backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           duration: Duration(milliseconds: 500),
-          margin: EdgeInsets.all(16),
         ),
       );
     }
@@ -2131,10 +2125,9 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
         SnackBar(
           content: Text('Please fill in all required fields', style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           duration: Duration(milliseconds: 1500),
-          margin: EdgeInsets.all(16),
         ),
       );
       return;
@@ -2144,11 +2137,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Please add at least one photo', style: TextStyle(color: Colors.white)),
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           duration: Duration(milliseconds: 1500),
           backgroundColor: AppTheme.primaryblue,
-          margin: EdgeInsets.all(16),
         ),
       );
       return;
@@ -2159,11 +2151,10 @@ class _LandlordPropertyUploadScreenState extends State<LandlordPropertyUploadScr
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Maximum 10 photos allowed. Please remove ${totalImages - 10} photo(s)', style: TextStyle(color: Colors.white)),
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           duration: Duration(milliseconds: 2000),
           backgroundColor: Colors.red,
-          margin: EdgeInsets.all(16),
         ),
       );
       return;

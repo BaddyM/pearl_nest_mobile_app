@@ -349,13 +349,14 @@ class PropertyService {
       final queryParams = <String, dynamic>{
         'page': page,
         'limit': limit,
+        'search': searchString.trim(),
       };
 
       if (sortBy != null) queryParams['sortBy'] = sortBy;
       if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
       if (filters != null) queryParams.addAll(filters);
 
-      final endpoint = '/property/list?search=${Uri.encodeComponent(searchString.trim())}&sortOrder=$sortOrder&minBeds=${filters?["bedrooms"] ?? 0}&minBathrooms=${filters?["bathrooms"] ?? 0}&minPrice=0&maxPrice=${filters?["priceRange"] == 5000 ? '' : filters?["priceRange"]}';
+      const endpoint = '/property/list';
 
       // Set token temporarily if provided
       final originalToken = ApiClient.currentAuthToken;

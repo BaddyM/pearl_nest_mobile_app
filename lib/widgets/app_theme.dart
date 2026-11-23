@@ -30,6 +30,7 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: whiteColor,
     snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.fixed,
       dismissDirection: DismissDirection.horizontal,
     ),
     cardColor: lightGreyColor,
@@ -106,6 +107,7 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: darkBackground,
     snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.fixed,
       dismissDirection: DismissDirection.horizontal,
     ),
     cardColor: darkCardColor,

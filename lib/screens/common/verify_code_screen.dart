@@ -278,8 +278,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
             SnackBar(
               content: Text(response['message'] ?? 'OTP sent successfully'),
               backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
+              behavior: SnackBarBehavior.fixed,
             ),
           );
         }

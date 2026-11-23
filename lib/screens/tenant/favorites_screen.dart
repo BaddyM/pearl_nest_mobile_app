@@ -143,8 +143,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               style: TextStyle(color: AppTheme.lightGreyColor),
             ),
             backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
+            behavior: SnackBarBehavior.fixed,
           ),
         );
       }
@@ -202,8 +201,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           ),
           backgroundColor: AppTheme.primaryblue,
           duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(responsive['horizontalPadding']),
+          behavior: SnackBarBehavior.fixed,
         ),
       );
 
@@ -239,9 +237,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 style: TextStyle(color: AppTheme.lightGreyColor),
               ),
               backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
+              behavior: SnackBarBehavior.fixed,
               duration: Duration(seconds: 3),
-              margin: EdgeInsets.all(responsive['horizontalPadding']),
             ),
           );
         }
@@ -259,9 +256,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               style: TextStyle(color: AppTheme.lightGreyColor),
             ),
             backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
+            behavior: SnackBarBehavior.fixed,
             duration: Duration(seconds: 3),
-            margin: EdgeInsets.all(responsive['horizontalPadding']),
           ),
         );
       }

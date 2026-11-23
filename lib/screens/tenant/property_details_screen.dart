@@ -649,8 +649,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
               style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
+          behavior: SnackBarBehavior.fixed,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
@@ -818,8 +817,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           content: Text('Please provide a rating and comment',
               style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
+          behavior: SnackBarBehavior.fixed,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
@@ -859,9 +857,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             content: Text('Review submitted successfully!',
                 style: TextStyle(color: AppTheme.whiteColor)),
             backgroundColor: AppTheme.primaryblue,
-            behavior: SnackBarBehavior.floating,
+            behavior: SnackBarBehavior.fixed,
             duration: Duration(seconds: 2),
-            margin: EdgeInsets.all(16),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
@@ -872,8 +869,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
             content: Text(result['message'] ?? 'Failed to submit review',
                 style: TextStyle(color: AppTheme.whiteColor)),
             backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
+            behavior: SnackBarBehavior.fixed,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
@@ -885,8 +881,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           content: Text('Error submitting review. Please try again.',
               style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
+          behavior: SnackBarBehavior.fixed,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
@@ -1032,7 +1027,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     //             SnackBar(
     //               content: Text('Payment completed successfully!', style: TextStyle(color: AppTheme.whiteColor)),
     //               backgroundColor: Colors.green,
-    //               behavior: SnackBarBehavior.floating,
+    //               behavior: SnackBarBehavior.fixed,
     //               margin: EdgeInsets.all(16),
     //               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     //             ),
@@ -1097,7 +1092,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     //           SnackBar(
     //             content: Text('Payment completed successfully!', style: TextStyle(color: AppTheme.whiteColor)),
     //             backgroundColor: Colors.green,
-    //             behavior: SnackBarBehavior.floating,
+    //             behavior: SnackBarBehavior.fixed,
     //             margin: EdgeInsets.all(16),
     //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     //           ),
@@ -1422,7 +1417,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
                   SnackBar(
                     content: Text(state.error),
                     backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior.floating,
+                    behavior: SnackBarBehavior.fixed,
                   ),
                 );
               }
@@ -4394,9 +4389,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           style: TextStyle(color: AppTheme.lightGreyColor),
         ),
         backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.fixed,
         duration: Duration(milliseconds: 500),
-        margin: EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -4413,9 +4407,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           content: Text('Phone number not available',
               style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           duration: Duration(seconds: 2),
-          margin: EdgeInsets.all(16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -4437,9 +4430,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           content: Text('Could not open phone dialer',
               style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           duration: Duration(seconds: 2),
-          margin: EdgeInsets.all(16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -4493,7 +4485,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
     //     SnackBar(
     //       content: Text('Please select both check-in and check-out dates'),
     //       backgroundColor: Colors.orange,
-    //       behavior: SnackBarBehavior.floating,
+    //       behavior: SnackBarBehavior.fixed,
     //     ),
     //   );
     //   return;
@@ -4772,8 +4764,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen>
           content: Text('Failed to share property',
               style: TextStyle(color: AppTheme.whiteColor)),
           backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
+          behavior: SnackBarBehavior.fixed,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),

@@ -181,10 +181,9 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
             style: TextStyle(color: AppTheme.lightGreyColor),
           ),
           backgroundColor: newStatus == BookingStatus.confirmed ? AppTheme.primaryblue : Colors.red,
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           duration: Duration(seconds: 3),
-          margin: EdgeInsets.all(16),
         ),
       );
     } on BookingException catch (error) {
@@ -198,8 +197,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                 : error.message,
           ),
           backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
+          behavior: SnackBarBehavior.fixed,
         ),
       );
     } catch (error) {
@@ -213,8 +211,7 @@ class _LandlordBookingRequestsScreenState extends State<LandlordBookingRequestsS
                 : 'Could not update the booking: $error',
           ),
           backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
+          behavior: SnackBarBehavior.fixed,
         ),
       );
     }
@@ -1390,8 +1387,7 @@ class LandlordProfileScreen extends StatelessWidget {
                           ),
                           duration: Duration(milliseconds: 500),
                           backgroundColor: AppTheme.primaryblue,
-                          behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.all(16),
+                          behavior: SnackBarBehavior.fixed,
                         ),
                       );
                     },
@@ -1524,10 +1520,9 @@ class LandlordProfileScreen extends StatelessWidget {
           style: TextStyle(color: AppTheme.lightGreyColor),
         ),
         backgroundColor: AppTheme.primaryblue,
-        behavior: SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.fixed,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: Duration(milliseconds: 500),
-        margin: EdgeInsets.all(16),
       ),
     );
   }
@@ -1575,8 +1570,7 @@ class LandlordProfileScreen extends StatelessWidget {
                     ),
                     backgroundColor: AppTheme.primaryblue,
                     duration: Duration(milliseconds: 500),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.all(16),
+                    behavior: SnackBarBehavior.fixed,
                   ),
                 );
               },

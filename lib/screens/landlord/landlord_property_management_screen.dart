@@ -34,6 +34,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
+  final Set<String> _updatingAvailabilityPropertyIds = {};
   final List<String> _filterOptions = ['All', 'Available', 'Booked', 'Under Review', 'Featured', 'Verified'];
 
   @override
@@ -159,7 +160,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
     if (_selectedFilter != 'All') {
       switch (_selectedFilter) {
         case 'Available':
-          filtered = filtered.where((p) => p.status == PropertyStatus.available).toList();
+          filtered = filtered.where((p) => p.availabilityStatus).toList();
           break;
         case 'Booked':
           filtered = filtered.where((p) => p.status == PropertyStatus.booked).toList();
@@ -748,6 +749,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     borderRadius: BorderRadius.circular(8),
                   ),
                   itemBuilder: (context) => [
+                    _buildAvailabilityMenuItem(property),
                     PopupMenuItem(
                       value: 'view',
                       child: Row(
@@ -908,6 +910,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         borderRadius: BorderRadius.circular(8),
                       ),
                       itemBuilder: (context) => [
+                        _buildAvailabilityMenuItem(property),
                         PopupMenuItem(
                           value: 'view',
                           child: Row(
@@ -1252,6 +1255,9 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
 
   void _handlePropertyAction(String action, Property property) {
     switch (action) {
+      case 'availability':
+        _togglePropertyAvailability(property);
+        break;
       case 'view':
         _viewPropertyDetails(property);
         break;
@@ -1267,6 +1273,92 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
       case 'delete':
         _deleteProperty(property);
         break;
+    }
+  }
+
+  PopupMenuItem<String> _buildAvailabilityMenuItem(Property property) {
+    final isUpdating = _updatingAvailabilityPropertyIds.contains(property.id);
+    final isAvailable = property.availabilityStatus;
+    return PopupMenuItem<String>(
+      value: 'availability',
+      enabled: !isUpdating,
+      child: Row(
+        children: [
+          Icon(
+            isAvailable ? Icons.visibility_off_outlined : Icons.check_circle_outline,
+            size: 16,
+            color: AppTheme.getTextColor(context),
+          ),
+          SizedBox(width: 8),
+          Text(
+            isUpdating
+                ? 'Updating availability...'
+                : isAvailable
+                    ? 'Mark unavailable'
+                    : 'Mark available',
+            style: TextStyle(color: AppTheme.getTextColor(context)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _togglePropertyAvailability(Property property) async {
+    final isAvailable = !property.availabilityStatus;
+    if (isAvailable && property.availableUnits < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add at least one available unit before marking this property available.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _updatingAvailabilityPropertyIds.add(property.id));
+    try {
+      final token = await AuthService.getCurrentToken();
+      if (token == null || token.isEmpty) {
+        throw StateError('Authentication required. Please log in again.');
+      }
+
+      final result = await PropertyService.updateProperty(
+        propertyId: property.id,
+        token: token,
+        availability: isAvailable,
+      );
+      if (result['success'] != true) {
+        throw PropertyException(
+          result['message']?.toString() ?? 'Could not update property availability.',
+        );
+      }
+
+      if (!mounted) return;
+      setState(() {
+        final index = _properties.indexWhere((item) => item.id == property.id);
+        if (index != -1) {
+          _properties[index] = _properties[index].copyWith(
+            availabilityStatus: isAvailable,
+          );
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isAvailable
+                ? 'Property marked as available.'
+                : 'Property marked as unavailable.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update availability: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _updatingAvailabilityPropertyIds.remove(property.id));
+      }
     }
   }
 
@@ -1952,8 +2044,7 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                   ),
                   duration: Duration(milliseconds: 500),
                   backgroundColor: AppTheme.primaryblue,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.all(16),
+                  behavior: SnackBarBehavior.fixed,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -2055,9 +2146,8 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     ],
                   ),
                   backgroundColor: property.isFeatured ? Colors.red : AppTheme.primaryblue,
-                  behavior: SnackBarBehavior.floating,
+                  behavior: SnackBarBehavior.fixed,
                   duration: Duration(milliseconds: 500),
-                  margin: EdgeInsets.all(16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -2162,11 +2252,10 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                   ),
                   duration: Duration(seconds: 30), // Long duration for loading
                   backgroundColor: AppTheme.primaryblue,
-                  behavior: SnackBarBehavior.floating,
+                  behavior: SnackBarBehavior.fixed,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  margin: EdgeInsets.all(16),
                 ),
               );
 
@@ -2179,9 +2268,8 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     SnackBar(
                       content: Text('Authentication required. Please log in again.', style: TextStyle(color: Colors.white)),
                       backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
+                      behavior: SnackBarBehavior.fixed,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      margin: EdgeInsets.all(16),
                     ),
                   );
                   return;
@@ -2209,9 +2297,8 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                         ],
                       ),
                       duration: Duration(milliseconds: 2000),
-                      margin: EdgeInsets.all(16),
                       backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
+                      behavior: SnackBarBehavior.fixed,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -2222,9 +2309,8 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                     SnackBar(
                       content: Text(result['message'] ?? 'Failed to delete property', style: TextStyle(color: Colors.white)),
                       backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
+                      behavior: SnackBarBehavior.fixed,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      margin: EdgeInsets.all(16),
                     ),
                   );
                 }
@@ -2234,9 +2320,8 @@ class _LandlordPropertyManagementScreenState extends State<LandlordPropertyManag
                   SnackBar(
                     content: Text('Error deleting property: $e', style: TextStyle(color: Colors.white)),
                     backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior.floating,
+                    behavior: SnackBarBehavior.fixed,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    margin: EdgeInsets.all(16),
                   ),
                 );
               }

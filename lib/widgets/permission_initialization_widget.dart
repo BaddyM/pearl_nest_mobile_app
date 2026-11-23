@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/notification_service.dart';
 import '../services/permission_service.dart';
 import '../widgets/app_theme.dart';
 
@@ -62,8 +63,10 @@ class _PermissionInitializationWidgetState extends State<PermissionInitializatio
       });
 
       final granted = await PermissionService.requestAllPermissions();
+      final pushPermissionGranted =
+          await NotificationService.requestPushPermission();
 
-      if (granted) {
+      if (granted && pushPermissionGranted) {
         debugPrint("Requesting all permissions...");
         setState(() {
           _showPermissionDialog = false;

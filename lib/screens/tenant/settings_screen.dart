@@ -691,8 +691,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         backgroundColor: backgroundColor,
         duration: Duration(milliseconds: 1500),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(16),
+        behavior: SnackBarBehavior.fixed,
       ),
     );
   }

@@ -404,20 +404,16 @@ class AuthService {
       if (email.trim().isEmpty) throw ValidationException('Email is required');
       if (password.isEmpty) throw ValidationException('Password is required');
 
-      // Get real FCM token
-      var fcmToken = await _getFcmToken();
-      if (fcmToken == null || fcmToken.isEmpty) {
-        //remove this
-        fcmToken = "default";
-        // throw AuthException('Unable to retrieve device notification token. Please check your network and try again.');
-      }
+      final fcmToken = await _getFcmToken();
 
       // Create request data for login
-      final requestData = {
+      final requestData = <String, String>{
         'email': email.trim().toLowerCase(),
         'password': password,
-        'fcmToken': fcmToken,
       };
+      if (fcmToken != null && fcmToken.trim().isNotEmpty) {
+        requestData['fcmToken'] = fcmToken.trim();
+      }
 
       _logRequest('/user/login', requestData);
 
@@ -814,15 +810,15 @@ class AuthService {
       // Try to call logout endpoint if token exists
       if (token != null && token.isNotEmpty) {
         try {
-          _logRequest('/auth/logout', {}, token: token);
+          _logRequest('/user/logout', {}, token: token);
 
           // Temporarily set the token for this request
           final originalToken = ApiClient.currentAuthToken;
           ApiClient.setAuthToken(token);
 
           try {
-            final response = await ApiClient.post('/auth/logout', {});
-            _logResponse('/auth/logout', response);
+            final response = await ApiClient.get('/user/logout');
+            _logResponse('/user/logout', response);
           } finally {
             ApiClient.setAuthToken(originalToken);
           }
@@ -1094,6 +1090,19 @@ class AuthService {
     } catch (e) {
       return null;
     }
+  }
+
+  static Future<void> updateFcmToken(String fcmToken) async {
+    final normalizedToken = fcmToken.trim();
+    if (normalizedToken.isEmpty || normalizedToken.toLowerCase() == 'default') {
+      return;
+    }
+
+    final authToken = await getCurrentToken();
+    if (authToken == null || authToken.isEmpty) return;
+
+    ApiClient.setAuthToken(authToken);
+    await ApiClient.post('/user/fcm-token', {'fcmToken': normalizedToken});
   }
 
   // Update profile picture using dedicated endpoint
@@ -1643,8 +1652,8 @@ class AuthService {
       return NotificationService.fcmToken ??
           await NotificationService.refreshFCMToken();
     } catch (e, stack) {
-      // //debugPrint('FCM token fetch error: $e');
-      // //debugPrint('Stack trace: $stack');
+      debugPrint('FCM token fetch failed: $e');
+      debugPrint('$stack');
       return null;
     }
   }

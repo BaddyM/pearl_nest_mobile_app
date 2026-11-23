@@ -245,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
           //   SnackBar(
           //     content: Text(message),
           //     backgroundColor: AppTheme.primaryblue,
-          //     behavior: SnackBarBehavior.floating,
+          //     behavior: SnackBarBehavior.fixed,
           //     duration: Duration(seconds: 2),
           //     margin: EdgeInsets.all(16),
           //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -275,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
           //   SnackBar(
           //     content: Text('Failed to update favorites. Please try again.'),
           //     backgroundColor: Colors.red,
-          //     behavior: SnackBarBehavior.floating,
+          //     behavior: SnackBarBehavior.fixed,
           //     duration: Duration(seconds: 3),
           //     margin: EdgeInsets.all(16),
           //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -309,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
         //   SnackBar(
         //     content: Text('An error occurred. Please try again.'),
         //     backgroundColor: Colors.red,
-        //     behavior: SnackBarBehavior.floating,
+        //     behavior: SnackBarBehavior.fixed,
         //     duration: Duration(seconds: 3),
         //     margin: EdgeInsets.all(16),
         //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -815,7 +815,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SnackBar(
               content: Text('Press back again to exit'),
               duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
+              behavior: SnackBarBehavior.fixed,
             ),
           );
       },
@@ -2704,7 +2704,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 //   SnackBar(
                 //     content: Text('Payment completed successfully!'),
                 //     backgroundColor: Colors.green,
-                //     behavior: SnackBarBehavior.floating,
+                //     behavior: SnackBarBehavior.fixed,
                 //     duration: Duration(seconds: 3),
                 //     margin: EdgeInsets.all(16),
                 //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -2771,7 +2771,7 @@ class _HomeScreenState extends State<HomeScreen> {
               //   SnackBar(
               //     content: Text('Payment completed successfully!'),
               //     backgroundColor: Colors.green,
-              //     behavior: SnackBarBehavior.floating,
+              //     behavior: SnackBarBehavior.fixed,
               //     duration: Duration(seconds: 3),
               //     margin: EdgeInsets.all(16),
               //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

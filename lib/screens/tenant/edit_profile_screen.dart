@@ -771,7 +771,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),

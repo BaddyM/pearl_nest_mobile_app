@@ -61,8 +61,8 @@ class NotificationService {
       _isInitialized = true;
       //debugPrint('✅ NotificationService initialized successfully');
     } catch (e, stackTrace) {
-      //debugPrint('❌ Error initializing NotificationService: $e');
-      //debugPrint('Stack trace: $stackTrace');
+      debugPrint('Notification service initialization failed: $e');
+      debugPrint('$stackTrace');
     }
   }
 
@@ -188,6 +188,16 @@ class NotificationService {
 
   /// Setup FCM listeners
   static void _setupFCMListeners() {
+    _firebaseMessaging.onTokenRefresh.listen(
+      (token) {
+        _fcmToken = token;
+        unawaited(_registerRefreshedToken(token));
+      },
+      onError: (Object error) {
+        debugPrint('FCM token refresh listener failed: $error');
+      },
+    );
+
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
@@ -199,6 +209,14 @@ class NotificationService {
 
     // Handle notification tap when app is terminated
     _handleInitialMessage();
+  }
+
+  static Future<void> _registerRefreshedToken(String token) async {
+    try {
+      await AuthService.updateFcmToken(token);
+    } catch (error) {
+      debugPrint('Unable to register refreshed FCM token: $error');
+    }
   }
 
   /// Handle foreground messages
@@ -588,7 +606,7 @@ class NotificationService {
       //debugPrint('📱 FCM Token: $_fcmToken');
       return _fcmToken;
     } catch (e) {
-      //debugPrint('❌ Error getting FCM token: $e');
+      debugPrint('Unable to retrieve an FCM token: $e');
       return null;
     }
   }
